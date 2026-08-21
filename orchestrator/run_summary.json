@@ -1,0 +1,552 @@
+{
+  "exit_code": 1,
+  "gate": "void",
+  "scenarios": {
+    "ok": 0,
+    "fail": 1,
+    "fail_allowed": 0,
+    "skip": 0
+  },
+  "paths": {
+    "allure_results": "C:\\Users\\mails\\Documents\\zap-kdt\\reports\\allure-results\\f93b03ede817",
+    "allure_report": "C:\\Users\\mails\\Documents\\zap-kdt\\reports\\allure-report",
+    "allure_project_id": "f93b03ede817",
+    "zap_html": "C:\\Users\\mails\\Documents\\zap-kdt\\reports\\zap-results\\zap-final.html",
+    "zap_xml": "C:\\Users\\mails\\Documents\\zap-kdt\\reports\\zap-results\\juice_dojo.xml",
+    "live": "http://127.0.0.1:8767/"
+  },
+  "zap_mode": "demon",
+  "zap_api_port": 8080,
+  "zap_proxy_port": 8099,
+  "honest_contract_notes": [],
+  "admission_void": true,
+  "dojo_stats": {
+    "critical": 0,
+    "high": 1,
+    "medium": 6,
+    "low": 14,
+    "info": 7
+  },
+  "finding_collapse": {
+    "kind": "kdt_finding_collapse",
+    "version": 1,
+    "raw_count": 28,
+    "cluster_count": 20,
+    "systemic_clusters": 13,
+    "totals": {
+      "critical": 0,
+      "high": 1,
+      "medium": 6,
+      "low": 7,
+      "info": 6
+    },
+    "clusters": [
+      {
+        "fingerprint": "f3138c1c4c366450",
+        "title": "SQL Injection",
+        "severity": "high",
+        "cwe": "89",
+        "rule_id": "40018",
+        "systemic": false,
+        "instance_count": 1,
+        "sample_endpoints": [
+          "1091"
+        ],
+        "sample_params": []
+      },
+      {
+        "fingerprint": "acfbfa89c9abb1a4",
+        "title": "Application Error Disclosure",
+        "severity": "medium",
+        "cwe": "550",
+        "rule_id": "90022",
+        "systemic": true,
+        "instance_count": 1,
+        "sample_endpoints": [
+          "1093"
+        ],
+        "sample_params": []
+      },
+      {
+        "fingerprint": "3b987b7f8a0f1c14",
+        "title": "Content Security Policy (CSP) Header Not Set",
+        "severity": "medium",
+        "cwe": "693",
+        "rule_id": "10038",
+        "systemic": true,
+        "instance_count": 1,
+        "sample_endpoints": [
+          "1100"
+        ],
+        "sample_params": []
+      },
+      {
+        "fingerprint": "82982cb3a16a5935",
+        "title": "Cross-Domain Misconfiguration",
+        "severity": "medium",
+        "cwe": "264",
+        "rule_id": "10098",
+        "systemic": true,
+        "instance_count": 1,
+        "sample_endpoints": [
+          "1103"
+        ],
+        "sample_params": []
+      },
+      {
+        "fingerprint": "9c2dcf1095f28031",
+        "title": "CSP: Failure to Define Directive With No Fallback",
+        "severity": "medium",
+        "cwe": "693",
+        "rule_id": "10055",
+        "systemic": true,
+        "instance_count": 1,
+        "sample_endpoints": [
+          "1095"
+        ],
+        "sample_params": []
+      },
+      {
+        "fingerprint": "4ad560846a9be346",
+        "title": "Missing Anti-Clickjacking Header",
+        "severity": "medium",
+        "cwe": "1021",
+        "rule_id": "10020",
+        "systemic": true,
+        "instance_count": 1,
+        "sample_endpoints": [
+          "1106"
+        ],
+        "sample_params": []
+      },
+      {
+        "fingerprint": "fcde32d3c7fa9868",
+        "title": "Session ID in URL Rewrite",
+        "severity": "medium",
+        "cwe": "598",
+        "rule_id": "3",
+        "systemic": false,
+        "instance_count": 1,
+        "sample_endpoints": [
+          "1107"
+        ],
+        "sample_params": []
+      },
+      {
+        "fingerprint": "d6c2cca120c0a5b3",
+        "title": "Strict-Transport-Security Header Not Set",
+        "severity": "low",
+        "cwe": "319",
+        "rule_id": "10035",
+        "systemic": true,
+        "instance_count": 6,
+        "sample_endpoints": [
+          "1066",
+          "1068",
+          "1070",
+          "1079",
+          "1080"
+        ],
+        "sample_params": []
+      },
+      {
+        "fingerprint": "0657ca8f0e4a4a09",
+        "title": "Timestamp Disclosure - Unix",
+        "severity": "low",
+        "cwe": "497",
+        "rule_id": "10096",
+        "systemic": true,
+        "instance_count": 3,
+        "sample_endpoints": [
+          "1071",
+          "1072",
+          "1126"
+        ],
+        "sample_params": []
+      },
+      {
+        "fingerprint": "ca310bdfbee52eb1",
+        "title": "Application Error Disclosure",
+        "severity": "low",
+        "cwe": "550",
+        "rule_id": "90022",
+        "systemic": true,
+        "instance_count": 1,
+        "sample_endpoints": [
+          "1108"
+        ],
+        "sample_params": []
+      },
+      {
+        "fingerprint": "b4eb60910c29ba53",
+        "title": "Cross Site Scripting Weakness (Persistent in JSON Response)",
+        "severity": "low",
+        "cwe": "79",
+        "rule_id": "40014",
+        "systemic": false,
+        "instance_count": 1,
+        "sample_endpoints": [
+          "1121"
+        ],
+        "sample_params": []
+      },
+      {
+        "fingerprint": "f3095e7f33e0d0cb",
+        "title": "Information Disclosure - Debug Error Messages",
+        "severity": "low",
+        "cwe": "1295",
+        "rule_id": "10023",
+        "systemic": false,
+        "instance_count": 1,
+        "sample_endpoints": [
+          "1122"
+        ],
+        "sample_params": []
+      },
+      {
+        "fingerprint": "a31cbdd6380bdaaa",
+        "title": "Private IP Disclosure",
+        "severity": "low",
+        "cwe": "497",
+        "rule_id": "2",
+        "systemic": true,
+        "instance_count": 1,
+        "sample_endpoints": [
+          "1124"
+        ],
+        "sample_params": []
+      },
+      {
+        "fingerprint": "1ecb472731ac3dea",
+        "title": "X-Content-Type-Options Header Missing",
+        "severity": "low",
+        "cwe": "693",
+        "rule_id": "10021",
+        "systemic": true,
+        "instance_count": 1,
+        "sample_endpoints": [
+          "1128"
+        ],
+        "sample_params": []
+      },
+      {
+        "fingerprint": "91f64f3bbf450718",
+        "title": "Information Disclosure - Sensitive Information in URL",
+        "severity": "info",
+        "cwe": "598",
+        "rule_id": "10024",
+        "systemic": false,
+        "instance_count": 2,
+        "sample_endpoints": [
+          "1067",
+          "1069"
+        ],
+        "sample_params": []
+      },
+      {
+        "fingerprint": "e56aa89c6119a5dc",
+        "title": "Authentication Request Identified",
+        "severity": "info",
+        "cwe": "0",
+        "rule_id": "10111",
+        "systemic": false,
+        "instance_count": 1,
+        "sample_endpoints": [
+          "1129"
+        ],
+        "sample_params": []
+      },
+      {
+        "fingerprint": "af92fa6ad986ec90",
+        "title": "Modern Web Application",
+        "severity": "info",
+        "cwe": "0",
+        "rule_id": "10109",
+        "systemic": true,
+        "instance_count": 1,
+        "sample_endpoints": [
+          "1131"
+        ],
+        "sample_params": []
+      },
+      {
+        "fingerprint": "cf82fcd90adac4fd",
+        "title": "Re-Examine Cache-Control Directives",
+        "severity": "info",
+        "cwe": "525",
+        "rule_id": "10015",
+        "systemic": true,
+        "instance_count": 1,
+        "sample_endpoints": [
+          "1086"
+        ],
+        "sample_params": []
+      },
+      {
+        "fingerprint": "a090e88978f42875",
+        "title": "Retrieved From Cache",
+        "severity": "info",
+        "cwe": "525",
+        "rule_id": "10050",
+        "systemic": true,
+        "instance_count": 1,
+        "sample_endpoints": [
+          "1074"
+        ],
+        "sample_params": []
+      },
+      {
+        "fingerprint": "b4c254b7d755bf09",
+        "title": "Session Management Response Identified",
+        "severity": "info",
+        "cwe": "0",
+        "rule_id": "10112",
+        "systemic": false,
+        "instance_count": 1,
+        "sample_endpoints": [
+          "1135"
+        ],
+        "sample_params": []
+      }
+    ],
+    "top_findings": [
+      {
+        "name": "SQL Injection",
+        "risk": "high",
+        "count": 1,
+        "fingerprint": "f3138c1c4c366450",
+        "systemic": false,
+        "sample_endpoints": [
+          "1091"
+        ]
+      },
+      {
+        "name": "Application Error Disclosure",
+        "risk": "medium",
+        "count": 1,
+        "fingerprint": "acfbfa89c9abb1a4",
+        "systemic": true,
+        "sample_endpoints": [
+          "1093"
+        ]
+      },
+      {
+        "name": "Content Security Policy (CSP) Header Not Set",
+        "risk": "medium",
+        "count": 1,
+        "fingerprint": "3b987b7f8a0f1c14",
+        "systemic": true,
+        "sample_endpoints": [
+          "1100"
+        ]
+      },
+      {
+        "name": "Cross-Domain Misconfiguration",
+        "risk": "medium",
+        "count": 1,
+        "fingerprint": "82982cb3a16a5935",
+        "systemic": true,
+        "sample_endpoints": [
+          "1103"
+        ]
+      },
+      {
+        "name": "CSP: Failure to Define Directive With No Fallback",
+        "risk": "medium",
+        "count": 1,
+        "fingerprint": "9c2dcf1095f28031",
+        "systemic": true,
+        "sample_endpoints": [
+          "1095"
+        ]
+      },
+      {
+        "name": "Missing Anti-Clickjacking Header",
+        "risk": "medium",
+        "count": 1,
+        "fingerprint": "4ad560846a9be346",
+        "systemic": true,
+        "sample_endpoints": [
+          "1106"
+        ]
+      },
+      {
+        "name": "Session ID in URL Rewrite",
+        "risk": "medium",
+        "count": 1,
+        "fingerprint": "fcde32d3c7fa9868",
+        "systemic": false,
+        "sample_endpoints": [
+          "1107"
+        ]
+      },
+      {
+        "name": "Strict-Transport-Security Header Not Set",
+        "risk": "low",
+        "count": 6,
+        "fingerprint": "d6c2cca120c0a5b3",
+        "systemic": true,
+        "sample_endpoints": [
+          "1066",
+          "1068",
+          "1070",
+          "1079",
+          "1080"
+        ]
+      },
+      {
+        "name": "Timestamp Disclosure - Unix",
+        "risk": "low",
+        "count": 3,
+        "fingerprint": "0657ca8f0e4a4a09",
+        "systemic": true,
+        "sample_endpoints": [
+          "1071",
+          "1072",
+          "1126"
+        ]
+      },
+      {
+        "name": "Application Error Disclosure",
+        "risk": "low",
+        "count": 1,
+        "fingerprint": "ca310bdfbee52eb1",
+        "systemic": true,
+        "sample_endpoints": [
+          "1108"
+        ]
+      },
+      {
+        "name": "Cross Site Scripting Weakness (Persistent in JSON Response)",
+        "risk": "low",
+        "count": 1,
+        "fingerprint": "b4eb60910c29ba53",
+        "systemic": false,
+        "sample_endpoints": [
+          "1121"
+        ]
+      },
+      {
+        "name": "Information Disclosure - Debug Error Messages",
+        "risk": "low",
+        "count": 1,
+        "fingerprint": "f3095e7f33e0d0cb",
+        "systemic": false,
+        "sample_endpoints": [
+          "1122"
+        ]
+      },
+      {
+        "name": "Private IP Disclosure",
+        "risk": "low",
+        "count": 1,
+        "fingerprint": "a31cbdd6380bdaaa",
+        "systemic": true,
+        "sample_endpoints": [
+          "1124"
+        ]
+      },
+      {
+        "name": "X-Content-Type-Options Header Missing",
+        "risk": "low",
+        "count": 1,
+        "fingerprint": "1ecb472731ac3dea",
+        "systemic": true,
+        "sample_endpoints": [
+          "1128"
+        ]
+      },
+      {
+        "name": "Information Disclosure - Sensitive Information in URL",
+        "risk": "info",
+        "count": 2,
+        "fingerprint": "91f64f3bbf450718",
+        "systemic": false,
+        "sample_endpoints": [
+          "1067",
+          "1069"
+        ]
+      },
+      {
+        "name": "Authentication Request Identified",
+        "risk": "info",
+        "count": 1,
+        "fingerprint": "e56aa89c6119a5dc",
+        "systemic": false,
+        "sample_endpoints": [
+          "1129"
+        ]
+      },
+      {
+        "name": "Modern Web Application",
+        "risk": "info",
+        "count": 1,
+        "fingerprint": "af92fa6ad986ec90",
+        "systemic": true,
+        "sample_endpoints": [
+          "1131"
+        ]
+      },
+      {
+        "name": "Re-Examine Cache-Control Directives",
+        "risk": "info",
+        "count": 1,
+        "fingerprint": "cf82fcd90adac4fd",
+        "systemic": true,
+        "sample_endpoints": [
+          "1086"
+        ]
+      },
+      {
+        "name": "Retrieved From Cache",
+        "risk": "info",
+        "count": 1,
+        "fingerprint": "a090e88978f42875",
+        "systemic": true,
+        "sample_endpoints": [
+          "1074"
+        ]
+      },
+      {
+        "name": "Session Management Response Identified",
+        "risk": "info",
+        "count": 1,
+        "fingerprint": "b4c254b7d755bf09",
+        "systemic": false,
+        "sample_endpoints": [
+          "1135"
+        ]
+      }
+    ]
+  },
+  "executive": {
+    "executive_class": "High",
+    "recommendations": [
+      "Заключение: высокий уровень риска — закрыть ACTIVE High/Critical (critical=0, high=1) до следующего допуска.",
+      "Кластер: SQL Injection — high×1.",
+      "Кластер: Application Error Disclosure — medium×1 (site-wide).",
+      "Кластер: Content Security Policy (CSP) Header Not Set — medium×1 (site-wide).",
+      "Кластер: Cross-Domain Misconfiguration — medium×1 (site-wide).",
+      "Кластер: CSP: Failure to Define Directive With No Fallback — medium×1 (site-wide)."
+    ],
+    "risks": {
+      "critical": 0,
+      "high": 1,
+      "medium": 6,
+      "low": 14,
+      "info": 7
+    },
+    "source": "dojo_findings",
+    "execution_fault": false
+  },
+  "allure_summary": {
+    "passed": 1,
+    "failed": 1,
+    "broken": 0,
+    "skipped": 0,
+    "total": 2,
+    "status": "has_failures"
+  },
+  "executive_class": "High",
+  "built_at": 1787330100.0901206
+}

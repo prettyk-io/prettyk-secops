@@ -1,0 +1,36 @@
+---
+description: Explorer icons — dark и light канон, раздельно; откат без приказа = инцидент
+globs: frontend/src/assets/icons/**,frontend/public/icons/**,frontend/src/studio/StudioBlocksTree.tsx,frontend/src/studio/studioTreeLeafChrome.tsx,frontend/src/styles.css
+alwaysApply: true
+---
+
+# Explorer icons: dark + light канон (не пересекать)
+
+Владелец: **Максим**. Скрин тёмного дерева 2026-08-10 — канон dark. Light — отдельный пакет с собственными hashes.
+
+## Обе темы бетонированы
+
+Без явной фразы Максима («замени dark/light иконку X») **запрещено** менять байты канон-файлов, шарить один PNG на обе темы, invert/punch/resize «для удобства», откатывать при merge.
+
+| Тема | Wiring | Файлы |
+|---|---|---|
+| **Dark** | `LEAF_ICONS_DARK` | base без `-light` |
+| **Light** | `LEAF_ICONS_LIGHT` | только `*-light.png` |
+
+Hashes: rule `explorer-theme-icons.mdc` §1b (dark) / §1c (light).
+`public/icons/` basename = `src/assets/icons/`.
+
+## Удаление фичи на FE (урок 2026-08-10: `showCanvasLabEntry`)
+
+Перед `Delete` модуля:
+
+1. `rg` по **всем** символам фичи (`Component`, `hook`, CSS-класс, query, localStorage key).
+2. Вырезать **все** import / state / JSX / CSS в одном ходе.
+3. Только потом удалять файлы.
+4. Проверить: `rg` пуст + Editor/Vite не орёт ReferenceError.
+
+Частичный cut (убрал state, оставил JSX) = сломанный Editor. Не коммитить/пушить, пока refs живы.
+
+## Приём ассета
+
+Тема dark/light обязательна (спросить) → только свой пакет → sync `public/` → другую тему не трогать → без пережатия без приказа.

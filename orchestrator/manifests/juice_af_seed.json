@@ -1,0 +1,37 @@
+{
+  "meta": {
+    "assessment_purpose": "scheduled",
+    "app_type": "web",
+    "project_id": "juice-af-seed",
+    "scheduled_info": "Seed for gen_af_plan → plans/juice-from-manifest.yaml"
+  },
+  "infrastructure": {
+    "zap_mode": "demon",
+    "browser_type": "chrome-headless",
+    "zap_work_timeout_min": 60,
+    "idle_timeout_min": 10
+  },
+  "security_configuration": {
+    "base_url_override": "http://juice-shop:3000",
+    "allowed_extra_domains": "",
+    "scan_policy": "custom_policy",
+    "auth_type": "Без авторизации",
+    "auth_details": {}
+  },
+  "test_suites": {
+    "imports": [],
+    "pages": {},
+    "test_data_constructor": [],
+    "scenarios": [
+      {
+        "scenario_name": "AF seed only",
+        "steps": [
+          {
+            "description": "Маркер",
+            "constructor": "core|log_message|juice-af-seed"
+          }
+        ]
+      }
+    ]
+  }
+}

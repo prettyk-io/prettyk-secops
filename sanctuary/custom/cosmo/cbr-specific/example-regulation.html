@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Техническое задание № DAST-D650C0B9</title>
+  <style>
+    @page { size: A4; margin: 16mm 14mm; }
+    :root {
+      --ink: #1f2328;
+      --ink-mute: #59636e;
+      --paper: #ffffff;
+      --border: #d1d9e0;
+      --border-muted: #e6eaef;
+      --code-bg: #f6f8fa;
+      --quote-border: #d1d9e0;
+      --accent-line: #d1d9e0;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--paper);
+      color: var(--ink);
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans",
+        Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+      font-size: 16px;
+      line-height: 1.6;
+      word-wrap: break-word;
+    }
+    .page {
+      width: 100%;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 28px 32px 40px;
+    }
+
+    /* Шапка: горизонтальный логотип брендбука (D10), без плашки и рамки */
+    .doc-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      margin: 0 0 18px;
+      padding: 0;
+      border: none;
+    }
+    .doc-head .logo {
+      height: 80px;
+      width: auto;
+      max-width: 340px;
+      object-fit: contain;
+      display: block;
+      border: none;
+      outline: none;
+      box-shadow: none;
+      background: transparent;
+    }
+    .doc-head .org {
+      flex: 1;
+      text-align: right;
+      font-size: 11pt;
+      line-height: 1.35;
+      color: var(--ink);
+      max-width: 48%;
+    }
+    .doc-head .org .org-title {
+      font-weight: 700;
+      font-size: 11pt;
+      color: var(--ink);
+      margin: 0 0 3px;
+    }
+    .doc-head .org .form-label {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 10pt;
+      font-weight: 600;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    /* Тело = markdown-body (GFM) */
+    .markdown-body h1 {
+      font-size: 1.75em;
+      font-weight: 600;
+      line-height: 1.25;
+      margin: 0.4em 0 0.4em;
+      padding-bottom: 0.3em;
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+    .markdown-body h1 + h2 {
+      font-size: 1.15em;
+      font-weight: 400;
+      color: var(--ink-mute);
+      text-align: center;
+      margin: -0.2em 0 1.2em;
+      padding: 0;
+      border: none;
+    }
+    .markdown-body h2 {
+      font-size: 1.35em;
+      font-weight: 600;
+      margin: 1.4em 0 0.6em;
+      padding-bottom: 0.25em;
+      border-bottom: 1px solid var(--border-muted);
+    }
+    .markdown-body h3 {
+      font-size: 1.2em;
+      font-weight: 600;
+      margin: 1.1em 0 0.45em;
+      border: none;
+      background: none;
+      padding: 0;
+    }
+    .markdown-body h4 {
+      font-size: 1.05em;
+      font-weight: 600;
+      margin: 0.7em 0 0.3em;
+    }
+    .markdown-body h5 {
+      font-size: 1em;
+      font-weight: 600;
+      margin: 1em 0 0.4em;
+    }
+    .markdown-body p {
+      margin: 0 0 0.85em;
+    }
+    .markdown-body ul, .markdown-body ol {
+      margin: 0 0 0.85em;
+      padding-left: 2em;
+    }
+    .markdown-body li { margin: 0.2em 0; }
+    .markdown-body li + li { margin-top: 0.15em; }
+    .markdown-body hr {
+      height: 1px;
+      padding: 0;
+      margin: 1.5em 0;
+      background: var(--border);
+      border: 0;
+      width: 100%;
+    }
+    .markdown-body blockquote {
+      margin: 0 0 1em;
+      padding: 0 1em;
+      color: var(--ink-mute);
+      border-left: 0.25em solid var(--quote-border);
+      background: none;
+      font-style: normal;
+    }
+    .markdown-body blockquote p { margin: 0.4em 0; }
+    .markdown-body table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.6em 0 1em;
+      font-size: 0.95em;
+      display: table;
+    }
+    .markdown-body th, .markdown-body td {
+      border: 1px solid var(--border);
+      padding: 6px 13px;
+      vertical-align: top;
+      background: transparent;
+    }
+    .markdown-body th {
+      font-weight: 600;
+      text-align: center;
+      background: var(--code-bg);
+    }
+    .markdown-body td:nth-child(2) { text-align: center; width: 18%; }
+    .markdown-body code {
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        "Liberation Mono", monospace;
+      font-size: 0.875em;
+      background: var(--code-bg);
+      border: 1px solid var(--border-muted);
+      border-radius: 6px;
+      padding: 0.15em 0.4em;
+    }
+    .markdown-body a {
+      color: #0969da;
+      text-decoration: none;
+    }
+    .markdown-body a:hover { text-decoration: underline; }
+    .markdown-body strong { font-weight: 600; }
+    .markdown-body em { font-style: italic; }
+
+    .doc-section {
+      margin: 0;
+      padding: 0;
+      border: none;
+      background: transparent;
+      /* не avoid: иначе §7 «Приложение» уезжает на пустую страницу */
+      page-break-inside: auto;
+    }
+
+    /* Подписи ОРД: должность | линия | расшифровка */
+    .sign-block {
+      margin: 22pt 0 10pt;
+      page-break-inside: avoid;
+    }
+    .sign-lead {
+      font-weight: 600;
+      margin: 0 0 14pt;
+      text-align: left;
+    }
+    .sign-lead-next {
+      margin-top: 20pt;
+    }
+    .sign-row {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 18pt;
+      margin: 0 0 4pt;
+      width: 100%;
+    }
+    .sign-col {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      min-width: 0;
+    }
+    .sign-role { flex: 1.55; text-align: left; }
+    .sign-mark { flex: 1; text-align: center; }
+    .sign-name { flex: 1.1; text-align: right; }
+    .sign-value {
+      border-bottom: 1px solid var(--ink);
+      min-height: 1.15em;
+      padding: 0 2pt 2pt;
+      font-size: 11pt;
+      line-height: 1.25;
+    }
+    .sign-mark .sign-value { min-width: 90pt; }
+    .sign-cap {
+      margin-top: 3pt;
+      font-size: 9pt;
+      line-height: 1.2;
+      color: var(--ink-mute);
+      font-weight: 400;
+      text-align: center;
+    }
+    .sign-role .sign-cap { text-align: left; }
+    .sign-name .sign-cap { text-align: right; }
+
+    /* Приложение — плотнее, без выталкивания на пустой лист */
+    .doc-appendix {
+      margin-top: 10pt;
+      page-break-before: auto;
+      page-break-inside: auto;
+    }
+    .doc-appendix h3 {
+      margin-top: 0.55em;
+    }
+    .doc-appendix p,
+    .doc-appendix ul {
+      margin-bottom: 0.45em;
+    }
+
+    footer.doc-foot {
+      margin-top: 12pt;
+      padding-top: 6pt;
+      border-top: 1px solid var(--border);
+      font-size: 10px;
+      color: var(--ink-mute);
+      line-height: 1.35;
+      page-break-before: avoid;
+    }
+
+    @media print {
+      body { font-size: 11pt; }
+      .page { max-width: none; padding: 0; }
+      .markdown-body a { color: var(--ink); text-decoration: none; }
+      .markdown-body th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .doc-appendix { page-break-before: avoid; }
+      footer.doc-foot { page-break-before: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    
+  <header class="doc-head">
+    <img class="logo" src="data:image/png;base64,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" alt="Банк России" />
+    <div class="org">
+      <div class="org-title">Департамент информационной безопасности</div>
+      Управление анализа уязвимостей<br />и тестирования на проникновение
+      <span class="form-label">Форма</span>
+    </div>
+  </header>
+    <main class="markdown-body">
+<h1>ТЕХНИЧЕСКОЕ ЗАДАНИЕ № DAST-D650C0B9</h1>
+<h2>на проведение динамического тестирования безопасности</h2>
+<p><strong>Дата составления:</strong> 09.08.2026<br><strong>Место составления:</strong> г. Москва<br><strong>Степень конфиденциальности:</strong> ДСП (для служебного пользования)<br><strong>Идентификатор задания:</strong> <code>d650c0b9</code></p>
+<hr>
+<section class="doc-section"><h3>1. Основание и нормативные ссылки</h3>
+<p>Настоящее техническое задание определяет границы, состав и порядок проведения работ по динамическому тестированию безопасности объекта информационной инфраструктуры <strong>до начала выполнения работ</strong>.</p>
+<ul>
+<li>работы проводятся во исполнение требований Положений Банка России № 683-П (кредитные организации), № 757-П (некредитные финансовые организации), № 821-П (защита информации при осуществлении переводов денежных средств; Положение № 719-П утратило силу), а также с учётом Методических рекомендаций Банка России по проведению тестирования на проникновение и анализа уязвимостей объектов информационной инфраструктуры организаций финансового рынка</li>
+<li>применяются положения ГОСТ Р 57580.1-2017 в части мер контроля защищённости и устранения уязвимостей (группа мер ЦЗИ.*), меры ЖЦ.8 (анализ уязвимостей прикладного программного обеспечения), ГОСТ Р 58143-2018, а также подпункта 7.2.6 пункта 7.2 «Оценка уязвимостей (AVA)» Профиля защиты прикладного программного обеспечения автоматизированных систем и приложений кредитных организаций и некредитных финансовых организаций. Пункт 7.8 ГОСТ Р 57580.1 относится к защите среды виртуализации и в качестве раздела оценки уязвимостей не применяется</li>
+<li>при необходимости — Методика оценки угроз безопасности информации (ФСТЭК России, 05.02.2021); для значимых объектов критической информационной инфраструктуры — требования к испытаниям программного обеспечения (в том числе приказ ФСТЭК России № 239) по категории значимости объекта; иные нормативные правовые акты Российской Федерации по защите информации — по применимости к объекту</li>
+</ul>
+</section><section class="doc-section"><h3>2. Объект и границы тестирования</h3>
+<ul>
+<li><strong>Наименование ИС (ПО):</strong> owasp-zap-tests</li>
+<li><strong>Версия / релиз:</strong> —</li>
+<li><strong>Критичность объекта (ГОСТ Р 57580.1):</strong> подлежит указанию по ГОСТ Р 57580.1 (уровень: —)</li>
+<li><strong>Цели для проверки безопасности:</strong> <a href="http://juice-shop:3000">http://juice-shop:3000</a></li>
+<li><strong>Дополнительно запрошенные границы для проверки:</strong> <a href="https://rkn.gov.ru%7Cauth.dev.spaceport.ru%7C*.internal.bank%7Cgoogle.com">https://rkn.gov.ru|auth.dev.spaceport.ru|*.internal.bank|google.com</a></li>
+<li><strong>Сведения о контуре для тестирования:</strong> Внутренняя сеть Платформы цифрового рубля (ПлЦР) Центрального банка Российской Федерации</li>
+<li><strong>Ответственный за приложение:</strong> <a href="mailto:ss7leader-itlead@dev.spaceport.ru">ss7leader-itlead@dev.spaceport.ru</a> Космопорт ИТ-Лидер</li>
+<li><strong>Инициатор проверки:</strong> <a href="mailto:ss7developer@dev.spaceport.ru">ss7developer@dev.spaceport.ru</a> Космопорт Разработчик</li>
+<li><strong>Назначение проверки:</strong> Контроль релиза приложения</li>
+</ul>
+<h4>2.1. Программа работ (состав)</h4>
+<ul>
+<li>Страницы: login</li>
+<li>Страницы: register</li>
+<li>Сценарии: juicy</li>
+<li>Сценарии: juice_shop_test_1</li>
+<li>Модули: auth_data</li>
+<li>Модули: data_module</li>
+<li>Фаззеры: juice0</li>
+<li>Ресурсы: r_2</li>
+</ul>
+<h4>2.2. Исключения из границ</h4>
+<p>Объекты, входящие в общие границы, но исключённые из настоящей проверки, в задании не заявлены. При появлении исключений указать перечень и причины (ограничение окна работ, пропускная способность, распоряжение владельца объекта).</p>
+</section><section class="doc-section"><h3>3. Параметры проведения работ</h3>
+<ul>
+<li><strong>Плановый период:</strong> с — по — <em>(уточняется при начале работ)</em></li>
+<li><strong>Вид работ:</strong> динамическое тестирование безопасности с инструментальным сканированием</li>
+<li><strong>Средства проведения работ:</strong> Комплекс средств динамического анализа (KDT) с применением OWASP ZAP (режим сканирования)</li>
+<li><strong>Метод:</strong> методом «чёрного ящика» (исполнитель не располагает учётными данными объекта)</li>
+<li><strong>Учётная запись:</strong> Учётная запись не применялась (проверка без авторизации).</li>
+<li><strong>Политика сканирования:</strong> Пользовательская политика сканирования</li>
+</ul>
+<blockquote>
+<p>Сведения, составляющие секрет (пароли, Cookie, Bearer, токены), в документ <strong>не включаются</strong>. Указываются тип доступа либо отметка о наличии учётных данных.</p>
+</blockquote>
+</section><section class="doc-section"><h3>4. Ограничения, условия остановки, ожидаемые результаты</h3>
+<h4>4.1. События немедленной остановки работ</h4>
+<ul>
+<li>деградация или недоступность объекта проверки либо смежных сервисов, создающая риск нарушения штатной деятельности;</li>
+<li>признаки инцидента информационной безопасности, требующие немедленного реагирования;</li>
+<li>письменное или зафиксированное иным установленным порядком распоряжение заказчика (владельца объекта) о приостановке работ.</li>
+</ul>
+<h4>4.2. Ожидаемые результаты и перепроверка</h4>
+<ul>
+<li>завершение динамического сканирования в установленных границах и верификация выявленных уязвимостей;</li>
+<li>оформление акта по результатам выполненных работ с рекомендациями по устранению недостатков;</li>
+<li>решение о необходимости перепроверки после устранения критических и высоких уязвимостей — по итогам акта.</li>
+</ul>
+</section><section class="doc-section"><h3>5. Отчётность</h3>
+<p>Результаты оформляются <strong>актом</strong> по результатам выполненных работ. Рекомендуемый срок хранения акта — <strong>не менее 5 лет</strong> (Методические рекомендации Банка России). Форма акта — шаблон <code>res-blank-0.6</code>.</p>
+</section><section class="doc-section"><h3>6. Согласование</h3>
+<div class="sign-block">
+<p class="sign-lead">Проверку провёл</p>
+<div class="sign-row">
+  <div class="sign-col sign-role"><div class="sign-value">Специалист по анализу уязвимостей</div><div class="sign-cap">(должность)</div></div>
+  <div class="sign-col sign-mark"><div class="sign-value">&nbsp;</div><div class="sign-cap">(подпись)</div></div>
+  <div class="sign-col sign-name"><div class="sign-value">—</div><div class="sign-cap">(инициалы, фамилия)</div></div>
+</div>
+<p class="sign-lead sign-lead-next">Согласовано</p>
+<div class="sign-row">
+  <div class="sign-col sign-role"><div class="sign-value">Начальник Управления анализа уязвимостей и тестирования на проникновение</div><div class="sign-cap">(должность)</div></div>
+  <div class="sign-col sign-mark"><div class="sign-value">&nbsp;</div><div class="sign-cap">(подпись)</div></div>
+  <div class="sign-col sign-name"><div class="sign-value">—</div><div class="sign-cap">(инициалы, фамилия)</div></div>
+</div>
+</div>
+</section>
+    </main>
+    <footer class="doc-foot">
+      техническое задание · шаблон res-blank-0.6
+      · идентификатор задания d650c0b9
+      · 2026-08-09T08:26:29.951Z
+      · рекомендуемый срок хранения не менее 5 лет
+    </footer>
+  </div>
+</body>
+</html>

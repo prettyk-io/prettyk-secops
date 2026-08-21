@@ -1,0 +1,64 @@
+---
+description: Локальный стенд — «стартуй / почисти»; пульты; allure3-secops; Webswing не дефолт
+alwaysApply: true
+---
+
+# Стенд: старт и локальная чистка
+
+Владелец говорит коротко — агент делает **полный** lab-контур.  
+Подробный чеклист и ловушки: global skill **`secops-lab`** (читать при старте/чистке).  
+**Порты — CANON: [`sanctuary/canon/stand-port-meta.md`](../../sanctuary/canon/stand-port-meta.md).** Хардкод порта = инцидент.
+
+## Имена
+
+- Сервис отчётов: **allure3-secops** (`:5050/`, compose `allure3-secops`, канон). Legacy: `allure-light-secops` (`:5051/`).
+- Токен чистки: `-Target allure` **или** `-Target allure3-secops` **или** `-Target allure-light-secops` (одно и то же).
+- Запрещены строки/URL: `allure-docker-service`, `allure-lite`, `frankescobar`, `Allure Lite`.
+
+## Пульты (после любого «подними / стартуй» — кидать автоматом)
+
+```text
+allure3-secops (канон)
+http://127.0.0.1:5050/
+DefectDojo
+http://127.0.0.1:8081/  admin/admin
+PrettyK Live
+http://127.0.0.1:8767/
+Editor
+http://localhost:5173/
+ZAP Webswing
+http://127.0.0.1:8082/zap
+ZAP demon API
+http://127.0.0.1:8080/
+```
+
+## Команды по умолчанию
+
+```powershell
+# старт
+.\orchestrator\tools\lab_up.ps1
+.\orchestrator\tools\lab_up.ps1 -IncludeDefectDojo
+
+# чистка перед прогоном, потом старт
+.\orchestrator\tools\lab_clean.ps1 -Target allure,live
+.\orchestrator\tools\lab_up.ps1
+```
+
+- Обязательный контур: Grid + **allure3-secops** + ZAP **demon** + Juice + Editor/playground + Live idle.
+- **Webswing не дефолт** — только `zap_mode=webswing` или явная просьба. URL в пультах всё равно давать (down — пометить).
+- Juice `-Target juice` — только по явной просьбе, не во время прогона.
+- Live clean: diary + meta + **results_hooks.json**; idle-процесс не убивать.
+
+## После правок FE
+
+- Python API playground / generate keywords|method-ids → рестарт playground (`lab_ensure_ui.ps1`).
+- Только UI → HMR; мёртвый :5173 → ensure, не ждать просьбы.
+- **Инвазивный FE** (shell / Studio boot / providers / vite): DoD **живого Editor** — [`agent-entrypoint.md`](docs/agent-entrypoint.md) § «DoD: живой Editor после инвазивного FE». HTTP + глазами (логин или shell, не белый экран). Упало → логи и **корень** в коде, не «рестарт и сдал».
+
+## Запреты
+
+- Не утверждать, что Live «только when live/run».
+- Не гасить idle «заодно» после прогона.
+- Shell abort ≠ смерть Vite/Live — [`stand-shell-abort.mdc`](stand-shell-abort.mdc).
+- **Браузер на localhost — основной путь: CDP Chrome `:9222`** (harness `C:\cursor-buddy\Flow\Current\blitz-auth\cdp\local.ps1`, skill `browser-hands-pure`). Cursor-браузер — равноправный fallback для простых задач и просмотра. Хост → `browser-hands-pure`, VM → `browser-hands-remote`. Канон: rule [`browser-cdp-only.mdc`](browser-cdp-only.mdc) (alwaysApply).
+- Канон narrative: [`docs/stand.md`](../../docs/stand.md) · шпаргалка [`docs/operator-cheatsheet.md`](../../docs/operator-cheatsheet.md).

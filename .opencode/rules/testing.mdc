@@ -1,0 +1,38 @@
+﻿---
+description: Тесты prettyk-dev — pytest / vitest, политика прогона и написания тестов
+globs: orchestrator/tests/**,frontend/src/**/*.test.ts,frontend/src/**/*.test.tsx,**/test_*.py
+alwaysApply: true
+---
+
+# Testing Policy & Layering
+
+## 1. Политика написания тестов
+- **Большая фича:** покрывать тестами обширно (различные сценарии, грановые кейсы, компоненты).
+- **Маленькая фича / точечная правка:** добавлять умеренные тесты для смоука.
+
+## 2. Политика прогона тестов (Строго!)
+- **При изменениях и дебаге:** запускать тесты **строго ограниченно и точечно** (только изменяемый тест или конкретный файл, например `npx vitest run src/studio/StudioBlocksTree.test.tsx` или `pytest orchestrator/tests/test_specific.py`).
+- **ЗАПРЕЩЕНО гонять все тесты целиком** во время локальной разработки и отладки (`npm test` без параметров / полный `vitest run` / глобальный `pytest` без фильтра не запускать).
+- **Sonar dig / Open rematch:** сначала большой скоуп кода без прогона после каждого файла; тесты — **скопом в конце цикла** по зоне (список связанных test-файлов). Упало → чинишь → снова batch. Канон: [`docs/agent-entrypoint.md`](../../docs/agent-entrypoint.md) § Sonar.
+
+## 3. Слои
+1. **Unit** — parse, MethodId, schema, language, factories.
+2. **Component / API** — playground validate/eval, RJSF behaviour.
+3. **Integration** (Docker / ZAP / Juice) — только по запросу.
+
+Стек: orchestrator → `pytest`; frontend → `vitest`.
+
+## 4. Поведение
+- Проверять результат/поведение, не «мок был вызван», если можно иначе.
+- Описывать кейсы блоками: Rendering / Interactions / Edge (по смыслу).
+- Багфикс: failing test, если дёшево — потом фикс.
+- Snapshots — обновлять осознанно, не «починило зелёный».
+
+## 5. Фабрики (шаблон)
+```ts
+const getMockX = (overrides?: Partial<T>): T => ({
+  /* sensible defaults */
+  ...overrides,
+});
+```
+То же для Python fixtures / helpers в `orchestrator/tests`.

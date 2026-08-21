@@ -1,0 +1,2881 @@
+{
+  "$comment": "СГЕНЕРИРОВАННЫЙ ФАЙЛ. Не редактировать вручную. Источник: docs/manifest.json, генератор: frontend/scripts/generate-schema.mjs. Обновить: npm run generate:schema",
+  "title": "Запуск Автоматизированных проверок и тестирование безопасности",
+  "type": "object",
+  "required": [
+    "meta",
+    "infrastructure"
+  ],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "title": "Информация о проверке",
+      "required": [
+        "assessment_purpose"
+      ],
+      "properties": {
+        "project_id": {
+          "type": "string",
+          "title": "Приложения участвующие в проверке",
+          "default": "owasp-zap-tests",
+          "readOnly": true
+        },
+        "initiator_name": {
+          "type": "string",
+          "title": "Инициатор проверки",
+          "default": "ss7developer@dev.spaceport.ru Космопорт Разработчик",
+          "readOnly": true
+        },
+        "app_leader": {
+          "type": "string",
+          "title": "Ответственный за проверяемое приложение",
+          "default": "ss7leader-itlead@dev.spaceport.ru Космопорт ИТ-Лидер",
+          "readOnly": true
+        },
+        "assessment_purpose": {
+          "type": "string",
+          "title": "Назначение проверки",
+          "default": "scheduled",
+          "oneOf": [
+            {
+              "const": "scheduled",
+              "title": "Плановая проверка"
+            },
+            {
+              "const": "pre_release",
+              "title": "Контроль релиза приложения"
+            },
+            {
+              "const": "emergency",
+              "title": "Внештатная проверка"
+            },
+            {
+              "const": "manual",
+              "title": "Ручная проверка в ZAP"
+            }
+          ]
+        },
+        "generate_act": {
+          "type": "boolean",
+          "title": "Формировать акт проверки",
+          "default": false,
+          "description": "Без оси допуска акт не сформируется; для релиза обязательно."
+        }
+      }
+    },
+    "infrastructure": {
+      "type": "object",
+      "title": "Конфигурация запуска",
+      "required": [
+        "base_url_override",
+        "allowed_extra_domains",
+        "zap_mode",
+        "browser_type"
+      ],
+      "properties": {
+        "base_url_override": {
+          "type": "string",
+          "title": "URL Сканирования",
+          "default": "http://runner01.dev.spaceport.ru:8080"
+        },
+        "allowed_extra_domains": {
+          "type": "string",
+          "title": "Дополнительные разрешенные URL",
+          "default": "https://rkn.gov.ru,auth.dev.spaceport.ru,*.internal.bank"
+        },
+        "zap_mode": {
+          "type": "string",
+          "title": "Режим работы ZAP",
+          "default": "demon",
+          "oneOf": [
+            {
+              "const": "demon",
+              "title": "Сканирование"
+            },
+            {
+              "const": "webswing",
+              "title": "Запуск с Webswing"
+            }
+          ]
+        },
+        "browser_type": {
+          "type": "string",
+          "title": "Браузер-исполнитель",
+          "default": "chrome",
+          "oneOf": [
+            {
+              "const": "chrome",
+              "title": "Chrome"
+            },
+            {
+              "const": "chrome-headless",
+              "title": "Chrome (headless)"
+            },
+            {
+              "const": "firefox",
+              "title": "Firefox"
+            },
+            {
+              "const": "firefox-headless",
+              "title": "Firefox (headless)"
+            }
+          ]
+        },
+        "debug_mode": {
+          "type": "boolean",
+          "title": "Режим отладки",
+          "default": false,
+          "description": "Операторский прогон: пауза/продолжить в Live (noVNC), all-failsafe, без idle/work kill. Допуск по ACTIVE для этого прогона недействителен (admission_void)."
+        }
+      }
+    },
+    "security_configuration": {
+      "type": "object",
+      "title": "Security (internal)",
+      "required": [
+        "scan_policy",
+        "auth_type"
+      ],
+      "properties": {
+        "scan_policy": {
+          "type": "string",
+          "title": "Политика сканирования ZAP",
+          "default": "custom_policy",
+          "oneOf": [
+            {
+              "const": "custom_policy",
+              "title": "Пользовательская"
+            }
+          ]
+        },
+        "auth_type": {
+          "type": "string",
+          "title": "Тип авторизации",
+          "default": "Без авторизации",
+          "oneOf": [
+            {
+              "const": "Без авторизации",
+              "title": "Без авторизации"
+            },
+            {
+              "const": "Базовая авторизация",
+              "title": "Базовая авторизация"
+            },
+            {
+              "const": "Страница авторизации",
+              "title": "Страница авторизации"
+            },
+            {
+              "const": "Последовательность действий / SSO",
+              "title": "Последовательность действий / SSO"
+            },
+            {
+              "const": "На основе Cookie",
+              "title": "На основе Cookie"
+            },
+            {
+              "const": "Скрипт авторизация Web",
+              "title": "Скрипт авторизация Web"
+            },
+            {
+              "const": "API Cookie",
+              "title": "API Cookie"
+            },
+            {
+              "const": "API Key",
+              "title": "API Key"
+            },
+            {
+              "const": "Bearer Token",
+              "title": "Bearer Token"
+            },
+            {
+              "const": "Query Key",
+              "title": "Query Key"
+            },
+            {
+              "const": "Скрипт авторизация API",
+              "title": "Скрипт авторизация API"
+            },
+            {
+              "const": "Последовательность вызовов / SSO",
+              "title": "Последовательность вызовов / SSO"
+            }
+          ]
+        },
+        "auth_details": {
+          "type": "object",
+          "title": "Детали авторизации",
+          "additionalProperties": true,
+          "default": {}
+        },
+        "active_auth_module": {
+          "type": "string",
+          "title": "Активный auth-модуль",
+          "description": "id листа module_type=Авторизация; CSV id1,id2 — compose по порядку; пусто — legacy auth_type/auth_details",
+          "default": ""
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "meta": {
+            "properties": {
+              "assessment_purpose": {
+                "const": "scheduled"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "meta": {
+            "properties": {
+              "scheduled_info": {
+                "type": "string",
+                "title": "Информация о назначении проверки и плане тестирования"
+              }
+            },
+            "required": [
+              "scheduled_info"
+            ]
+          },
+          "infrastructure": {
+            "properties": {
+              "zap_mode": {
+                "const": "demon",
+                "readOnly": true
+              },
+              "base_url_override": {
+                "type": "string",
+                "default": "http://runner01.dev.spaceport.ru:8080",
+                "readOnly": true
+              },
+              "allowed_extra_domains": {
+                "type": "string",
+                "default": "https://rkn.gov.ru,auth.dev.spaceport.ru,*.internal.bank",
+                "readOnly": true
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "meta": {
+            "properties": {
+              "assessment_purpose": {
+                "const": "pre_release"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "meta": {
+            "properties": {
+              "release_domain": {
+                "type": "string",
+                "title": "Домен развертывания для релизной сборки приложения",
+                "default": "deploydomain-builddomain-owasp-zap-tests",
+                "readOnly": true
+              },
+              "compliance_requirements": {
+                "type": "string",
+                "title": "Предъявляемые к проверке требования и нормативы",
+                "default": ""
+              },
+              "release_manager": {
+                "type": "string",
+                "title": "Ответственный за релиз",
+                "default": "ss7rel-manager@dev.spaceport.ru Космопорт Релиз-Менеджер",
+                "readOnly": true
+              },
+              "generate_act": {
+                "type": "boolean",
+                "title": "Формировать акт проверки",
+                "const": true,
+                "default": true,
+                "readOnly": true,
+                "description": "Без оси допуска акт не сформируется; для релиза обязательно."
+              }
+            },
+            "required": [
+              "release_domain",
+              "compliance_requirements",
+              "release_manager"
+            ]
+          },
+          "infrastructure": {
+            "properties": {
+              "zap_mode": {
+                "const": "demon",
+                "readOnly": true
+              },
+              "base_url_override": {
+                "type": "string",
+                "default": "http://spaceport.ru",
+                "readOnly": true
+              },
+              "allowed_extra_domains": {
+                "type": "string",
+                "default": "https://rkn.gov.ru,auth.dev.spaceport.ru,*.internal.bank",
+                "readOnly": true
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "meta": {
+            "properties": {
+              "assessment_purpose": {
+                "const": "emergency"
+              }
+            },
+            "required": [
+              "assessment_purpose"
+            ]
+          }
+        },
+        "required": [
+          "meta"
+        ]
+      },
+      "then": {
+        "properties": {
+          "meta": {
+            "properties": {
+              "emergency_reason": {
+                "type": "string",
+                "title": "Основания для внештатной проверки"
+              }
+            },
+            "required": [
+              "emergency_reason"
+            ]
+          },
+          "infrastructure": {
+            "properties": {
+              "additional_local_server_port": {
+                "type": "integer",
+                "title": "Дополнительный порт ZAP (API + Proxy)",
+                "description": "Опционально. Поднимает дополнительный local server ZAP с API и Proxy на указанном порту. Основной порт раннера (по умолчанию 8080, API+proxy) задаётся инфраструктурой и с формы не меняется.",
+                "minimum": 1024,
+                "maximum": 65535
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "meta": {
+            "properties": {
+              "assessment_purpose": {
+                "const": "manual"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "meta": {
+            "properties": {
+              "generate_act": {
+                "type": "boolean",
+                "title": "Формировать акт проверки",
+                "const": false,
+                "default": false,
+                "description": "Без оси допуска акт не сформируется; для релиза обязательно."
+              }
+            }
+          },
+          "infrastructure": {
+            "properties": {
+              "zap_mode": false,
+              "browser_type": false,
+              "base_url_override": false,
+              "allowed_extra_domains": false,
+              "webswing_session_timeout_min": {
+                "type": "integer",
+                "title": "Длительность сессии",
+                "minimum": 30,
+                "maximum": 180,
+                "default": 60
+              },
+              "idle_timeout_min": {
+                "type": "integer",
+                "title": "Таймаут бездействия (от 5 до 30 минут)",
+                "minimum": 5,
+                "maximum": 30,
+                "default": 10
+              }
+            },
+            "required": [
+              "webswing_session_timeout_min",
+              "idle_timeout_min"
+            ]
+          },
+          "security_configuration": false,
+          "test_suites": false,
+          "scanning_and_fuzzing_targets": false,
+          "openapi_swagger_scanning": false,
+          "api_targets_scanning": false,
+          "gui_elements_scanning": false
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "security_configuration": {
+            "properties": {
+              "auth_type": {
+                "const": "Без авторизации"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "security_configuration": {
+            "properties": {
+              "auth_details": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "security_configuration": {
+            "properties": {
+              "auth_type": {
+                "const": "Базовая авторизация"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "security_configuration": {
+            "properties": {
+              "auth_details": {
+                "type": "object",
+                "title": "Детали авторизации",
+                "properties": {
+                  "Логин": {
+                    "type": "string",
+                    "default": ""
+                  },
+                  "Пароль": {
+                    "type": "string",
+                    "default": ""
+                  }
+                },
+                "required": [
+                  "Логин"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "security_configuration": {
+            "properties": {
+              "auth_type": {
+                "const": "API Cookie"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "security_configuration": {
+            "properties": {
+              "auth_details": {
+                "type": "object",
+                "title": "Детали авторизации",
+                "properties": {
+                  "Заголовок": {
+                    "type": "string",
+                    "default": ""
+                  },
+                  "Токен": {
+                    "type": "string",
+                    "default": ""
+                  },
+                  "Адрес страницы при успешном входе": {
+                    "type": "string",
+                    "default": ""
+                  },
+                  "Проверочная строка": {
+                    "type": "string",
+                    "default": ""
+                  }
+                },
+                "required": [
+                  "Заголовок",
+                  "Токен"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "security_configuration": {
+            "properties": {
+              "auth_type": {
+                "const": "API Key"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "security_configuration": {
+            "properties": {
+              "auth_details": {
+                "type": "object",
+                "title": "Детали авторизации",
+                "properties": {
+                  "Заголовок": {
+                    "type": "string",
+                    "default": ""
+                  },
+                  "Токен": {
+                    "type": "string",
+                    "default": ""
+                  },
+                  "Адрес страницы при успешном входе": {
+                    "type": "string",
+                    "default": ""
+                  },
+                  "Проверочная строка": {
+                    "type": "string",
+                    "default": ""
+                  }
+                },
+                "required": [
+                  "Заголовок",
+                  "Токен"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "security_configuration": {
+            "properties": {
+              "auth_type": {
+                "const": "Bearer Token"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "security_configuration": {
+            "properties": {
+              "auth_details": {
+                "type": "object",
+                "title": "Детали авторизации",
+                "properties": {
+                  "Токен": {
+                    "type": "string",
+                    "default": ""
+                  },
+                  "Адрес страницы при успешном входе": {
+                    "type": "string",
+                    "default": ""
+                  },
+                  "Проверочная строка": {
+                    "type": "string",
+                    "default": ""
+                  }
+                },
+                "required": [
+                  "Токен"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "security_configuration": {
+            "properties": {
+              "auth_type": {
+                "const": "Query Key"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "security_configuration": {
+            "properties": {
+              "auth_details": {
+                "type": "object",
+                "title": "Детали авторизации",
+                "properties": {
+                  "Query-параметр": {
+                    "type": "string",
+                    "default": ""
+                  },
+                  "Токен": {
+                    "type": "string",
+                    "default": ""
+                  },
+                  "Адрес страницы при успешном входе": {
+                    "type": "string",
+                    "default": ""
+                  },
+                  "Проверочная строка": {
+                    "type": "string",
+                    "default": ""
+                  }
+                },
+                "required": [
+                  "Query-параметр",
+                  "Токен"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "security_configuration": {
+            "properties": {
+              "auth_type": {
+                "const": "Скрипт авторизация API"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "security_configuration": {
+            "properties": {
+              "auth_details": {
+                "type": "object",
+                "title": "Детали авторизации",
+                "properties": {
+                  "Запрос": {
+                    "type": "string",
+                    "default": ""
+                  },
+                  "Движок скрипта": {
+                    "type": "string",
+                    "enum": [
+                      "graal_js",
+                      "jython"
+                    ],
+                    "default": "graal_js"
+                  },
+                  "Адрес страницы при успешном входе": {
+                    "type": "string",
+                    "default": ""
+                  },
+                  "Проверочная строка": {
+                    "type": "string",
+                    "default": ""
+                  }
+                },
+                "required": [
+                  "Запрос",
+                  "Движок скрипта"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "security_configuration": {
+            "properties": {
+              "auth_type": {
+                "const": "Последовательность вызовов / SSO"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "security_configuration": {
+            "properties": {
+              "auth_details": {
+                "type": "object",
+                "title": "Детали авторизации",
+                "properties": {
+                  "Последовательность вызовов": {
+                    "type": "array",
+                    "title": "Последовательность вызовов",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "Запрос": {
+                          "type": "string"
+                        },
+                        "Метод": {
+                          "type": "string",
+                          "enum": [
+                            "GET",
+                            "POST",
+                            "PUT",
+                            "DELETE",
+                            "PATCH"
+                          ]
+                        },
+                        "Заголовки запроса": {
+                          "type": "object",
+                          "additionalProperties": true
+                        },
+                        "Тело запроса": {
+                          "type": "string"
+                        },
+                        "Получить динамический параметр": {
+                          "type": "string"
+                        },
+                        "Присвоенный идентификатор": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "Запрос",
+                        "Метод",
+                        "Получить динамический параметр",
+                        "Присвоенный идентификатор"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "Последовательность вызовов"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "security_configuration": {
+            "properties": {
+              "auth_type": {
+                "const": "Страница авторизации"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "security_configuration": {
+            "properties": {
+              "auth_details": {
+                "type": "object",
+                "title": "Детали авторизации",
+                "properties": {
+                  "Логин": {
+                    "type": "string",
+                    "default": ""
+                  },
+                  "Пароль": {
+                    "type": "string",
+                    "default": ""
+                  },
+                  "Проверочная строка": {
+                    "type": "string",
+                    "default": ""
+                  },
+                  "Дополнительные настройки формы": {
+                    "type": "object",
+                    "title": "Дополнительные настройки формы",
+                    "properties": {
+                      "Локатор формы авторизации": {
+                        "type": "string",
+                        "default": ""
+                      },
+                      "Локатор поля логина": {
+                        "type": "string",
+                        "default": ""
+                      },
+                      "Локатор поля пароля": {
+                        "type": "string",
+                        "default": ""
+                      },
+                      "Локатор кнопки отправки формы": {
+                        "type": "string",
+                        "default": ""
+                      }
+                    },
+                    "required": [
+                      "Локатор формы авторизации",
+                      "Локатор поля логина",
+                      "Локатор поля пароля",
+                      "Локатор кнопки отправки формы"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "Логин",
+                  "Пароль"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "security_configuration": {
+            "properties": {
+              "auth_type": {
+                "const": "Последовательность действий / SSO"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "security_configuration": {
+            "properties": {
+              "auth_details": {
+                "type": "object",
+                "title": "Детали авторизации",
+                "properties": {
+                  "Провайдер авторизации (IdP URL)": {
+                    "type": "string",
+                    "default": ""
+                  },
+                  "Метод получения сессии": {
+                    "type": "string",
+                    "enum": [
+                      "page",
+                      "sequence"
+                    ],
+                    "default": "page"
+                  },
+                  "Страница авторизации": {
+                    "type": "object",
+                    "title": "Страница авторизации",
+                    "properties": {
+                      "Логин": {
+                        "type": "string",
+                        "default": ""
+                      },
+                      "Пароль": {
+                        "type": "string",
+                        "default": ""
+                      },
+                      "Проверочная строка": {
+                        "type": "string",
+                        "default": ""
+                      },
+                      "Дополнительные настройки формы": {
+                        "type": "object",
+                        "properties": {
+                          "Локатор формы авторизации": {
+                            "type": "string",
+                            "default": ""
+                          },
+                          "Локатор поля логина": {
+                            "type": "string",
+                            "default": ""
+                          },
+                          "Локатор поля пароля": {
+                            "type": "string",
+                            "default": ""
+                          },
+                          "Локатор кнопки отправки формы": {
+                            "type": "string",
+                            "default": ""
+                          }
+                        },
+                        "required": [
+                          "Локатор формы авторизации",
+                          "Локатор поля логина",
+                          "Локатор поля пароля",
+                          "Локатор кнопки отправки формы"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "Логин",
+                      "Пароль"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "Последовательность действий": {
+                    "type": "array",
+                    "title": "Последовательность действий",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "Тип действия": {
+                          "type": "string",
+                          "enum": [
+                            "Нажать",
+                            "ВставитьТекст"
+                          ]
+                        },
+                        "Тип локатора": {
+                          "type": "string",
+                          "enum": [
+                            "css",
+                            "xpath",
+                            "id",
+                            "name"
+                          ]
+                        },
+                        "Значение локатора": {
+                          "type": "string"
+                        },
+                        "Текст": {
+                          "type": "string",
+                          "default": ""
+                        },
+                        "Сохранить результат": {
+                          "type": "string",
+                          "default": ""
+                        }
+                      },
+                      "required": [
+                        "Тип действия",
+                        "Тип локатора",
+                        "Значение локатора"
+                      ],
+                      "additionalProperties": false,
+                      "allOf": [
+                        {
+                          "if": {
+                            "properties": {
+                              "Тип действия": {
+                                "const": "ВставитьТекст"
+                              }
+                            }
+                          },
+                          "then": {
+                            "required": [
+                              "Текст"
+                            ]
+                          }
+                        }
+                      ]
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "Провайдер авторизации (IdP URL)",
+                  "Метод получения сессии"
+                ],
+                "additionalProperties": false,
+                "allOf": [
+                  {
+                    "if": {
+                      "properties": {
+                        "Метод получения сессии": {
+                          "const": "page"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "Страница авторизации"
+                      ]
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "Метод получения сессии": {
+                          "const": "sequence"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "Последовательность действий"
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "security_configuration": {
+            "properties": {
+              "auth_type": {
+                "const": "На основе Cookie"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "security_configuration": {
+            "properties": {
+              "auth_details": {
+                "type": "object",
+                "title": "Детали авторизации",
+                "properties": {
+                  "Cookie": {
+                    "type": "string",
+                    "default": ""
+                  },
+                  "Адрес страницы при успешном входе": {
+                    "type": "string",
+                    "default": ""
+                  },
+                  "Проверочная строка": {
+                    "type": "string",
+                    "default": ""
+                  }
+                },
+                "required": [
+                  "Cookie"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "security_configuration": {
+            "properties": {
+              "auth_type": {
+                "const": "Скрипт авторизация Web"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "security_configuration": {
+            "properties": {
+              "auth_details": {
+                "type": "object",
+                "title": "Детали авторизации",
+                "properties": {
+                  "Движок скрипта": {
+                    "type": "string",
+                    "enum": [
+                      "graal_js",
+                      "jython"
+                    ],
+                    "default": "graal_js"
+                  },
+                  "Шаги выполнения": {
+                    "type": "array",
+                    "title": "Шаги выполнения",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "Шаг": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "Шаг"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "minItems": 1
+                  },
+                  "Адрес страницы при успешном входе": {
+                    "type": "string",
+                    "default": ""
+                  },
+                  "Проверочная строка": {
+                    "type": "string",
+                    "default": ""
+                  }
+                },
+                "required": [
+                  "Движок скрипта",
+                  "Шаги выполнения"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "meta": {
+            "properties": {
+              "assessment_purpose": {
+                "not": {
+                  "const": "manual"
+                }
+              }
+            }
+          },
+          "infrastructure": {
+            "properties": {
+              "zap_mode": {
+                "const": "demon"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "infrastructure": {
+            "properties": {
+              "zap_work_timeout_min": {
+                "type": "integer",
+                "title": "Таймаут работы ZAP (от 10 до 180 минут)",
+                "minimum": 10,
+                "maximum": 180,
+                "default": 60
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "infrastructure": {
+            "properties": {
+              "zap_mode": {
+                "const": "webswing"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "infrastructure": {
+            "properties": {
+              "webswing_session_timeout_min": {
+                "type": "integer",
+                "title": "Длительность сессии",
+                "minimum": 30,
+                "maximum": 180,
+                "default": 60
+              },
+              "idle_timeout_min": {
+                "type": "integer",
+                "title": "Таймаут бездействия (от 5 до 30 минут)",
+                "minimum": 5,
+                "maximum": 30,
+                "default": 10
+              }
+            },
+            "required": [
+              "webswing_session_timeout_min",
+              "idle_timeout_min"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "meta": {
+            "properties": {
+              "assessment_purpose": {
+                "not": {
+                  "const": "manual"
+                }
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "test_suites": {
+            "type": "object",
+            "title": "Детали и порядок проведения проверок",
+            "properties": {
+              "imports": {
+                "type": "array",
+                "title": "Импорт внешних файлов",
+                "description": "data_file (.txt → URL list), fuzz_corpus (.txt), har_file (.har), proto_pack (.zip/.proto), openapi_spec (.json/.yaml), graphql_sdl (.graphql/.sdl), scenario_json (пока не исполняется). Строка path — shorthand для data_file.",
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "title": "Путь к .txt"
+                    },
+                    {
+                      "type": "object",
+                      "title": "Импорт",
+                      "properties": {
+                        "path": {
+                          "type": "string",
+                          "title": "Путь к файлу"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "title": "Тип импорта",
+                          "enum": [
+                            "data_file",
+                            "fuzz_corpus",
+                            "har_file",
+                            "proto_pack",
+                            "openapi_spec",
+                            "graphql_sdl",
+                            "scenario_json"
+                          ],
+                          "default": "data_file"
+                        },
+                        "as": {
+                          "type": "string",
+                          "title": "Имя в stream"
+                        },
+                        "import_paths": {
+                          "type": "array",
+                          "title": "Корни импорта proto (пусто = корень пакета)",
+                          "default": [],
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "path"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "default": []
+              },
+              "pages": {
+                "type": "object",
+                "title": "Моделирование страниц",
+                "additionalProperties": {
+                  "type": "object",
+                  "title": "Страница",
+                  "properties": {
+                    "title": {
+                      "type": "string",
+                      "title": "Название страницы"
+                    },
+                    "path": {
+                      "type": "string",
+                      "title": "Относительный путь"
+                    },
+                    "constructor": {
+                      "type": "string",
+                      "title": "Макет и логика страницы",
+                      "default": ""
+                    }
+                  },
+                  "required": [
+                    "title"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "scenarios": {
+                "type": "array",
+                "title": "Сценарии проверок",
+                "items": {
+                  "type": "object",
+                  "title": "Сценарий",
+                  "properties": {
+                    "scenario_name": {
+                      "type": "string",
+                      "title": "Название сценария",
+                      "minLength": 1
+                    },
+                    "description": {
+                      "type": "string",
+                      "title": "Описание / Allure suite"
+                    },
+                    "id": {
+                      "type": "string",
+                      "title": "Идентификатор"
+                    },
+                    "continue_on_failure": {
+                      "type": "boolean",
+                      "title": "Продолжать при ошибке",
+                      "default": false
+                    },
+                    "steps": {
+                      "type": "array",
+                      "title": "Шаги сценария",
+                      "items": {
+                        "type": "object",
+                        "title": "Шаг",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "title": "Идентификатор шага"
+                          },
+                          "description": {
+                            "type": "string",
+                            "title": "Описание шага"
+                          },
+                          "constructor": {
+                            "type": "string",
+                            "title": "Конструктор",
+                            "minLength": 1
+                          },
+                          "failsafe": {
+                            "type": "boolean",
+                            "title": "Ожидать ошибку",
+                            "default": false
+                          },
+                          "retry": {
+                            "type": "integer",
+                            "title": "Количество повторных попыток",
+                            "default": 0,
+                            "minimum": 0
+                          },
+                          "retry_delay": {
+                            "type": "integer",
+                            "title": "Задержка между попытками (сек)",
+                            "default": 2,
+                            "minimum": 1
+                          },
+                          "continue_on_failure": {
+                            "type": "boolean",
+                            "title": "Продолжать при ошибке",
+                            "default": false
+                          },
+                          "save_as": {
+                            "type": "string",
+                            "title": "Сохранить результат в переменную",
+                            "default": ""
+                          }
+                        },
+                        "required": [
+                          "constructor"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "scenario_name"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "test_data_constructor": {
+                "type": "array",
+                "title": "Технические настройки и метрики для проверок",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "module_type": {
+                      "type": "string",
+                      "title": "Назначение модуля",
+                      "enum": [
+                        "Фаззер",
+                        "Генератор",
+                        "Коннектор",
+                        "Модуль работы с данными",
+                        "Авторизация",
+                        "OpenAPI",
+                        "GraphQL",
+                        "gRPC",
+                        "Цепь"
+                      ]
+                    },
+                    "id": {
+                      "type": "string",
+                      "title": "Идентификатор модуля"
+                    },
+                    "label": {
+                      "type": "string",
+                      "title": "Название модуля"
+                    },
+                    "fuzzing_fields": {
+                      "type": "object",
+                      "title": "Настройки безопасного фаззинга",
+                      "properties": {
+                        "request": {
+                          "type": "object",
+                          "title": "HTTP-шаблон",
+                          "properties": {
+                            "method": {
+                              "const": "GET",
+                              "title": "HTTP-метод"
+                            },
+                            "url": {
+                              "type": "string",
+                              "minLength": 1,
+                              "title": "URL без query-параметра фаззинга"
+                            },
+                            "headers": {
+                              "type": "object",
+                              "title": "Заголовки",
+                              "additionalProperties": {
+                                "type": "string"
+                              },
+                              "default": {}
+                            },
+                            "follow_redirects": {
+                              "type": "boolean",
+                              "title": "Следовать redirect",
+                              "default": true
+                            }
+                          },
+                          "required": [
+                            "url"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "injection": {
+                          "type": "object",
+                          "title": "Query-подстановка",
+                          "properties": {
+                            "query_param": {
+                              "type": "string",
+                              "minLength": 1,
+                              "title": "Имя query-параметра"
+                            },
+                            "corpus": {
+                              "type": "string",
+                              "minLength": 1,
+                              "title": "Ресурс corpus"
+                            }
+                          },
+                          "required": [
+                            "query_param",
+                            "corpus"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "limits": {
+                          "type": "object",
+                          "title": "Лимиты POC",
+                          "properties": {
+                            "max_requests": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 25,
+                              "default": 25,
+                              "title": "Максимум запросов"
+                            },
+                            "requests_per_second": {
+                              "type": "number",
+                              "exclusiveMinimum": 0,
+                              "maximum": 1,
+                              "default": 1,
+                              "title": "Запросов в секунду"
+                            },
+                            "timeout_seconds": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 10,
+                              "default": 10,
+                              "title": "Таймаут запроса, сек."
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "observation": {
+                          "type": "object",
+                          "title": "Наблюдение аномалий",
+                          "properties": {
+                            "alert_on_server_error": {
+                              "type": "boolean",
+                              "title": "Отмечать 5xx",
+                              "default": true
+                            },
+                            "latency_multiplier": {
+                              "type": "number",
+                              "minimum": 1.5,
+                              "maximum": 5,
+                              "default": 3,
+                              "title": "Порог задержки к baseline"
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "request",
+                        "injection"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "request_mixer_fields": {
+                      "type": "object",
+                      "title": "Настройки генератора запросов",
+                      "properties": {
+                        "chain": {
+                          "type": "string",
+                          "title": "Цепь вызовов"
+                        },
+                        "headers": {
+                          "type": "string",
+                          "title": "Заголовки"
+                        },
+                        "body": {
+                          "type": "string",
+                          "title": "Тело запроса"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "connector_fields": {
+                      "type": "object",
+                      "title": "Настройки коннектора",
+                      "properties": {
+                        "connector_type": {
+                          "type": "string",
+                          "title": "Тип подключения",
+                          "enum": [
+                            "База данных",
+                            "Система логгирования",
+                            "Prometheus",
+                            "SSH",
+                            "Очередь сообщений"
+                          ]
+                        },
+                        "notes": {
+                          "type": "string",
+                          "title": "Заметки",
+                          "default": ""
+                        },
+                        "metric_packs": {
+                          "type": "string",
+                          "title": "Metric packs (CSV)",
+                          "default": ""
+                        },
+                        "db_engine": {
+                          "type": "string",
+                          "title": "СУБД",
+                          "enum": [
+                            "PostgreSQL",
+                            "MySQL/MariaDB",
+                            "Microsoft SQL Server",
+                            "MongoDB"
+                          ],
+                          "default": "PostgreSQL"
+                        },
+                        "dsn": {
+                          "type": "string",
+                          "title": "DSN (read-only)"
+                        },
+                        "schema_name": {
+                          "type": "string",
+                          "title": "Схема / БД"
+                        },
+                        "read_only": {
+                          "type": "boolean",
+                          "title": "Только чтение",
+                          "default": true
+                        },
+                        "log_source": {
+                          "type": "string",
+                          "title": "Источник логов",
+                          "enum": [
+                            "Splunk",
+                            "Elasticsearch",
+                            "Grafana Loki",
+                            "HTTP endpoint"
+                          ],
+                          "default": "Splunk"
+                        },
+                        "log_query": {
+                          "type": "string",
+                          "title": "Запрос / путь логов"
+                        },
+                        "log_window": {
+                          "type": "string",
+                          "title": "Окно выборки"
+                        },
+                        "host": {
+                          "type": "string",
+                          "title": "Хост"
+                        },
+                        "port": {
+                          "type": "string",
+                          "title": "Порт"
+                        },
+                        "username": {
+                          "type": "string",
+                          "title": "Пользователь"
+                        },
+                        "key_ref": {
+                          "type": "string",
+                          "title": "Ссылка на ключ / секрет"
+                        },
+                        "allowlist": {
+                          "type": "string",
+                          "title": "Allowlist команд"
+                        },
+                        "mq_engine": {
+                          "type": "string",
+                          "title": "Брокер очереди",
+                          "enum": [
+                            "Kafka",
+                            "RabbitMQ"
+                          ],
+                          "default": "Kafka"
+                        },
+                        "broker_url": {
+                          "type": "string",
+                          "title": "Broker URL"
+                        },
+                        "topic": {
+                          "type": "string",
+                          "title": "Topic / queue"
+                        },
+                        "prom_url": {
+                          "type": "string",
+                          "title": "Prometheus URL"
+                        },
+                        "prom_lookback": {
+                          "type": "string",
+                          "title": "Prometheus lookback",
+                          "default": "15m"
+                        },
+                        "constructor": {
+                          "type": "string",
+                          "title": "Инициализация (legacy)"
+                        }
+                      },
+                      "required": [
+                        "connector_type"
+                      ],
+                      "allOf": [
+                        {
+                          "if": {
+                            "properties": {
+                              "connector_type": {
+                                "const": "База данных"
+                              }
+                            },
+                            "required": [
+                              "connector_type"
+                            ]
+                          },
+                          "then": {
+                            "properties": {
+                              "metric_packs": false,
+                              "log_source": false,
+                              "log_query": false,
+                              "log_window": false,
+                              "host": false,
+                              "port": false,
+                              "username": false,
+                              "key_ref": false,
+                              "allowlist": false,
+                              "mq_engine": false,
+                              "broker_url": false,
+                              "topic": false,
+                              "prom_url": false,
+                              "prom_lookback": false
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": {
+                              "connector_type": {
+                                "const": "Система логгирования"
+                              }
+                            },
+                            "required": [
+                              "connector_type"
+                            ]
+                          },
+                          "then": {
+                            "properties": {
+                              "metric_packs": false,
+                              "db_engine": false,
+                              "dsn": false,
+                              "schema_name": false,
+                              "read_only": false,
+                              "host": false,
+                              "port": false,
+                              "username": false,
+                              "key_ref": false,
+                              "allowlist": false,
+                              "mq_engine": false,
+                              "broker_url": false,
+                              "topic": false,
+                              "prom_url": false,
+                              "prom_lookback": false
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": {
+                              "connector_type": {
+                                "const": "Prometheus"
+                              }
+                            },
+                            "required": [
+                              "connector_type"
+                            ]
+                          },
+                          "then": {
+                            "properties": {
+                              "db_engine": false,
+                              "dsn": false,
+                              "schema_name": false,
+                              "read_only": false,
+                              "log_source": false,
+                              "log_query": false,
+                              "log_window": false,
+                              "host": false,
+                              "port": false,
+                              "username": false,
+                              "key_ref": false,
+                              "allowlist": false,
+                              "mq_engine": false,
+                              "broker_url": false,
+                              "topic": false
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": {
+                              "connector_type": {
+                                "const": "SSH"
+                              }
+                            },
+                            "required": [
+                              "connector_type"
+                            ]
+                          },
+                          "then": {
+                            "properties": {
+                              "metric_packs": false,
+                              "db_engine": false,
+                              "dsn": false,
+                              "schema_name": false,
+                              "read_only": false,
+                              "log_source": false,
+                              "log_query": false,
+                              "log_window": false,
+                              "mq_engine": false,
+                              "broker_url": false,
+                              "topic": false,
+                              "prom_url": false,
+                              "prom_lookback": false
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": {
+                              "connector_type": {
+                                "const": "Очередь сообщений"
+                              }
+                            },
+                            "required": [
+                              "connector_type"
+                            ]
+                          },
+                          "then": {
+                            "properties": {
+                              "metric_packs": false,
+                              "db_engine": false,
+                              "dsn": false,
+                              "schema_name": false,
+                              "read_only": false,
+                              "log_source": false,
+                              "log_query": false,
+                              "log_window": false,
+                              "host": false,
+                              "port": false,
+                              "username": false,
+                              "key_ref": false,
+                              "allowlist": false,
+                              "prom_url": false,
+                              "prom_lookback": false
+                            }
+                          }
+                        }
+                      ],
+                      "additionalProperties": false
+                    },
+                    "data_storage_fields": {
+                      "type": "object",
+                      "title": "Модуль работы с данными",
+                      "properties": {
+                        "source_type": {
+                          "type": "string",
+                          "title": "Источник данных",
+                          "enum": [
+                            "Данные из массива",
+                            "Генерация из источника",
+                            "Конвертация данных"
+                          ]
+                        },
+                        "process_id": {
+                          "type": "string",
+                          "title": "Идентификатор процесса"
+                        },
+                        "editor": {
+                          "type": "string",
+                          "title": "Редактор"
+                        },
+                        "output_format": {
+                          "type": "string",
+                          "title": "Формат вывода"
+                        }
+                      },
+                      "allOf": [
+                        {
+                          "if": {
+                            "properties": {
+                              "source_type": {
+                                "enum": [
+                                  "Данные из массива",
+                                  "Генерация из источника",
+                                  "Конвертация данных"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "source_type"
+                            ]
+                          },
+                          "else": {
+                            "properties": {
+                              "process_id": false,
+                              "editor": false,
+                              "output_format": false
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": {
+                              "source_type": {
+                                "enum": [
+                                  "Данные из массива",
+                                  "Генерация из источника"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "source_type"
+                            ]
+                          },
+                          "then": {
+                            "required": [
+                              "process_id",
+                              "editor"
+                            ],
+                            "properties": {
+                              "output_format": false
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": {
+                              "source_type": {
+                                "const": "Конвертация данных"
+                              }
+                            },
+                            "required": [
+                              "source_type"
+                            ]
+                          },
+                          "then": {
+                            "required": [
+                              "editor",
+                              "output_format"
+                            ],
+                            "properties": {
+                              "process_id": false
+                            }
+                          }
+                        }
+                      ],
+                      "additionalProperties": false
+                    },
+                    "auth_fields": {
+                      "type": "object",
+                      "title": "Профиль авторизации",
+                      "properties": {
+                        "constructor": {
+                          "type": "string",
+                          "title": "Полотно auth (dialect)"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "openapi_fields": {
+                      "type": "object",
+                      "title": "OpenAPI / Swagger",
+                      "description": "Базовый URL — из URL атаки. Схема — ресурс openapi_spec или относительный путь.",
+                      "properties": {
+                        "spec_mode": {
+                          "type": "string",
+                          "title": "Режим схемы",
+                          "enum": [
+                            "resource",
+                            "url_relative"
+                          ],
+                          "default": "url_relative"
+                        },
+                        "spec_as": {
+                          "type": "string",
+                          "title": "Ресурс схемы (imports.as, kind=openapi_spec)",
+                          "default": ""
+                        },
+                        "spec_path_rel": {
+                          "type": "string",
+                          "title": "Относительный путь схемы (к URL атаки)",
+                          "default": "/openapi.json"
+                        },
+                        "auth_module_id": {
+                          "type": "string",
+                          "title": "Модуль «Авторизация» (идентификатор)",
+                          "default": ""
+                        },
+                        "zap_import": {
+                          "type": "boolean",
+                          "title": "Разрешить импорт в ZAP (только по шагу сценария)",
+                          "default": false
+                        },
+                        "last_inventory": {
+                          "type": "array",
+                          "title": "Кэш операций (редактирование)",
+                          "default": [],
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": true
+                          }
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "graphql_fields": {
+                      "type": "object",
+                      "title": "GraphQL",
+                      "description": "Endpoint — относительный к URL атаки. Схема — ресурс graphql_sdl или introspection по относительному пути.",
+                      "properties": {
+                        "schema_mode": {
+                          "type": "string",
+                          "title": "Режим схемы",
+                          "enum": [
+                            "resource",
+                            "introspection_relative"
+                          ],
+                          "default": "introspection_relative"
+                        },
+                        "sdl_as": {
+                          "type": "string",
+                          "title": "Ресурс SDL (imports.as, kind=graphql_sdl)",
+                          "default": ""
+                        },
+                        "schema_path_rel": {
+                          "type": "string",
+                          "title": "Относительный путь introspection / SDL URL",
+                          "default": "/graphql"
+                        },
+                        "endpoint_rel": {
+                          "type": "string",
+                          "title": "Относительный путь GraphQL endpoint",
+                          "default": "/graphql"
+                        },
+                        "auth_module_id": {
+                          "type": "string",
+                          "title": "Модуль «Авторизация» (идентификатор)",
+                          "default": ""
+                        },
+                        "zap_import": {
+                          "type": "boolean",
+                          "title": "Разрешить импорт в ZAP (только по шагу сценария)",
+                          "default": false
+                        },
+                        "zap_scan": {
+                          "type": "boolean",
+                          "title": "Разрешить скан GraphQL в ZAP (только по шагу сценария)",
+                          "default": false
+                        },
+                        "last_inventory": {
+                          "type": "array",
+                          "title": "Кэш операций (редактирование)",
+                          "default": [],
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": true
+                          }
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "grpc_fields": {
+                      "type": "object",
+                      "title": "gRPC",
+                      "description": "Хост и TLS — из URL атаки манифеста. Пакет proto — ресурс proto_pack.",
+                      "properties": {
+                        "proto_as": {
+                          "type": "string",
+                          "title": "Ресурс пакета proto (imports.as)",
+                          "default": ""
+                        },
+                        "auth_module_id": {
+                          "type": "string",
+                          "title": "Модуль «Авторизация» (идентификатор)",
+                          "default": ""
+                        },
+                        "last_inventory": {
+                          "type": "array",
+                          "title": "Кэш сервисов и методов (редактирование)",
+                          "default": [],
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": true
+                          }
+                        }
+                      },
+                      "additionalProperties": true
+                    },
+                    "chain_fields": {
+                      "type": "object",
+                      "title": "Цепь запросов",
+                      "description": "HAR → слоты токенов → сборка файла → ИмпортHAR и скан последовательности. Без тихого скана.",
+                      "properties": {
+                        "har_as": {
+                          "type": "string",
+                          "title": "Имя ресурса HAR (imports.as)",
+                          "default": ""
+                        },
+                        "sequence_name": {
+                          "type": "string",
+                          "title": "Имя последовательности ZAP",
+                          "default": ""
+                        },
+                        "source_har": {
+                          "type": "string",
+                          "title": "Исходный HAR (редактирование)",
+                          "default": ""
+                        },
+                        "template_har": {
+                          "type": "string",
+                          "title": "HAR с подстановками {{slot}}",
+                          "default": ""
+                        },
+                        "steps": {
+                          "type": "array",
+                          "title": "Шаги (кэш)",
+                          "default": [],
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": true
+                          }
+                        },
+                        "slots": {
+                          "type": "array",
+                          "title": "Карта подмен",
+                          "description": "Replace Map: где подменять (не CSV эндпоинтов). Values — bindings / value pack.",
+                          "default": [],
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "location": {
+                                "type": "string",
+                                "enum": [
+                                  "header",
+                                  "cookie",
+                                  "query",
+                                  "body"
+                                ]
+                              },
+                              "key": {
+                                "type": "string"
+                              },
+                              "recorded_value": {
+                                "type": "string"
+                              },
+                              "enabled": {
+                                "type": "boolean",
+                                "default": true
+                              },
+                              "bind": {
+                                "type": "string",
+                                "default": "",
+                                "description": "literal:… | env:NAME | extract:step:N:… | значение"
+                              },
+                              "step_index": {
+                                "type": "integer"
+                              },
+                              "apply": {
+                                "type": "string",
+                                "enum": [
+                                  "step",
+                                  "all"
+                                ],
+                                "default": "step",
+                                "description": "step — только step_index; all — все matching entries"
+                              },
+                              "match": {
+                                "type": "string",
+                                "default": "",
+                                "description": "URL contains или regex:…; пусто = любой"
+                              }
+                            },
+                            "additionalProperties": true
+                          }
+                        },
+                        "bindings": {
+                          "type": "object",
+                          "title": "Play bindings (override)",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "default": {}
+                        },
+                        "value_pack_module": {
+                          "type": "string",
+                          "title": "Value pack — id data-модуля",
+                          "description": "Модуль работы с данными (properties key=value); ключи = id слотов карты. Как auth_data.",
+                          "default": ""
+                        },
+                        "include_sequence_scan": {
+                          "type": "boolean",
+                          "title": "Вставить СканПоследовательности",
+                          "default": true
+                        },
+                        "seed_fuzz_targets": {
+                          "type": "boolean",
+                          "title": "Добавить цели фаззинга из шагов",
+                          "default": false
+                        },
+                        "last_notes": {
+                          "type": "array",
+                          "title": "Заметки",
+                          "default": [],
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "allOf": [
+                    {
+                      "if": {
+                        "properties": {
+                          "module_type": {
+                            "enum": [
+                              "Фаззер",
+                              "Генератор",
+                              "Коннектор",
+                              "Модуль работы с данными",
+                              "Авторизация",
+                              "OpenAPI",
+                              "GraphQL",
+                              "gRPC",
+                              "Цепь"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "module_type"
+                        ]
+                      },
+                      "else": {
+                        "properties": {
+                          "id": false,
+                          "label": false,
+                          "fuzzing_fields": false,
+                          "request_mixer_fields": false,
+                          "connector_fields": false,
+                          "data_storage_fields": false,
+                          "auth_fields": false,
+                          "openapi_fields": false,
+                          "graphql_fields": false,
+                          "grpc_fields": false,
+                          "chain_fields": false
+                        }
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "module_type": {
+                            "const": "Фаззер"
+                          }
+                        },
+                        "required": [
+                          "module_type"
+                        ]
+                      },
+                      "then": {
+                        "required": [
+                          "id",
+                          "fuzzing_fields"
+                        ],
+                        "properties": {
+                          "request_mixer_fields": false,
+                          "connector_fields": false,
+                          "data_storage_fields": false,
+                          "auth_fields": false,
+                          "openapi_fields": false,
+                          "graphql_fields": false,
+                          "grpc_fields": false,
+                          "chain_fields": false
+                        }
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "module_type": {
+                            "const": "Генератор"
+                          }
+                        },
+                        "required": [
+                          "module_type"
+                        ]
+                      },
+                      "then": {
+                        "required": [
+                          "id"
+                        ],
+                        "properties": {
+                          "fuzzing_fields": false,
+                          "connector_fields": false,
+                          "data_storage_fields": false,
+                          "auth_fields": false,
+                          "openapi_fields": false,
+                          "graphql_fields": false,
+                          "grpc_fields": false,
+                          "chain_fields": false
+                        }
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "module_type": {
+                            "const": "Коннектор"
+                          }
+                        },
+                        "required": [
+                          "module_type"
+                        ]
+                      },
+                      "then": {
+                        "required": [
+                          "id"
+                        ],
+                        "properties": {
+                          "fuzzing_fields": false,
+                          "request_mixer_fields": false,
+                          "data_storage_fields": false,
+                          "auth_fields": false,
+                          "openapi_fields": false,
+                          "graphql_fields": false,
+                          "grpc_fields": false,
+                          "chain_fields": false
+                        }
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "module_type": {
+                            "const": "Модуль работы с данными"
+                          }
+                        },
+                        "required": [
+                          "module_type"
+                        ]
+                      },
+                      "then": {
+                        "required": [
+                          "id"
+                        ],
+                        "properties": {
+                          "fuzzing_fields": false,
+                          "request_mixer_fields": false,
+                          "connector_fields": false,
+                          "auth_fields": false,
+                          "openapi_fields": false,
+                          "graphql_fields": false,
+                          "grpc_fields": false,
+                          "chain_fields": false
+                        }
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "module_type": {
+                            "const": "Авторизация"
+                          }
+                        },
+                        "required": [
+                          "module_type"
+                        ]
+                      },
+                      "then": {
+                        "required": [
+                          "id",
+                          "auth_fields"
+                        ],
+                        "properties": {
+                          "fuzzing_fields": false,
+                          "request_mixer_fields": false,
+                          "connector_fields": false,
+                          "data_storage_fields": false,
+                          "openapi_fields": false,
+                          "graphql_fields": false,
+                          "grpc_fields": false,
+                          "chain_fields": false
+                        }
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "module_type": {
+                            "const": "OpenAPI"
+                          }
+                        },
+                        "required": [
+                          "module_type"
+                        ]
+                      },
+                      "then": {
+                        "required": [
+                          "id",
+                          "openapi_fields"
+                        ],
+                        "properties": {
+                          "fuzzing_fields": false,
+                          "request_mixer_fields": false,
+                          "connector_fields": false,
+                          "data_storage_fields": false,
+                          "auth_fields": false,
+                          "graphql_fields": false,
+                          "grpc_fields": false,
+                          "chain_fields": false
+                        }
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "module_type": {
+                            "const": "GraphQL"
+                          }
+                        },
+                        "required": [
+                          "module_type"
+                        ]
+                      },
+                      "then": {
+                        "required": [
+                          "id",
+                          "graphql_fields"
+                        ],
+                        "properties": {
+                          "fuzzing_fields": false,
+                          "request_mixer_fields": false,
+                          "connector_fields": false,
+                          "data_storage_fields": false,
+                          "auth_fields": false,
+                          "openapi_fields": false,
+                          "grpc_fields": false,
+                          "chain_fields": false
+                        }
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "module_type": {
+                            "const": "gRPC"
+                          }
+                        },
+                        "required": [
+                          "module_type"
+                        ]
+                      },
+                      "then": {
+                        "required": [
+                          "id",
+                          "grpc_fields"
+                        ],
+                        "properties": {
+                          "fuzzing_fields": false,
+                          "request_mixer_fields": false,
+                          "connector_fields": false,
+                          "data_storage_fields": false,
+                          "auth_fields": false,
+                          "openapi_fields": false,
+                          "graphql_fields": false,
+                          "chain_fields": false
+                        }
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "module_type": {
+                            "const": "Цепь"
+                          }
+                        },
+                        "required": [
+                          "module_type"
+                        ]
+                      },
+                      "then": {
+                        "required": [
+                          "id",
+                          "chain_fields"
+                        ],
+                        "properties": {
+                          "fuzzing_fields": false,
+                          "request_mixer_fields": false,
+                          "connector_fields": false,
+                          "data_storage_fields": false,
+                          "auth_fields": false,
+                          "openapi_fields": false,
+                          "graphql_fields": false,
+                          "grpc_fields": false
+                        }
+                      }
+                    }
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "fuzzers": {
+                "type": "array",
+                "title": "Fuzzers",
+                "description": "Сущности Fuzzer в Редакторе (вкладка-форма → Campaign). Не module_type=Фаззер.",
+                "default": [],
+                "items": {
+                  "type": "object",
+                  "title": "Fuzzer",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "title": "Идентификатор",
+                      "minLength": 1
+                    },
+                    "label": {
+                      "type": "string",
+                      "title": "Название"
+                    },
+                    "algorithm": {
+                      "type": "string",
+                      "title": "Алгоритм фаззинга",
+                      "default": "triples"
+                    },
+                    "targets": {
+                      "type": "array",
+                      "title": "Таблица целей (троек)",
+                      "default": [],
+                      "items": {
+                        "type": "object",
+                        "title": "Цель (тройка)",
+                        "properties": {
+                          "url": {
+                            "type": "string",
+                            "title": "URL цели",
+                            "minLength": 1
+                          },
+                          "method": {
+                            "type": "string",
+                            "title": "HTTP-метод",
+                            "enum": [
+                              "GET",
+                              "POST",
+                              "PUT",
+                              "PATCH",
+                              "DELETE"
+                            ],
+                            "default": "GET"
+                          },
+                          "corpus": {
+                            "type": "string",
+                            "title": "Corpus (resource as или intent_*)",
+                            "default": "intent_boundary"
+                          },
+                          "body": {
+                            "type": "string",
+                            "title": "Шаблон тела (JSON/Form) с масками {MASK} / {MASK_1}",
+                            "default": ""
+                          }
+                        },
+                        "required": [
+                          "url"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "policy": {
+                      "type": "object",
+                      "title": "Политика",
+                      "properties": {
+                        "max_requests": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 25,
+                          "default": 25,
+                          "title": "Максимум запросов"
+                        },
+                        "requests_per_second": {
+                          "type": "number",
+                          "exclusiveMinimum": 0,
+                          "maximum": 1,
+                          "default": 1,
+                          "title": "Запросов в секунду"
+                        },
+                        "alert_on_server_error": {
+                          "type": "boolean",
+                          "title": "Отмечать 5xx",
+                          "default": true
+                        },
+                        "latency_multiplier": {
+                          "type": "number",
+                          "minimum": 1.5,
+                          "maximum": 5,
+                          "default": 3,
+                          "title": "Порог задержки к baseline"
+                        },
+                        "size_ratio": {
+                          "type": "number",
+                          "minimum": 1.5,
+                          "maximum": 10,
+                          "default": 3,
+                          "title": "Порог size к baseline"
+                        },
+                        "size_abs_delta": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "default": 2048,
+                          "title": "Абсолютный порог size, байт"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "session_replay": {
+                      "type": "boolean",
+                      "title": "Replay Cookie/Authorization",
+                      "default": true
+                    },
+                    "headers": {
+                      "type": "object",
+                      "title": "Заголовки",
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "default": {}
+                    },
+                    "follow_redirects": {
+                      "type": "boolean",
+                      "title": "Следовать redirect",
+                      "default": true
+                    },
+                    "message": {
+                      "type": "object",
+                      "title": "Legacy Сообщение"
+                    },
+                    "location": {
+                      "type": "object",
+                      "title": "Legacy Дырка"
+                    },
+                    "corpus": {
+                      "type": "string",
+                      "title": "Legacy Corpus"
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "editor_folders": {
+                "type": "object",
+                "title": "Папки Редактора",
+                "description": "Логические папки authoring-редактора. Исполнение suites остаётся плоским.",
+                "properties": {
+                  "pages": {
+                    "type": "array",
+                    "default": [],
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "title": "Внутренний id папки",
+                          "minLength": 1
+                        },
+                        "title": {
+                          "type": "string",
+                          "title": "Название папки",
+                          "minLength": 1
+                        },
+                        "members": {
+                          "type": "array",
+                          "title": "Модели данных",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "uniqueItems": true,
+                          "default": []
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "title",
+                        "members"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "scenarios": {
+                    "type": "array",
+                    "default": [],
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "title": "Внутренний id папки",
+                          "minLength": 1
+                        },
+                        "title": {
+                          "type": "string",
+                          "title": "Название папки",
+                          "minLength": 1
+                        },
+                        "members": {
+                          "type": "array",
+                          "title": "Сценарии",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "uniqueItems": true,
+                          "default": []
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "title",
+                        "members"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "resources": {
+                    "type": "array",
+                    "default": [],
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "title": "Внутренний id папки",
+                          "minLength": 1
+                        },
+                        "title": {
+                          "type": "string",
+                          "title": "Название папки",
+                          "minLength": 1
+                        },
+                        "members": {
+                          "type": "array",
+                          "title": "Участники группы",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "uniqueItems": true,
+                          "default": []
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "title",
+                        "members"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "fuzzers": {
+                    "type": "array",
+                    "default": [],
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "title": "Внутренний id папки",
+                          "minLength": 1
+                        },
+                        "title": {
+                          "type": "string",
+                          "title": "Название папки",
+                          "minLength": 1
+                        },
+                        "members": {
+                          "type": "array",
+                          "title": "Участники группы",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "uniqueItems": true,
+                          "default": []
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "title",
+                        "members"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "modules": {
+                    "type": "array",
+                    "default": [],
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "title": "Внутренний id папки",
+                          "minLength": 1
+                        },
+                        "title": {
+                          "type": "string",
+                          "title": "Название папки",
+                          "minLength": 1
+                        },
+                        "members": {
+                          "type": "array",
+                          "title": "Модули",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "uniqueItems": true,
+                          "default": []
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "title",
+                        "members"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "additionalProperties": false,
+                "default": {
+                  "pages": [],
+                  "scenarios": [],
+                  "modules": [],
+                  "resources": [],
+                  "fuzzers": []
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    }
+  ]
+}

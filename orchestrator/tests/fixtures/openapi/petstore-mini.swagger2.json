@@ -1,0 +1,23 @@
+﻿{
+  "swagger": "2.0",
+  "info": { "title": "Petstore mini", "version": "1.0.0" },
+  "host": "petstore.example",
+  "basePath": "/v2",
+  "schemes": ["https"],
+  "paths": {
+    "/pet/{petId}": {
+      "get": {
+        "operationId": "getPetById",
+        "summary": "Find pet by ID",
+        "tags": ["pet"]
+      }
+    },
+    "/user/login": {
+      "get": {
+        "operationId": "loginUser",
+        "summary": "Logs user into the system",
+        "tags": ["user"]
+      }
+    }
+  }
+}

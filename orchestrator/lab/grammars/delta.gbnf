@@ -1,0 +1,11 @@
+root ::= "{" ws "\"schema_version\"" ws ":" ws "\"ai-delta-v1\"" ws "," ws "\"decision\"" ws ":" ws decision ws "," ws "\"confidence\"" ws ":" ws confidence ws "," ws "\"narrative_ru\"" ws ":" ws string ws "," ws "\"suggestions\"" ws ":" ws suggestions ws "," ws "\"unsupported_claims\"" ws ":" ws claims ws "," ws "\"model\"" ws ":" ws model ws "}"
+decision ::= "\"narrative_ready\"" | "\"abstain\"" | "\"invalid_model_output\"" | "\"llm_unavailable\""
+confidence ::= "\"low\"" | "\"medium\"" | "\"high\""
+suggestions ::= "[]" | "[" suggestion ("," ws suggestion)* "]"
+suggestion ::= "{" ws "\"code\"" ws ":" ws string ws "," ws "\"text\"" ws ":" ws string ws "," ws "\"support\"" ws ":" ws support ws "," ws "\"evidence_refs\"" ws ":" ws refs ws "}"
+support ::= "\"evidence_backed\"" | "\"generic_advice\""
+refs ::= "[]" | "[" string ("," ws string)* "]"
+claims ::= "[]" | "[" string ("," ws string)* "]"
+model ::= "{" ws "\"name\"" ws ":" ws string ws "," ws "\"prompt_version\"" ws ":" ws string ws "}"
+string ::= "\"" ([^"\\] | "\\" ["\\/bfnrt])* "\""
+ws ::= [ \t\n\r]*

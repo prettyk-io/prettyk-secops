@@ -1,0 +1,153 @@
+{
+  "meta": {
+    "project_id": "smoke-dry-run",
+    "initiator_name": "KDT Smoke",
+    "app_leader": "KDT Smoke",
+    "assessment_purpose": "emergency",
+    "generate_act": false,
+    "emergency_reason": "Dry run — validation only, no Dojo",
+    "release_domain": "kdt-smoke",
+    "compliance_requirements": "",
+    "release_manager": "KDT Smoke",
+    "app_type": "web"
+  },
+  "infrastructure": {
+    "base_url_override": "http://juice-shop:3000",
+    "allowed_extra_domains": "",
+    "zap_mode": "demon",
+    "browser_type": "chrome-headless",
+    "debug_mode": true,
+    "zap_work_timeout_min": 30,
+    "idle_timeout_min": 5
+  },
+  "security_configuration": {
+    "scan_policy": "custom_policy",
+    "auth_type": "Без авторизации",
+    "app_architecture": "Не указано"
+  },
+  "test_suites": {
+    "scenarios": [
+      {
+        "scenario_name": "smoke_register_flow",
+        "continue_on_failure": false,
+        "description": "Smoke: register flow only, no ZAP scans",
+        "steps": [
+          {
+            "constructor": "Пусть $username = СлучайныйEmail\nСекрет $password_value = \"smoke_password\"\nСекрет $security_answer = \"cat\"",
+            "description": "Seed variables",
+            "save_as": ""
+          },
+          {
+            "constructor": "НовыйКонтекст juice_ctx \"Juice Shop smoke context\"\nВключитьВКонтекст juice_ctx",
+            "description": "Create ZAP context",
+            "save_as": ""
+          },
+          {
+            "constructor": "Открыть",
+            "description": "Open base URL",
+            "save_as": ""
+          },
+          {
+            "constructor": "ЖдатьЭлемент id emailControl 10",
+            "description": "Wait for page load",
+            "save_as": ""
+          },
+          {
+            "constructor": "? {\n  Нажать css \"button[aria-label='Close Welcome Banner']\"\n} > {\n  Лог \"banner closed\"\n} >! {\n  Лог \"no banner\"\n}",
+            "description": "Dismiss welcome banner if present",
+            "save_as": ""
+          },
+          {
+            "constructor": "Открыть /#/register",
+            "description": "Go to register page",
+            "save_as": ""
+          },
+          {
+            "constructor": "ЖдатьЭлемент id emailControl 10",
+            "description": "Wait for register form",
+            "save_as": ""
+          },
+          {
+            "constructor": "register.Заполнить",
+            "description": "Fill register form (page model)",
+            "save_as": ""
+          },
+          {
+            "constructor": "Нажать css \"mat-select[aria-label='Selection list for the security question']\"",
+            "description": "Open security question dropdown",
+            "save_as": ""
+          },
+          {
+            "constructor": "Нажать css \".cdk-overlay-pane mat-option\"",
+            "description": "Select first security question",
+            "save_as": ""
+          },
+          {
+            "constructor": "Нажать id registerButton",
+            "description": "Submit registration",
+            "save_as": ""
+          },
+          {
+            "constructor": "Пауза 2",
+            "description": "Wait for registration",
+            "save_as": ""
+          },
+          {
+            "constructor": "Открыть /#/login",
+            "description": "Go to login page",
+            "save_as": ""
+          },
+          {
+            "constructor": "ЖдатьЭлемент id email 10",
+            "description": "Wait for login form",
+            "save_as": ""
+          },
+          {
+            "constructor": "login.Войти",
+            "description": "Login (page model operation)",
+            "save_as": ""
+          },
+          {
+            "constructor": "Пауза 2",
+            "description": "Wait for login",
+            "save_as": ""
+          },
+          {
+            "constructor": "Лог \"SMOKE OK — registered and logged in as $username\"",
+            "description": "Log success",
+            "save_as": ""
+          }
+        ]
+      }
+    ],
+    "pages": {
+      "login": {
+        "title": "login",
+        "constructor": "Элемент email = css #email\nЭлемент password = css #password\nЭлемент submit = css #loginButton\n\nОперация Войти {\n  ВставитьЗначение email $username\n  ВставитьЗначение password $password_value\n  Нажать submit\n}\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+      },
+      "register": {
+        "title": "register",
+        "constructor": "Элемент email = id emailControl\nЭлемент password = id passwordControl\nЭлемент password2 = id repeatPasswordControl\nЭлемент answer = id securityAnswerControl\nЭлемент submit = id registerButton\n\nОперация Заполнить {\n  ВставитьЗначение email $username\n  ВставитьЗначение password $password_value\n  ВставитьЗначение password2 $password_value\n  ВставитьЗначение answer $security_answer\n}\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+      }
+    },
+    "editor_folders": {
+      "pages": [
+        {
+          "id": "folder_1",
+          "title": "Smoke pages",
+          "members": ["login", "register"]
+        }
+      ],
+      "scenarios": [
+        {
+          "id": "folder_1",
+          "title": "Smoke scenarios",
+          "members": ["smoke_register_flow"]
+        }
+      ],
+      "modules": [],
+      "fuzzers": [],
+      "resources": []
+    }
+  }
+}

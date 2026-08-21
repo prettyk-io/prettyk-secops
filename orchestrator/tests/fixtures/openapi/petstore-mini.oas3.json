@@ -1,0 +1,41 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Petstore mini", "version": "1.0.0" },
+  "servers": [{ "url": "https://petstore.example/v2" }],
+  "paths": {
+    "/pet/{petId}": {
+      "get": {
+        "operationId": "getPetById",
+        "summary": "Find pet by ID",
+        "tags": ["pet"],
+        "parameters": [
+          {
+            "name": "petId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "deletePet",
+        "summary": "Deletes a pet",
+        "tags": ["pet"]
+      }
+    },
+    "/pet": {
+      "post": {
+        "operationId": "addPet",
+        "summary": "Add a new pet",
+        "tags": ["pet"]
+      }
+    },
+    "/store/inventory": {
+      "get": {
+        "operationId": "getInventory",
+        "summary": "Returns pet inventories",
+        "tags": ["store"]
+      }
+    }
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "meta": {
+    "assessment_purpose": "scheduled",
+    "app_type": "api",
+    "emergency_reason": "Fixture: shared via data-module (public); scenarios only read"
+  },
+  "infrastructure": {
+    "zap_mode": "demon",
+    "browser_type": "chrome"
+  },
+  "security_configuration": {
+    "base_url_override": "http://example.test",
+    "allowed_extra_domains": "",
+    "scan_policy": "custom_policy",
+    "auth_type": "Без авторизации"
+  },
+  "test_suites": {
+    "test_data_constructor": [
+      {
+        "id": "shared",
+        "module_type": "Модуль работы с данными",
+        "label": "shared",
+        "data_storage_fields": {
+          "editor": "Пусть $role = \"admin\"\nПусть $payload = Объект { \"q\": \"x\", \"n\": 1 }\nПусть $shared = true"
+        }
+      }
+    ],
+    "scenarios": [
+      {
+        "id": "s1-read",
+        "scenario_name": "S1: читает data-модуль",
+        "steps": [
+          {
+            "id": "log-vars",
+            "description": "Подстановка из export data-модуля",
+            "constructor": "Лог \"role=${role} q=${payload.q} n=${payload.n}\"",
+            "save_as": "logged"
+          }
+        ]
+      },
+      {
+        "id": "s2-read",
+        "scenario_name": "S2: тот же модуль (не vars S1)",
+        "steps": [
+          {
+            "id": "log-vars-2",
+            "description": "Снова из data-модуля",
+            "constructor": "Лог \"role=${role} q=${payload.q}\"",
+            "save_as": "logged2"
+          }
+        ]
+      }
+    ]
+  }
+}

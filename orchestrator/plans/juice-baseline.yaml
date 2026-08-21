@@ -1,0 +1,47 @@
+# ZAP Automation Framework — эталон Juice Shop (G-38).
+# Запуск: ZAP План plans/juice-baseline.yaml
+# Не стартует сам из scan_policy — только явный шаг / CLI autorun.
+env:
+  contexts:
+    - name: juice_ctx
+      urls:
+        - http://juice-shop:3000
+      includePaths:
+        - http://juice-shop:3000.*
+      excludePaths: []
+  parameters:
+    failOnError: true
+    failOnWarning: false
+    progressToStdout: true
+  vars: {}
+jobs:
+  - type: passiveScan-config
+    parameters:
+      maxAlertsPerRule: 10
+      scanOnlyInScope: true
+  - type: spider
+    parameters:
+      context: juice_ctx
+      url: http://juice-shop:3000
+      maxDuration: 2
+      maxDepth: 5
+  - type: spiderAjax
+    parameters:
+      context: juice_ctx
+      url: http://juice-shop:3000
+      maxDuration: 2
+      inScopeOnly: true
+  - type: passiveScan-wait
+    parameters:
+      maxDuration: 2
+  - type: activeScan
+    parameters:
+      context: juice_ctx
+      maxRuleDurationInMins: 1
+      maxScanDurationInMins: 3
+  - type: report
+    parameters:
+      template: traditional-html
+      reportDir: reports/scanner-results
+      reportFile: juice-af-baseline
+      reportDescription: KDT AF juice-baseline

@@ -1,0 +1,55 @@
+{
+  "meta": {
+    "assessment_purpose": "scheduled",
+    "app_type": "web",
+    "project_id": "juice-af-compose",
+    "scheduled_info": "Lab: ПрименитьAuth → План (AF operating model). Нужны Juice + ZAP; не CI smoke."
+  },
+  "infrastructure": {
+    "zap_mode": "demon",
+    "browser_type": "chrome-headless",
+    "zap_work_timeout_min": 30,
+    "idle_timeout_min": 10
+  },
+  "security_configuration": {
+    "base_url_override": "http://juice-shop:3000",
+    "allowed_extra_domains": "",
+    "scan_policy": "custom_policy",
+    "auth_type": "Bearer Token",
+    "auth_details": {
+      "Токен": "$ENV:JUICE_BEARER_TOKEN"
+    }
+  },
+  "test_suites": {
+    "imports": [],
+    "pages": {},
+    "test_data_constructor": [],
+    "scenarios": [
+      {
+        "scenario_name": "Compose Auth then AF plan",
+        "steps": [
+          {
+            "description": "Контекст под base_url",
+            "constructor": "НовыйКонтекст juice_ctx"
+          },
+          {
+            "description": "Auth из security_configuration → ZAP (Replacer Bearer)",
+            "constructor": "ПрименитьAuth juice_ctx"
+          },
+          {
+            "description": "Опционально обновить YAML из манифеста (без runPlan)",
+            "constructor": "СгенерироватьПлан plans/juice-from-manifest.yaml"
+          },
+          {
+            "description": "AF пакет скана (эталон или сгенерированный)",
+            "constructor": "План plans/juice-baseline.yaml"
+          },
+          {
+            "description": "Маркер в Live zap-ленте",
+            "constructor": "ЛогАтаки \"af-compose: auth+plan done\""
+          }
+        ]
+      }
+    ]
+  }
+}

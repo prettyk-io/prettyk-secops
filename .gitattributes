@@ -1,0 +1,2 @@
+# Shell entrypoints must stay LF in Docker on Windows checkouts
+services/**/entrypoint.sh text eol=lf

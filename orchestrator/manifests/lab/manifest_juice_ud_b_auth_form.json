@@ -1,0 +1,50 @@
+{
+  "meta": {
+    "project_id": "juice-ud-b-auth",
+    "initiator_name": "BOT-EXT UD-B2",
+    "assessment_purpose": "scheduled",
+    "app_type": "web",
+    "scheduled_info": "UD-B2: auth=form browser Juice login → cookies / ZAP Cookie"
+  },
+  "infrastructure": {
+    "zap_mode": "demon",
+    "browser_type": "chrome-headless",
+    "zap_work_timeout_min": 20,
+    "idle_timeout_min": 10,
+    "start_with_webswing": false
+  },
+  "security_configuration": {
+    "scan_policy": "custom_policy",
+    "auth_type": "Страница авторизации",
+    "base_url_override": "http://juice-shop:3000",
+    "allowed_extra_domains": "",
+    "active_auth_module": "juice_form"
+  },
+  "test_suites": {
+    "imports": [],
+    "pages": {},
+    "test_data_constructor": [
+      {
+        "module_type": "Авторизация",
+        "id": "juice_form",
+        "label": "juice_form",
+        "auth_fields": {
+          "constructor": "auth=form\nlogin_url=http://juice-shop:3000/#/login\nlogin=REPLACE_ME@kdt.lab\n#password=REPLACE_ME\nuser_locator=css #email\npass_locator=css #password\nsubmit_locator=css #loginButton\nsuccess_string=account\n"
+        }
+      }
+    ],
+    "scenarios": [
+      {
+        "scenario_name": "ud_b2_auth_form",
+        "continue_on_failure": true,
+        "steps": [
+          {
+            "description": "ПрименитьAuth form browser",
+            "constructor": "НовыйКонтекст juice_ctx\nПрименитьAuth juice_form\nЛогАтаки \"ud-b2: after ПрименитьAuth\"\n"
+          }
+        ]
+      }
+    ],
+    "fuzzers": []
+  }
+}

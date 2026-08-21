@@ -1,0 +1,17 @@
+# lab — boundary / encoding (кураторский KDT; не SecLists)
+x
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+тест
+%00
+%0a
+%0d%0a
+..%2f
+%2e%2e%2f
+<>
+"'
+{{
+}}
+${
+}
+%20
+%09

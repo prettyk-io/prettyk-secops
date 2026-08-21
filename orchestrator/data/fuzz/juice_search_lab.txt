@@ -1,0 +1,9 @@
+# lab only — смешанный smoke для Juice /rest/products/search?q=
+apple
+quote'
+dquote"
+tag<x>
+AAAAAAA
+1 OR 1=1
+null%00
+path../

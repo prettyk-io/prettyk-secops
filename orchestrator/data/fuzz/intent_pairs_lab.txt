@@ -1,0 +1,3 @@
+# lab DF-11 TAB slots → {MASK_1}/{MASK_2}
+pair1a	pair1b
+pair2a	pair2b

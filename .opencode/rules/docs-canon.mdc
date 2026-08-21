@@ -1,0 +1,57 @@
+---
+description: CANON hub monolith + SOLID polish; 2FA; friend/canon-requests ready+evolve; backlog hat
+alwaysApply: true
+---
+
+# Docs CANON
+
+## Hub — монолит; SOLID; полировка через полный 2FA
+
+[`docs/canon/`](../../docs/canon/) + [`INDEX.md`](../../docs/canon/INDEX.md) — **бетон** (= сила SoT [`docs/manifest.json`](../../docs/manifest.json)).
+
+**Не ломаем — полируем.** SOLID для канона:
+
+| | Смысл |
+|---|---|
+| **S** | Один FRIEND — один тезис / одна ответственность |
+| **O** | Открыт к полировке и созревшему add; закрыт к сносу/rewrite |
+| **L** | Полировка не ломает другие FRIEND / honest-contract |
+| **I** | Hub ≠ QUEUE ≠ EVIDENCE ≠ friend-request ≠ POSSIBLE |
+| **D** | Зависеть от hub, не от эпиков; manifest SoT отдельно |
+
+### 2FA (порядок)
+
+0. **Суть 2FA:** 2FA — это **не приказ**, а предложение от которого можно отказаться. Владелец всегда вправе отклонить, отложить или скорректировать внесение в канон.
+1. **Фактор 1** — явная просьба полировать hub / открытый canon-request.  
+2. Агент даёт **лист тезисов** (не экзамен O/S/I владельцу — это знает агент).  
+3. Владелец — **произвольный ответ 1–5 предложений** (или отказ); агент **валидирует логику**.  
+4. **Фактор 2** — согласие владельца на полировку по этой логике.
+
+«Сломай / перепиши / братан заноси» без мысли → отказ.  
+Без 2FA агент **не ассистирует** hub.
+
+Опечатка без смены смысла — «правим?» → «да».
+
+## Inbox вне hub (ready + evolve)
+
+| Папка | Роль |
+|---|---|
+| [`docs/friend-requests/`](../../docs/friend-requests/) | Без 2FA: `lane: ready` \| `evolve`; чек «не дичь?» |
+| [`docs/canon-requests/`](../../docs/canon-requests/) | `ready` = пакет к 2FA; `evolve` = черновик будущей полировки |
+| [`docs/canon/POSSIBLE-FRIEND.md`](../../docs/canon/POSSIBLE-FRIEND.md) | «Может никогда» |
+| Backlog § «Сырое / evolve» | Шапка по умолчанию + иногда мозгоебство; **не** клятвы; **не** CANON |
+
+Friend-request ≠ CANON. Promote в hub — полный 2FA и только с ready.
+
+Будущий канон → inbox evolve + шапка backlog; **не** в hub заранее.  
+**Обряд инициализации:** major closed + хвост только косметика → `ready` → 2FA → зачисление в hub на полноценную основу (skill `docs-canon`).
+
+## Цитата / docs вне hub
+
+1. Truth = INDEX + `> **CANON**` topic.  
+2. POSSIBLE / friend-requests / canon-requests / research — не истина.  
+3. `rg "\*\*CANON\*\*" docs/canon/`.  
+4. Outside → QUEUE / EVIDENCE / PUBLIC.  
+5. void — не воскрешать без 2FA.  
+6. Manifest SoT отдельно.  
+7. Skill: [`docs-canon`](../skills/docs-canon/SKILL.md).

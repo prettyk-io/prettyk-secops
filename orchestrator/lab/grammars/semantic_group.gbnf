@@ -1,0 +1,8 @@
+root ::= "{" ws "\"clusters\"" ws ":" ws clusters ws "}"
+clusters ::= "[]" | "[" cluster ("," ws cluster)* "]"
+cluster ::= "{" ws "\"cluster_id\"" ws ":" ws string ws "," ws "\"title\"" ws ":" ws string ws "," ws "\"severity\"" ws ":" ws severity ws "," ws "\"member_indices\"" ws ":" ws indices ws "," ws "\"relationship\"" ws ":" ws string ws "," ws "\"root_cause_hypothesis\"" ws ":" ws string ws "," ws "\"systemic_remediation\"" ws ":" ws string ws "}"
+severity ::= "\"high\"" | "\"medium\"" | "\"low\"" | "\"info\""
+indices ::= "[" (number ("," ws number)*)? "]"
+number ::= [0-9]+
+string ::= "\"" ([^"\\] | "\\" ["\\/bfnrt])* "\""
+ws ::= [ \t\n\r]*

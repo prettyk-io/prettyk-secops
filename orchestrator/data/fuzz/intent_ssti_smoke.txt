@@ -1,0 +1,12 @@
+# lab — SSTI / expression smoke (образовательный; не exploit pack)
+# Назначение: template engines markers → 5xx / size / reflection later.
+{{7*7}}
+${7*7}
+#{7*7}
+<%= 7*7 %>
+{{config}}
+{{self}}
+*{7*7}
+@(1+2)
+{{''.__class__}}
+{{request}}

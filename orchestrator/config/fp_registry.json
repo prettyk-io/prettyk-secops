@@ -1,0 +1,121 @@
+{
+  "_comment": "Централизованный реестр FP/шума DAST (канон FK-FILTER). Suppression = governed, logged, reversible.",
+  "_doctag": "docs/canon/ — без 2FA не править структуру; наполнение правил — по факту сканов.",
+  "rules": [
+    {
+      "rule_id": "10096",
+      "reason": "Timestamp Disclosure — ожидаемо в enterprise, не actionable",
+      "permanent": true
+    },
+    {
+      "rule_id": "10054",
+      "severity": "info",
+      "reason": "Cookie without SameSite — банковские куки обычно HttpOnly+Secure, SameSite — опционально в старом стеке RFC",
+      "permanent": false
+    },
+    {
+      "rule_id": "10055",
+      "reason": "CSP Header Not Set — конфигурируется на уровне reverse proxy / Cloudflare, не приложения",
+      "permanent": true
+    },
+    {
+      "rule_id": "10020",
+      "severity": "low",
+      "reason": "Missing Anti-clickjacking Header (X-Frame-Options) — CDN / WAF добавляет, не приложение",
+      "permanent": true,
+      "_note": "10020 — X-Frame-Options Header Not Set; если WAF уже ставит — systemic шум"
+    },
+    {
+      "rule_id": "10036",
+      "reason": "Server Leaks Information (серверная платформа) — известный стек, не actionable",
+      "permanent": true
+    },
+    {
+      "rule_id": "10037",
+      "reason": "Server Leaks Information (web-сервер) — nginx/apache/подпись, dev-стенд, не actionable",
+      "permanent": true
+    },
+    {
+      "rule_id": "10015",
+      "reason": "Re-examine Cache-control Directives — статика кешируется CDN, не приложение",
+      "permanent": false
+    },
+    {
+      "cwe": "693",
+      "severity": "info",
+      "reason": "CORS misconfiguration / Cross-Domain JS — CDN/WAF-домены, dev-стенд, не все в зоне ответственности приложения",
+      "permanent": false
+    },
+    {
+      "rule_id": "10017",
+      "reason": "Cross-Domain JavaScript Source — вендорские CDN (googleapis, cdnjs, etc.), незловредные",
+      "permanent": false
+    },
+    {
+      "rule_id": "10098",
+      "reason": "Cross-Domain Misconfiguration — dev-стенд, мультидоменная архитектура банка",
+      "permanent": false
+    },
+    {
+      "rule_id": "10027",
+      "reason": "Information Disclosure — Suspicious Comments (дефолтные комментарии в HTML/js, dev-стенд)",
+      "permanent": false
+    },
+    {
+      "rule_id": "10109",
+      "reason": "Modern Web Application — информационный, не security finding",
+      "permanent": true
+    },
+    {
+      "rule_id": "10202",
+      "reason": "Absence of Anti-CSRF Tokens — не каждый endpoint требует CSRF (публичные API / без state-changing)",
+      "permanent": false
+    },
+    {
+      "rule_id": "10019",
+      "reason": "Content-Type Header Missing — статика/шрифты, не security-critical",
+      "permanent": false
+    }
+  ],
+  "waivers": [
+    {
+      "title": "Timestamp Disclosure — Unix",
+      "severity": "info",
+      "expires_at": ""
+    },
+    {
+      "title": "Cookie Without Secure Flag",
+      "severity": "info",
+      "expires_at": "2027-01-01"
+    },
+    {
+      "title": "X-Powered-By Header Information Leak",
+      "severity": "info",
+      "expires_at": ""
+    },
+    {
+      "title": "Cross-Domain JavaScript Source",
+      "severity": "info",
+      "expires_at": "2027-01-01"
+    },
+    {
+      "title": "Private IP Disclosure",
+      "severity": "info",
+      "expires_at": ""
+    },
+    {
+      "title": "Content Security Policy (CSP) Header Not Set",
+      "severity": "low",
+      "expires_at": "2027-01-01"
+    },
+    {
+      "title": "Information Disclosure — Sensitive Information in URL",
+      "severity": "info",
+      "expires_at": "2027-01-01"
+    }
+  ],
+  "import": {
+    "close_old_findings": false,
+    "_note": "true — Dojo будет закрывать старые находки при реимпорте. Пока false (безопасно). Включить после настройки dedup."
+  }
+}

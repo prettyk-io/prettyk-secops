@@ -1,0 +1,16 @@
+{
+  "imports": [],
+  "pages": [],
+  "scenarios": [],
+  "modules": {
+    "auth": [],
+    "openapi": [],
+    "graphql": [],
+    "grpc": [],
+    "chain": [],
+    "data": [],
+    "connectors": [],
+    "fuzzers": []
+  },
+  "fuzzer_targets": []
+}

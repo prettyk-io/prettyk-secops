@@ -1,0 +1,51 @@
+{
+  "meta": {
+    "project_id": "authoring-roundtrip-bad-redact",
+    "initiator_name": "rt@example.test",
+    "app_leader": "lead@example.test",
+    "assessment_purpose": "emergency",
+    "emergency_reason": "BE-RT redact mask reject fixture",
+    "release_domain": "lab",
+    "compliance_requirements": "",
+    "release_manager": "rm@example.test"
+  },
+  "infrastructure": {
+    "zap_mode": "demon",
+    "browser_type": "chrome",
+    "additional_local_server_port": 8085,
+    "zap_work_timeout_min": 10,
+    "idle_timeout_min": 5,
+    "webswing_session_timeout_min": 60
+  },
+  "security_configuration": {
+    "base_url_override": "http://example.test",
+    "allowed_extra_domains": "",
+    "scan_policy": "custom_policy",
+    "auth_type": "Форма логина/пароля",
+    "login_url": "http://example.test/login",
+    "username": "admin",
+    "password": "***"
+  },
+  "test_suites": {
+    "imports": [],
+    "pages": {},
+    "scenarios": [
+      {
+        "scenario_name": "bad redact",
+        "continue_on_failure": false,
+        "steps": [
+          {
+            "description": "log only",
+            "constructor": "Лог \"ok\"",
+            "failsafe": false,
+            "retry": 0,
+            "retry_delay": 2,
+            "continue_on_failure": false,
+            "save_as": ""
+          }
+        ]
+      }
+    ],
+    "test_data_constructor": []
+  }
+}

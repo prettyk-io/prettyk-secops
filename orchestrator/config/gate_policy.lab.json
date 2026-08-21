@@ -1,0 +1,54 @@
+{
+  "max_critical": 0,
+  "max_high": 0,
+  "enabled": true,
+  "filter": {
+    "require_active": true,
+    "exclude_false_positive": true,
+    "exclude_duplicate": true,
+    "exclude_mitigated": true,
+    "verified_only": false,
+    "min_severity": "",
+    "min_confidence": 0,
+    "exclude_tags": [],
+    "require_tags": [],
+    "max_age_days": 0
+  },
+  "waivers": [
+    {
+      "title": "Timestamp Disclosure — Unix",
+      "severity": "info",
+      "expires_at": ""
+    },
+    {
+      "title": "Cookie Without Secure Flag",
+      "severity": "info",
+      "expires_at": "2027-01-01"
+    },
+    {
+      "title": "X-Powered-By Header Information Leak",
+      "severity": "info",
+      "expires_at": ""
+    },
+    {
+      "title": "Cross-Domain JavaScript Source",
+      "severity": "info",
+      "expires_at": "2027-01-01"
+    },
+    {
+      "title": "Private IP Disclosure",
+      "severity": "info",
+      "expires_at": ""
+    },
+    {
+      "title": "Content Security Policy (CSP) Header Not Set",
+      "severity": "low",
+      "expires_at": "2027-01-01"
+    },
+    {
+      "title": "Information Disclosure — Sensitive Information in URL",
+      "severity": "info",
+      "expires_at": "2027-01-01"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+root ::= "{" ws "\"warnings\"" ws ":" ws warnings ws "}"
+warnings ::= "[]" | "[" warning ("," ws warning)* "]"
+warning ::= "{" ws "\"code\"" ws ":" ws code ws "," ws "\"text\"" ws ":" ws string ws ("," ws "\"entity_id\"" ws ":" ws string)? ws "}"
+code ::= "\"AUTH_NOT_APPLIED\"" | "\"ORPHAN_FUZZER\"" | "\"ORPHAN_PAGE\"" | "\"TIMEOUT_SUGGESTION\"" | "\"TARGET_MISMATCH\"" | "\"PAGE_MODEL_UNUSED\""
+string ::= "\"" ([^"\\] | "\\" ["\\/bfnrt])* "\""
+ws ::= [ \t\n\r]*

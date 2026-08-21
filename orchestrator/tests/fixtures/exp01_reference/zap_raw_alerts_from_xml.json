@@ -1,0 +1,1140 @@
+{
+  "alerts": [
+    {
+      "name": "Strict-Transport-Security Header Not Set",
+      "risk": "low",
+      "riskcode": "1",
+      "confidence": "3",
+      "pluginid": "10035",
+      "alertRef": "10035-1",
+      "cwe": "319",
+      "count": 1,
+      "description": "<p>HTTP Strict Transport Security (HSTS) is a web security policy mechanism whereby a web server declares that complying user agents (such as a web browser) are to interact with it using only secure HTTPS connections (i.e. HTTP layered over TLS/SSL). HSTS is an IETF standards track protocol and is specified in RFC 6797.</p>",
+      "solution": "<p>Ensure that your web server, application server, load balancer, etc. is configured to enforce Strict-Transport-Security.</p>",
+      "site": "https://r1---sn-4g5ednrs.gvt1.com",
+      "instances": [
+        {
+          "uri": "https://r1---sn-4g5ednrs.gvt1.com/edgedl/chrome/dict/en-us-10-1.bdic?cms_redirect=yes&met=1787212498,&mh=7g&mip=185.207.139.8&mm=28&mn=sn-4g5ednrs&ms=nvh&mt=1787212385&mv=u&mvi=1&pl=24&rmhost=r3---sn-4g5ednrs.gvt1.com&rms=nvh,nvh&shardbypass=sd&smhost=r3---sn-4g5edndr.gvt1.com",
+          "param": "",
+          "method": "GET",
+          "evidence": "",
+          "attack": ""
+        }
+      ]
+    },
+    {
+      "name": "Information Disclosure - Sensitive Information in URL",
+      "risk": "informational",
+      "riskcode": "0",
+      "confidence": "2",
+      "pluginid": "10024",
+      "alertRef": "10024",
+      "cwe": "598",
+      "count": 1,
+      "description": "<p>The request appeared to contain sensitive information leaked in the URL. This can violate PCI and most organizational compliance policies. You can configure the list of strings for this check to add or remove values specific to your environment.</p>",
+      "solution": "<p>Do not pass sensitive information in URIs.</p>",
+      "site": "https://r1---sn-4g5ednrs.gvt1.com",
+      "instances": [
+        {
+          "uri": "https://r1---sn-4g5ednrs.gvt1.com/edgedl/chrome/dict/en-us-10-1.bdic?cms_redirect=yes&met=1787212498,&mh=7g&mip=185.207.139.8&mm=28&mn=sn-4g5ednrs&ms=nvh&mt=1787212385&mv=u&mvi=1&pl=24&rmhost=r3---sn-4g5ednrs.gvt1.com&rms=nvh,nvh&shardbypass=sd&smhost=r3---sn-4g5edndr.gvt1.com",
+          "param": "shardbypass",
+          "method": "GET",
+          "evidence": "shardbypass",
+          "attack": ""
+        }
+      ]
+    },
+    {
+      "name": "Strict-Transport-Security Header Not Set",
+      "risk": "low",
+      "riskcode": "1",
+      "confidence": "3",
+      "pluginid": "10035",
+      "alertRef": "10035-1",
+      "cwe": "319",
+      "count": 1,
+      "description": "<p>HTTP Strict Transport Security (HSTS) is a web security policy mechanism whereby a web server declares that complying user agents (such as a web browser) are to interact with it using only secure HTTPS connections (i.e. HTTP layered over TLS/SSL). HSTS is an IETF standards track protocol and is specified in RFC 6797.</p>",
+      "solution": "<p>Ensure that your web server, application server, load balancer, etc. is configured to enforce Strict-Transport-Security.</p>",
+      "site": "https://r2---sn-4g5e6nsy.gvt1.com",
+      "instances": [
+        {
+          "uri": "https://r2---sn-4g5e6nsy.gvt1.com/edgedl/chrome/dict/en-us-10-1.bdic?cms_redirect=yes&met=1787211931,&mh=7g&mip=185.207.139.8&mm=28&mn=sn-4g5e6nsy&ms=nvh&mt=1787211615&mv=m&mvi=2&pl=24&rmhost=r1---sn-4g5e6nsy.gvt1.com&rms=nvh,nvh&shardbypass=sd&smhost=r4---sn-4g5e6nze.gvt1.com",
+          "param": "",
+          "method": "GET",
+          "evidence": "",
+          "attack": ""
+        }
+      ]
+    },
+    {
+      "name": "Information Disclosure - Sensitive Information in URL",
+      "risk": "informational",
+      "riskcode": "0",
+      "confidence": "2",
+      "pluginid": "10024",
+      "alertRef": "10024",
+      "cwe": "598",
+      "count": 1,
+      "description": "<p>The request appeared to contain sensitive information leaked in the URL. This can violate PCI and most organizational compliance policies. You can configure the list of strings for this check to add or remove values specific to your environment.</p>",
+      "solution": "<p>Do not pass sensitive information in URIs.</p>",
+      "site": "https://r2---sn-4g5e6nsy.gvt1.com",
+      "instances": [
+        {
+          "uri": "https://r2---sn-4g5e6nsy.gvt1.com/edgedl/chrome/dict/en-us-10-1.bdic?cms_redirect=yes&met=1787211931,&mh=7g&mip=185.207.139.8&mm=28&mn=sn-4g5e6nsy&ms=nvh&mt=1787211615&mv=m&mvi=2&pl=24&rmhost=r1---sn-4g5e6nsy.gvt1.com&rms=nvh,nvh&shardbypass=sd&smhost=r4---sn-4g5e6nze.gvt1.com",
+          "param": "shardbypass",
+          "method": "GET",
+          "evidence": "shardbypass",
+          "attack": ""
+        }
+      ]
+    },
+    {
+      "name": "Strict-Transport-Security Header Not Set",
+      "risk": "low",
+      "riskcode": "1",
+      "confidence": "3",
+      "pluginid": "10035",
+      "alertRef": "10035-1",
+      "cwe": "319",
+      "count": 1,
+      "description": "<p>HTTP Strict Transport Security (HSTS) is a web security policy mechanism whereby a web server declares that complying user agents (such as a web browser) are to interact with it using only secure HTTPS connections (i.e. HTTP layered over TLS/SSL). HSTS is an IETF standards track protocol and is specified in RFC 6797.</p>",
+      "solution": "<p>Ensure that your web server, application server, load balancer, etc. is configured to enforce Strict-Transport-Security.</p>",
+      "site": "https://redirector.gvt1.com",
+      "instances": [
+        {
+          "uri": "https://redirector.gvt1.com/edgedl/chrome/dict/en-us-10-1.bdic",
+          "param": "",
+          "method": "GET",
+          "evidence": "",
+          "attack": ""
+        }
+      ]
+    },
+    {
+      "name": "Timestamp Disclosure - Unix",
+      "risk": "low",
+      "riskcode": "1",
+      "confidence": "1",
+      "pluginid": "10096",
+      "alertRef": "10096",
+      "cwe": "497",
+      "count": 5,
+      "description": "<p>A timestamp was disclosed by the application/web server. - Unix</p>",
+      "solution": "<p>Manually confirm that the timestamp data is not sensitive, and that the data cannot be aggregated to disclose exploitable patterns.</p>",
+      "site": "https://redirector.gvt1.com",
+      "instances": [
+        {
+          "uri": "https://redirector.gvt1.com/edgedl/chrome/dict/en-us-10-1.bdic",
+          "param": "",
+          "method": "GET",
+          "evidence": "1787211615",
+          "attack": ""
+        },
+        {
+          "uri": "https://redirector.gvt1.com/edgedl/chrome/dict/en-us-10-1.bdic",
+          "param": "",
+          "method": "GET",
+          "evidence": "1787211931",
+          "attack": ""
+        },
+        {
+          "uri": "https://redirector.gvt1.com/edgedl/chrome/dict/en-us-10-1.bdic",
+          "param": "Location",
+          "method": "GET",
+          "evidence": "1787211615",
+          "attack": ""
+        },
+        {
+          "uri": "https://redirector.gvt1.com/edgedl/chrome/dict/en-us-10-1.bdic",
+          "param": "Location",
+          "method": "GET",
+          "evidence": "1787211931",
+          "attack": ""
+        },
+        {
+          "uri": "https://redirector.gvt1.com/edgedl/chrome/dict/en-us-10-1.bdic",
+          "param": "Location",
+          "method": "GET",
+          "evidence": "1787212498",
+          "attack": ""
+        }
+      ]
+    },
+    {
+      "name": "Timestamp Disclosure - Unix",
+      "risk": "low",
+      "riskcode": "1",
+      "confidence": "1",
+      "pluginid": "10096",
+      "alertRef": "10096",
+      "cwe": "497",
+      "count": 3,
+      "description": "<p>A timestamp was disclosed by the application/web server. - Unix</p>",
+      "solution": "<p>Manually confirm that the timestamp data is not sensitive, and that the data cannot be aggregated to disclose exploitable patterns.</p>",
+      "site": "http://edgedl.me.gvt1.com",
+      "instances": [
+        {
+          "uri": "http://edgedl.me.gvt1.com/edgedl/release2/chrome_component/ac3uqjtywtomf4pjcbarw5t4potq_10727/hfnkpimlhhgieaddgfemjhofmfblmnib_10727_all_acnjo3cgdftqo4p24xxw3nm2esdq.crx3",
+          "param": "",
+          "method": "GET",
+          "evidence": "1787555773",
+          "attack": ""
+        },
+        {
+          "uri": "http://edgedl.me.gvt1.com/edgedl/release2/chrome_component/hgawkxaw5kj7k7jbqqynpzaun4_1748/efniojlnjndmcbiieegkicadnoecjjef_1748_all_acegtnqmsftxicavgerzgquwp4va.crx3",
+          "param": "",
+          "method": "GET",
+          "evidence": "2012304261",
+          "attack": ""
+        },
+        {
+          "uri": "http://edgedl.me.gvt1.com/edgedl/release2/chrome_component/hgawkxaw5kj7k7jbqqynpzaun4_1748/efniojlnjndmcbiieegkicadnoecjjef_1748_all_acegtnqmsftxicavgerzgquwp4va.crx3",
+          "param": "",
+          "method": "GET",
+          "evidence": "2033973561",
+          "attack": ""
+        }
+      ]
+    },
+    {
+      "name": "Retrieved from Cache",
+      "risk": "informational",
+      "riskcode": "0",
+      "confidence": "2",
+      "pluginid": "10050",
+      "alertRef": "10050-2",
+      "cwe": "525",
+      "count": 5,
+      "description": "<p>The content was retrieved from a shared cache. If the response data is sensitive, personal or user-specific, this may result in sensitive information being leaked. In some cases, this may even result in a user gaining complete control of the session of another user, depending on the configuration of the caching components in use in their environment. This is primarily an issue where caching servers such as \"proxy\" caches are configured on the local network. This configuration is typically fou",
+      "solution": "<p>Validate that the response does not contain sensitive, personal or user-specific information. If it does, consider the use of the following HTTP response headers, to limit, or prevent the content being stored and retrieved from the cache by another user:</p><p>Cache-Control: no-cache, no-store, must-revalidate, private</p><p>Pragma: no-cache</p><p>Expires: 0</p><p>This configuration directs both HTTP 1.0 and HTTP 1.1 compliant caching servers to not store the response, and to not retrieve the",
+      "site": "http://edgedl.me.gvt1.com",
+      "instances": [
+        {
+          "uri": "http://edgedl.me.gvt1.com/edgedl/diffgen-puffin/gcmjkmgdlgnkkcocmoeiminaijmmjnii/6ca5bdb9f3e2cd83b7e359729bc6c33c4fe975ec499861d969b3e080320849ff",
+          "param": "",
+          "method": "GET",
+          "evidence": "Age: 59480",
+          "attack": ""
+        },
+        {
+          "uri": "http://edgedl.me.gvt1.com/edgedl/diffgen-puffin/jflookgnkcckhobaglndicnbbgbonegd/ac83a0cacf04394ae254e3785259fd7a4c5dcbb00b71d2f3f3d9e88597a28951",
+          "param": "",
+          "method": "GET",
+          "evidence": "Age: 21943",
+          "attack": ""
+        },
+        {
+          "uri": "http://edgedl.me.gvt1.com/edgedl/diffgen-puffin/obedbbhbpmojnkanicioggnmelmoomoc/e40bb820d29fb9a9bf8935fa5fbe77b363cf9c553cd0c1993bf0a9bec48686e4",
+          "param": "",
+          "method": "GET",
+          "evidence": "Age: 18130",
+          "attack": ""
+        },
+        {
+          "uri": "http://edgedl.me.gvt1.com/edgedl/release2/chrome_component/V3P1l2hLvLw_7/7_all_sslErrorAssistant.crx3",
+          "param": "",
+          "method": "GET",
+          "evidence": "Age: 21107",
+          "attack": ""
+        },
+        {
+          "uri": "http://edgedl.me.gvt1.com/edgedl/release2/chrome_component/ac3uqjtywtomf4pjcbarw5t4potq_10727/hfnkpimlhhgieaddgfemjhofmfblmnib_10727_all_acnjo3cgdftqo4p24xxw3nm2esdq.crx3",
+          "param": "",
+          "method": "GET",
+          "evidence": "Age: 662",
+          "attack": ""
+        }
+      ]
+    },
+    {
+      "name": "Strict-Transport-Security Header Not Set",
+      "risk": "low",
+      "riskcode": "1",
+      "confidence": "3",
+      "pluginid": "10035",
+      "alertRef": "10035-1",
+      "cwe": "319",
+      "count": 5,
+      "description": "<p>HTTP Strict Transport Security (HSTS) is a web security policy mechanism whereby a web server declares that complying user agents (such as a web browser) are to interact with it using only secure HTTPS connections (i.e. HTTP layered over TLS/SSL). HSTS is an IETF standards track protocol and is specified in RFC 6797.</p>",
+      "solution": "<p>Ensure that your web server, application server, load balancer, etc. is configured to enforce Strict-Transport-Security.</p>",
+      "site": "https://update.googleapis.com",
+      "instances": [
+        {
+          "uri": "https://update.googleapis.com/service/update2/json",
+          "param": "",
+          "method": "POST",
+          "evidence": "",
+          "attack": ""
+        },
+        {
+          "uri": "https://update.googleapis.com/service/update2/json",
+          "param": "",
+          "method": "POST",
+          "evidence": "",
+          "attack": ""
+        },
+        {
+          "uri": "https://update.googleapis.com/service/update2/json",
+          "param": "",
+          "method": "POST",
+          "evidence": "",
+          "attack": ""
+        },
+        {
+          "uri": "https://update.googleapis.com/service/update2/json?cup2key=15:1tUDnyiZcHzuTvakvAy9_nflzlrAp0paFp75vp5RoRQ&cup2hreq=93e0f1929eaeb9dadb2d4edbc092156cc968c770c6c07559d51e1a32fa766b4f",
+          "param": "",
+          "method": "POST",
+          "evidence": "",
+          "attack": ""
+        },
+        {
+          "uri": "https://update.googleapis.com/service/update2/json?cup2key=15:9Ryvo_Fdx_u9oIYcP0LgXPdnUR4H7UKKFzUgGPDohRw&cup2hreq=bbb8ed800ff4423e8cd7b764c0401dacef55f90a6acefd6ff7e0e149a451c02c",
+          "param": "",
+          "method": "POST",
+          "evidence": "",
+          "attack": ""
+        }
+      ]
+    },
+    {
+      "name": "Strict-Transport-Security Header Not Set",
+      "risk": "low",
+      "riskcode": "1",
+      "confidence": "3",
+      "pluginid": "10035",
+      "alertRef": "10035-1",
+      "cwe": "319",
+      "count": 5,
+      "description": "<p>HTTP Strict Transport Security (HSTS) is a web security policy mechanism whereby a web server declares that complying user agents (such as a web browser) are to interact with it using only secure HTTPS connections (i.e. HTTP layered over TLS/SSL). HSTS is an IETF standards track protocol and is specified in RFC 6797.</p>",
+      "solution": "<p>Ensure that your web server, application server, load balancer, etc. is configured to enforce Strict-Transport-Security.</p>",
+      "site": "https://passwordsleakcheck-pa.googleapis.com",
+      "instances": [
+        {
+          "uri": "https://passwordsleakcheck-pa.googleapis.com/v1/leaks:lookupSingle",
+          "param": "",
+          "method": "POST",
+          "evidence": "",
+          "attack": ""
+        },
+        {
+          "uri": "https://passwordsleakcheck-pa.googleapis.com/v1/leaks:lookupSingle",
+          "param": "",
+          "method": "POST",
+          "evidence": "",
+          "attack": ""
+        },
+        {
+          "uri": "https://passwordsleakcheck-pa.googleapis.com/v1/leaks:lookupSingle",
+          "param": "",
+          "method": "POST",
+          "evidence": "",
+          "attack": ""
+        },
+        {
+          "uri": "https://passwordsleakcheck-pa.googleapis.com/v1/leaks:lookupSingle",
+          "param": "",
+          "method": "POST",
+          "evidence": "",
+          "attack": ""
+        },
+        {
+          "uri": "https://passwordsleakcheck-pa.googleapis.com/v1/leaks:lookupSingle",
+          "param": "",
+          "method": "POST",
+          "evidence": "",
+          "attack": ""
+        }
+      ]
+    },
+    {
+      "name": "Strict-Transport-Security Header Not Set",
+      "risk": "low",
+      "riskcode": "1",
+      "confidence": "3",
+      "pluginid": "10035",
+      "alertRef": "10035-1",
+      "cwe": "319",
+      "count": 5,
+      "description": "<p>HTTP Strict Transport Security (HSTS) is a web security policy mechanism whereby a web server declares that complying user agents (such as a web browser) are to interact with it using only secure HTTPS connections (i.e. HTTP layered over TLS/SSL). HSTS is an IETF standards track protocol and is specified in RFC 6797.</p>",
+      "solution": "<p>Ensure that your web server, application server, load balancer, etc. is configured to enforce Strict-Transport-Security.</p>",
+      "site": "https://content-autofill.googleapis.com",
+      "instances": [
+        {
+          "uri": "https://content-autofill.googleapis.com/v1/pages/ChVDaHJvbWUvMTM4LjAuNzIwNC4xNTcSGQn6mWv1E8zkxRIFDZFhlU4hzvygyePn65U=?alt=proto",
+          "param": "",
+          "method": "GET",
+          "evidence": "",
+          "attack": ""
+        },
+        {
+          "uri": "https://content-autofill.googleapis.com/v1/pages/ChVDaHJvbWUvMTM4LjAuNzIwNC4xNTcSGQnnnBXs2k70fRIFDQqJ_80hzvygyePn65U=?alt=proto",
+          "param": "",
+          "method": "GET",
+          "evidence": "",
+          "attack": ""
+        },
+        {
+          "uri": "https://content-autofill.googleapis.com/v1/pages/ChVDaHJvbWUvMTM4LjAuNzIwNC4xNTcSIAkfjMd8LeLfPxIFDXhvEhkSBQ3OQUx6IZETMaDKNRrt?alt=proto",
+          "param": "",
+          "method": "GET",
+          "evidence": "",
+          "attack": ""
+        },
+        {
+          "uri": "https://content-autofill.googleapis.com/v1/pages/ChVDaHJvbWUvMTM4LjAuNzIwNC4xNTcSLgk5xC10LNU7WxIFDWp1l1cSBQ0TMeXDEgUNMT2UMBIFDb30XvIhtR7YGaj5CkA=?alt=proto",
+          "param": "",
+          "method": "GET",
+          "evidence": "",
+          "attack": ""
+        },
+        {
+          "uri": "https://content-autofill.googleapis.com/v1/pages/ChVDaHJvbWUvMTM4LjAuNzIwNC4xNTcSLglJko59DXpKAxIFDbcCBwISBQ1pATZaEgUNsTWoahIFDRHp2_ohrIKnflOPi44=?alt=proto",
+          "param": "",
+          "method": "GET",
+          "evidence": "",
+          "attack": ""
+        }
+      ]
+    },
+    {
+      "name": "Re-examine Cache-control Directives",
+      "risk": "informational",
+      "riskcode": "0",
+      "confidence": "1",
+      "pluginid": "10015",
+      "alertRef": "10015",
+      "cwe": "525",
+      "count": 5,
+      "description": "<p>The cache-control header has not been set properly or is missing, allowing the browser and proxies to cache content. For static assets like css, js, or image files this might be intended, however, the resources should be reviewed to ensure that no sensitive content will be cached.</p>",
+      "solution": "<p>For secure content, ensure the cache-control HTTP header is set with \"no-cache, no-store, must-revalidate\". If an asset should be cached consider setting the directives \"public, max-age, immutable\".</p>",
+      "site": "https://content-autofill.googleapis.com",
+      "instances": [
+        {
+          "uri": "https://content-autofill.googleapis.com/v1/pages/ChVDaHJvbWUvMTM4LjAuNzIwNC4xNTcSGQn6mWv1E8zkxRIFDZFhlU4hzvygyePn65U=?alt=proto",
+          "param": "cache-control",
+          "method": "GET",
+          "evidence": "private,max-age=604800",
+          "attack": ""
+        },
+        {
+          "uri": "https://content-autofill.googleapis.com/v1/pages/ChVDaHJvbWUvMTM4LjAuNzIwNC4xNTcSGQnnnBXs2k70fRIFDQqJ_80hzvygyePn65U=?alt=proto",
+          "param": "cache-control",
+          "method": "GET",
+          "evidence": "private,max-age=604800",
+          "attack": ""
+        },
+        {
+          "uri": "https://content-autofill.googleapis.com/v1/pages/ChVDaHJvbWUvMTM4LjAuNzIwNC4xNTcSIAkfjMd8LeLfPxIFDXhvEhkSBQ3OQUx6IZETMaDKNRrt?alt=proto",
+          "param": "cache-control",
+          "method": "GET",
+          "evidence": "private,max-age=604800",
+          "attack": ""
+        },
+        {
+          "uri": "https://content-autofill.googleapis.com/v1/pages/ChVDaHJvbWUvMTM4LjAuNzIwNC4xNTcSLgk5xC10LNU7WxIFDWp1l1cSBQ0TMeXDEgUNMT2UMBIFDb30XvIhtR7YGaj5CkA=?alt=proto",
+          "param": "cache-control",
+          "method": "GET",
+          "evidence": "private,max-age=604800",
+          "attack": ""
+        },
+        {
+          "uri": "https://content-autofill.googleapis.com/v1/pages/ChVDaHJvbWUvMTM4LjAuNzIwNC4xNTcSLglJko59DXpKAxIFDbcCBwISBQ1pATZaEgUNsTWoahIFDRHp2_ohrIKnflOPi44=?alt=proto",
+          "param": "cache-control",
+          "method": "GET",
+          "evidence": "private,max-age=604800",
+          "attack": ""
+        }
+      ]
+    },
+    {
+      "name": "SQL Injection",
+      "risk": "high",
+      "riskcode": "3",
+      "confidence": "1",
+      "pluginid": "40018",
+      "alertRef": "40018",
+      "cwe": "89",
+      "count": 2,
+      "description": "<p>SQL injection may be possible.</p>",
+      "solution": "<p>Do not trust client side input, even if there is client side validation in place.</p><p>In general, type check all data on the server side.</p><p>If the application uses JDBC, use PreparedStatement or CallableStatement, with parameters passed by '?'</p><p>If the application uses ASP, use ADO Command Objects with strong type checking and parameterized queries.</p><p>If database Stored Procedures can be used, use them.</p><p>Do *not* concatenate strings into queries in the stored procedure, or ",
+      "site": "http://juice-shop:3000",
+      "instances": [
+        {
+          "uri": "http://juice-shop:3000/rest/products/search?q=%27%28",
+          "param": "q",
+          "method": "GET",
+          "evidence": "HTTP/1.1 500 Internal Server Error",
+          "attack": "'("
+        },
+        {
+          "uri": "http://juice-shop:3000/rest/user/login",
+          "param": "email",
+          "method": "POST",
+          "evidence": "HTTP/1.1 500 Internal Server Error",
+          "attack": "'"
+        }
+      ]
+    },
+    {
+      "name": "Application Error Disclosure",
+      "risk": "medium",
+      "riskcode": "2",
+      "confidence": "2",
+      "pluginid": "90022",
+      "alertRef": "90022",
+      "cwe": "550",
+      "count": 2,
+      "description": "<p>This page contains an error/warning message that may disclose sensitive information like the location of the file that produced the unhandled exception. This information can be used to launch further attacks against the web application. The alert could be a false positive if the error message is found inside a documentation page.</p>",
+      "solution": "<p>Review the source code of this page. Implement custom error pages. Consider implementing a mechanism to provide a unique error reference/identifier to the client (browser) while logging the details on the server side and not exposing them to the user.</p>",
+      "site": "http://juice-shop:3000",
+      "instances": [
+        {
+          "uri": "http://juice-shop:3000/api/Hints",
+          "param": "",
+          "method": "GET",
+          "evidence": "Internal Server Error",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/api/Hints/",
+          "param": "",
+          "method": "GET",
+          "evidence": "Internal Server Error",
+          "attack": ""
+        }
+      ]
+    },
+    {
+      "name": "CSP: Failure to Define Directive with No Fallback",
+      "risk": "medium",
+      "riskcode": "2",
+      "confidence": "3",
+      "pluginid": "10055",
+      "alertRef": "10055-13",
+      "cwe": "693",
+      "count": 5,
+      "description": "<p>The Content Security Policy fails to define one of the directives that has no fallback. Missing/excluding them is the same as allowing anything.</p>",
+      "solution": "<p>Ensure that your web server, application server, load balancer, etc. is properly configured to set the Content-Security-Policy header.</p>",
+      "site": "http://juice-shop:3000",
+      "instances": [
+        {
+          "uri": "http://juice-shop:3000/assets",
+          "param": "Content-Security-Policy",
+          "method": "GET",
+          "evidence": "default-src 'none'",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/assets/i18n",
+          "param": "Content-Security-Policy",
+          "method": "GET",
+          "evidence": "default-src 'none'",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/assets/public",
+          "param": "Content-Security-Policy",
+          "method": "GET",
+          "evidence": "default-src 'none'",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/assets/public/images",
+          "param": "Content-Security-Policy",
+          "method": "GET",
+          "evidence": "default-src 'none'",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/assets/public/images/deluxe",
+          "param": "Content-Security-Policy",
+          "method": "GET",
+          "evidence": "default-src 'none'",
+          "attack": ""
+        }
+      ]
+    },
+    {
+      "name": "Content Security Policy (CSP) Header Not Set",
+      "risk": "medium",
+      "riskcode": "2",
+      "confidence": "3",
+      "pluginid": "10038",
+      "alertRef": "10038-1",
+      "cwe": "693",
+      "count": 5,
+      "description": "<p>Content Security Policy (CSP) is an added layer of security that helps to detect and mitigate certain types of attacks, including Cross Site Scripting (XSS) and data injection attacks. These attacks are used for everything from data theft to site defacement or distribution of malware. CSP provides a set of standard HTTP headers that allow website owners to declare approved sources of content that browsers should be allowed to load on that page — covered types are JavaScript, CSS, HTML frames,",
+      "solution": "<p>Ensure that your web server, application server, load balancer, etc. is configured to set the Content-Security-Policy header.</p>",
+      "site": "http://juice-shop:3000",
+      "instances": [
+        {
+          "uri": "http://juice-shop:3000",
+          "param": "",
+          "method": "GET",
+          "evidence": "",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/",
+          "param": "",
+          "method": "GET",
+          "evidence": "",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/assets/public/images/uploads/%E1%93%9A%E1%98%8F%E1%97%A2-",
+          "param": "",
+          "method": "GET",
+          "evidence": "",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/socket.io/?EIO=4&transport=polling&t=Q0U7kHF&sid=bmCM9HIXDRN8kTtgAAAA",
+          "param": "",
+          "method": "POST",
+          "evidence": "",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/socket.io/?EIO=4&transport=polling&t=Q0U7hPU&sid=bmCM9HIXDRN8kTtgAAAA",
+          "param": "",
+          "method": "POST",
+          "evidence": "",
+          "attack": ""
+        }
+      ]
+    },
+    {
+      "name": "Cross-Domain Misconfiguration",
+      "risk": "medium",
+      "riskcode": "2",
+      "confidence": "2",
+      "pluginid": "10098",
+      "alertRef": "10098",
+      "cwe": "264",
+      "count": 3,
+      "description": "<p>Web browser data loading may be possible, due to a Cross Origin Resource Sharing (CORS) misconfiguration on the web server.</p>",
+      "solution": "<p>Ensure that sensitive data is not available in an unauthenticated manner (using IP address white-listing, for instance).</p><p>Configure the \"Access-Control-Allow-Origin\" HTTP header to a more restrictive set of domains, or remove all CORS headers entirely, to allow the web browser to enforce the Same Origin Policy (SOP) in a more restrictive manner.</p>",
+      "site": "http://juice-shop:3000",
+      "instances": [
+        {
+          "uri": "http://juice-shop:3000/",
+          "param": "",
+          "method": "GET",
+          "evidence": "Access-Control-Allow-Origin: *",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/chunk-VJL3IV3O.js",
+          "param": "",
+          "method": "GET",
+          "evidence": "Access-Control-Allow-Origin: *",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/chunk-VS3A3LTT.js",
+          "param": "",
+          "method": "GET",
+          "evidence": "Access-Control-Allow-Origin: *",
+          "attack": ""
+        }
+      ]
+    },
+    {
+      "name": "Missing Anti-clickjacking Header",
+      "risk": "medium",
+      "riskcode": "2",
+      "confidence": "2",
+      "pluginid": "10020",
+      "alertRef": "10020-1",
+      "cwe": "1021",
+      "count": 2,
+      "description": "<p>The response does not protect against 'ClickJacking' attacks. It should include either Content-Security-Policy with 'frame-ancestors' directive or X-Frame-Options.</p>",
+      "solution": "<p>Modern Web browsers support the Content-Security-Policy and X-Frame-Options HTTP headers. Ensure one of them is set on all web pages returned by your site/app.</p><p>If you expect the page to be framed only by pages on your server (e.g. it's part of a FRAMESET) then you'll want to use SAMEORIGIN, otherwise if you never expect the page to be framed, you should use DENY. Alternatively consider implementing Content Security Policy's \"frame-ancestors\" directive.</p>",
+      "site": "http://juice-shop:3000",
+      "instances": [
+        {
+          "uri": "http://juice-shop:3000/socket.io/?EIO=4&transport=polling&t=Q0U7kHF&sid=bmCM9HIXDRN8kTtgAAAA",
+          "param": "x-frame-options",
+          "method": "POST",
+          "evidence": "",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/socket.io/?EIO=4&transport=polling&t=Q0U7hPU&sid=bmCM9HIXDRN8kTtgAAAA",
+          "param": "x-frame-options",
+          "method": "POST",
+          "evidence": "",
+          "attack": ""
+        }
+      ]
+    },
+    {
+      "name": "Session ID in URL Rewrite",
+      "risk": "medium",
+      "riskcode": "2",
+      "confidence": "3",
+      "pluginid": "3",
+      "alertRef": "3-1",
+      "cwe": "598",
+      "count": 5,
+      "description": "<p>URL rewrite is used to track user session ID. The session ID may be disclosed via cross-site referer header. In addition, the session ID might be stored in browser history or server logs.</p>",
+      "solution": "<p>For secure content, put session ID in a cookie. To be even more secure consider using a combination of cookie and URL rewrite.</p>",
+      "site": "http://juice-shop:3000",
+      "instances": [
+        {
+          "uri": "http://juice-shop:3000/socket.io/?EIO=4&transport=polling&t=Q0U7hQ5&sid=bmCM9HIXDRN8kTtgAAAA",
+          "param": "sid",
+          "method": "GET",
+          "evidence": "bmCM9HIXDRN8kTtgAAAA",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/socket.io/?EIO=4&transport=websocket&sid=GA_MubqWFyJn93LAAAAC",
+          "param": "sid",
+          "method": "GET",
+          "evidence": "GA_MubqWFyJn93LAAAAC",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/socket.io/?EIO=4&transport=websocket&sid=bmCM9HIXDRN8kTtgAAAA",
+          "param": "sid",
+          "method": "GET",
+          "evidence": "bmCM9HIXDRN8kTtgAAAA",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/socket.io/?EIO=4&transport=polling&t=Q0U7kHF&sid=bmCM9HIXDRN8kTtgAAAA",
+          "param": "sid",
+          "method": "POST",
+          "evidence": "bmCM9HIXDRN8kTtgAAAA",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/socket.io/?EIO=4&transport=polling&t=Q0U7hPU&sid=bmCM9HIXDRN8kTtgAAAA",
+          "param": "sid",
+          "method": "POST",
+          "evidence": "bmCM9HIXDRN8kTtgAAAA",
+          "attack": ""
+        }
+      ]
+    },
+    {
+      "name": "Application Error Disclosure",
+      "risk": "low",
+      "riskcode": "1",
+      "confidence": "2",
+      "pluginid": "90022",
+      "alertRef": "90022",
+      "cwe": "550",
+      "count": 13,
+      "description": "<p>This page contains an error/warning message that may disclose sensitive information like the location of the file that produced the unhandled exception. This information can be used to launch further attacks against the web application. The alert could be a false positive if the error message is found inside a documentation page.</p>",
+      "solution": "<p>Review the source code of this page. Implement custom error pages. Consider implementing a mechanism to provide a unique error reference/identifier to the client (browser) while logging the details on the server side and not exposing them to the user.</p>",
+      "site": "http://juice-shop:3000",
+      "instances": [
+        {
+          "uri": "http://juice-shop:3000/api",
+          "param": "",
+          "method": "GET",
+          "evidence": "HTTP/1.1 500 Internal Server Error",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/rest",
+          "param": "",
+          "method": "GET",
+          "evidence": "HTTP/1.1 500 Internal Server Error",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/rest/admin",
+          "param": "",
+          "method": "GET",
+          "evidence": "HTTP/1.1 500 Internal Server Error",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/rest/order-history",
+          "param": "",
+          "method": "GET",
+          "evidence": "HTTP/1.1 500 Internal Server Error",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/rest/products",
+          "param": "",
+          "method": "GET",
+          "evidence": "HTTP/1.1 500 Internal Server Error",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/rest/products/1",
+          "param": "",
+          "method": "GET",
+          "evidence": "HTTP/1.1 500 Internal Server Error",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/rest/products/41",
+          "param": "",
+          "method": "GET",
+          "evidence": "HTTP/1.1 500 Internal Server Error",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/rest/products/search?q=%22%27",
+          "param": "",
+          "method": "GET",
+          "evidence": "HTTP/1.1 500 Internal Server Error",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/rest/track-order",
+          "param": "",
+          "method": "GET",
+          "evidence": "HTTP/1.1 500 Internal Server Error",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/rest/user",
+          "param": "",
+          "method": "GET",
+          "evidence": "HTTP/1.1 500 Internal Server Error",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/rest/user/login",
+          "param": "",
+          "method": "GET",
+          "evidence": "HTTP/1.1 500 Internal Server Error",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/rest/wallet",
+          "param": "",
+          "method": "GET",
+          "evidence": "HTTP/1.1 500 Internal Server Error",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/rest/web3",
+          "param": "",
+          "method": "GET",
+          "evidence": "HTTP/1.1 500 Internal Server Error",
+          "attack": ""
+        }
+      ]
+    },
+    {
+      "name": "Cross Site Scripting Weakness (Persistent in JSON Response)",
+      "risk": "low",
+      "riskcode": "1",
+      "confidence": "1",
+      "pluginid": "40014",
+      "alertRef": "40014-2",
+      "cwe": "79",
+      "count": 5,
+      "description": "<p>A XSS attack was found in a JSON response, this might leave content consumers vulnerable to attack if they don't appropriately handle the data (response).</p>",
+      "solution": "<p>Phase: Architecture and Design</p><p>Use a vetted library or framework that does not allow this weakness to occur or provides constructs that make this weakness easier to avoid.</p><p>Examples of libraries and frameworks that make it easier to generate properly encoded output include Microsoft's Anti-XSS library, the OWASP ESAPI Encoding module, and Apache Wicket.</p><p></p><p>Phases: Implementation; Architecture and Design</p><p>Understand the context in which your data will be used and the ",
+      "site": "http://juice-shop:3000",
+      "instances": [
+        {
+          "uri": "http://juice-shop:3000/api/Addresss",
+          "param": "city",
+          "method": "GET",
+          "evidence": "",
+          "attack": "<script>alert(1);</script>"
+        },
+        {
+          "uri": "http://juice-shop:3000/api/Addresss",
+          "param": "country",
+          "method": "GET",
+          "evidence": "",
+          "attack": "<script>alert(1);</script>"
+        },
+        {
+          "uri": "http://juice-shop:3000/api/Addresss",
+          "param": "fullName",
+          "method": "GET",
+          "evidence": "",
+          "attack": "<script>alert(1);</script>"
+        },
+        {
+          "uri": "http://juice-shop:3000/api/Addresss",
+          "param": "state",
+          "method": "GET",
+          "evidence": "",
+          "attack": "<script>alert(1);</script>"
+        },
+        {
+          "uri": "http://juice-shop:3000/api/Addresss",
+          "param": "streetAddress",
+          "method": "GET",
+          "evidence": "",
+          "attack": "<script>alert(1);</script>"
+        }
+      ]
+    },
+    {
+      "name": "Information Disclosure - Debug Error Messages",
+      "risk": "low",
+      "riskcode": "1",
+      "confidence": "2",
+      "pluginid": "10023",
+      "alertRef": "10023",
+      "cwe": "1295",
+      "count": 2,
+      "description": "<p>The response appeared to contain common error messages returned by platforms such as ASP.NET, and Web-servers such as IIS and Apache. You can configure the list of common debug messages.</p>",
+      "solution": "<p>Disable debugging messages before pushing to production.</p>",
+      "site": "http://juice-shop:3000",
+      "instances": [
+        {
+          "uri": "http://juice-shop:3000/api/Hints",
+          "param": "",
+          "method": "GET",
+          "evidence": "Internal Server Error",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/api/Hints/",
+          "param": "",
+          "method": "GET",
+          "evidence": "Internal Server Error",
+          "attack": ""
+        }
+      ]
+    },
+    {
+      "name": "Private IP Disclosure",
+      "risk": "low",
+      "riskcode": "1",
+      "confidence": "2",
+      "pluginid": "2",
+      "alertRef": "2",
+      "cwe": "497",
+      "count": 2,
+      "description": "<p>A private IP (such as 10.x.x.x, 172.x.x.x, 192.168.x.x) or an Amazon EC2 private hostname (for example, ip-10-0-56-78) has been found in the HTTP response body. This information might be helpful for further attacks targeting internal systems.</p>",
+      "solution": "<p>Remove the private IP address from the HTTP response body. For comments, use JSP/ASP/PHP comment instead of HTML/JavaScript comment which can be seen by client browsers.</p>",
+      "site": "http://juice-shop:3000",
+      "instances": [
+        {
+          "uri": "http://juice-shop:3000/rest/admin/application-configuration",
+          "param": "",
+          "method": "GET",
+          "evidence": "192.168.99.100:3000",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/rest/order-history",
+          "param": "",
+          "method": "GET",
+          "evidence": "172.21.0.10",
+          "attack": ""
+        }
+      ]
+    },
+    {
+      "name": "Timestamp Disclosure - Unix",
+      "risk": "low",
+      "riskcode": "1",
+      "confidence": "1",
+      "pluginid": "10096",
+      "alertRef": "10096",
+      "cwe": "497",
+      "count": 5,
+      "description": "<p>A timestamp was disclosed by the application/web server. - Unix</p>",
+      "solution": "<p>Manually confirm that the timestamp data is not sensitive, and that the data cannot be aggregated to disclose exploitable patterns.</p>",
+      "site": "http://juice-shop:3000",
+      "instances": [
+        {
+          "uri": "http://juice-shop:3000/",
+          "param": "",
+          "method": "GET",
+          "evidence": "1666666667",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/",
+          "param": "",
+          "method": "GET",
+          "evidence": "1839622642",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/styles.css",
+          "param": "",
+          "method": "GET",
+          "evidence": "1528301887",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/styles.css",
+          "param": "",
+          "method": "GET",
+          "evidence": "1578947368",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/styles.css",
+          "param": "",
+          "method": "GET",
+          "evidence": "1602209945",
+          "attack": ""
+        }
+      ]
+    },
+    {
+      "name": "X-Content-Type-Options Header Missing",
+      "risk": "low",
+      "riskcode": "1",
+      "confidence": "2",
+      "pluginid": "10021",
+      "alertRef": "10021",
+      "cwe": "693",
+      "count": 4,
+      "description": "<p>The Anti-MIME-Sniffing header X-Content-Type-Options was not set to 'nosniff'. This allows older versions of Internet Explorer and Chrome to perform MIME-sniffing on the response body, potentially causing the response body to be interpreted and displayed as a content type other than the declared content type. Current (early 2014) and legacy versions of Firefox will use the declared content type (if one is set), rather than performing MIME-sniffing.</p>",
+      "solution": "<p>Ensure that the application/web server sets the Content-Type header appropriately, and that it sets the X-Content-Type-Options header to 'nosniff' for all web pages.</p><p>If possible, ensure that the end user uses a standards-compliant and modern web browser that does not perform MIME-sniffing at all, or that can be directed by the web application/web server to not perform MIME-sniffing.</p>",
+      "site": "http://juice-shop:3000",
+      "instances": [
+        {
+          "uri": "http://juice-shop:3000/socket.io/?EIO=4&transport=polling&t=Q0U7hQ5&sid=bmCM9HIXDRN8kTtgAAAA",
+          "param": "x-content-type-options",
+          "method": "GET",
+          "evidence": "",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/socket.io/?EIO=4&transport=polling&t=Q0U7hLY",
+          "param": "x-content-type-options",
+          "method": "GET",
+          "evidence": "",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/socket.io/?EIO=4&transport=polling&t=Q0U7kHF&sid=bmCM9HIXDRN8kTtgAAAA",
+          "param": "x-content-type-options",
+          "method": "POST",
+          "evidence": "",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/socket.io/?EIO=4&transport=polling&t=Q0U7hPU&sid=bmCM9HIXDRN8kTtgAAAA",
+          "param": "x-content-type-options",
+          "method": "POST",
+          "evidence": "",
+          "attack": ""
+        }
+      ]
+    },
+    {
+      "name": "Authentication Request Identified",
+      "risk": "informational",
+      "riskcode": "0",
+      "confidence": "1",
+      "pluginid": "10111",
+      "alertRef": "10111",
+      "cwe": "-1",
+      "count": 2,
+      "description": "<p>The given request has been identified as an authentication request. The 'Other Info' field contains a set of key=value lines which identify any relevant fields. If the request is in a context which has an Authentication Method set to \"Auto-Detect\" then this rule will change the authentication to match the request identified.</p>",
+      "solution": "<p>This is an informational alert rather than a vulnerability and so there is nothing to fix.</p>",
+      "site": "http://juice-shop:3000",
+      "instances": [
+        {
+          "uri": "http://juice-shop:3000/api/Users/",
+          "param": "email",
+          "method": "POST",
+          "evidence": "password",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/rest/user/login",
+          "param": "email",
+          "method": "POST",
+          "evidence": "password",
+          "attack": ""
+        }
+      ]
+    },
+    {
+      "name": "Modern Web Application",
+      "risk": "informational",
+      "riskcode": "0",
+      "confidence": "2",
+      "pluginid": "10109",
+      "alertRef": "10109",
+      "cwe": "-1",
+      "count": 5,
+      "description": "<p>The application appears to be a modern web application. If you need to explore it automatically then the Client Spider may well be more effective than the standard one.</p>",
+      "solution": "<p>This is an informational alert and so no changes are required.</p>",
+      "site": "http://juice-shop:3000",
+      "instances": [
+        {
+          "uri": "http://juice-shop:3000",
+          "param": "",
+          "method": "GET",
+          "evidence": "<script>\n    window.addEventListener(\"load\", function(){\n      window.cookieconsent.initialise({\n        \"palette\": {\n          \"popup\": { \"background\": \"var(--theme-primary)\", \"text\": \"var(--theme-text)\" },\n          \"button\": { \"background\": \"var(--theme-accent)\", \"text\": \"var(--theme-text)\" }\n   ",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/",
+          "param": "",
+          "method": "GET",
+          "evidence": "<script>\n    window.addEventListener(\"load\", function(){\n      window.cookieconsent.initialise({\n        \"palette\": {\n          \"popup\": { \"background\": \"var(--theme-primary)\", \"text\": \"var(--theme-text)\" },\n          \"button\": { \"background\": \"var(--theme-accent)\", \"text\": \"var(--theme-text)\" }\n   ",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/assets/public/images/uploads/%E1%93%9A%E1%98%8F%E1%97%A2-",
+          "param": "",
+          "method": "GET",
+          "evidence": "<script>\n    window.addEventListener(\"load\", function(){\n      window.cookieconsent.initialise({\n        \"palette\": {\n          \"popup\": { \"background\": \"var(--theme-primary)\", \"text\": \"var(--theme-text)\" },\n          \"button\": { \"background\": \"var(--theme-accent)\", \"text\": \"var(--theme-text)\" }\n   ",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/sitemap.xml",
+          "param": "",
+          "method": "GET",
+          "evidence": "<script>\n    window.addEventListener(\"load\", function(){\n      window.cookieconsent.initialise({\n        \"palette\": {\n          \"popup\": { \"background\": \"var(--theme-primary)\", \"text\": \"var(--theme-text)\" },\n          \"button\": { \"background\": \"var(--theme-accent)\", \"text\": \"var(--theme-text)\" }\n   ",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/socket.io",
+          "param": "",
+          "method": "GET",
+          "evidence": "<script>\n    window.addEventListener(\"load\", function(){\n      window.cookieconsent.initialise({\n        \"palette\": {\n          \"popup\": { \"background\": \"var(--theme-primary)\", \"text\": \"var(--theme-text)\" },\n          \"button\": { \"background\": \"var(--theme-accent)\", \"text\": \"var(--theme-text)\" }\n   ",
+          "attack": ""
+        }
+      ]
+    },
+    {
+      "name": "Session Management Response Identified",
+      "risk": "informational",
+      "riskcode": "0",
+      "confidence": "2",
+      "pluginid": "10112",
+      "alertRef": "10112",
+      "cwe": "-1",
+      "count": 2,
+      "description": "<p>The given response has been identified as containing a session management token. The 'Other Info' field contains a set of header tokens that can be used in the Header Based Session Management Method. If the request is in a context which has a Session Management Method set to \"Auto-Detect\" then this rule will change the session management to use the tokens identified.</p>",
+      "solution": "<p>This is an informational alert rather than a vulnerability and so there is nothing to fix.</p>",
+      "site": "http://juice-shop:3000",
+      "instances": [
+        {
+          "uri": "http://juice-shop:3000/rest/user/login",
+          "param": "authentication.token",
+          "method": "POST",
+          "evidence": "authentication.token",
+          "attack": ""
+        },
+        {
+          "uri": "http://juice-shop:3000/rest/continue-code",
+          "param": "continueCode",
+          "method": "GET",
+          "evidence": "continueCode",
+          "attack": ""
+        }
+      ]
+    }
+  ],
+  "count": 28,
+  "source": "xml_parse"
+}

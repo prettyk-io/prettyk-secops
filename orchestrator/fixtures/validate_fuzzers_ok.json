@@ -1,0 +1,70 @@
+{
+  "meta": {
+    "project_id": "validate-fuzzers-ok",
+    "initiator_name": "ci@example.test",
+    "app_leader": "lead@example.test",
+    "assessment_purpose": "emergency",
+    "emergency_reason": "validate fuzzers[] SoT",
+    "release_domain": "validate-fuzzers",
+    "compliance_requirements": "",
+    "release_manager": "rm@example.test"
+  },
+  "infrastructure": {
+    "zap_mode": "demon",
+    "browser_type": "chrome",
+    "additional_local_server_port": 8085,
+    "zap_work_timeout_min": 10,
+    "idle_timeout_min": 5,
+    "webswing_session_timeout_min": 60
+  },
+  "security_configuration": {
+    "base_url_override": "http://example.test",
+    "allowed_extra_domains": "",
+    "scan_policy": "custom_policy",
+    "auth_type": "Без авторизации"
+  },
+  "test_suites": {
+    "imports": [],
+    "pages": {},
+    "scenarios": [
+      {
+        "scenario_name": "fuzz wave smoke",
+        "continue_on_failure": false,
+        "steps": [
+          {
+            "description": "call fuzzer entity",
+            "constructor": "ФаззингВолна juice_search_q",
+            "failsafe": false,
+            "retry": 0,
+            "retry_delay": 2,
+            "continue_on_failure": false,
+            "save_as": ""
+          }
+        ]
+      }
+    ],
+    "test_data_constructor": [],
+    "fuzzers": [
+      {
+        "id": "juice_search_q",
+        "label": "Juice search q",
+        "algorithm": "triples",
+        "targets": [
+          {
+            "url": "http://example.test/#/search?q=test",
+            "method": "GET",
+            "corpus": "intent_boundary"
+          }
+        ],
+        "policy": {
+          "max_requests": 5,
+          "requests_per_second": 1,
+          "alert_on_server_error": true,
+          "latency_multiplier": 3,
+          "size_ratio": 3,
+          "size_abs_delta": 2048
+        }
+      }
+    ]
+  }
+}

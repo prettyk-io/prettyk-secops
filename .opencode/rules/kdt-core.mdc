@@ -1,0 +1,30 @@
+﻿---
+description: Канон KDT/DDT — MethodId, ворота, data-скрипт, честный контракт формы
+globs: orchestrator/**,docs/**,logic-construction.md,frontend/src/monaco/**,frontend/src/keywords/**,frontend/src/components/DataPlayground.tsx
+alwaysApply: false
+---
+
+# KDT core
+
+## Канон
+
+Сначала [`docs/agent-entry.md`](docs/agent-entry.md) → [`docs/KDTZaproxy.md`](docs/KDTZaproxy.md), `logic-construction.md`, код (`method_id.py`, `language_*`). Паспорт честен: Controller гоняет suites/keyword'и, не всю форму.
+
+## Ворота и MethodId
+
+- Ворота: `ZAP` · `HTTP` · `Сессия` · `Драйвер`. `Операция` — только AC строк, не префикс в сценарии.
+- Новый MethodId: тонкий вызов адаптера + unit/placement + keywords/AC. Канон assert: `Проверить*` (не плодить `Утвердить*` в AC).
+- Явная ошибка «не реализовано» лучше тихого no-op. Заглушка / `ЗапуститьFuzzer` — не в автодополнении без запроса.
+
+## Data / скрипт
+
+- Комментарии: `#` (не `//`). `css #id` / `css|#id` — не комментарий.
+- Leaf `${…}`; fail-fast. Playground SAMPLE — живой контракт синтаксиса.
+
+## Не делать без запроса
+
+Persist AST, полный SSO bootstrap, rewrite Controller, полный form→runtime auth/scan_policy, UI Fuzzer API.
+
+## Русский
+
+Доки и ответы: skill `ru-text` + [`.opencode/rules/docs-ru.mdc`](docs-ru.mdc). Без канцелярита и агентского сленга в прозе.

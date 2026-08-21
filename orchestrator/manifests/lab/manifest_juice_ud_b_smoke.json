@@ -1,0 +1,93 @@
+{
+  "meta": {
+    "project_id": "juice-ud-b",
+    "initiator_name": "BOT-EXT UD-B",
+    "assessment_purpose": "scheduled",
+    "app_type": "web",
+    "scheduled_info": "UD-B1 short: Open Juice → FuzzWave juice_search_q"
+  },
+  "infrastructure": {
+    "zap_mode": "demon",
+    "browser_type": "chrome-headless",
+    "zap_work_timeout_min": 20,
+    "idle_timeout_min": 10,
+    "start_with_webswing": false
+  },
+  "security_configuration": {
+    "scan_policy": "custom_policy",
+    "auth_type": "Без авторизации",
+    "base_url_override": "http://juice-shop:3000",
+    "allowed_extra_domains": ""
+  },
+  "test_suites": {
+    "imports": [],
+    "pages": {},
+    "test_data_constructor": [
+      {
+        "module_type": "Коннектор",
+        "id": "prom_slot",
+        "label": "prom_slot",
+        "connector_fields": {
+          "connector_type": "Prometheus",
+          "metric_packs": "http_red",
+          "prom_url": "http://127.0.0.1:9090",
+          "prom_lookback": "5m",
+          "notes": "UD-B4 after-fuzz bolvan (no live Prom required)"
+        }
+      }
+    ],
+    "scenarios": [
+      {
+        "scenario_name": "ud_b1_juice_fuzz",
+        "continue_on_failure": false,
+        "steps": [
+          {
+            "description": "Open Juice + short fuzz wave",
+            "constructor": "НовыйКонтекст juice_ctx \"UD-B1\"\nВключитьВКонтекст juice_ctx\nОткрыть\nПауза 2\n? {\n  Нажать css \"button[aria-label='Close Welcome Banner']\"\n  Нажать css .cc-dismiss\n} > {\n  Лог \"баннеров не было\"\n} >! {\n  Пауза 1\n}\nЛогАтаки \"ud-b1: juice open before fuzz\"\nФаззингВолна juice_search_q\nЛог \"ud-b1: fuzz done\"\n"
+          }
+        ]
+      }
+    ],
+    "fuzzers": [
+      {
+        "id": "juice_search_q",
+        "label": "juice_search_q",
+        "algorithm": "sniper",
+        "targets": [
+          {
+            "url": "http://juice-shop:3000/rest/products/search?q=",
+            "method": "GET",
+            "corpus": "intent_boundary",
+            "body": ""
+          }
+        ],
+        "message": {
+          "source": "template",
+          "method": "GET",
+          "url": "http://juice-shop:3000/rest/products/search?q=",
+          "history_url_contains": "",
+          "history_method": "GET",
+          "session_replay": false,
+          "headers": {},
+          "follow_redirects": true
+        },
+        "location": {
+          "kind": "query_param",
+          "name": "q"
+        },
+        "corpus": "intent_boundary",
+        "policy": {
+          "max_requests": 5,
+          "requests_per_second": 1,
+          "alert_on_server_error": true,
+          "latency_multiplier": 3,
+          "size_ratio": 3,
+          "size_abs_delta": 2048
+        },
+        "session_replay": false,
+        "headers": {},
+        "follow_redirects": true
+      }
+    ]
+  }
+}

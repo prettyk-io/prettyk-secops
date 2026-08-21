@@ -1,0 +1,17 @@
+{
+  "run": {
+    "id": 1001,
+    "status": "completed",
+    "conclusion": "failure",
+    "name": "orchestrator",
+    "display_title": "lab fixture fail_run",
+    "run_number": 9,
+    "html_url": "https://github.com/example/zap-kdt/actions/runs/1001"
+  },
+  "job": {
+    "name": "orchestrator",
+    "status": "completed",
+    "conclusion": "failure",
+    "html_url": "https://github.com/example/zap-kdt/actions/runs/1001/job/55"
+  }
+}

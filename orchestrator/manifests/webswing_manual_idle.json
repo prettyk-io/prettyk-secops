@@ -1,0 +1,20 @@
+{
+  "meta": {
+    "assessment_purpose": "manual",
+    "app_type": "web",
+    "emergency_reason": "Ручной Webswing: idle 5 мин → shutdown_all. Без авто-сценариев."
+  },
+  "infrastructure": {
+    "zap_mode": "webswing",
+    "browser_type": "chrome-headless",
+    "start_with_webswing": true,
+    "idle_timeout_min": 5,
+    "webswing_session_timeout_min": 30
+  },
+  "test_suites": {
+    "imports": [],
+    "pages": {},
+    "test_data_constructor": [],
+    "scenarios": []
+  }
+}

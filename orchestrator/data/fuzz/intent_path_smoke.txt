@@ -1,0 +1,16 @@
+# lab — path / traversal smoke (не SecLists dump; ≤ pack max_lines)
+# Назначение: path segment {MASK}; status/size deltas.
+.
+..
+../
+..%2f
+%2e%2e%2f
+....//
+%252e%252e%252f
+..;/
+/etc/passwd
+..\\..\\
+%00
+~
+.bak
+.old

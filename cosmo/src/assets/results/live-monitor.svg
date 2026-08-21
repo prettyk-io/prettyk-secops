@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <filter id="glowBlue" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="6" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="glowGreen" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="5" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="glowCyan" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <!-- monitor frame -->
+  <rect x="96" y="88" width="320" height="248" rx="28" ry="28"
+        stroke="#5B8CFF" stroke-width="14" filter="url(#glowBlue)"/>
+  <!-- stand -->
+  <path d="M214 372 L298 372 L278 412 L234 412 Z"
+        stroke="#5B8CFF" stroke-width="12" stroke-linejoin="round" filter="url(#glowBlue)"/>
+  <!-- green pulse -->
+  <path d="M128 210 H210 L228 168 L252 252 L270 198 H384"
+        stroke="#39FF6A" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"
+        filter="url(#glowGreen)"/>
+  <!-- cyan baseline -->
+  <path d="M140 292 H372"
+        stroke="#3DE7FF" stroke-width="10" stroke-linecap="round"
+        filter="url(#glowCyan)"/>
+</svg>

@@ -1,0 +1,16 @@
+---
+description: PrettyK дефолт / полотно конструктора — всегда 30 строк
+alwaysApply: true
+---
+
+# Constructor canvas = 32 строки
+
+**Канон:** `CONSTRUCTOR_VISIBLE_LINES = 32` в [`frontend/src/monaco/constructorLayout.ts`](frontend/src/monaco/constructorLayout.ts).
+
+- Новый page / step / PrettyK-модуль → `defaultConstructorText()` → **ровно 32** строки.
+- При загрузке и flush в formData → `padConstructorCanvas()` — короткие добивать до 32; пустой хвост сверх 32 срезать (`bindMinimumConstructorLines` / `targetConstructorLineCount`). Контент длиннее 32 не резать.
+- **Запрещено** уменьшать до 24/1/«пустая строка» «для удобства» или при полировке UI.
+- Тест: [`frontend/src/studio/defaultConstructor.test.ts`](frontend/src/studio/defaultConstructor.test.ts) — `toBe(32)`.
+- Высота Monaco формы = `CONSTRUCTOR_EDITOR_HEIGHT` из того же файла (32 × lineHeight + padding).
+
+Если юзер орёт что строки слетели — сначала проверь pad на read/write и что константа всё ещё 32.

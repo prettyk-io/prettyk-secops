@@ -1,0 +1,17 @@
+{
+  "context": "juice_ctx",
+  "filters": [
+    {
+      "rule_id": 10062,
+      "new_level": -1,
+      "url": ".*/api/Cards/.*",
+      "url_is_regex": true
+    },
+    {
+      "rule_id": 10021,
+      "new_level": "False Positive",
+      "url": ".*",
+      "url_is_regex": true
+    }
+  ]
+}

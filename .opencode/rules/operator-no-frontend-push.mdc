@@ -1,0 +1,19 @@
+---
+description: Бэк-оператору запрещён push и merge ветки frontend без приказа
+alwaysApply: true
+---
+
+# Запрет push / merge frontend
+
+Бэк-оператор **никогда** не делает без явной команды владельца:
+
+- `git push` в `frontend` / `origin/frontend`;
+- `git merge` ветки `frontend` «заодно» (исключение: владелец сказал собрать frontend → `dev`);
+- `gh pr merge`, если целевая или исходная ветка — `frontend`, без приказа.
+
+Перед любым `git push` / `git merge` / `gh pr create|merge`:
+
+1. `git branch --show-current` — если `frontend`, **стоп** (кроме явного «пуш frontend»).
+2. Убедиться, что ref пуша не `origin/frontend`.
+
+Код и WIP во `frontend/` не зона оператора. Не коммитить туда «по дороге».

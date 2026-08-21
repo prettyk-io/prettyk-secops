@@ -1,0 +1,127 @@
+# -*- coding: utf-8 -*-
+"""
+MON-5: запись видео прогона (Selenium Grid chrome-video → MP4).
+
+Grid уже пишет MP4 в reports/video/ через sidecar chrome-video (ffmpeg).
+Этот модуль находит файл по run_id и отдаёт его в Monitor с поддержкой
+Range (HTTP 206) — так браузер может seek в replay-режиме.
+"""
+from __future__ import annotations
+
+import os
+from pathlib import Path
+from typing import Optional, Tuple, Union
+
+from utils.paths import VIDEO_DIR
+
+_VIDEO_EXTENSIONS = frozenset({".mp4", ".webm", ".mkv"})
+DEFAULT_CHUNK = 65536  # 64 KiB
+
+
+def find_video_for_run(run_id: str) -> Optional[Path]:
+    """
+    Найти видео-файл, имя которого начинается с run_id_ (MON-5).
+    Возвращает путь к файлу или None. Без fallback — чужой прогон не подменяем.
+    """
+    if not run_id:
+        return None
+    vdir = Path(VIDEO_DIR)
+    if not vdir.is_dir():
+        return None
+    prefix = f"{run_id}_"
+    candidates = [
+        p for p in vdir.iterdir()
+        if p.is_file()
+        and p.suffix.lower() in _VIDEO_EXTENSIONS
+        and p.name.startswith(prefix)
+    ]
+    if not candidates:
+        return None
+    # Новейший при нескольких (re-run)
+    candidates.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    return candidates[0]
+
+
+def video_content_type(path: Path) -> str:
+    suffix = path.suffix.lower()
+    return {
+        ".mp4": "video/mp4",
+        ".webm": "video/webm",
+        ".mkv": "video/x-matroska",
+    }.get(suffix, "application/octet-stream")
+
+
+def _parse_range_header(range_header: str, file_size: int) -> Optional[Tuple[int, int]]:
+    """bytes=start-end → (start, end_inclusive). None = malformed."""
+    val = (range_header or "").strip()
+    if not val.startswith("bytes="):
+        return None
+    spec = val[6:].strip()
+    if "-" not in spec:
+        return None
+    s, _, e = spec.partition("-")
+    # bytes=- (оба пустые) и bytes=-N (suffix) не поддерживаем — браузеры не шлют
+    if s == "" and e == "":
+        return None
+    try:
+        if s == "":
+            # suffix-byte-range bytes=-N: последние N байт
+            n = int(e)
+            if n <= 0:
+                return None
+            start = max(0, file_size - n)
+            end = file_size - 1
+        else:
+            start = int(s)
+            end = int(e) if e else file_size - 1
+    except ValueError:
+        return None
+    if start < 0 or start >= file_size or end < start:
+        return None
+    return max(0, start), min(end, file_size - 1)
+
+
+def serve_video_range_body(
+    path: Path,
+    range_header: str = "",
+) -> Tuple[bytes, int, dict]:
+    """
+    Вернуть (body, status, headers) для видео с поддержкой Range.
+    200 без Range, 206 с Range — нативные seek-запросы браузера.
+    """
+    try:
+        file_size = path.stat().st_size
+    except OSError:
+        return b"{}", 500, {}
+    range_tuple = _parse_range_header(range_header, file_size) if range_header else None
+
+    content_type = video_content_type(path)
+    headers = {
+        "Content-Type": content_type,
+        "Accept-Ranges": "bytes",
+        "Cache-Control": "no-store",
+    }
+
+    if range_tuple is None:
+        # Без Range: отдаём весь файл
+        try:
+            body = path.read_bytes()
+        except OSError:
+            return b"{}", 500, {}
+        headers["Content-Length"] = str(file_size)
+        return body, 200, headers
+
+    # 206 Partial Content
+    start, end = range_tuple
+    chunk_size = end - start + 1
+    try:
+        with open(path, "rb") as fh:
+            fh.seek(start)
+            body = fh.read(chunk_size)
+    except OSError:
+        return b"{}", 500, {}
+    headers.update({
+        "Content-Length": str(len(body)),
+        "Content-Range": f"bytes {start}-{end}/{file_size}",
+    })
+    return body, 206, headers

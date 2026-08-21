@@ -1,0 +1,2423 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pretty< LIVE</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='2' y='9' width='60' height='46' rx='8' fill='%2312141a' stroke='%238ab4f8' stroke-width='5'/%3E%3Cpath fill='%238ab4f8' d='M24.5 19.5v25c0 1.3 1.4 2.1 2.5 1.4l18.5-12.5c1-.7 1-2.1 0-2.8l-18.5-12.5c-1.1-.7-2.5.1-2.5 1.4z'/%3E%3C/svg%3E" />
+  <link rel="alternate icon" type="image/svg+xml" href="/secops-monitor-icon.svg" />
+  <link rel="apple-touch-icon" href="/secops-monitor-icon.png" />
+  <style>
+    :root {
+      --bg: #12141a;
+      --panel: #1a1d26;
+      --border: #2a2f3a;
+      --text: #e8eaed;
+      --muted: #9aa0a6;
+      --step: #8ab4f8;
+      --note: #bdc1c6;
+      --error: #f28b82;
+      --high: #fdd663;
+      --medium: #fbbc04;
+      --input: #0e1016;
+      --header-h: 41px;
+      --playhead-h: 30px;
+      /* WebDriver viewport 1920×1080 → 16:9 */
+      --video-ar: 16 / 9;
+      --video-w: 960px;
+      --video-h: 540px;
+      --inspector-w: 403px;
+      --zap-min: 220px;
+      --diary-min: 140px;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font: 13px/1.4 "Segoe UI", system-ui, sans-serif;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      height: var(--header-h);
+      padding: 0 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+      flex-shrink: 0;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      flex: 0 1 auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #e8eaed;
+    }
+    .live-deep-links {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+    .live-deep-links a {
+      color: var(--step);
+      text-decoration: none;
+      font-size: 12px;
+      padding: 3px 8px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      background: var(--input);
+    }
+    .live-deep-links a:hover {
+      border-color: rgba(138, 180, 248, 0.55);
+      background: rgba(138, 180, 248, 0.1);
+    }
+    /* MH-6: дропдаун «Все запуски» */
+    .runs-dropdown {
+      display: inline-flex;
+      align-items: center;
+      flex-shrink: 0;
+      color: var(--step);
+      font-size: 12px;
+      padding: 3px 8px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      background: var(--input);
+      cursor: pointer;
+      max-width: 180px;
+      outline: none;
+    }
+    .runs-dropdown:focus {
+      border-color: rgba(138, 180, 248, 0.55);
+    }
+    .runs-dropdown option {
+      color: var(--text);
+      background: #1a1f2e;
+    }
+    .live-view-switcher {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-left: 0;
+      padding: 3px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--input);
+      flex-shrink: 0;
+    }
+    .filter-presets {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .filter-presets button {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--muted);
+      border-radius: 4px;
+      padding: 2px 7px;
+      font: 11px/1.2 "Segoe UI", system-ui, sans-serif;
+      cursor: pointer;
+    }
+    .filter-presets button:hover {
+      color: var(--text);
+      border-color: #4a5568;
+    }
+    .filter-presets button.active {
+      color: var(--step);
+      border-color: rgba(138, 180, 248, 0.45);
+      background: rgba(138, 180, 248, 0.1);
+    }
+    .live-view-button {
+      display: inline-grid;
+      width: 28px;
+      height: 26px;
+      place-items: center;
+      padding: 0;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .live-view-button:hover {
+      color: var(--text);
+      border-color: #4a5568;
+    }
+    .live-view-button.active {
+      color: var(--step);
+      border-color: rgba(138, 180, 248, 0.5);
+      background: rgba(138, 180, 248, 0.12);
+    }
+    .live-view-button svg {
+      width: 18px;
+      height: 18px;
+    }
+    .live-view-button:disabled {
+      opacity: 0.35;
+      cursor: default;
+      pointer-events: none;
+    }
+    .live-view-divider {
+      color: #4a5568;
+      font: 14px/1 ui-monospace, "Cascadia Mono", Consolas, monospace;
+      user-select: none;
+    }
+    .kdt-prettyk-live {
+      display: block;
+      height: 28px;
+      width: auto;
+      user-select: none;
+    }
+    header a { color: var(--step); }
+    .instance-tags {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .instance-tag {
+      background: none;
+      border: 0;
+      border-radius: 0;
+      padding: 0;
+      font: 13px/1.4 "Segoe UI", system-ui, sans-serif;
+      color: var(--muted);
+      white-space: nowrap;
+      user-select: all;
+      cursor: default;
+      vertical-align: baseline;
+    }
+    .instance-tag:not(:last-child)::after {
+      content: "·";
+      margin-left: 6px;
+      color: #4a5568;
+    }
+    .results-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 600;
+    }
+    .results-link-icon {
+      font-size: 13px;
+      line-height: 1;
+      transition: transform 140ms ease;
+    }
+    .results-link:hover .results-link-icon {
+      transform: translateX(2px);
+    }
+    /* Пульсация для кнопки результатов, когда статус running */
+    .results-link.pulse {
+      animation: results-glow 2s ease-in-out infinite;
+    }
+    @keyframes results-glow {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.55; }
+    }
+    .status-flag {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .debug-controls {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .debug-controls.visible { display: flex; }
+    .debug-banner {
+      font-size: 11px;
+      color: #fdd663;
+      max-width: 220px;
+      line-height: 1.25;
+    }
+    .debug-controls button {
+      background: var(--input);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 4px;
+      padding: 4px 10px;
+      font: 12px/1.2 "Segoe UI", system-ui, sans-serif;
+      cursor: pointer;
+    }
+    .debug-controls button:hover { border-color: #5a7ab5; color: var(--step); }
+    .debug-controls button:disabled {
+      opacity: 0.45;
+      cursor: default;
+    }
+    .status-flag.online .status-dot {
+      background: #34a853;
+    }
+    .status-flag.pulse .status-dot {
+      background: #34a853;
+      animation: status-pulse 2s ease-in-out infinite;
+    }
+    .status-flag.offline .status-dot {
+      background: #ea4335;
+    }
+    @keyframes status-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.45; }
+    }
+    .layout {
+      height: calc(100vh - var(--header-h) - var(--playhead-h));
+      min-height: 0;
+      overflow: hidden;
+    }
+    .playhead {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      height: var(--playhead-h);
+      padding: 0 12px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .playhead-controls {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-right: 10px;
+      flex-shrink: 0;
+    }
+    .playhead-btn {
+      display: inline-grid;
+      width: 26px;
+      height: 24px;
+      place-items: center;
+      padding: 0;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--input);
+      color: var(--muted);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .playhead-btn:hover {
+      color: var(--text);
+      border-color: rgba(138, 180, 248, 0.55);
+      background: rgba(138, 180, 248, 0.1);
+    }
+    .playhead-btn:disabled {
+      opacity: 0.45;
+      cursor: default;
+    }
+    .playhead-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+    .playhead-track {
+      position: relative;
+      height: 100%;
+      display: flex;
+      align-items: center;
+    }
+    .playhead-bar {
+      position: relative;
+      width: 100%;
+      height: 3px;
+      background: #2a2f3a;
+      border-radius: 2px;
+      cursor: pointer;
+      transition: height 140ms ease;
+      touch-action: none; /* pointer capture — скраббинг не срывается тач-скроллом */
+    }
+    .playhead:hover .playhead-bar {
+      height: 6px;
+    }
+    .playhead-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      background: #8ab4f8;
+      border-radius: 2px;
+      pointer-events: none;
+    }
+    .playhead-thumb {
+      position: absolute;
+      top: 50%;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #8ab4f8;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 100ms ease;
+    }
+    .playhead:hover .playhead-thumb,
+    .playhead.dragging .playhead-thumb {
+      opacity: 1;
+    }
+    .playhead-marker {
+      position: absolute;
+      top: 50%;
+      width: 3px;
+      height: 10px;
+      border-radius: 1px;
+      transform: translate(-50%, -50%);
+      cursor: pointer;
+      transition: height 80ms ease;
+    }
+    .playhead:hover .playhead-marker {
+      height: 16px;
+    }
+    .playhead-marker[data-kind="STEP"] { background: #8ab4f8; }
+    .playhead-marker[data-kind="ERROR"] { background: #f28b82; }
+    .playhead-marker[data-kind="HIGH"] { background: #fdd663; }
+    .playhead-marker[data-kind="ZAP"] { background: #ff8a65; }
+    .playhead-time {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      margin-left: 10px;
+      font: 11px/1 ui-monospace, "Cascadia Mono", Consolas, monospace;
+      color: var(--muted);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .playhead-time .current {
+      color: var(--step);
+      min-width: 5ch;
+      text-align: right;
+    }
+    .playhead-time .sep { color: #4a5568; }
+    .playhead-time .total { min-width: 5ch; }
+    .stage {
+      display: grid;
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
+      grid-template-columns: var(--video-w) minmax(var(--zap-min), 1fr);
+      grid-template-rows: var(--video-h) minmax(var(--diary-min), 1fr);
+      overflow: hidden;
+    }
+    .vnc-cell {
+      grid-column: 1;
+      grid-row: 1;
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      background: #000;
+      overflow: hidden;
+    }
+    .vnc-cell.headless {
+      display: none;
+    }
+    .vnc {
+      position: absolute;
+      inset: 0;
+      background: #000;
+    }
+    .vnc iframe {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: #000;
+    }
+    .replay-video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: #000;
+      display: none;
+    }
+    .replay-video.show { display: block; }
+    .diary-pane {
+      grid-column: 1;
+      grid-row: 2;
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--panel);
+      border-top: 1px solid var(--border);
+    }
+    .zap-pane {
+      grid-column: 2;
+      grid-row: 1 / -1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      background: var(--panel);
+      border-left: 1px solid var(--border);
+    }
+    /* В наблюдателе дневник и ZAP остаются исходными grid-панелями. */
+    .focus-inspector { display: contents; }
+    .focus-log-pane { display: none; }
+    .execution-rail {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      min-height: 0;
+      padding: 7px 10px;
+      overflow: hidden;
+    }
+    .execution-rail-direction {
+      color: #526174;
+      font: 18px/1 ui-monospace, "Cascadia Mono", Consolas, monospace;
+      user-select: none;
+    }
+    .execution-rail-slots {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      align-items: stretch;
+      height: 100%;
+      min-width: 0;
+      margin: 0 7px;
+      padding: 0;
+      list-style: none;
+    }
+    .execution-rail-slot {
+      position: relative;
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+      justify-content: center;
+      margin: 2px 0;
+      padding: 2px 10px;
+      color: var(--muted);
+      border: 1px solid transparent;
+      border-radius: 3px;
+      transition: box-shadow 160ms ease, border-color 160ms ease, background 160ms ease;
+    }
+    .execution-rail-slot:nth-child(1),
+    .execution-rail-slot:nth-child(2) {
+      border-right: 1px solid rgba(138, 180, 248, 0.58);
+    }
+    .execution-rail-slot[data-rail-state="next"] {
+      opacity: 0.51;
+    }
+    /* Текущий шаг под оболочкой: тонкий border, тень вниз-вправо */
+    .execution-rail-slot[data-rail-state="current"] {
+      z-index: 2;
+      margin: 0;
+      color: var(--text);
+      border-color: rgba(138, 180, 248, 0.55);
+      border-radius: 3px;
+      background: linear-gradient(
+        180deg,
+        rgba(138, 180, 248, 0.14) 0%,
+        rgba(138, 180, 248, 0.05) 100%
+      );
+      box-shadow:
+        inset 0 0 0 1px rgba(138, 180, 248, 0.28),
+        3px 3px 10px rgba(138, 180, 248, 0.35),
+        6px 6px 18px rgba(138, 180, 248, 0.18);
+    }
+    .execution-rail-slot[data-rail-state="past-1"] { opacity: 0.54; }
+    .execution-rail-slot[data-rail-state="past-2"] { opacity: 0.45; }
+    .execution-rail-slot[data-rail-state="past-3"] { opacity: 0.36; }
+    .execution-rail-method,
+    .execution-rail-constructor {
+      display: block;
+      overflow: hidden;
+      color: var(--step);
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .execution-rail-method { font-size: 13px; }
+    .execution-rail-constructor {
+      display: none;
+    }
+    @media (max-width: 760px) {
+      .stage[data-live-view="focus"] {
+        display: block;
+      }
+      .stage[data-live-view="focus"] .vnc-cell {
+        position: absolute;
+        inset: 0;
+      }
+      .stage[data-live-view="focus"] .focus-inspector {
+        position: absolute;
+        right: 10px;
+        bottom: 10px;
+        z-index: 2;
+        width: calc(100% - 20px);
+        height: min(42vh, 330px);
+        border: 1px solid #3b4556;
+        border-radius: 8px;
+        box-shadow: 0 14px 34px rgba(0, 0, 0, 0.48);
+      }
+      .stage[data-live-view="focus"] .execution-rail {
+        display: none;
+      }
+    }
+    /* Рабочая сцена: исходная компоновка с журналом справа и футером слева. */
+    .stage[data-live-view="focus"] {
+      grid-template-columns: 1fr var(--inspector-w);
+      grid-template-rows: 1fr auto;
+      align-content: stretch;
+      justify-content: stretch;
+    }
+    .stage[data-live-view="focus"] .vnc-cell {
+      position: relative;
+      grid-column: 1;
+      grid-row: 1;
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    .stage[data-live-view="focus"] .vnc {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+    .stage[data-live-view="focus"] .vnc iframe {
+      width: 100%;
+      height: 100%;
+    }
+    .stage[data-live-view="focus"] .focus-inspector {
+      position: relative;
+      right: auto;
+      bottom: auto;
+      z-index: auto;
+      display: flex;
+      grid-column: 2;
+      grid-row: 1 / -1;
+      width: auto;
+      height: auto;
+      flex-direction: column;
+      overflow: hidden;
+      border: 0;
+      border-left: 1px solid var(--border);
+      border-radius: 0;
+      background: var(--panel);
+      box-shadow: none;
+    }
+    .stage[data-live-view="focus"] .focus-log-pane {
+      display: flex;
+      min-height: 0;
+      flex: 1 1 auto;
+      flex-direction: column;
+      overflow: hidden;
+      border: 0;
+      background: var(--panel);
+    }
+    .stage[data-live-view="focus"] .diary-pane,
+    .stage[data-live-view="focus"] .zap-pane {
+      display: none;
+    }
+    .stage[data-live-view="observer"] .focus-log-pane {
+      display: none;
+    }
+    .stage[data-live-view="focus"] .execution-rail {
+      grid-column: 1;
+      grid-row: 2;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      min-height: 0;
+      padding: 6px 10px;
+      /* visible: иначе outer glow у current срезается оболочкой */
+      overflow: visible;
+      border-top: 1px solid var(--border);
+      background: #000;
+    }
+    .stage[data-live-view="focus"] .execution-rail-slots {
+      overflow: hidden;
+    }
+    .stage[data-live-view="observer"] .execution-rail {
+      display: none;
+    }
+    /* MON-9: split 50/50 — слева видео (VNC/запись), справа консоль логов
+       (merged focus-log-pane) + каретка шагов (execution-rail) под ней.
+       Ползунок таймлайна уже во всю ширину под хедером (отдельный .playhead). */
+    .stage[data-live-view="split"] {
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: minmax(0, 1fr) auto;
+      align-content: stretch;
+      justify-content: stretch;
+    }
+    .stage[data-live-view="split"] .vnc-cell {
+      display: block;
+      grid-column: 1;
+      grid-row: 1 / -1;
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      width: 100%;
+      height: 100%;
+    }
+    .stage[data-live-view="split"] .focus-inspector {
+      display: contents;
+    }
+    .stage[data-live-view="split"] .focus-log-pane {
+      display: flex;
+      grid-column: 2;
+      grid-row: 1;
+      min-width: 0;
+      min-height: 0;
+      flex-direction: column;
+      overflow: hidden;
+      border-left: 1px solid var(--border);
+      background: var(--panel);
+    }
+    .stage[data-live-view="split"] .diary-pane,
+    .stage[data-live-view="split"] .zap-pane {
+      display: none;
+    }
+    .stage[data-live-view="split"] .execution-rail {
+      display: grid;
+      grid-column: 2;
+      grid-row: 2;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      min-height: 0;
+      padding: 6px 10px;
+      overflow: visible;
+      border-top: 1px solid var(--border);
+      background: #000;
+    }
+    .pane-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      min-height: 37px;
+      padding: 4px 6px 4px 10px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .kind-chips {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .kind-chips button {
+      background: var(--input);
+      border: 1px solid transparent;
+      color: var(--muted);
+      border-radius: 4px;
+      padding: 4px 7px;
+      font: 11px/1.2 "Segoe UI", system-ui, sans-serif;
+      cursor: pointer;
+    }
+    .kind-chips button:hover { border-color: #4a5568; color: var(--text); }
+    .kind-chips button.active {
+      color: var(--step);
+      border-color: rgba(138, 180, 248, 0.5);
+      background: rgba(138, 180, 248, 0.12);
+    }
+    .filter-input {
+      margin-left: auto;
+      box-sizing: border-box;
+      flex: 0 0 158px;
+      width: 158px;
+      min-width: 158px;
+      max-width: 158px;
+      background: var(--input);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 4px;
+      padding: 6px 10px;
+      font: 13px/1.3 ui-monospace, "Cascadia Mono", Consolas, monospace;
+      outline: none;
+      transition:
+        width 0.18s ease,
+        flex-basis 0.18s ease,
+        min-width 0.18s ease,
+        max-width 0.18s ease,
+        border-color 0.18s ease;
+    }
+    .filter-input:focus,
+    .filter-input.is-expanded {
+      border-color: #5a7ab5;
+      flex: 0 0 221px;
+      width: 221px;
+      min-width: 221px;
+      max-width: 221px;
+    }
+    .filter-input.bad { border-color: var(--error); }
+    .log {
+      flex: 1 1 0;
+      min-height: 0;
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding: 10px 12px 16px;
+      font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+      font-size: 14px;
+      line-height: 1.55;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(0, 0, 0, 0.5) transparent;
+    }
+    .log::-webkit-scrollbar { width: 4px; height: 4px; }
+    .log::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+    .log::-webkit-scrollbar-track { background: transparent; }
+    .log::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 2px;
+    }
+    .log::-webkit-scrollbar-thumb:active {
+      background: rgba(0, 0, 0, 0.2);
+    }
+    .row {
+      padding: 5px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      word-break: break-word;
+    }
+    .row.hidden { display: none; }
+    .row .kind { display: inline-block; min-width: 1.9em; margin-right: 0.35em; font-weight: 650; }
+    .row.STEP .kind { color: var(--step); }
+    .row.NOTE .kind { color: var(--note); }
+    .row.ERROR .kind { color: var(--error); }
+    .row.HIGH .kind { color: var(--high); }
+    .row.MEDIUM .kind { color: var(--medium); }
+    .row.LOW .kind { color: #81c995; }
+    .row.INFO .kind, .row.INFORMATIONAL .kind { color: #80cbc4; }
+    .row.LOG .kind, .row.CONSOLE .kind { color: #c3a6ff; }
+    /* ZAP + ФАЗЗИНГ / FUZZ — один «оранжевый» DAST-тон. */
+    .row.ZAP .kind,
+    .row.FUZZ .kind,
+    .row.ФАЗЗИНГ .kind { color: #ff8a65; }
+    .row .ts { color: var(--muted); margin-right: 8px; }
+    .empty { color: var(--muted); padding: 12px 0; }
+    mark {
+      background: rgba(253, 214, 99, 0.35);
+      color: inherit;
+      border-radius: 2px;
+      padding: 0 1px;
+    }
+
+    /* ── MH-3: HomePage (dynamic apps table) ── */
+    .homepage { display: none; flex-direction: column; flex: 1; min-height: 0; overflow: auto; }
+    .homepage.active { display: flex; }
+    .hp-panel {
+      max-width: 960px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 24px 16px;
+    }
+    .hp-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0 0 20px 0;
+      color: var(--text);
+    }
+    .hp-table { width: 100%; border-collapse: collapse; }
+    .hp-app-row { border-bottom: 1px solid var(--border); cursor: pointer; }
+    .hp-app-row:hover { background: rgba(138, 180, 248, 0.04); }
+    .hp-app-row td { padding: 10px 8px; vertical-align: top; }
+    .hp-app-code {
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--step);
+      text-decoration: none;
+    }
+    .hp-app-code:hover { text-decoration: underline; }
+    .hp-app-meta {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .hp-app-count {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: right;
+      white-space: nowrap;
+    }
+    .hp-app-arrow {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+      width: 20px;
+      transition: transform 0.2s;
+    }
+    .hp-app-row.open .hp-app-arrow { transform: rotate(90deg); }
+    .hp-deploy-row { display: none; }
+    .hp-app-row.open + .hp-deploy-row { display: table-row; }
+    .hp-deploy-row td {
+      padding: 0 0 12px 32px;
+    }
+    .hp-deploy-block {
+      border-left: 1px solid var(--border);
+      padding: 8px 0 8px 14px;
+      margin: 0;
+    }
+    .hp-deploy-url {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      word-break: break-all;
+    }
+    .hp-deploy-instance {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 8px;
+      border-radius: 5px;
+      background: var(--input);
+      border: 1px solid var(--border);
+      margin-bottom: 4px;
+      font-size: 12px;
+    }
+    .hp-deploy-instance:hover { border-color: rgba(138, 180, 248, 0.4); }
+    .hp-instance-id {
+      color: var(--step);
+      text-decoration: none;
+      font-weight: 600;
+      flex: 1;
+    }
+    .hp-instance-id:hover { text-decoration: underline; }
+    .hp-instance-status {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .hp-instance-status.running { background: rgba(138, 180, 248, 0.2); color: var(--step); }
+    .hp-instance-status.success { background: rgba(129, 201, 149, 0.15); color: #81c995; }
+    .hp-instance-status.failed { background: rgba(242, 139, 130, 0.15); color: var(--error); }
+    .hp-instance-status.unknown { background: rgba(189, 193, 198, 0.12); color: var(--muted); }
+    .hp-instance-ts { color: var(--muted); font-size: 11px; white-space: nowrap; }
+    .hp-empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 48px 16px;
+      font-size: 14px;
+    }
+    .hp-pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      margin-top: 20px;
+    }
+    .hp-page-btn {
+      padding: 4px 10px;
+      border-radius: 5px;
+      border: 1px solid var(--border);
+      background: var(--input);
+      color: var(--step);
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .hp-page-btn:disabled { opacity: 0.35; cursor: default; }
+    .hp-page-btn:hover:not(:disabled) { border-color: rgba(138, 180, 248, 0.55); background: rgba(138, 180, 248, 0.1); }
+    .hp-page-info { font-size: 11px; color: var(--muted); margin: 0 8px; }
+    /* Скрытие live-контента когда HomePage активен */
+    body.homepage-view header > :not(h1) { display: none; }
+    body.homepage-view .playhead,
+    body.homepage-view .layout { display: none; }
+    body.homepage-view header h1 { flex: 1; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><img class="kdt-prettyk-live" src="prettyk-real-live.png" alt="Pretty< LIVE" /><span class="sr-only" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;">SecOps Lab Monitoring</span></h1>
+    <span class="instance-tags" id="instanceTags" hidden>
+      <span id="instanceRunId" class="instance-tag" title="">#…</span>
+      <span id="instanceCheckId" class="instance-tag" title="" hidden>#…</span>
+    </span>
+    <div class="status-flag offline" id="statusFlag">
+      <span class="status-dot" aria-hidden="true"></span>
+      <span id="statusLabel">оффлайн</span>
+    </div>
+    <div class="debug-controls" id="debugControls" aria-label="Режим отладки">
+      <span class="debug-banner" id="debugBanner">отладка: таймеры сняты · допуск VOID</span>
+      <button type="button" id="debugPauseBtn" title="Пауза сценария (можно кликать в noVNC)">Пауза</button>
+      <button type="button" id="debugResumeBtn" title="Продолжить сценарий" disabled>Продолжить</button>
+    </div>
+    <nav class="live-deep-links" aria-label="Навигация">
+      <a id="linkCheckResults" data-testid="live-link-results"
+         href="#" target="_blank" rel="noopener noreferrer"
+         title="Перейти к результатам проверки" class="results-link" hidden>
+        Результаты
+        <span class="results-link-icon" aria-hidden="true">&rarr;</span>
+      </a>
+    </nav>
+    <select id="runsDropdown" class="runs-dropdown" hidden aria-label="Все запуски">
+    </select>
+    <div class="live-view-switcher" role="group" aria-label="Режим отображения Live">
+      <button class="live-view-button active" type="button" data-live-view-button="focus"
+              aria-label="Рабочая сцена" aria-pressed="true" title="Рабочая сцена">
+        <!-- Экран 2:1 без подставки: широкая сцена | узкий лог -->
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.7"/>
+          <path d="M15 5v14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <span class="live-view-divider" aria-hidden="true">|</span>
+      <button class="live-view-button" type="button" data-live-view-button="observer"
+              aria-label="Наблюдатель" aria-pressed="false" title="Наблюдатель">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="13" rx="2" stroke="currentColor" stroke-width="1.7"/>
+          <path d="M12 5v11M4 11h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M7.5 20h9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <span class="live-view-divider" aria-hidden="true">|</span>
+      <button class="live-view-button" type="button" data-live-view-button="split"
+              aria-label="Сплит 50/50" aria-pressed="false" title="Сплит 50/50">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <rect x="1" y="5" width="10" height="14" rx="1.5" stroke="currentColor" stroke-width="1.7"/>
+          <rect x="13" y="5" width="10" height="14" rx="1.5" stroke="currentColor" stroke-width="1.7"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+  <div class="playhead" id="playhead">
+    <div class="playhead-controls" id="playheadControls">
+      <button type="button" class="playhead-btn" id="playheadPlayBtn" aria-label="Воспроизвести" title="Воспроизвести">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+      </button>
+      <button type="button" class="playhead-btn" id="playheadPauseBtn" aria-label="Пауза" title="Пауза" hidden>
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor"/><rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor"/></svg>
+      </button>
+      <button type="button" class="playhead-btn" id="playheadStopBtn" aria-label="Стоп" title="Стоп">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1" fill="currentColor"/></svg>
+      </button>
+    </div>
+    <div class="playhead-track" id="playheadTrack">
+      <div class="playhead-bar" id="playheadBar">
+        <div class="playhead-fill" id="playheadFill" style="width:0%"></div>
+        <div class="playhead-thumb" id="playheadThumb" style="left:0%"></div>
+        <div class="playhead-markers" id="playheadMarkers"></div>
+      </div>
+    </div>
+    <div class="playhead-time">
+      <span class="current" id="playheadCurrent">0:00</span>
+      <span class="sep">/</span>
+      <span class="total" id="playheadTotal">0:00</span>
+    </div>
+  </div>
+  <div class="layout" id="layout">
+    <div class="stage" id="stage" data-live-view="focus">
+      <div class="vnc-cell">
+        <div class="vnc">
+          <iframe
+            id="vnc"
+            title="noVNC"
+            allow="clipboard-read; clipboard-write"
+            src="http://127.0.0.1:7900/?autoconnect=1&amp;resize=scale"
+          ></iframe>
+        </div>
+        <video
+          id="replayVideo"
+          class="replay-video"
+          preload="auto"
+          controls
+        ></video>
+      </div>
+      <div class="focus-inspector" id="focusInspector">
+        <aside class="focus-log-pane" id="focusLogPane">
+          <div class="pane-toolbar">
+            <div class="kind-chips" id="focusKindChips">
+              <button type="button" data-kind="ALL" class="active">ВСЕ</button>
+              <button type="button" data-kind="ZAP">ZAP</button>
+              <button type="button" data-kind="STEP">STEP</button>
+              <button type="button" data-kind="LOG">LOG</button>
+              <button type="button" data-kind="ERROR">ERROR</button>
+            </div>
+            <input id="focusFilter" class="filter-input" type="search" spellcheck="false" autocomplete="off"
+                   placeholder="Фильтр / regExp" />
+          </div>
+          <div class="log" id="focusLog"><div class="empty">Ожидание событий...</div></div>
+        </aside>
+        <aside class="diary-pane" id="diaryPane">
+          <div class="pane-toolbar">
+            <div class="kind-chips" id="diaryKindChips">
+              <button type="button" data-kind="ALL" class="active">ВСЕ</button>
+              <button type="button" data-kind="STEP">STEP</button>
+              <button type="button" data-kind="LOG">LOG</button>
+              <button type="button" data-kind="ERROR">ERROR</button>
+            </div>
+            <input id="diaryFilter" class="filter-input" type="search" spellcheck="false" autocomplete="off"
+                   placeholder="Фильтр / regExp" />
+          </div>
+          <div class="log" id="diaryLog"><div class="empty">Ожидание событий...</div></div>
+        </aside>
+        <aside class="zap-pane" id="zapPane">
+          <div class="pane-toolbar">
+            <div class="kind-chips" id="zapKindChips">
+              <button type="button" data-kind="ALL" class="active">ВСЕ</button>
+              <button type="button" data-kind="ZAP">ZAP</button>
+              <button type="button" data-kind="LOG">LOG</button>
+            </div>
+            <input id="zapFilter" class="filter-input" type="search" spellcheck="false" autocomplete="off"
+                   placeholder="Фильтр / regExp" />
+          </div>
+          <div class="log" id="zapLog"><div class="empty">Ожидание событий...</div></div>
+        </aside>
+      </div>
+      <section class="execution-rail" aria-label="Ход выполнения" aria-live="off">
+          <span class="execution-rail-direction" aria-hidden="true">›</span>
+          <ol class="execution-rail-slots">
+            <li class="execution-rail-slot" data-rail-state="next">
+              <span class="execution-rail-method" id="executionRailNextMethod"></span>
+              <span class="execution-rail-constructor" id="executionRailNextConstructor"></span>
+            </li>
+            <li class="execution-rail-slot" data-rail-state="current">
+              <span class="execution-rail-method" id="executionRailMethod"></span>
+              <span class="execution-rail-constructor" id="executionRailConstructor"></span>
+            </li>
+            <li class="execution-rail-slot" data-rail-state="past-1">
+              <span class="execution-rail-method" id="executionRailPast1Method"></span>
+              <span class="execution-rail-constructor" id="executionRailPast1Constructor"></span>
+            </li>
+            <li class="execution-rail-slot" data-rail-state="past-2">
+              <span class="execution-rail-method" id="executionRailPast2Method"></span>
+              <span class="execution-rail-constructor" id="executionRailPast2Constructor"></span>
+            </li>
+            <li class="execution-rail-slot" data-rail-state="past-3">
+              <span class="execution-rail-method" id="executionRailPast3Method"></span>
+              <span class="execution-rail-constructor" id="executionRailPast3Constructor"></span>
+            </li>
+          </ol>
+          <span class="execution-rail-direction" aria-hidden="true">›</span>
+      </section>
+    </div>
+  </div>
+  <!-- MH-3: HomePage (динамическая таблица apps) -->
+  <div class="homepage" id="homepage">
+    <div class="hp-panel" id="hpPanel"></div>
+  </div>
+  <script>
+    /* ── MH-3: HomePage JS ── */
+    const homepageEl = document.getElementById("homepage");
+    const hpPanel = document.getElementById("hpPanel");
+    let hpApps = [];
+    let hpPage = 0;
+    const HP_PAGE_SIZE = 10;
+
+    function hpGoLive() {
+      document.body.classList.remove("homepage-view");
+      homepageEl.classList.remove("active");
+    }
+
+    function hpShow() {
+      document.body.classList.add("homepage-view");
+      homepageEl.classList.add("active");
+    }
+
+    function hpBuild() {
+      const total = hpApps.length;
+      const pages = Math.max(1, Math.ceil(total / HP_PAGE_SIZE));
+      if (hpPage >= pages) hpPage = pages - 1;
+      if (hpPage < 0) hpPage = 0;
+      const slice = hpApps.slice(hpPage * HP_PAGE_SIZE, (hpPage + 1) * HP_PAGE_SIZE);
+
+      let html = '<h2 class="hp-title">Запуски автоматизированных проверок</h2>';
+      if (total === 0) {
+        html += '<div class="hp-empty">Нет данных о запусках</div>';
+      } else {
+        html += '<table class="hp-table"><tbody>';
+        slice.forEach(function(app, i) {
+          const appIdx = hpPage * HP_PAGE_SIZE + i;
+          const deployCount = (app.deploys || []).length;
+          const instanceCount = (app.deploys || []).reduce(function(s, d) { return s + (d.instances || []).length; }, 0);
+          const lastTs = app.last_run_ts ? new Date(app.last_run_ts * 1000).toLocaleString("ru-RU") : "—";
+          const firstTs = app.first_run_ts ? new Date(app.first_run_ts * 1000).toLocaleString("ru-RU") : "—";
+          html += '<tr class="hp-app-row" data-app-idx="' + appIdx + '" onclick="hpToggle(event, this, ' + appIdx + ')">';
+          html += '<td class="hp-app-arrow">▶</td>';
+          html += '<td><span class="hp-app-code">' + escapeHtml(app.app_code) + '</span>';
+          html += '<div class="hp-app-meta">Последний запуск: ' + lastTs + ' · Первый: ' + firstTs + '</div></td>';
+          html += '<td class="hp-app-count">' + deployCount + ' deploy · ' + instanceCount + ' instance</td>';
+          html += '</tr>';
+          // deploy rows (hidden, shown on app-row click)
+          html += '<tr class="hp-deploy-row" data-app-idx="' + appIdx + '"><td></td><td colspan="2"><div class="hp-deploy-block">';
+          (app.deploys || []).forEach(function(deploy) {
+            html += '<div class="hp-deploy-url">' + escapeHtml(deploy.deploy_url || "(без URL)") + '</div>';
+            (deploy.instances || []).forEach(function(inst) {
+              const instTs = inst.last_run_ts ? new Date(inst.last_run_ts * 1000).toLocaleString("ru-RU") : "—";
+              const statusClass = (inst.status || "unknown").toLowerCase();
+              const monitorUrl = "?run_id=" + encodeURIComponent(inst.run_id);
+              html += '<div class="hp-deploy-instance">';
+              html += '<a class="hp-instance-id" href="' + monitorUrl + '" onclick="event.stopPropagation()">#' + escapeHtml((inst.instance_id || "").slice(0, 8)) + '</a>';
+              html += '<span class="hp-instance-status ' + statusClass + '">' + escapeHtml(inst.status || "unknown") + '</span>';
+              html += '<span class="hp-instance-ts">' + instTs + '</span>';
+              html += '</div>';
+            });
+          });
+          html += '</div></td></tr>';
+        });
+        html += '</tbody></table>';
+      }
+      // pagination
+      if (pages > 1) {
+        html += '<div class="hp-pagination">';
+        html += '<button class="hp-page-btn" onclick="hpPageGo(' + (hpPage - 1) + ')" ' + (hpPage <= 0 ? "disabled" : "") + '>← Назад</button>';
+        html += '<span class="hp-page-info">Стр. ' + (hpPage + 1) + ' из ' + pages + '</span>';
+        html += '<button class="hp-page-btn" onclick="hpPageGo(' + (hpPage + 1) + ')" ' + (hpPage >= pages - 1 ? "disabled" : "") + '>Вперёд →</button>';
+        html += '</div>';
+      }
+      hpPanel.innerHTML = html;
+    }
+
+    function hpPageGo(n) {
+      if (n < 0 || n >= Math.max(1, Math.ceil(hpApps.length / HP_PAGE_SIZE))) return;
+      hpPage = n;
+      hpBuild();
+    }
+
+    function hpToggle(event, tr, idx) {
+      tr.classList.toggle("open");
+    }
+
+    async function hpRefresh() {
+      try {
+        var res = await fetch("/api/runs/apps", { cache: "no-store" });
+        if (!res.ok) { hpBuild(); return; }
+        var payload = await res.json();
+        hpApps = (payload && payload.apps) || [];
+      } catch (_) {
+        hpApps = [];
+      }
+      hpBuild();
+    }
+
+    /* Периодический refresh раз в 5 сек */
+    function hpInit() {
+      hpRefresh();
+      setInterval(hpRefresh, 5000);
+    }
+    const statusFlag = document.getElementById("statusFlag");
+    const statusLabel = document.getElementById("statusLabel");
+    let metaStatus = "";
+    let metaReachable = false;
+    const vncFrame = document.getElementById("vnc");
+    const layoutEl = document.getElementById("layout");
+    const stageEl = document.getElementById("stage");
+    const liveViewButtons = document.querySelectorAll("[data-live-view-button]");
+    const executionRailMethod = document.getElementById("executionRailMethod");
+    const executionRailConstructor = document.getElementById("executionRailConstructor");
+    const executionRailSlots = {
+      next: {
+        method: document.getElementById("executionRailNextMethod"),
+        constructor: document.getElementById("executionRailNextConstructor"),
+      },
+      current: { method: executionRailMethod, constructor: executionRailConstructor },
+      past1: {
+        method: document.getElementById("executionRailPast1Method"),
+        constructor: document.getElementById("executionRailPast1Constructor"),
+      },
+      past2: {
+        method: document.getElementById("executionRailPast2Method"),
+        constructor: document.getElementById("executionRailPast2Constructor"),
+      },
+      past3: {
+        method: document.getElementById("executionRailPast3Method"),
+        constructor: document.getElementById("executionRailPast3Constructor"),
+      },
+    };
+    const executionRailHistory = [];
+    let executionRailNextStep = null;
+    /* MON-15: полноисторический rail для скраббинга в replay */
+    const executionRailFullHistory = []; /* [{step, ts}, ...] */
+    let runStartTs = null;
+    let runFirstStepTs = null;
+    const DEFAULT_NOVNC = "http://127.0.0.1:7900/?autoconnect=1&resize=scale";
+    let vncSet = Boolean(vncFrame.getAttribute("src"));
+    const replayVideoEl = document.getElementById("replayVideo");
+    const EDITOR_HOME = "http://localhost:5173";
+    const instanceTags = document.getElementById("instanceTags");
+    const instanceRunId = document.getElementById("instanceRunId");
+    const instanceCheckId = document.getElementById("instanceCheckId");
+    const linkCheckResults = document.getElementById("linkCheckResults");
+    const runsDropdown = document.getElementById("runsDropdown");
+    let resultsCheckId = null;
+    let currentInstanceId = null; /* MH-6: instance_id из meta для группировки дропдауна */
+    /* bound-инстанс: открыт ли Monitor с ?run_id=/check_id= (иначе голый :8767) */
+    let urlBound = false;
+    let urlBoundRunId = null;
+    let urlBoundCheckId = null;
+
+    /* ── MON-11: единый playhead ─────────────────────────────── */
+    const playhead = {
+      currentTime: 0,
+      duration: 0,
+      playing: false,
+      speed: 1,
+    };
+    const playheadTrack = document.getElementById("playheadTrack");
+    const playheadBar = document.getElementById("playheadBar");
+    const playheadFill = document.getElementById("playheadFill");
+    const playheadThumb = document.getElementById("playheadThumb");
+    const playheadMarkers = document.getElementById("playheadMarkers");
+    const playheadCurrent = document.getElementById("playheadCurrent");
+    const playheadTotal = document.getElementById("playheadTotal");
+    let playheadDragging = false;
+    const playheadPaneListeners = [];
+
+    function fmtDuration(sec) {
+      if (!Number.isFinite(sec) || sec < 0) return "0:00";
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return m + ":" + String(s).padStart(2, "0");
+    }
+
+    function renderPlayhead() {
+      const ratio = playhead.duration > 0
+        ? Math.min(1, Math.max(0, playhead.currentTime / playhead.duration))
+        : 0;
+      const pct = (ratio * 100).toFixed(3) + "%";
+      playheadFill.style.width = pct;
+      playheadThumb.style.left = pct;
+      playheadCurrent.textContent = fmtDuration(playhead.currentTime);
+      playheadTotal.textContent = fmtDuration(playhead.duration);
+    }
+
+    /** Точка на ползунке → время. Легко: только fill/thumb/таймер, без перерисовки логов. */
+    function playheadSeekFromClientX(clientX) {
+      const rect = playheadBar.getBoundingClientRect();
+      const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+      playhead.currentTime = ratio * playhead.duration;
+      renderPlayhead();
+      return playhead.currentTime;
+    }
+
+    /** Финализация скрабба (на отпускании): лёгкая перерисовка логов + видео. */
+    function playheadCommitSeek() {
+      playheadPaneListeners.forEach((fn) => fn());
+      /* Скреббинг конвейера — в live и replay (fullHistory есть всегда). */
+      rebuildExecutionRailAtTime(playhead.currentTime);
+      if (replayMode && replayVideoEl.duration && Number.isFinite(replayVideoEl.duration)) {
+        replayVideoEl.currentTime = playhead.currentTime;
+      }
+    }
+
+    function registerPlayheadPane(fn) {
+      playheadPaneListeners.push(fn);
+    }
+
+    function setPlayheadMarkers(markers) {
+      playheadMarkers.innerHTML = "";
+      for (const mk of markers || []) {
+        if (!Number.isFinite(mk.t) || playhead.duration <= 0) continue;
+        const ratio = Math.min(1, Math.max(0, mk.t / playhead.duration));
+        const el = document.createElement("div");
+        el.className = "playhead-marker";
+        el.dataset.kind = String(mk.kind || "").toUpperCase();
+        el.style.left = (ratio * 100) + "%";
+        el.title = String(mk.kind || "") + " @ " + fmtDuration(mk.t);
+        el.addEventListener("click", (e) => {
+          e.stopPropagation();
+          playhead.currentTime = mk.t;
+          renderPlayhead();
+          playheadPaneListeners.forEach((fn) => fn());
+          rebuildExecutionRailAtTime(playhead.currentTime);
+        });
+        playheadMarkers.appendChild(el);
+      }
+    }
+
+    /* Маркеры событий (STEP/ERROR/HIGH/ZAP) — накопительный набор */
+    const playheadMarkerSet = [];
+    const MARKER_KINDS = new Set(["STEP", "ERROR", "HIGH", "ZAP"]);
+    function addPlayheadMarker(ev) {
+      const kind = eventKind(ev);
+      if (!MARKER_KINDS.has(kind)) return;
+      if (!Number.isFinite(ev.ts) || !runStartTs) return;
+      const t = ev.ts - runStartTs;
+      if (t < 0) return;
+      playheadMarkerSet.push({ kind, t });
+      setPlayheadMarkers(playheadMarkerSet);
+    }
+
+    /* Drag: живой скраббинг. При движении: видео + конвейер сразу.
+       Логи — раз в ~120ms (мягкий дебаунс). */
+    let dragRafId = null;
+    let lastDragRenderAt = 0;
+    playheadBar.addEventListener("pointerdown", (e) => {
+      playheadDragging = true;
+      playheadBar.classList.add("dragging");
+      try { playheadBar.setPointerCapture(e.pointerId); } catch (_) {}
+      lastDragRenderAt = 0;
+      playheadSeekFromClientX(e.clientX);
+      playheadCommitSeek();
+    });
+    playheadBar.addEventListener("pointermove", (e) => {
+      if (!playheadDragging) return;
+      if (dragRafId) return;
+      dragRafId = requestAnimationFrame(() => {
+        dragRafId = null;
+        playheadSeekFromClientX(e.clientX);
+        /* Видео + конвейер — каждый кадр */
+        if (replayMode && replayVideoEl.duration && Number.isFinite(replayVideoEl.duration)) {
+          replayVideoEl.currentTime = playhead.currentTime;
+        }
+        rebuildExecutionRailAtTime(playhead.currentTime);
+        /* Логи — раз в ~120ms, не каждый кадр */
+        const now = performance.now();
+        if (now - lastDragRenderAt > 120) {
+          lastDragRenderAt = now;
+          playheadPaneListeners.forEach((fn) => fn());
+        }
+      });
+    });
+    function endPlayheadDrag() {
+      if (!playheadDragging) return;
+      playheadDragging = false;
+      playheadBar.classList.remove("dragging");
+      if (dragRafId) { cancelAnimationFrame(dragRafId); dragRafId = null; }
+      /* Живой drag уже перемотал всё. Финализируем логи однократно. */
+      playheadPaneListeners.forEach((fn) => fn());
+      rebuildExecutionRailAtTime(playhead.currentTime);
+    }
+    playheadBar.addEventListener("pointerup", endPlayheadDrag);
+    playheadBar.addEventListener("pointercancel", endPlayheadDrag);
+
+    /* Кнопки play / pause / stop */
+    const playheadPlayBtn = document.getElementById("playheadPlayBtn");
+    const playheadPauseBtn = document.getElementById("playheadPauseBtn");
+    const playheadStopBtn = document.getElementById("playheadStopBtn");
+
+    /* Воспроизведение вперёд (live-режим): таймер, привязанный к wall clock */
+    let playTimerId = null;
+    let playLastWall = 0;
+    let lastLogRenderAt = 0;
+    function stepPlayTimer() {
+      if (!playhead.playing || playhead.duration <= 0) {
+        if (playhead.currentTime >= playhead.duration) {
+          playhead.playing = false;
+          playheadPlayBtn.hidden = false;
+          playheadPauseBtn.hidden = true;
+        }
+        return;
+      }
+      const now = performance.now();
+      const delta = playLastWall ? (now - playLastWall) / 1000 : 0.04;
+      playLastWall = now;
+      playhead.currentTime = Math.min(playhead.duration, playhead.currentTime + delta * playhead.speed);
+      renderPlayhead();
+      if (playhead.currentTime >= playhead.duration) {
+        playhead.currentTime = playhead.duration;
+        playhead.playing = false;
+        playheadPlayBtn.hidden = false;
+        playheadPauseBtn.hidden = true;
+        renderPlayhead();
+        playheadCommitSeek();
+        return;
+      }
+      /* Логи перерисовываем реже — раз в ~200мс, не каждый кадр */
+      if (now - lastLogRenderAt > 200) {
+        lastLogRenderAt = now;
+        playheadPaneListeners.forEach((fn) => fn());
+        rebuildExecutionRailAtTime(playhead.currentTime);
+      }
+      playTimerId = requestAnimationFrame(stepPlayTimer);
+    }
+    playheadPlayBtn.addEventListener("click", () => {
+      if (playhead.duration <= 0) return;
+      playhead.playing = true;
+      playheadPlayBtn.hidden = true;
+      playheadPauseBtn.hidden = false;
+      playLastWall = performance.now();
+      if (replayMode && replayVideoEl.duration) {
+        if (replayVideoEl.ended || replayVideoEl.currentTime >= replayVideoEl.duration) {
+          replayVideoEl.currentTime = 0;
+          playhead.currentTime = 0;
+        } else {
+          replayVideoEl.currentTime = playhead.currentTime;
+        }
+        replayVideoEl.play().catch(() => {});
+        playheadPaneListeners.forEach((fn) => fn());
+        rebuildExecutionRailAtTime(playhead.currentTime);
+      } else {
+        playTimerId = requestAnimationFrame(stepPlayTimer);
+      }
+    });
+    playheadPauseBtn.addEventListener("click", () => {
+      playhead.playing = false;
+      playheadPlayBtn.hidden = false;
+      playheadPauseBtn.hidden = true;
+      if (playTimerId) { cancelAnimationFrame(playTimerId); playTimerId = null; }
+      if (replayMode && replayVideoEl.duration) {
+        replayVideoEl.pause();
+      }
+      /* Фиксация состояния на паузе */
+      renderPlayhead();
+      playheadPaneListeners.forEach((fn) => fn());
+      rebuildExecutionRailAtTime(playhead.currentTime);
+    });
+    playheadStopBtn.addEventListener("click", () => {
+      playhead.playing = false;
+      playhead.currentTime = 0;
+      playheadPlayBtn.hidden = false;
+      playheadPauseBtn.hidden = true;
+      if (playTimerId) { cancelAnimationFrame(playTimerId); playTimerId = null; }
+      if (replayMode && replayVideoEl.duration) {
+        replayVideoEl.pause();
+        replayVideoEl.currentTime = 0;
+      }
+      /* Полная перемотка логов и каретки в 0 */
+      renderPlayhead();
+      playheadCommitSeek();
+    });
+
+    /* Если видео кончилось само — синхронизируем кнопки */
+    replayVideoEl.addEventListener("ended", () => {
+      playhead.playing = false;
+      playheadPlayBtn.hidden = false;
+      playheadPauseBtn.hidden = true;
+      if (playTimerId) { cancelAnimationFrame(playTimerId); playTimerId = null; }
+    });
+
+    renderPlayhead();
+    /* ── /MON-11 ─────────────────────────────────────────────── */
+
+    /* ── MON-6+MON-7: replay-режим, архив лога, видео ──────── */
+    let replayMode = false;
+    let replayRunId = null;
+    let urlToken = "";                  /* MON-13: bind-токен из ?token= — пробрасываем в API */
+    let sawRunning = false;             /* видели status=running — был живой прогон */
+    let liveToReplayTransitioned = false;
+    let pendingReplaySeek = null;       /* точка для <video> после loadedmetadata */
+
+    /* Читаем run_id из query-строки */
+    {
+      const params = new URLSearchParams(window.location.search);
+      const rid = params.get("run_id");
+      if (rid) {
+        replayRunId = rid;
+        replayMode = true;
+        urlBound = true;
+        urlBoundRunId = rid;
+      }
+      const qCheckId = params.get("check_id");
+      if (qCheckId) {
+        resultsCheckId = qCheckId;
+        urlBoundCheckId = qCheckId;
+      }
+      const qToken = params.get("token");
+      if (qToken) {
+        urlToken = qToken;
+      }
+      renderInstanceTags(rid, qCheckId);
+    }
+
+    /* MON-13: добавить ?token= в URL, если он есть */
+    function addTokenParam(url) {
+      if (!urlToken) return url;
+      var sep = url.indexOf("?") === -1 ? "?" : "&";
+      return url + sep + "token=" + encodeURIComponent(urlToken);
+    }
+
+    function enterReplayMode(opts) {
+      // opts = { keepLogs, currentTime } — при переходе live→replay сохраняем накопленные события.
+      const keepLogs = !!(opts && opts.keepLogs);
+      const seekTo = (opts && typeof opts.currentTime === "number") ? opts.currentTime : null;
+      if (!replayRunId) return;
+      replayMode = true;
+      liveToReplayTransitioned = true;
+      // Остановить live-таймер: в replay текущее время ведёт <video>.
+      if (playTimerId) { cancelAnimationFrame(playTimerId); playTimerId = null; }
+      playhead.playing = false;
+      playheadPlayBtn.hidden = false;
+      playheadPauseBtn.hidden = true;
+      // Переключить отображение: убрать VNC, показать video.
+      vncFrame.style.display = "none";
+      replayVideoEl.classList.add("show");
+      // Установить src один раз; 404 (ffmpeg ещё дописывает MP4) → тихий ретрай.
+      const recSrc = addTokenParam("/api/recording?run_id=" + encodeURIComponent(replayRunId));
+      if (replayVideoEl.getAttribute("src") !== recSrc) {
+        replayVideoEl.src = recSrc;
+      }
+      if (seekTo != null) {
+        pendingReplaySeek = seekTo;
+      }
+      scheduleRecordingRetry();
+      // Переподключить SSE на run_id (только если не закончен прогон).
+      if (window._liveEventSource) {
+        window._liveEventSource.close();
+        window._liveEventSource = null;
+      }
+      // Если логи уже на месте (live→replay) — не загружаем journal повторно.
+      if (keepLogs) {
+        // playhead.duration уже отражает время последнего события.
+        // Расширим, когда видео догрузится (canplay).
+        renderPlayhead();
+        setPlayheadMarkers(playheadMarkerSet);
+        return;
+      }
+      loadReplayJournal();
+    }
+
+    /* Если MP4 ещё дописывается Grid'ом (ffmpeg), <video> словит error/404.
+       Ретраим раз в ~1.5с, не трогая состояние playhead. */
+    let recordingRetryTimer = null;
+    let recordingRetryAttempts = 0;
+    const RECORDING_RETRY_MAX = 20;
+    function scheduleRecordingRetry() {
+      if (!replayMode || !replayRunId) return;
+      if (recordingRetryAttempts >= RECORDING_RETRY_MAX) return;
+      if (recordingRetryTimer) clearTimeout(recordingRetryTimer);
+      recordingRetryTimer = setTimeout(() => {
+        recordingRetryTimer = null;
+        const recSrc = addTokenParam("/api/recording?run_id=" + encodeURIComponent(replayRunId));
+        const hadSrc = replayVideoEl.getAttribute("src");
+        replayVideoEl.load();
+        if (!hadSrc) {
+          replayVideoEl.src = recSrc;
+        }
+      }, 1500);
+    }
+    replayVideoEl.addEventListener("error", () => {
+      if (!replayMode) return;
+      recordingRetryAttempts += 1;
+      scheduleRecordingRetry();
+    });
+    replayVideoEl.addEventListener("loadedmetadata", () => {
+      recordingRetryAttempts = RECORDING_RETRY_MAX; /* готово — больше не ретраим */
+      if (replayVideoEl.duration && Number.isFinite(replayVideoEl.duration)) {
+        playhead.duration = Math.max(playhead.duration, replayVideoEl.duration);
+        renderPlayhead();
+      }
+    });
+
+    async function loadReplayJournal() {
+      if (!replayRunId) return;
+      try {
+        const res = await fetch(addTokenParam("/api/journal?run_id=" + encodeURIComponent(replayRunId) + "&preset=signal"), { cache: "no-store" });
+        if (!res.ok) return;
+        const data = await res.json();
+        const events = data.events || [];
+        /* Заполняем панели и playhead */
+        if (events.length > 0) {
+          runStartTs = events[0].ts || (Date.now() / 1000);
+          playhead.currentTime = 0;
+
+          // Очищаем начальные пустые заглушки перед заполнением
+          focusPane.clear();
+          diaryPane.clear();
+          zapPane.clear();
+
+          for (const ev of events) {
+            focusPane.appendEvent(ev);
+            const channel = String(ev?.channel || "diary").toLowerCase();
+            if (channel === "zap") {
+              zapPane.appendEvent(ev);
+            } else {
+              diaryPane.appendEvent(ev);
+            }
+            const rel = ev.ts ? ev.ts - runStartTs : 0;
+            if (rel > playhead.duration) {
+              playhead.duration = rel + 1;
+            }
+            addPlayheadMarker(ev);
+            /* MON-15: заполняем конвейер для скраббинга (STEP/NEXT) */
+            updateExecutionRail(ev);
+          }
+          renderPlayhead();
+          setPlayheadMarkers(playheadMarkerSet);
+          /* MON-15: инициализировать конвейер и панели на момент 0 */
+          playheadPaneListeners.forEach((fn) => fn());
+          rebuildExecutionRailAtTime(0);
+        }
+      } catch (_) {}
+    }
+
+    /* MON-7: playhead ↔ video двусторонняя связь */
+    function syncFromVideoCurrentTime(force) {
+      if (playheadDragging && !force) return; /* не мешаем скраббингу верхним ползунком */
+      if (Number.isFinite(replayVideoEl.currentTime)) {
+        playhead.currentTime = replayVideoEl.currentTime;
+        if (replayVideoEl.duration && Number.isFinite(replayVideoEl.duration)) {
+          playhead.duration = Math.max(playhead.duration, replayVideoEl.duration);
+        }
+        renderPlayhead();
+        
+        /* Логи и каретка обновляются всегда синхронно со временем */
+        playheadPaneListeners.forEach((fn) => fn());
+        rebuildExecutionRailAtTime(playhead.currentTime);
+      }
+    }
+
+    replayVideoEl.addEventListener("timeupdate", () => syncFromVideoCurrentTime(false));
+    replayVideoEl.addEventListener("seeking", () => syncFromVideoCurrentTime(true));
+    replayVideoEl.addEventListener("seeked", () => syncFromVideoCurrentTime(true));
+    replayVideoEl.addEventListener("ratechange", () => {
+      if (replayVideoEl.playbackRate) {
+        playhead.speed = replayVideoEl.playbackRate;
+      }
+    });
+    replayVideoEl.addEventListener("playing", () => {
+      playhead.playing = true;
+      playheadPlayBtn.hidden = true;
+      playheadPauseBtn.hidden = false;
+      syncFromVideoCurrentTime(true);
+    });
+    replayVideoEl.addEventListener("play", () => {
+      playhead.playing = true;
+      playheadPlayBtn.hidden = true;
+      playheadPauseBtn.hidden = false;
+      syncFromVideoCurrentTime(true);
+    });
+    replayVideoEl.addEventListener("pause", () => {
+      if (!replayVideoEl.ended) {
+        playhead.playing = false;
+        playheadPlayBtn.hidden = false;
+        playheadPauseBtn.hidden = true;
+      }
+      syncFromVideoCurrentTime(true);
+    });
+
+    replayVideoEl.addEventListener("canplay", () => {
+      if (replayVideoEl.duration && Number.isFinite(replayVideoEl.duration)) {
+        playhead.duration = Math.max(playhead.duration, replayVideoEl.duration);
+        renderPlayhead();
+      }
+      if (pendingReplaySeek != null && replayVideoEl.duration && Number.isFinite(replayVideoEl.duration)) {
+        replayVideoEl.currentTime = Math.min(pendingReplaySeek, replayVideoEl.duration);
+        pendingReplaySeek = null;
+      }
+    });
+
+    /* ── /MON-6+MON-7 ─────────────────────────────────────── */
+
+    (function initStageLayout() {
+      const AR = 16 / 9;
+      const ZAP_MIN = 220;
+      const DIARY_MIN = 140;
+      const OBSERVER_VIDEO_SCALE = 0.8;
+      const FOCUS_INSPECTOR_RATIO = 0.42;
+
+      function fitVideo(availW, availH) {
+        const view = stageEl.dataset.liveView;
+        const isFocus = view === "focus";
+        const isSplit = view === "split";
+        if (isSplit) {
+          /* split: видео занимает свою grid-клетку целиком (50/50), без --video-w */
+          return { w: 0, h: 0 };
+        }
+        if (isFocus) {
+          /* focus: видео 1fr, инспектор — фиксированная доля от ширины */
+          const inspectorW = Math.max(
+            220,
+            Math.round(availW * FOCUS_INSPECTOR_RATIO / (1 + FOCUS_INSPECTOR_RATIO))
+          );
+          return { inspectorW };
+        }
+
+        const maxW = Math.max(0, availW - ZAP_MIN);
+        const maxH = Math.max(0, availH - DIARY_MIN);
+        let w, h;
+        if (maxW < 1 || maxH < 1) {
+          w = Math.max(120, availW * 0.45);
+          h = w / AR;
+        } else if (maxW / maxH > AR) {
+          w = maxH * AR;
+          h = maxH;
+        } else {
+          w = maxW;
+          h = maxW / AR;
+        }
+        return { w: w * OBSERVER_VIDEO_SCALE, h: h * OBSERVER_VIDEO_SCALE };
+      }
+
+      function updateStage() {
+        const { w, h, inspectorW } = fitVideo(layoutEl.clientWidth, layoutEl.clientHeight);
+        if (w || h) {
+          stageEl.style.setProperty("--video-w", w + "px");
+          stageEl.style.setProperty("--video-h", h + "px");
+        }
+        if (inspectorW) {
+          stageEl.style.setProperty("--inspector-w", inspectorW + "px");
+        }
+      }
+
+      function setLiveView(view) {
+        const valid = ["focus", "observer", "split"];
+        const next = valid.includes(view) ? view : "focus";
+        stageEl.dataset.liveView = next;
+        liveViewButtons.forEach((button) => {
+          const active = button.dataset.liveViewButton === next;
+          button.classList.toggle("active", active);
+          button.setAttribute("aria-pressed", String(active));
+        });
+        updateStage();
+      }
+
+      liveViewButtons.forEach((button) => {
+        button.addEventListener("click", () => setLiveView(button.dataset.liveViewButton));
+      });
+
+      new ResizeObserver(updateStage).observe(layoutEl);
+      setLiveView(stageEl.dataset.liveView);
+    })();
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function fmtTs(ts) {
+      if (!ts) return "";
+      return new Date(ts * 1000).toLocaleTimeString();
+    }
+
+    function compileFilter(raw) {
+      const q = (raw || "").trim();
+      if (!q) return { ok: true, test: () => true, highlight: null };
+      if (q.length >= 2 && q.startsWith("/")) {
+        const last = q.lastIndexOf("/");
+        if (last > 0) {
+          const body = q.slice(1, last);
+          const flags = q.slice(last + 1) || "i";
+          try {
+            const re = new RegExp(body, flags.includes("g") ? flags : flags + "g");
+            const testRe = new RegExp(body, flags.replace("g", ""));
+            return { ok: true, test: (s) => testRe.test(s), highlight: re };
+          } catch (e) {
+            return { ok: false, error: String(e.message || e) };
+          }
+        }
+      }
+      const needle = q.toLowerCase();
+      return {
+        ok: true,
+        test: (s) => s.toLowerCase().includes(needle),
+        highlight: new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"),
+      };
+    }
+
+    function highlightHtml(text, re) {
+      const safe = escapeHtml(text);
+      if (!re) return safe;
+      try { return safe.replace(re, (m) => "<mark>" + m + "</mark>"); }
+      catch (_) { return safe; }
+    }
+
+    function renderExecutionRailSlot(name, step) {
+      const slot = executionRailSlots[name];
+      const method = step?.method || "";
+      const constructor = step?.constructor || "";
+      slot.method.textContent = method;
+      slot.method.title = method;
+      slot.constructor.textContent = constructor;
+      slot.constructor.title = constructor;
+    }
+
+    function executionRailStep(event) {
+      const text = String(event.text || "").trim();
+      if (!text) return null;
+
+      // PrettyK-строка для каретки (если бэк её прислал): `Нажать css "…"`.
+      const pretty = String(event.pretty || "").trim();
+      const separator = text.indexOf(" | ");
+      return {
+        method: pretty || (separator >= 0 ? text.slice(0, separator) : text),
+        constructor: pretty ? "" : (separator >= 0 ? text.slice(separator + 3) : ""),
+      };
+    }
+
+    function isSameExecutionRailStep(left, right) {
+      return Boolean(
+        left &&
+        right &&
+        left.method === right.method &&
+        left.constructor === right.constructor
+      );
+    }
+
+    function updateExecutionRail(event) {
+      const kind = String(event?.kind || "").toUpperCase();
+      if (kind !== "STEP" && kind !== "NEXT" && kind !== "ФАЗЗИНГ" && kind !== "FUZZ") return;
+
+      const step = executionRailStep(event);
+      if (!step) return;
+      if (kind === "NEXT") {
+        executionRailNextStep = step;
+        renderExecutionRailSlot("next", step);
+        return;
+      }
+
+      executionRailHistory.push(step);
+      while (executionRailHistory.length > 4) executionRailHistory.shift();
+
+      /* MON-15: полноисторический rail для скраббинга */
+      executionRailFullHistory.push({ step, ts: event.ts || (runStartTs ? Date.now()/1000 : 0) });
+      if (executionRailFullHistory.length > 512) executionRailFullHistory.shift();
+
+      if (isSameExecutionRailStep(executionRailNextStep, step)) {
+        executionRailNextStep = null;
+        renderExecutionRailSlot("next", null);
+      }
+      renderExecutionRailSlot("current", executionRailHistory[executionRailHistory.length - 1]);
+      renderExecutionRailSlot("past1", executionRailHistory[executionRailHistory.length - 2]);
+      renderExecutionRailSlot("past2", executionRailHistory[executionRailHistory.length - 3]);
+      renderExecutionRailSlot("past3", executionRailHistory[executionRailHistory.length - 4]);
+    }
+
+    /* MON-15: скраббинг конвейера — восстановить rail на момент времени t
+       (в секундах от runStartTs). Вызывается при seek в replay. */
+    function rebuildExecutionRailAtTime(t) {
+      if (!executionRailFullHistory.length) {
+        renderExecutionRailSlot("next", null);
+        renderExecutionRailSlot("current", null);
+        renderExecutionRailSlot("past1", null);
+        renderExecutionRailSlot("past2", null);
+        renderExecutionRailSlot("past3", null);
+        return;
+      }
+      // Найти последний STEP с ts <= runStartTs + t
+      const absT = (runStartTs || 0) + (Number.isFinite(t) ? t : 0);
+      let current = null;
+      let past = [];
+      let next = null;
+      for (const rec of executionRailFullHistory) {
+        const recAbs = rec.ts || 0;
+        if (recAbs <= absT) {
+          if (current) past.push(current);
+          current = rec.step;
+          if (past.length > 3) past.shift();
+        } else {
+          next = rec.step;
+          break;
+        }
+      }
+      if (current && past.length > 3) past = past.slice(-3);
+      renderExecutionRailSlot("current", current);
+      renderExecutionRailSlot("past1", past[past.length - 1]);
+      renderExecutionRailSlot("past2", past[past.length - 2]);
+      renderExecutionRailSlot("past3", past[past.length - 3]);
+      renderExecutionRailSlot("next", next);
+    }
+
+    function eventKind(ev) {
+      const raw = String(ev?.kind || "NOTE").toUpperCase();
+      // ASCII alias → тот же ярлык/цвет, что у Live-событий фаззинга.
+      if (raw === "FUZZ") return "ФАЗЗИНГ";
+      return raw;
+    }
+
+    /** Бейдж в строке лога: WebDriver вместо STEP, ЛогАтаки вместо LOG, Фаззинг. */
+    function displayKindBadge(ev) {
+      const raw = String(ev?.kind || "NOTE").toUpperCase();
+      if (raw === "FUZZ") return "Фаззинг";
+      if (raw === "STEP") {
+        const text = String(ev?.text || "");
+        const colon = text.indexOf(":");
+        if (colon > 0) {
+          const prefix = text.slice(0, colon).trim();
+          if (/^[A-Za-zА-ЯЁ][A-Za-zА-ЯЁ0-9]+$/.test(prefix)) return prefix;
+        }
+        if (/^Фаззинг\b/.test(text)) return "Фаззинг";
+      }
+      if (raw === "LOG" && isAttackLog(ev)) return "ЛогАтаки";
+      return raw;
+    }
+
+    /** CSS-класс строки (для цвета бейджа): ЛогАтаки → ZAP, FUZZ → ФАЗЗИНГ. */
+    function displayRowKind(ev) {
+      const raw = String(ev?.kind || "NOTE").toUpperCase();
+      if (raw === "FUZZ") return "ФАЗЗИНГ";
+      if (raw === "LOG" && isAttackLog(ev)) return "ZAP";
+      return raw;
+    }
+
+    function isAttackLog(ev) {
+      return String(ev?.text || "").startsWith("ЛогАтаки");
+    }
+
+    function isSecurityKind(ev) {
+      const kind = eventKind(ev);
+      return kind === "ZAP" || kind === "ФАЗЗИНГ" || kind === "HIGH" || isAttackLog(ev);
+    }
+
+    const SIGNAL_PRESET_KINDS = new Set([
+      "ERROR", "HIGH", "WARN", "WARNING", "FAIL", "FAILED", "GATE", "CI",
+      "NOTE", "INFO", "STEP", "SCAN", "FUZZ", "CUT", "ФАЗЗИНГ",
+    ]);
+
+    function passesFilterPreset(ev, preset) {
+      const p = String(preset || "all").toLowerCase();
+      if (p === "all") return true;
+      const kind = eventKind(ev);
+      if (p === "errors") return kind === "ERROR" || kind === "HIGH";
+      if (p === "signal") return SIGNAL_PRESET_KINDS.has(kind);
+      return true;
+    }
+
+    function createLogPane(opts) {
+      const {
+        logEl, filterInput, emptyText, kindChipsEl, kindGroups, kindMatchers, presetChipsEl,
+      } = opts;
+      const events = [];
+      let stickBottom = true;
+      let kindFilter = "ALL";
+      let filterPreset = "all";
+
+      function passesKindFilter(ev) {
+        const selected = String(kindFilter || "ALL").toUpperCase();
+        if (!kindChipsEl || selected === "ALL") return true;
+        if (kindMatchers && kindMatchers[selected]) {
+          return kindMatchers[selected](ev);
+        }
+        const kind = eventKind(ev);
+        if (kindGroups && kindGroups[selected]) {
+          return kindGroups[selected].includes(kind);
+        }
+        return kind === selected;
+      }
+
+      function passesAllFilters(ev) {
+        if (!passesFilterPreset(ev, filterPreset)) return false;
+        if (!passesKindFilter(ev)) return false;
+        /* MON-11: фильтр по времени playhead — строго <= currentTime */
+        if (playhead.duration > 0 && Number.isFinite(runStartTs)) {
+          const relSec = (ev.ts ?? 0) - runStartTs;
+          if (relSec > playhead.currentTime) return false;
+        }
+        return true;
+      }
+
+      function lineText(ev) {
+        return (eventKind(ev) + " " + (ev.text || "")).trim();
+      }
+
+      function renderAll() {
+        const compiled = compileFilter(filterInput.value);
+        filterInput.classList.toggle("bad", !compiled.ok);
+        if (!events.length) {
+          logEl.innerHTML = '<div class="empty">' + escapeHtml(emptyText) + "</div>";
+          return;
+        }
+
+        // Быстрое переключение классов существующих DOM-элементов без парсинга innerHTML
+        const existingRows = logEl.children;
+        if (existingRows.length === events.length && !logEl.querySelector(".empty")) {
+          for (let i = 0; i < events.length; i++) {
+            const ev = events[i];
+            const row = existingRows[i];
+            const kindOk = passesAllFilters(ev);
+            const textOk = compiled.ok ? compiled.test(lineText(ev)) : true;
+            const pass = kindOk && textOk;
+            if (pass) {
+              row.classList.remove("hidden");
+            } else {
+              row.classList.add("hidden");
+            }
+          }
+          if (stickBottom) logEl.scrollTop = logEl.scrollHeight;
+          return;
+        }
+
+        const parts = [];
+        for (const ev of events) {
+          const kind = displayKindBadge(ev);
+          const rowKind = displayRowKind(ev);
+          const text = ev.text || "";
+          const kindOk = passesAllFilters(ev);
+          const textOk = compiled.ok ? compiled.test(lineText(ev)) : true;
+          const pass = kindOk && textOk;
+          const body = compiled.ok && compiled.highlight
+            ? highlightHtml(text, compiled.highlight)
+            : escapeHtml(text);
+          parts.push(
+            '<div class="row ' + rowKind + (pass ? "" : " hidden") + '">' +
+              '<span class="ts">' + escapeHtml(fmtTs(ev.ts)) + "</span>" +
+              '<span class="kind">' + escapeHtml(kind) + "</span> " +
+              '<span class="text">' + body + "</span></div>"
+          );
+        }
+        logEl.innerHTML = parts.join("");
+        if (stickBottom) logEl.scrollTop = logEl.scrollHeight;
+      }
+
+      function clear() {
+        events.length = 0;
+        logEl.innerHTML = "";
+      }
+
+      function appendEvent(ev) {
+        events.push(ev);
+        const kind = displayKindBadge(ev);
+        const rowKind = displayRowKind(ev);
+        const row = document.createElement("div");
+        const pass = passesAllFilters(ev);
+        row.className = "row " + rowKind + (pass ? "" : " hidden");
+        row.innerHTML =
+          '<span class="ts">' + escapeHtml(fmtTs(ev.ts)) + "</span>" +
+          '<span class="kind">' + escapeHtml(kind) + "</span> " +
+          '<span class="text"></span>';
+        row.querySelector(".text").textContent = ev.text || "";
+        logEl.appendChild(row);
+        if (stickBottom) logEl.scrollTop = logEl.scrollHeight;
+      }
+
+      return { appendEvent, renderAll, clear };
+    }
+
+    // Рабочая сцена: merge diary+zap в один лог.
+    // ВСЕ = diary.ВСЕ ∪ zap.ВСЕ; LOG = diary.LOG ∪ zap.LOG (+ ЛогАтаки).
+    const focusKindMatchers = {
+      ZAP: (ev) => isSecurityKind(ev),
+      STEP: (ev) => eventKind(ev) === "STEP",
+      LOG: (ev) => ["LOG", "CONSOLE"].includes(eventKind(ev)) || isAttackLog(ev),
+      ERROR: (ev) => eventKind(ev) === "ERROR",
+    };
+    const focusPane = createLogPane({
+      logEl: document.getElementById("focusLog"),
+      filterInput: document.getElementById("focusFilter"),
+      kindChipsEl: document.getElementById("focusKindChips"),
+      presetChipsEl: document.getElementById("focusFilterPresets"),
+      kindMatchers: focusKindMatchers,
+      emptyText: "Ожидание событий...",
+    });
+    // Наблюдатель: панели раздельно, как раньше (без merge).
+    // В правой ZAP-панели ВСЕ = только zap-поток (ZAP+LOG+…).
+    const diaryPane = createLogPane({
+      logEl: document.getElementById("diaryLog"),
+      filterInput: document.getElementById("diaryFilter"),
+      kindChipsEl: document.getElementById("diaryKindChips"),
+      presetChipsEl: document.getElementById("diaryFilterPresets"),
+      kindGroups: {
+        LOG: ["LOG", "CONSOLE"],
+      },
+      emptyText: "Ожидание событий...",
+    });
+    const zapPane = createLogPane({
+      logEl: document.getElementById("zapLog"),
+      filterInput: document.getElementById("zapFilter"),
+      kindChipsEl: document.getElementById("zapKindChips"),
+      presetChipsEl: document.getElementById("zapFilterPresets"),
+      kindGroups: {
+        ZAP: ["ZAP", "HIGH", "ФАЗЗИНГ", "FUZZ"],
+        LOG: ["LOG", "CONSOLE"],
+      },
+      emptyText: "Ожидание событий...",
+    });
+
+    /* MON-11: скраббинг перерисовывает все панели */
+    registerPlayheadPane(() => focusPane.renderAll());
+    registerPlayheadPane(() => diaryPane.renderAll());
+    registerPlayheadPane(() => zapPane.renderAll());
+
+    function bindSSE(url, onEvent) {
+      const es = new EventSource(url);
+      es.onmessage = (msg) => {
+        try { onEvent(JSON.parse(msg.data)); } catch (_) {}
+      };
+      return es;
+    }
+
+    function handleDiaryEvent(event) {
+      if (replayMode) return; /* в режиме replay архив событий загружен через loadReplayJournal, live SSE игнорируем */
+      const kind = String(event?.kind || "").toUpperCase();
+      const channel = String(event?.channel || "diary").toLowerCase();
+
+      /* MON-11: привязка playhead ко времени событий */
+      if (!runStartTs && event.ts) {
+        runStartTs = event.ts;
+        playhead.duration = 0;
+      }
+      if (runStartTs && event.ts) {
+        const rel = Math.max(0, event.ts - runStartTs);
+        if (rel > playhead.duration) {
+          playhead.duration = rel + 1;
+          renderPlayhead();
+          setPlayheadMarkers(playheadMarkerSet);
+        }
+      }
+
+      if (kind === "NEXT") {
+        updateExecutionRail(event);
+        return;
+      }
+      addPlayheadMarker(event);
+      focusPane.appendEvent(event);
+      if (channel === "zap") {
+        zapPane.appendEvent(event);
+        return;
+      }
+      diaryPane.appendEvent(event);
+      updateExecutionRail(event);
+    }
+
+    window._liveEventSource = bindSSE(addTokenParam("/api/diary?channel=all"), handleDiaryEvent);
+
+    const debugControls = document.getElementById("debugControls");
+    const debugPauseBtn = document.getElementById("debugPauseBtn");
+    const debugResumeBtn = document.getElementById("debugResumeBtn");
+    const debugBanner = document.getElementById("debugBanner");
+    let debugMode = false;
+    let debugPaused = false;
+
+    function renderDebugControls() {
+      if (!debugControls) return;
+      debugControls.classList.toggle("visible", !!debugMode);
+      if (debugBanner) {
+        debugBanner.textContent = debugPaused
+          ? "отладка: пауза · кликай в noVNC · допуск VOID"
+          : "отладка: таймеры сняты · допуск VOID";
+      }
+      if (debugPauseBtn) debugPauseBtn.disabled = !debugMode || debugPaused;
+      if (debugResumeBtn) debugResumeBtn.disabled = !debugMode || !debugPaused;
+    }
+
+    async function postDebug(path) {
+      try {
+        const res = await fetch(path, { method: "POST", cache: "no-store" });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data && data.meta) applyMeta(data.meta);
+        else refreshMeta();
+      } catch (_) {}
+    }
+    if (debugPauseBtn) {
+      debugPauseBtn.addEventListener("click", () => postDebug("/api/debug/pause"));
+    }
+    if (debugResumeBtn) {
+      debugResumeBtn.addEventListener("click", () => postDebug("/api/debug/resume"));
+    }
+
+    function renderStatus() {
+      // red = оффлайн; green = онлайн (оболочка); pulse = прогон (running).
+      if (!metaReachable) {
+        statusFlag.className = "status-flag offline";
+        statusLabel.textContent = "оффлайн";
+        renderResultsLink(null, false);
+        return;
+      }
+      if (debugPaused) {
+        statusFlag.className = "status-flag online";
+        statusLabel.textContent = "пауза";
+        renderResultsLink(null, false);
+        return;
+      }
+      const runLive = (metaStatus || "").toLowerCase() === "running";
+      statusFlag.className = runLive ? "status-flag pulse" : "status-flag online";
+      statusLabel.textContent = runLive ? "прогон" : "онлайн";
+      renderResultsLink(null, runLive);
+    }
+
+    /* ── MON-12: печатать #run_id и #check_id в хедере всегда ─── */
+    function renderInstanceTags(runId, checkId) {
+      const wantRun = (runId || "").trim();
+      const wantCheck = (checkId || "").trim();
+      if (!wantRun && !wantCheck) {
+        instanceTags.hidden = true;
+        resultsCheckId = null;
+        return;
+      }
+      if (wantRun) {
+        instanceRunId.textContent = "#" + wantRun.slice(0, 8);
+        instanceRunId.title = wantRun;
+        instanceRunId.hidden = false;
+      }
+      if (wantCheck) {
+        instanceCheckId.textContent = "#" + wantCheck.slice(0, 8);
+        instanceCheckId.title = wantCheck;
+        instanceCheckId.hidden = false;
+        resultsCheckId = wantCheck;
+      }
+      instanceTags.hidden = false;
+    }
+
+    /* ── MON-10: кнопка «Перейти к результатам проверки →» ─── */
+    function renderResultsLink(checkId, pulse) {
+      const cid = (checkId || resultsCheckId || "").trim();
+      if (!cid) {
+        linkCheckResults.hidden = true;
+        linkCheckResults.classList.remove("pulse");
+        return;
+      }
+      // MON-10: Editor hash-роутер — #/checks/<check_id>/results
+      linkCheckResults.href = EDITOR_HOME + "/#/checks/" + encodeURIComponent(cid) + "/results";
+      linkCheckResults.hidden = false;
+      linkCheckResults.classList.toggle("pulse", !!pulse);
+    }
+
+    function applyMeta(meta) {
+      metaReachable = true;
+      metaStatus = meta.status || "";
+      debugMode = !!meta.debug_mode;
+      debugPaused = !!meta.debug_paused;
+      renderDebugControls();
+      renderStatus();
+      // MON-10 + MON-12: check_id из meta (fallback к query), tags только на bound-инстансе.
+      const metaCheckId = (meta.check_id || "").trim();
+      const metaRunId = (meta.run_id || meta.last_export_run_id || "").trim();
+      if (urlBound) {
+        renderInstanceTags(urlBoundRunId || metaRunId, urlBoundCheckId || metaCheckId);
+        if (metaCheckId && !resultsCheckId) {
+          resultsCheckId = metaCheckId;
+        }
+        renderResultsLink(null, (metaStatus || "").toLowerCase() === "running");
+        /* MH-6: instance_id для группировки дропдауна */
+        currentInstanceId = (meta.instance_id || meta.check_id || "").trim() || null;
+        refreshRunsDropdown();
+      }
+      const url = meta.novnc_url || DEFAULT_NOVNC;
+      if (!vncSet || (meta.novnc_url && vncFrame.src.indexOf(meta.novnc_url.split("?")[0]) === -1)) {
+        vncFrame.src = url;
+        vncSet = true;
+      }
+      /* headless: disable VNC/video views, hide cell, force split view */
+      const bt = (meta.browser_type || "").toLowerCase();
+      const isHeadless = bt.includes("headless");
+      if (isHeadless) {
+        const btnFocus = document.querySelector("[data-live-view-button=focus]");
+        const btnObs = document.querySelector("[data-live-view-button=observer]");
+        if (btnFocus) btnFocus.disabled = true;
+        if (btnObs) btnObs.disabled = true;
+        document.querySelector(".vnc-cell")?.classList.add("headless");
+        if (stageEl.dataset.liveView !== "split") {
+          setLiveView("split");
+        }
+      }
+    }
+
+    /* MH-6: дропдаун «Все запуски» — загрузка и рендер */
+    async function refreshRunsDropdown() {
+      if (!runsDropdown) return;
+      if (!currentInstanceId) {
+        runsDropdown.hidden = true;
+        return;
+      }
+      try {
+        const res = await fetch("/api/runs/index?limit=100", { cache: "no-store" });
+        if (!res.ok) { runsDropdown.hidden = true; return; }
+        const payload = await res.json();
+        const items = (payload && payload.items) || [];
+        /* MH-6: группировка по instance_id (== check_id), fallback на check_id */
+        const grouped = items.filter(function(r) {
+          const iid = (r.instance_id || r.check_id || "").trim();
+          return iid && iid === currentInstanceId;
+        });
+        if (grouped.length <= 1) { runsDropdown.hidden = true; return; }
+        const currentRunId = (urlBoundRunId || replayRunId || "").trim();
+        let html = '<option value="">Все запуски</option>';
+        for (var i = 0; i < grouped.length; i++) {
+          var rid = String(grouped[i].run_id || "");
+          var short = rid.slice(0, 8);
+          var sel = rid === currentRunId ? " selected" : "";
+          html += '<option value="' + escapeHtml(rid) + '"' + sel + '>#' + escapeHtml(short) + '</option>';
+        }
+        runsDropdown.innerHTML = html;
+        runsDropdown.hidden = false;
+      } catch (_) {
+        runsDropdown.hidden = true;
+      }
+    }
+
+    async function refreshMeta() {
+      if (replayMode) {
+        const url = addTokenParam("/api/meta?run_id=" + encodeURIComponent(replayRunId));
+        try {
+          const res = await fetch(url, { cache: "no-store" });
+          if (res.ok) {
+            const meta = await res.json();
+            metaReachable = true;
+            metaStatus = meta.status || "";
+            const replayLabel = meta.requested_run_id
+              ? "архив #" + String(meta.requested_run_id).slice(0, 8)
+              : "архив";
+            statusFlag.className = "status-flag online";
+            statusLabel.textContent = replayLabel;
+            // MON-12: тэги инстанса в replay
+            const metaCheckId = (meta.check_id || "").trim();
+            renderInstanceTags(urlBoundRunId, urlBoundCheckId || metaCheckId);
+            renderResultsLink(metaCheckId, false);
+            /* MH-6: дропдаун из replay-меты */
+            currentInstanceId = (meta.instance_id || meta.check_id || "").trim() || null;
+            refreshRunsDropdown();
+          } else {
+            metaReachable = false;
+            renderStatus();
+          }
+        } catch (_) {
+          metaReachable = false;
+          renderStatus();
+        }
+        return;
+      }
+      try {
+        const res = await fetch("/api/meta", { cache: "no-store" });
+        if (res.ok) {
+          const meta = await res.json();
+          metaStatus = meta.status || "";
+
+          // Отслеживаем «был ли живой прогон».
+          if (metaStatus === "running") {
+            sawRunning = true;
+          }
+
+          // Живой прогон кончился — перейти на видео без перезагрузки окна.
+          if (
+            sawRunning &&
+            !liveToReplayTransitioned &&
+            metaStatus !== "running" &&
+            meta.last_export_run_id
+          ) {
+            replayRunId = String(meta.last_export_run_id);
+            applyMeta(meta); // статус уже финальный
+            enterReplayMode({
+              keepLogs: true,
+              currentTime: playhead.currentTime
+            });
+            return;
+          }
+
+          applyMeta(meta);
+        } else {
+          metaReachable = false;
+          renderStatus();
+        }
+      } catch (_) {
+        metaReachable = false;
+        renderStatus();
+      }
+    }
+    refreshMeta();
+    setInterval(refreshMeta, 2000);
+
+    /* MH-6: смена run_id через дропдаун */
+    if (runsDropdown) {
+      runsDropdown.addEventListener("change", function() {
+        var val = (runsDropdown.value || "").trim();
+        if (!val) return;
+        /* пересобрать URL с новым run_id */
+        var url = new URL(window.location.href);
+        url.searchParams.set("run_id", val);
+        window.location.assign(url.toString());
+      });
+    }
+
+    /* MON-6: авто-вход в replay, если run_id в query */
+    if (replayRunId) {
+      enterReplayMode();
+    } else {
+      /* MH-3: голый :8767/ — HomePage */
+      hpInit();
+      hpShow();
+    }
+  </script>
+</body>
+</html>

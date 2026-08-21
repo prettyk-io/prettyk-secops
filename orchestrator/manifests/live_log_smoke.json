@@ -1,0 +1,40 @@
+{
+  "meta": {
+    "assessment_purpose": "manual",
+    "app_type": "web",
+    "emergency_reason": "Live diary/zap routing smoke (seconds, no Juice)"
+  },
+  "infrastructure": {
+    "zap_mode": "demon",
+    "browser_type": "chrome-headless",
+    "zap_work_timeout_min": 10,
+    "idle_timeout_min": 5
+  },
+  "security_configuration": {
+    "base_url_override": "about:blank",
+    "allowed_extra_domains": "",
+    "scan_policy": "custom_policy",
+    "auth_type": "Без авторизации"
+  },
+  "test_suites": {
+    "scenarios": [
+      {
+        "scenario_name": "Live diary routing smoke",
+        "steps": [
+          {
+            "description": "Plumbing (no Live STEP) + diary LOG",
+            "constructor": "Пусть $tag = \"smoke\"\nПусть $items = Объект { \"a\": 1 }\nПусть $n = Размер $items\nЛог \"marker diary LOG $tag n=$n\""
+          },
+          {
+            "description": "Webdriver user-flow + filtered wait",
+            "constructor": "Открыть about:blank\nЖдатьПростойСети 0.5 1\nНажать css body"
+          },
+          {
+            "description": "ZAP log_attack → zap channel only",
+            "constructor": "ЛогАтаки \"marker zap LOG $tag\""
+          }
+        ]
+      }
+    ]
+  }
+}

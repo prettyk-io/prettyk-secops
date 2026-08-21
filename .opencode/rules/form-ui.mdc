@@ -1,0 +1,30 @@
+---
+description: Эстетика манифест-формы — antd/RJSF, меньше шума, без AI-лендинга
+globs: frontend/src/form/**,frontend/src/styles.css,frontend/src/App.tsx,frontend/src/components/**,frontend/src/monaco/**
+alwaysApply: false
+---
+
+# Form UI (enterprise calm)
+
+Форма — рабочий SecOps-инструмент, не лендинг и не design-system с нуля.
+
+## Стек
+
+- Оставлять **Ant Design + RJSF + Monaco**. Не тащить Tailwind/Stitch «ради красоты».
+- Toolbar массивов: `Space.Compact`, не deprecated `Button.Group`.
+
+## Меньше шума
+
+- Не плодить вложенные Card / Badge / стат-полоски; секции уже есть.
+- Honest Contract: не светить мёртвые поля (`depends_on`, `imports`, legacy `id` шага/сценария). `ui:widget: hidden` для array недостаточен — фильтровать в template.
+- Не рефакторить форму «под дизайн» без явного запроса на полировку.
+
+## Визуал
+
+- CSS variables существующей темы; без purple-gradient / Inter AI-slop.
+- Не full-bleed hero, brand-first, diagonal/grain — это не про манифест-редактор.
+- Monaco: `unicodeHighlight.ambiguousCharacters: false` (кириллические MethodId).
+
+## Тексты
+
+- Русские лейблы/ошибки — через skill `ru-text`: кнопка = действие; ошибка = что случилось + что делать.

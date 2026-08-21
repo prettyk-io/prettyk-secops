@@ -1,0 +1,15 @@
+---
+description: Стиль shell Home/History — малый radius, placeholder 50%, атмосфера
+alwaysApply: false
+globs: frontend/src/shell/**/*.{tsx,css}
+---
+
+# Shell UI style (Home / History)
+
+- Скругления **вдвое меньше** типичных 10–12px → ориентир **5–6px** (entry/cmdk ≈5px, panel ≈6px).
+- Плейсхолдеры инпутов: **`opacity: 0.5`**.
+- Без длинных lede под заголовком, если смысл ясен из UI.
+- Тёмный фон + мягкие radial accents; hover entry = inset accent bar, не «пухлая» card.
+- Home / History / Регламент (form) — один язык (`pk-home-*` / `pk-history-*` / `pk-form-page`): атмосфера, radius 5–6px, SecOps mark в хедере.
+- Editor (`studio`) — только PrettyK mark, без SecOps.
+- **Disabled / locked CANON:** `--kdt-disabled-fg` + `--kdt-disabled-opacity` (как Home «политики»). Кнопки `:disabled` и `.kdt-field-locked-input` — только этот цвет, без «чуть иначе для primary».

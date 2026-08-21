@@ -1,0 +1,28 @@
+---
+description: Коробка secops-lab-pure (default) vs portal pack cosmo-custom (Cosmo/ЦБ); бумага, не git.
+alwaysApply: true
+---
+
+# Product profiles — коробка vs portal pack
+
+Владелец: **Максим**. Без автосоздания git worktree/веток паков.
+
+## Модель
+
+| ID | Смысл |
+|---|---|
+| **`secops-lab-pure`** | **Default. Коробка** SecOps Lab / KDT — до внедрения в чужой portal. |
+| **`cosmo-custom`** | **Integration pack:** коробка встраивается в **портал Cosmo** (кейс ЦБ). |
+
+Cosmo = portal банка, не второй бренд коробки.  
+К другому банку — та же коробка + другой `*-custom` later.
+
+Карточки: [`docs/profiles/README.md`](../../docs/profiles/README.md).
+
+## Поведение агента
+
+1. Неясный скоуп → **коробка** (`secops-lab-pure`).  
+2. Лесенка / bringup / «встройка в Cosmo» → **`cosmo-custom`**.  
+3. Не создавать `git branch pack/*|fork/*` / worktree без явной команды.  
+4. Не плодить второй `docs/manifest.json`.  
+5. Hub `product-forks` — только после печати; до того режим = `docs/profiles/**` + этот rule (**не** цитировать как CANON hub).

@@ -1,0 +1,109 @@
+{
+  "meta": {
+    "project_id": "kdt-bank-api-lab",
+    "initiator_name": "kdt-lab",
+    "app_leader": "kdt-lab",
+    "assessment_purpose": "emergency",
+    "emergency_reason": "IMP bank demo OpenAPI/GraphQL/gRPC cascade",
+    "release_domain": "lab-kdt-api",
+    "compliance_requirements": "",
+    "release_manager": "kdt-lab",
+    "app_type": "api"
+  },
+  "infrastructure": {
+    "zap_mode": "demon",
+    "browser_type": "chrome",
+    "additional_local_server_port": 8085,
+    "zap_work_timeout_min": 30,
+    "start_with_webswing": false,
+    "idle_timeout_min": 10,
+    "webswing_session_timeout_min": 30,
+    "gui_extra_configs": "",
+    "base_url_override": "http://host.docker.internal:8090",
+    "allowed_extra_domains": "prettyk-api-lab|127.0.0.1|localhost|host.docker.internal"
+  },
+  "security_configuration": {
+    "scan_policy": "custom_policy",
+    "auth_type": "Без авторизации",
+    "app_architecture": "Не указано"
+  },
+  "test_suites": {
+    "imports": [
+      {
+        "path": "../../tests/fixtures/openapi/petstore-mini.oas3.json",
+        "kind": "openapi_spec",
+        "as": "bank_oas"
+      },
+      {
+        "path": "../../tests/fixtures/openapi/mini.sdl",
+        "kind": "graphql_sdl",
+        "as": "bank_sdl"
+      },
+      {
+        "path": "../../../services/prettyk-api-lab/proto_pack",
+        "kind": "proto_pack",
+        "as": "bank_proto",
+        "import_paths": []
+      }
+    ],
+    "scenarios": [
+      {
+        "scenario_name": "bank_api_lab_oa_gql_grpc",
+        "continue_on_failure": true,
+        "steps": [
+          {
+            "id": "oa_gql_grpc",
+            "description": "OpenAPI/GraphQL/gRPC cascade: resource + relative к URL атаки",
+            "constructor": "Лог \"банк: OpenAPI GraphQL gRPC cascade\"\nНовыйКонтекст bank_api \"KDT API Lab\"\nВключитьВКонтекст bank_api\nОткрыть /health\nПауза 1\nСписокОперацийOpenAPI bank_openapi\nИмпортOpenAPI bank_openapi\nВыполнитьОперацииOpenAPI bank_openapi 5\nСписокОперацийGraphQL bank_graphql\nИмпортGraphQL bank_graphql\nВыполнитьGraphQL bank_graphql \"{ health }\"\nСписокСервисовgRPC bank_grpc\nВызовgRPC bank_grpc bank.v1.AccountService/Ping \"{}\"\nЛог \"OpenAPI GraphQL gRPC готовы; активное сканирование — отдельным шагом\"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
+            "failsafe": false,
+            "retry": 0,
+            "retry_delay": 2,
+            "continue_on_failure": true,
+            "save_as": ""
+          }
+        ]
+      }
+    ],
+    "test_data_constructor": [
+      {
+        "module_type": "OpenAPI",
+        "id": "bank_openapi",
+        "label": "bank_openapi",
+        "openapi_fields": {
+          "spec_mode": "url_relative",
+          "spec_as": "",
+          "spec_path_rel": "/openapi.json",
+          "auth_module_id": "",
+          "zap_import": true,
+          "last_inventory": []
+        }
+      },
+      {
+        "module_type": "GraphQL",
+        "id": "bank_graphql",
+        "label": "bank_graphql",
+        "graphql_fields": {
+          "schema_mode": "resource",
+          "sdl_as": "bank_sdl",
+          "schema_path_rel": "/graphql",
+          "endpoint_rel": "/graphql",
+          "auth_module_id": "",
+          "zap_import": true,
+          "zap_scan": false,
+          "last_inventory": []
+        }
+      },
+      {
+        "module_type": "gRPC",
+        "id": "bank_grpc",
+        "label": "bank_grpc",
+        "grpc_fields": {
+          "proto_as": "bank_proto",
+          "auth_module_id": "",
+          "last_inventory": []
+        }
+      }
+    ],
+    "pages": {}
+  }
+}
