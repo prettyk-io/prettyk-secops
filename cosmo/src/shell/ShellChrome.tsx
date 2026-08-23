@@ -1,4 +1,3 @@
-import { Layout, Typography } from 'antd';
 import { PrettyKMark } from '../components/PrettyKMark';
 import { LogoutButton } from './LogoutButton';
 import { ThemeToggle } from './ThemeToggle';
@@ -33,7 +32,7 @@ function BrandTitle({
       </button>
     );
   }
-  return <Typography.Text className="pk-brand-title">{title}</Typography.Text>;
+  return <span className="pk-brand-title">{title}</span>;
 }
 
 export function ShellChrome({
@@ -44,7 +43,7 @@ export function ShellChrome({
   roleLabel,
 }: ShellChromeProps): React.JSX.Element {
   return (
-    <Layout.Header className="pk-header">
+    <header className="pk-header">
       <div className="pk-brand">
         <div className="pk-brand-row">
           <PrettyKMark variant="secops" onClick={onTitleClick} />
@@ -61,6 +60,6 @@ export function ShellChrome({
         <ThemeToggle style={{ display: 'none' }} />
         {onLogout ? <LogoutButton onClick={onLogout} /> : null}
       </div>
-    </Layout.Header>
+    </header>
   );
 }

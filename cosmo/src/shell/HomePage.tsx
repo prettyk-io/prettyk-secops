@@ -229,6 +229,19 @@ export function HomePage({
                       </span>
                     </button>
                   ) : null}
+                  <button
+                    type="button"
+                    className="pk-home-entry"
+                    data-testid="home-design-playground"
+                    onClick={() => { window.location.hash = '#/design-playground'; }}
+                  >
+                    <span className="pk-home-entry-main">
+                      <span className="pk-home-entry-label">Design Playground</span>
+                    </span>
+                    <span className="pk-home-entry-chevron" aria-hidden>
+                      →
+                    </span>
+                  </button>
                 </div>
               ) : (
                 <div className="pk-home-initiate" data-testid="home-initiate-view">
@@ -333,7 +346,9 @@ export function HomePage({
         onCancel={() => setCreateModalOpen(false)}
         okText={dict.studio.launchPipeline}
         cancelText={dict.common.cancel}
+        okButtonProps={{ htmlType: 'submit' }}
       >
+        <div data-testid="home-fresh-view">
         <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
           <Form.Item name="title" label={dict.studio.form.title} rules={[{ required: true, message: dict.studio.emptyTitle }]}>
             <Input placeholder="My security check" autoFocus />
@@ -345,6 +360,7 @@ export function HomePage({
             <Select options={BROWSER_OPTIONS} />
           </Form.Item>
         </Form>
+        </div>
       </Modal>
     </Layout>
   );

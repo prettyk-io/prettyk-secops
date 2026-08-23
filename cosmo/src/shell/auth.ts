@@ -5,6 +5,7 @@
  */
 
 export const AUTH_STORAGE_KEY = 'pk.auth.user';
+export const AUTH_LEGACY_STORAGE_KEY = 'kdt.auth.user';
 
 export type LabRole =
   | 'admin_sec'
@@ -25,7 +26,6 @@ export type AuthUser =
   | 'admin-service@spaceport.cbr.ru'
   | 'expert-sec@spaceport.cbr.ru'
   | 'user@spaceport.cbr.ru'
-  | 'vaera@prettyk.io'
   | 'admin'
   | 'debug';
 
@@ -80,11 +80,6 @@ const USERS: Record<AuthUser, UserRow> = {
     password: 'verysecure',
     role: 'user',
     displayName: 'Пользователь',
-  },
-  'vaera@prettyk.io': {
-    password: 'verysecure',
-    role: 'admin_sec',
-    displayName: 'Вера',
   },
   admin: {
     password: 'verysecure',
@@ -208,9 +203,18 @@ export function canimportWired(user: AuthUser | null | undefined): boolean {
 
 export function readSession(): AuthUser | null {
   try {
-    const raw = window.sessionStorage.getItem(AUTH_STORAGE_KEY);
-    if (raw && isAuthUser(raw)) {
-      return raw;
+    const rawSession = window.sessionStorage.getItem(AUTH_STORAGE_KEY)
+      ?? window.sessionStorage.getItem(AUTH_LEGACY_STORAGE_KEY);
+    if (rawSession && isAuthUser(rawSession)) {
+      return rawSession;
+    }
+    const rawLocal = window.localStorage.getItem(AUTH_STORAGE_KEY)
+      ?? window.localStorage.getItem(AUTH_LEGACY_STORAGE_KEY);
+    if (rawLocal && isAuthUser(rawLocal)) {
+      try {
+        window.sessionStorage.setItem(AUTH_STORAGE_KEY, rawLocal);
+      } catch {}
+      return rawLocal;
     }
     return null;
   } catch {
@@ -221,6 +225,7 @@ export function readSession(): AuthUser | null {
 export function writeSession(user: AuthUser): void {
   try {
     window.sessionStorage.setItem(AUTH_STORAGE_KEY, user);
+    window.localStorage.setItem(AUTH_STORAGE_KEY, user);
   } catch {
     /* private mode */
   }
@@ -229,6 +234,9 @@ export function writeSession(user: AuthUser): void {
 export function clearSession(): void {
   try {
     window.sessionStorage.removeItem(AUTH_STORAGE_KEY);
+    window.sessionStorage.removeItem(AUTH_LEGACY_STORAGE_KEY);
+    window.localStorage.removeItem(AUTH_STORAGE_KEY);
+    window.localStorage.removeItem(AUTH_LEGACY_STORAGE_KEY);
   } catch {
     /* ignore */
   }

@@ -485,8 +485,17 @@ def sync_status() -> Dict[str, Any]:
     """Текущее состояние синка (для Admin UI GET /api/dojo/sync/status)."""
     state = load_sync_state()
     running = _worker is not None and _worker.is_alive()
+    try:
+        from adapters.defectdojo_client import _env as _dojo_env
+
+        dojo_configured = bool(
+            _dojo_env("KDT_DEFECTDOJO_URL") and _dojo_env("KDT_DEFECTDOJO_TOKEN")
+        )
+    except Exception:
+        dojo_configured = False
     return {
         "ok": True,
+        "configured": dojo_configured,
         "running": running,
         "last_sync_at": state.get("last_sync_at"),
         "last_sync_ok": state.get("last_sync_ok"),

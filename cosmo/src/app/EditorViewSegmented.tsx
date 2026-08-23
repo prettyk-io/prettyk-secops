@@ -63,6 +63,7 @@ export function EditorViewSegmented({
         onChange(next);
       }}
       options={[
+        { label: 'Студия', value: 'studio' },
         { label: monitorLabel(monitorState), value: 'monitor' },
         { label: 'Результаты', value: 'results' },
       ]}

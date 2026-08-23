@@ -34,6 +34,8 @@ import { LoginPage } from './LoginPage';
 import { CommandPalette } from './CommandPalette';
 import { AdminPage } from './AdminPage';
 import { LabWorkspace } from '../lab/LabWorkspace';
+import { DesignPlayground } from '../design-playground/DesignPlayground';
+import { StudioV2 } from '../studio/StudioV2';
 import { ShellAmbientVideo } from './ShellAmbientVideo';
 import { buildWiredFromDeploy, titleFromDeploy } from '../admin/buildWiredFromDeploy';
 import { getDeploy, linkCheckToDeploy } from '../admin/deployStore';
@@ -67,7 +69,7 @@ function guardAdminRoute(route: HashRoute, user: AuthUser | null): HashRoute {
 export function AppShell(): React.JSX.Element {
   const [user, setUser] = useState<AuthUser | null>(() => readSession());
   const [route, setRoute] = useState<HashRoute>(() =>
-    readSession() ? defaultAuthedRoute() : { kind: 'login' },
+    readSession() ? defaultAuthedRoute() : parseHash(window.location.hash || '#/home'),
   );
   const [workspaceKey, setWorkspaceKey] = useState(0);
   const [closeOpen, setCloseOpen] = useState(false);
@@ -93,9 +95,11 @@ export function AppShell(): React.JSX.Element {
       const session = readSession();
       const next = parseHash(window.location.hash || '#/home');
       if (!session) {
-        setRoute({ kind: 'login' });
+        setUser(null);
+        setRoute(next.kind === 'login' ? { kind: 'home' } : next);
         return;
       }
+      setUser(session);
       if (next.kind === 'login') {
         navigateHash({ kind: 'home' });
         setRoute({ kind: 'home' });
@@ -107,20 +111,44 @@ export function AppShell(): React.JSX.Element {
       }
       setRoute(guarded);
     };
+
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'pk.auth.user' || e.key === 'kdt.auth.user') {
+        const session = readSession();
+        setUser(session);
+        if (session) {
+          const cur = parseHash(window.location.hash || '#/home');
+          const target = cur.kind !== 'login' ? guardAdminRoute(cur, session) : { kind: 'home' as const };
+          setRoute(target);
+        } else {
+          setRoute({ kind: 'login' });
+        }
+      }
+    };
+
     window.addEventListener('hashchange', onHash);
-    if (readSession() && !window.location.hash) {
-      navigateHash({ kind: 'home' });
-    } else if (readSession()) {
-      const session = readSession();
-      const cur = parseHash(window.location.hash || '#/home');
-      const guarded = guardAdminRoute(cur, session);
-      if (guarded.kind !== cur.kind) {
-        navigateHash(guarded);
+    window.addEventListener('storage', onStorage);
+
+    // Initial check on mount
+    const session = readSession();
+    if (session) {
+      setUser(session);
+      if (!window.location.hash) {
+        navigateHash({ kind: 'home' });
+        setRoute({ kind: 'home' });
+      } else {
+        const cur = parseHash(window.location.hash);
+        const guarded = cur.kind === 'login' ? { kind: 'home' as const } : guardAdminRoute(cur, session);
+        if (formatHash(guarded) !== window.location.hash) {
+          navigateHash(guarded);
+        }
         setRoute(guarded);
       }
     }
+
     return () => {
       window.removeEventListener('hashchange', onHash);
+      window.removeEventListener('storage', onStorage);
     };
   }, []);
 
@@ -384,9 +412,16 @@ export function AppShell(): React.JSX.Element {
     main = (
       <LoginPage
         onSuccess={() => {
-          setHomeEnter(true);
-          setUser(readSession());
-          go({ kind: 'home' });
+          const session = readSession();
+          setUser(session);
+          const currentHash = parseHash(window.location.hash || '');
+          const target = currentHash.kind !== 'login'
+            ? guardAdminRoute(currentHash, session)
+            : { kind: 'home' as const };
+          if (target.kind === 'home') {
+            setHomeEnter(true);
+          }
+          go(target);
         }}
       />
     );
@@ -397,12 +432,11 @@ export function AppShell(): React.JSX.Element {
         onBackHome={() => go({ kind: 'home' })}
         onOpenCheck={(checkId) => {
           setHistoryEpoch((n) => n + 1);
-          // В Студию
-          openCheck(checkId, 'studio');
+          openCheck(checkId);
         }}
         onReplayCheck={(checkId) => {
           setHistoryEpoch((n) => n + 1);
-          openCheck(checkId, 'studio');
+          openCheck(checkId);
         }}
         onLogout={handleLogout}
       />
@@ -429,6 +463,16 @@ export function AppShell(): React.JSX.Element {
         }}
       />
     );
+  } else if (route.kind === 'studio-v2') {
+    main = (
+      <div className="dark h-screen w-screen flex flex-col overflow-hidden" style={{ background: "#09090b" }}>
+        <div className="flex items-center justify-between px-3 h-11 shrink-0" style={{ background: "#0f172a", borderBottom: "1px solid #1e293b" }}>
+          <span className="text-sm font-semibold" style={{ color: "#e2e8f0", fontFamily: "Golos UI, sans-serif" }}>PrettyK Studio</span>
+          <span className="text-xs" style={{ color: "#64748b", fontFamily: "Golos UI, sans-serif" }}>dev preview</span>
+        </div>
+        <StudioV2 />
+      </div>
+    );
   } else if (route.kind === 'lab') {
     main = (
       <LabWorkspace
@@ -436,6 +480,8 @@ export function AppShell(): React.JSX.Element {
         onLogout={handleLogout}
       />
     );
+  } else if (route.kind === 'design-playground') {
+    main = <DesignPlayground />;
   } else if (route.kind === 'check') {
     const item = getCheck(route.checkId);
     main = item ? (

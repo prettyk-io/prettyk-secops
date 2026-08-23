@@ -31,6 +31,7 @@ import { fetchJson, ADMIN_LIVE_BASE } from '../adminApi';
 
 export type DojoSyncStatus = {
   ok: boolean;
+  configured?: boolean;
   running: boolean;
   last_sync_at?: number | null;
   last_sync_ok?: boolean | null;
@@ -144,6 +145,15 @@ export function DojoSyncManager(): React.JSX.Element {
   return (
     <div data-testid="dojo-sync-manager" className="pk-admin-page">
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
+        {status && status.configured === false ? (
+          <Alert
+            type="warning"
+            showIcon
+            message="DefectDojo не настроен"
+            description="Задайте KDT_DEFECTDOJO_URL и KDT_DEFECTDOJO_TOKEN в переменных окружения или services/defectdojo/.env.example"
+            data-testid="dojo-sync-unconfigured"
+          />
+        ) : null}
         <Alert
           type="info"
           showIcon

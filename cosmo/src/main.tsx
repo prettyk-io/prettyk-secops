@@ -1,5 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { Toaster } from 'sonner';
 import '@fontsource/ibm-plex-sans/400.css';
 import '@fontsource/ibm-plex-sans/500.css';
 import '@fontsource/ibm-plex-sans/600.css';
@@ -12,6 +13,7 @@ import { ThemeProvider } from './theme/ThemeProvider';
 import { LocaleProvider } from './locales';
 import { applyThemeCss, readStoredThemeId } from './theme/catalog';
 import './styles.css';
+import './tailwind.css';
 
 applyThemeCss(readStoredThemeId());
 
@@ -26,6 +28,7 @@ createRoot(container).render(
     <ThemeProvider>
       <AppErrorBoundary>
         <AppShell />
+        <Toaster position="bottom-right" richColors theme="dark" />
       </AppErrorBoundary>
     </ThemeProvider>
   </LocaleProvider>

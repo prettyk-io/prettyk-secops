@@ -280,6 +280,82 @@ def list_findings_for_gate(
         }
 
 
+def list_findings_suppressed(
+    *,
+    test_id: Optional[Any] = None,
+    engagement_id: Optional[Any] = None,
+    dojo_url: Optional[str] = None,
+    token: Optional[str] = None,
+    limit: int = 200,
+    max_pages: int = 50,
+) -> Dict[str, Any]:
+    """Pull findings with DOJO-S-3 statuses: false_p, risk_accepted, mitigated, out_of_scope, inactive.
+
+    Returns suppressed findings with their statuses for PrettyK results display.
+    These are EXCLUDED from the active gate but preserved in history.
+    """
+    _load_lab_env()
+    url_base = (dojo_url or _env("KDT_DEFECTDOJO_URL")).rstrip("/")
+    api_token = token or _env("KDT_DEFECTDOJO_TOKEN")
+    if not url_base or not api_token:
+        return {"ok": False, "findings": [], "suppressed_count": 0, "error": "not_configured"}
+
+    page_limit = max(1, min(int(limit), 10000))
+    params: Dict[str, Any] = {
+        "limit": page_limit,
+        "offset": 0,
+    }
+    if test_id is not None and test_id != "":
+        params["test"] = test_id
+    elif engagement_id is not None and engagement_id != "":
+        params["test__engagement"] = engagement_id
+    else:
+        return {"ok": False, "findings": [], "suppressed_count": 0, "error": "need_test_or_engagement"}
+
+    endpoint = f"{url_base}/api/v2/findings/"
+    timeout = int(_env("KDT_DEFECTDOJO_TIMEOUT_SEC", "120") or "120")
+    headers = {"Authorization": f"Token {api_token}", "accept": "application/json"}
+    results: List[Dict[str, Any]] = []
+    pages = 0
+    url: Optional[str] = endpoint
+    use_params: Optional[Dict[str, Any]] = params
+    suppressed_count = 0
+    suppressed_kinds: Dict[str, int] = {"false_p": 0, "risk_accepted": 0, "mitigated": 0, "out_of_scope": 0, "inactive": 0}
+
+    try:
+        while url and pages < max(1, int(max_pages)):
+            pages += 1
+            resp = requests.get(url, headers=headers, params=use_params, timeout=timeout)
+            if resp.status_code >= 400:
+                return {"ok": False, "findings": results, "suppressed_count": suppressed_count, "suppressed_kinds": suppressed_kinds, "error": f"http_{resp.status_code}"}
+            body = resp.json()
+            page_items, next_url, has_next_key = _parse_findings_page(body)
+            for f in page_items:
+                is_fp = f.get("false_p") is True
+                is_ra = f.get("risk_accepted") is True
+                is_mit = f.get("mitigated") is not None and f.get("mitigated") != ""
+                is_oos = f.get("out_of_scope") is True
+                is_inactive = f.get("active") is False
+                if is_fp or is_ra or is_mit or is_oos or is_inactive:
+                    suppressed_count += 1
+                    if is_fp: suppressed_kinds["false_p"] += 1
+                    if is_ra: suppressed_kinds["risk_accepted"] += 1
+                    if is_mit: suppressed_kinds["mitigated"] += 1
+                    if is_oos: suppressed_kinds["out_of_scope"] += 1
+                    if is_inactive: suppressed_kinds["inactive"] += 1
+                    results.append(f)
+            url, use_params, done = _advance_findings_cursor(
+                page_items=page_items, next_url=next_url, has_next_key=has_next_key,
+                page_limit=page_limit, params=params, endpoint=endpoint,
+            )
+            if done:
+                break
+        return {"ok": True, "findings": results, "suppressed_count": suppressed_count, "suppressed_kinds": suppressed_kinds, "pages": pages}
+    except Exception as exc:
+        logger.error("DefectDojo suppressed findings error: %s", exc)
+        return {"ok": False, "findings": results, "suppressed_count": suppressed_count, "suppressed_kinds": suppressed_kinds, "error": str(exc)}
+
+
 def _filter_needs_findings_path(policy: Any, waivers: Any) -> bool:
     from core.admission_filter import FilterPolicy, default_filter_policy
 
@@ -450,11 +526,11 @@ def trigger_defectdojo_import_detailed(
     api_token = token or _env("KDT_DEFECTDOJO_TOKEN")
 
     if not url_base or not api_token:
-        logger.info(
-            "DefectDojo import skipped: нет URL/TOKEN "
-            "(ожидался services/defectdojo/.env.example или env)"
+        logger.error(
+            "DefectDojo import blocked: KDT_DEFECTDOJO_URL / KDT_DEFECTDOJO_TOKEN not set. "
+            "Set KDT_DEFECTDOJO_ENABLED=0 to suppress."
         )
-        return {"ok": True, "skipped": True}
+        return {"ok": False, "skipped": False, "error": "dojo_not_configured"}
 
     path = Path(file_path)
     if not path.is_file():

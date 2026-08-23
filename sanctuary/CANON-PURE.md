@@ -1,4 +1,4 @@
-# CANON-PURE — спека коробки (secops-lab-pure)
+# CANON-PURE — спека коробки (prettyk-pure)
 
 > **Sanctuary**. Slice: 13 августа 2026. Отполированная спека коробки (CANON BASE).
 > Основа: `docs/KDTZaproxy.md` (техпаспорт) + `docs/canon/runtime-shell.md` + `docs/canon/*`.

@@ -12,7 +12,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { Alert, App as AntdApp, Button, Layout, Modal, Segmented, Tooltip } from 'antd';
+import { Alert, App as AntdApp, Button, Modal, Segmented, Tooltip } from 'antd';
 import { CheckCircleFilled, CloseCircleFilled } from '@ant-design/icons';
 import { WiredForm } from './wired/WiredForm';
 import type { Wired } from './wired/types';
@@ -50,7 +50,8 @@ import {
 } from './checks/checksStore';
 import { consumePendingReplay, peekPendingReplay } from './checks/replayCheck';
 import type { ResourceContentsMap } from './studio/resourceContents';
-import { StudioWorkspace, type StudioMode, STUDIO_MODE_STORAGE_KEY } from './studio/StudioWorkspace';
+import { StudioV2 } from './studio/StudioV2';
+import { StudioWorkspace, STUDIO_MODE_STORAGE_KEY, type StudioMode } from './studio/StudioWorkspace';
 import { PipelineLaunchButton } from './results/PipelineLaunchButton';
 import { requestAwaitStart } from './results/awaitStartBus';
 import {
@@ -182,10 +183,10 @@ export default function App({
   );
   const [studioMode, setStudioMode] = useState<StudioMode>(() => {
     if (typeof window === 'undefined') {
-      return 'front';
+      return 'editor';
     }
     const stored = window.localStorage.getItem(STUDIO_MODE_STORAGE_KEY);
-    return stored === 'editor' ? 'editor' : 'front';
+    return stored === 'front' ? 'front' : 'editor';
   });
 
   const handleStudioModeChange = useCallback((next: StudioMode) => {
@@ -758,9 +759,9 @@ export default function App({
 
   return (
     <KeywordsContext.Provider value={keywordsState}>
-      <Layout className="pk-layout pk-shell-layout pk-check-page">
+      <div className="flex flex-col h-screen overflow-hidden pk-check-page">
         <ShellAmbientVideo />
-        <Layout.Header className={segmentView === 'studio' ? 'pk-header pk-header--studio' : 'pk-header'}>
+        <header className={segmentView === 'studio' ? 'pk-header pk-header--studio' : 'pk-header'}>
           <div className="pk-brand">
             <div
               className={
@@ -847,13 +848,13 @@ export default function App({
             <LanguageSwitcher />
             {onLogout ? <LogoutButton onClick={onLogout} /> : null}
           </div>
-        </Layout.Header>
+        </header>
 
-        <div className="pk-view-host">
+        <div className="flex-1 min-h-0 flex flex-col pk-view-host">
           {/* ── Регламент ── */}
           {shouldKeepEditorView('form', editorView, visitedViews) ? (
-            <Layout.Content
-              className="pk-content pk-content--portal pk-form-page pk-view-pane"
+            <div
+              className="flex-1 flex flex-col min-h-0 pk-content pk-content--portal pk-form-page pk-view-pane"
               hidden={editorView !== 'form'}
               aria-hidden={editorView !== 'form'}
             >
@@ -903,37 +904,41 @@ export default function App({
                   </div>
                 </div>
               </section>
-            </Layout.Content>
+            </div>
           ) : null}
 
           {/* ── Редактор ── */}
           {shouldKeepEditorView('studio', editorView, visitedViews) ? (
-            <Layout.Content
+            <div
               className="pk-studio pk-view-pane"
               hidden={editorView !== 'studio'}
               aria-hidden={editorView !== 'studio'}
             >
-              <StudioWorkspace
-                formData={rawFormData}
-                onFormDataChange={setFormDataClamped}
-                resourceContents={resourceContents}
-                onResourceContentsChange={setResourceContents}
-                validationFeedback={
-                  editorView === 'studio' ? validationDrawer : undefined
-                }
-                validationSuccessVersion={validationSuccessVersion}
-                onCloseValidationFeedback={closeValidationDrawer}
-                onCmdValidate={handleValidatePreview}
-                onCmdBaseline={handlePipelineStart}
-                studioMode={studioMode}
-                onStudioModeChange={handleStudioModeChange}
-              />
-            </Layout.Content>
+              {studioMode === 'editor' ? (
+                <StudioWorkspace
+                  formData={rawFormData}
+                  onFormDataChange={setFormDataClamped}
+                  resourceContents={resourceContents}
+                  onResourceContentsChange={setResourceContents}
+                  validationFeedback={
+                    editorView === 'studio' ? validationDrawer : undefined
+                  }
+                  validationSuccessVersion={validationSuccessVersion}
+                  onCloseValidationFeedback={closeValidationDrawer}
+                  onCmdValidate={handleValidatePreview}
+                  onCmdBaseline={handlePipelineStart}
+                  studioMode={studioMode}
+                  onStudioModeChange={handleStudioModeChange}
+                />
+              ) : (
+                <StudioV2 />
+              )}
+            </div>
           ) : null}
 
           {/* ── Результаты ── */}
           {shouldKeepEditorView('results', editorView, visitedViews) ? (
-            <Layout.Content
+            <div
               className="pk-results-content pk-view-pane"
               hidden={editorView !== 'results'}
               aria-hidden={editorView !== 'results'}
@@ -947,10 +952,10 @@ export default function App({
                 monitorUrl={buildMonitorUrl(checkId)}
                 formData={rawFormData}
               />
-            </Layout.Content>
+            </div>
           ) : null}
         </div>
-      </Layout>
+      </div>
     </KeywordsContext.Provider>
   );
 }

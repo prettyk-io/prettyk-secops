@@ -86,4 +86,9 @@ BRAND-VIDEO, MONITOR-MAINPAGE-AND-SPACE, MONITOR-HEADER, MONITOR-AUTH-BINDING, M
 
 ### Evolve — Canon-requests
 
+| Файл | Тезис | Lane |
+|---|---|---|
+| [`CANON-RENAME-PRETTYK-PURE.md`](CANON-RENAME-PRETTYK-PURE.md) | Эволюция профиля коробки secops-lab-pure → prettyk-pure | `ready` → LANDED |
+| [`CANVAS-EXECUTION-WAR-ROOM.md`](CANVAS-EXECUTION-WAR-ROOM.md) | Тактический War Room и интерактивный конвейер запуска на @xyflow/react | `evolve` |
+| [`SCENARIO-CANVAS-STEP-DECK.md`](SCENARIO-CANVAS-STEP-DECK.md) | Капсульные ноды сценариев и Pill-Based конструктор шагов на @xyflow/react | `evolve` |
 | [`LAB-INTRUDER-STATION.md`](LAB-INTRUDER-STATION.md) | Станция Intruder /lab (canon-request) | `evolve` |

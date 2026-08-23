@@ -11,6 +11,8 @@ export type HashRoute =
   | { kind: 'history' }
   | { kind: 'admin' }
   | { kind: 'lab' }
+  | { kind: 'studio-v2' }
+  | { kind: 'design-playground' }
   | { kind: 'check'; checkId: string; view: CheckView };
 
 function isCheckView(value: string): value is CheckView {
@@ -46,6 +48,12 @@ export function parseHash(hash: string): HashRoute {
   if (head === 'lab') {
     return { kind: 'lab' };
   }
+  if (head === 'studio-v2') {
+    return { kind: 'studio-v2' };
+  }
+  if (head === 'design-playground') {
+    return { kind: 'design-playground' };
+  }
   if (head === 'policies') {
     // legacy hash → тот же экран, что admin
     return { kind: 'admin' };
@@ -73,6 +81,10 @@ export function formatHash(route: HashRoute): string {
       return '#/admin';
     case 'lab':
       return '#/lab';
+    case 'studio-v2':
+      return '#/studio-v2';
+    case 'design-playground':
+      return '#/design-playground';
     case 'check':
       return `#/checks/${route.checkId}/${route.view}`;
     default:

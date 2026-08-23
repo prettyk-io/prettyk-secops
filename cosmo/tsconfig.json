@@ -8,6 +8,9 @@
     "jsx": "react-jsx",
     "resolveJsonModule": true,
     "types": ["vite/client", "node"],
+    "baseUrl": ".",
+    "paths": { "@/*": ["./src/*"] },
+    "ignoreDeprecations": "6.0",
 
     "strict": true,
     "noUncheckedIndexedAccess": true,

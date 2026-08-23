@@ -1,7 +1,7 @@
 ﻿# Единый рабочий backlog KDT
 
 > **QUEUE** — не истина. Hub: [`../sanctuary/canon/INDEX.md`](../sanctuary/canon/INDEX.md).  
-> Группировка **только по эпикам** (префикс ID). Срез: **16 августа 2026**.  
+> Группировка **только по эпикам** (префикс ID). Срез: **22 августа 2026**. SC/WAR код сдан, evolve до proper test.  
 > Ветки: **`dev` → `main`** (FF по вехам). Feature-тоннель: [`feature-routing-backlog.md`](feature-routing-backlog.md).
 
 ---
@@ -61,10 +61,13 @@ prettyk-dev/
 ## Индекс эпиков (порядок очереди)
 
 | # | Эпик | Статус контура | Паспорт / якорь |
-|---|---|---|---|
+|---|---|---|---|---|
+| **SC** | **STUDIO-CANVAS — prettyK Studio v2: shadcn/ui + Tailwind v4 + React Flow canvas + Step Deck + pill-based конструктор** | **ACTIVE — 22 авг (SC-1…8 код сдан, evolve до proper test)** | § Эпик STUDIO-CANVAS ниже · [`sanctuary/pure/studio-stack.md`](../sanctuary/pure/studio-stack.md) · [`friend-requests/SCENARIO-CANVAS-STEP-DECK.md`](friend-requests/SCENARIO-CANVAS-STEP-DECK.md) |
+| **SC-WAR** | **WAR ROOM — тактический конвейер запуска: 5 фаз, SSE-телеметрия, Canvas 2D, фотонные импульсы** | **evolve — 22 авг (WR-1…8 код сдан, proper test не применён)** | § Эпик SC-WAR ниже · [`friend-requests/CANVAS-EXECUTION-WAR-ROOM.md`](friend-requests/CANVAS-EXECUTION-WAR-ROOM.md) |
+| **DP** | **DESIGN PLAYGROUND — полный порт на shadcn/ui + Tailwind v4 + вкладка Tailwind for Designers** | **CLOSED — 23 авг (DP-1…10 ✅ 22.5h)** | § Эпик DP ниже · [`sanctuary/DESIGN-WORKBENCH.md`](../sanctuary/DESIGN-WORKBENCH.md) |
 | **INT** | **INTRUDER-PRO — фаззер, режимы Burp (Sniper/Pitchfork/Cluster Bomb) + Grep Match/Extract** | **CLOSED — 17 авг (INT-1…3 ✅)** | § Эпик INTRUDER-PRO ниже · [`friend-requests/INTRUDER-PRO-ADVANCED-ATTACKS.md`](friend-requests/INTRUDER-PRO-ADVANCED-ATTACKS.md) |
 | **AUTH-V** | **AUTH-CHAIN-VAULT — мульти-профильная pre-flight авторизация, цепочки токенов и ZAP Replacer injection** | **CLOSED — 17 авг (AUTH-1…3 ✅)** | § Эпик AUTH-CHAIN-VAULT ниже |
-| **DOJO-S** | **DEFECTDOJO-AUTO-SYNC — автоматическая синхронизация находок и дедупликация** | **IN PROGRESS (Flash solo)** | § Эпик DEFECTDOJO-AUTO-SYNC ниже |
+| **DOJO-S** | **DEFECTDOJO-AUTO-SYNC — автоматическая синхронизация находок и дедупликация** | **ACTIVE — Flash** | § Эпик DEFECTDOJO-AUTO-SYNC ниже |
 | **SALV** | **SALVAGE — добор годноты из `to-sanitize` (~3–5%)** | **CLOSED — 17 авг (SALV-1…4 ✅)** | § Эпик SALVAGE ниже · [`friend-requests/SALVAGE-USABLE-CODE.md`](friend-requests/SALVAGE-USABLE-CODE.md) |
 | **RET** | **RETENTION & CLEANUP — управление диском и очистка артефактов в Админке** | **CLOSED — 17 авг (RET-API-1/2, RET-UI-1 ✅)** | § Эпик RETENTION ниже · [`friend-requests/RETENTION-AND-CLEANUP.md`](friend-requests/RETENTION-AND-CLEANUP.md) |
 | **BLANK** | **BLANK-PREV — честный inline-просмотр акта/бланка ИБ в Результатах + FNV-1a отпечаток** | **CLOSED — 17 авг (BLANK-PREV-1 ✅)** | § Эпик BLANK ниже · [`friend-requests/BLANK-INLINE-PREVIEW.md`](friend-requests/BLANK-INLINE-PREVIEW.md) |
@@ -89,6 +92,286 @@ prettyk-dev/
 | **10** | **S** / **L** | S-1…3 · L-1…3 **landed** | [`../legacy/docs/acceptance/`](../legacy/docs/acceptance/) |
 | **11** | **SONAR** / **QA** / **CANON-CULT** / **DOC-POC** | infra / docs | § ниже |
 | **12** | **PAL** (IHSTTYPWNB) — `cosmo-custom` | **PARKED** | [`../legacy/docs/ihsttypwnb-epic.md`](../legacy/docs/ihsttypwnb-epic.md) |
+
+---
+
+## Эпик DOJO-S — автоматический жизненный цикл находок
+
+> **ACTIVE · 23 августа 2026.** Аудит показал: импорт отчёта в Dojo, список находок,
+> ручной запуск sync, fingerprint/dedup и обратные статусы уже существуют по отдельности.
+> Задача Flash — довести их до единого автоматически проверяемого поведения после прогона.
+> **Исполнитель:** Flash. **Приёмка:** Keeper после evidence от Flash.
+
+### Что уже есть по факту
+
+- После завершения прогона ZAP-отчёт может автоматически попасть в Dojo.
+- В Админке есть просмотр находок, severity/CWE/status и ручной запуск синхронизации.
+- Есть стабильный fingerprint, dedup-поиск, retry/backoff и pull статусов `False Positive`,
+  `Risk Accepted`, mitigated/inactive.
+- Есть unit/component-тесты на mapping, dedup, retry, suppressions и честные down/unconfigured-состояния.
+
+### Нарезка для Flash
+
+| ID | Что должно получить лицо пользователя | Приёмочный сценарий | Est |
+|---|---|---|---|
+| **DOJO-S-1** | После завершения прогона все найденные активные уязвимости автоматически появляются в связанном контексте DefectDojo с корректными названием, severity, CWE и доказательством. | **Given:** прогон завершён и в нём есть находка. **When:** завершается формирование результатов. **Then:** находка видна в DefectDojo и в результатах PrettyK; ручная кнопка синхронизации не требуется. **Edge:** если Dojo временно недоступен, результат явно показывает ошибку синка, а не зелёный успех. | 3h |
+| **DOJO-S-2** | Повторный прогон той же уязвимости не создаёт второй одинаковый finding, а отражается как повтор существующей находки. | **Given:** одна находка уже отправлена. **When:** тот же сценарий запускается повторно с теми же признаками уязвимости. **Then:** в Dojo остаётся одна логическая находка, счётчик/история повторов корректны, а в UI виден dedup-результат. **Edge:** изменение endpoint, параметра, типа атаки или severity не маскируется под старую находку. | 2h |
+| **DOJO-S-3** | Статус, выставленный специалистом в DefectDojo, учитывается в следующем результате PrettyK и не порождает повторный активный алерт. | **Given:** finding помечен как False Positive, Risk Accepted, mitigated или inactive. **When:** выполняется следующий sync/прогон. **Then:** finding виден как подавленный, не входит в активный gate и не исчезает бесследно из истории. **Edge:** неподтверждённая или отсутствующая в Dojo находка остаётся активной. | 2h |
+| **DOJO-S-4** | Оператор видит единый честный статус синхронизации: последний запуск, отправленные, deduped, активные, подавленные и ошибочные находки. | **Given:** sync завершился успешно, частично или с ошибкой. **When:** оператор открывает Admin и обновляет состояние. **Then:** показатели соответствуют фактическому результату последнего запуска, повторное нажатие не создаёт параллельных sync-процессов, а недоступность Dojo отображается как down/unconfigured. | 1.5h |
+
+### DoD эпика
+
+- Автоматический путь после завершения прогона покрыт тестом с реальным пользовательским результатом, а не только unit-моками.
+- Повторная одинаковая находка не плодит дубликаты; изменение существенного признака создаёт отдельную логическую находку.
+- Статусы подавления проходят полный путь до активного gate и отображения истории.
+- Тесты на happy path, повтор, изменение признака, Dojo down/timeout и повторный запуск sync зелёные.
+- В Admin показатели sync совпадают с результатом последнего прогона.
+
+### Что не делать
+
+- Не переписывать Admin целиком и не менять общий UX таблицы находок.
+- Не менять severity-модель, gate-политику или правила канонической идентификации без отдельного требования.
+- Не добавлять ручное подтверждение каждого finding перед автоматической отправкой.
+- Не считать наличие endpoint’а или зелёного unit-теста доказательством завершённости: нужен проверяемый путь от прогона до Dojo и обратно.
+
+---
+
+## Эпик STUDIO-CANVAS — prettyK Studio v2 (shadcn/ui + Tailwind v4 + React Flow)
+
+> **active · 22 августа 2026.** Полный переход Studio на новый стек: shadcn/ui, Tailwind CSS v4, React Flow / @xyflow/react.
+> **Канон:** [`sanctuary/pure/studio-stack.md`](../sanctuary/pure/studio-stack.md). **Видение:** [`sanctuary/future-design-vision.md`](../sanctuary/future-design-vision.md).
+> **Friend-requests:** [`SCENARIO-CANVAS-STEP-DECK.md`](friend-requests/SCENARIO-CANVAS-STEP-DECK.md) (evolve), [`CANVAS-EXECUTION-WAR-ROOM.md`](friend-requests/CANVAS-EXECUTION-WAR-ROOM.md) (evolve).
+> **Профиль:** `prettyk-pure` (CANON BASE). antd — legacy, вытесняется поэтапно.
+
+### Архитектура Studio v2
+
+Три зоны:
+- **Слева/справа** — статические якоря: entity-граф с категориями (интеграции, фаззеры, модели страниц, модули). Существующий `StudioGraphExplorer` — не трогаем.
+- **Центр** — сценарии как **капсульные Step Deck ноды** (React Flow): вертикальная последовательность шагов без рёбер, pill-based конструктор (действие → стратегия → значение).
+- **При запуске** — War Room (evolve, позже).
+
+### Состояние
+
+| ID | Статус | Суть | Est |
+|---|---|---|---|
+| **SC-1** | **✅ 22 авг** | `@xyflow/react` v12.11.3 установлен. `ScenarioCanvas.tsx` — smoke (7 нод, custom nodes, minimap, controls). Роут `#/canvas`. | 0.5h |
+| **SC-2** | **✅ 22 авг** | Tailwind CSS v4 + `@tailwindcss/vite`. `src/tailwind.css` с shadcn темой и CSS-переменными. `components.json`. `cn()` util. | 0.5h |
+| **SC-3** | **✅ 22 авг** | `StudioV2.tsx` — shell на shadcn/ui + Tailwind: header (PrettyK бейдж, Сохранить/Запустить), левый сайдбар (дерево проекта), центр (React Flow canvas), правый инспектор (свойства ноды), нижняя консоль (лог запуска). Панели сворачиваются. Роут `#/studio-v2`. Ноль antd. | 2h |
+| **SC-4** | **✅ 22 авг** | **Step Deck Node.** `ScenarioDeckNode.tsx` — капсульная нода сценария в React Flow: шапка с названием и счётчиком шагов, сворачивание/разворачивание, список шагов с пилюлями внутри, кнопка «Добавить шаг». Вертикальный пайплайн, без рёбер. | 4h |
+| **SC-5** | **✅ 22 авг** | **Pill-Based Step Row.** `StepPillRow.tsx` — строка шага с тремя пилюлями: действие (Click/Type/Open/Wait/Spider/FuzzWave/Let/Secret с цветовой кодировкой), стратегия (role/label/css/test_id/text/xpath), значение ($переменные с автодополнением). LED-индикатор, кнопки вверх/вниз/▶/удалить. | 4h |
+| **SC-6** | **✅ 22 авг** | **Two-Way Wired Synchronizer.** `ScenarioDeckSynchronizer.ts` + `useScenarioDeckWire` — синхронизация Pill UI ↔ PrettyK DSL ↔ Wired JSON. `stepToDSL()`, `importFromWired()`, `exportToWired()`. Zustand store `ScenarioDeckStore`. | 3h |
+| **SC-7** | **✅ 22 авг** | **Step-by-Step Playwright Debug.** Эндпоинт `/api/run/step` в `data_playground.py` — принимает action/strategy/strategy_value/payload, строит DSL constructor, валидирует. Кнопка `▶` в строке → POST → LED → success/failure. | 3h |
+| **SC-8** | **✅ 22 авг (код)** | **CDP Browser Pane.** `browser_service.py` (5 эндпоинтов), `BrowserPanel.tsx`, вкладка «Браузер» в правой панели, синхронизация клик-на-строке → подсветка элемента. proper test pending. | 6h |
+| **SC-9** | **evolve** | **War Room — Execution Mode.** → Выделен в SC-WAR ниже. WR-1…8 код сдан, proper test pending. | 8h |
+
+### Приёмка SC-4…7
+
+- [ ] Открыть `#/studio-v2` → увидеть сценарий как капсульную ноду с шагами внутри.
+- [ ] Добавить шаг через пилюли: выбрать действие → стратегию → значение.
+- [ ] Перетащить шаг вверх/вниз внутри ноды.
+- [ ] Нажать `▶` → шаг отправлен на `/api/run/step`, строка получила LED success/failure.
+- [ ] Переключиться в Monaco → увидеть тот же DSL без рассинхрона.
+- [ ] Изменить пилюлю → wired обновился.
+- [ ] `tsc --noEmit` чистый.
+
+### Out of scope (пока)
+
+- ❌ ~~War Room execution mode (SC-9)~~ — код сдан (WR-1…8), evolve.
+- ❌ Замена `StudioGraphExplorer` (entity-граф остаётся как есть).
+- ❌ Массовая миграция старых страниц с antd. Только новый Studio-shell.
+
+---
+
+## Эпик SC-WAR — War Room: тактический конвейер запуска на React Flow
+
+> **evolve · 22 августа 2026.** Интерактивный Tactical Execution Canvas — визуализация прогона в реальном времени.
+> **Автор vision:** Gemini. **Профиль:** `prettyk-pure`.
+> **Friend-request:** [`CANVAS-EXECUTION-WAR-ROOM.md`](friend-requests/CANVAS-EXECUTION-WAR-ROOM.md).
+> **Зависит от:** SC-4 (Step Deck Node), SC-5 (Pill-Based Step Row), SC-7 (Step Debug). Без готового Step Deck не начинать.
+> **Начинать только после закрытия SC-1…7.**
+
+### Тезис
+
+Во всех легаси-инструментах (Burp, ZAP, Acunetix) запуск — серый прогресс-бар и бегущие логи вслепую. Оператор не видит: где сканер, куда бьёт фаззер, где застрял запрос.
+
+War Room превращает кнопку «Запустить» в живой командный пункт. Studio перестраивается: редактор уступает место графовому холсту, по нодам бегут фотонные импульсы реального прогресса, фаззер заряжается и наносит удар, аномалии вспыхивают маркерами прямо на графе. Всё честно привязано к SSE-телеметрии, без дискотеки и WebGL.
+
+### As-Built фундамент (уже в коде)
+
+| Компонент | Файл | Что делает |
+|---|---|---|
+| `GraphWaveOverlay` | `studio/graph/GraphWaveOverlay.tsx` (517 строк) | Canvas 2D движок периметральных волн. Поддерживает `inverted`, `delayOffset`. Палитра Cyan/Violet/Magenta. 0% CPU, requestAnimationFrame. |
+| `GraphTelemetryOverlay` | `studio/graph/GraphTelemetryOverlay.tsx` (110 строк) | CSS Bezier-анимация фотонных импульсов по рёбрам. Адаптивная скорость: `<200ms` latency → `0.6s`, `<1500ms` → `1.8s`, иначе `3.5s`. |
+| `useGraphTelemetry` | `studio/graph/useGraphTelemetry.ts` (59 строк) | SSE-хук к `:8767/api/diary?channel=telemetry`. Буфер до 200 событий, фильтр по времени (`maxAgeMs`). |
+| `NodeHudWhisperer` | `studio/graph/NodeHudWhisperer.tsx` (84 строки) | 240×48px микро-чип над нодой. Две строки: факт телеметрии (JetBrains Mono 10px) + AI-whisper. |
+| `StepLanternLed` | `studio/graph/StepLanternLed.tsx` (70 строк) | 6 состояний: `queued` (серый), `running` (циан-пульс 1s), `success` (изумрудный flash), `warning` (янтарное дыхание 2s), `failure` (красный строб 3×), `predicted` (фиолет pre-light). |
+
+Все компоненты уже работают на entity-графе (`StudioGraphExplorer`). War Room берёт их и применяет к Step Deck сценария — с привязкой к реальным `step_id` из прогона, а не к категориям entity-графа.
+
+### Пять фаз запуска
+
+```text
+Клик «Запустить» в StudioV2
+            │
+            ▼
+┌─ ФАЗА 1: IGNITION ────────────────────────────────────────────┐
+│ Layout Shift: сайдбары сворачиваются, холст — 100% ширины      │
+│ Canvas-периметр → cyan wave (GraphWaveOverlay)                 │
+│ Камера → setCenter на первую ноду (step-1), duration: 600ms    │
+│ Все LED → queued (серый)                                       │
+└────────────────────────────────────────────────────────────────┘
+            │
+            ▼
+┌─ ФАЗА 2: ACTION CONVEYOR ─────────────────────────────────────┐
+│ SSE-события step_start/step_end → LED переключение             │
+│   queued → running (циан-пульс) → success (изумруд)            │
+│   При ошибке: running → failure (красный строб)                │
+│ Камера follow за активным step_id (setCenter, 400ms)           │
+│ NodeHudWhisperer над активной нодой: факт + статус             │
+└────────────────────────────────────────────────────────────────┘
+            │
+            ▼
+┌─ ФАЗА 3: HEAVY STRIKE (фаззер / active scan) ─────────────────┐
+│ Событие fuzz.start / active_scan.start                         │
+│ Камера → zoomTo(0.6), вся топология в кадре                    │
+│ Периметр → charge glow (GraphWaveOverlay, inverted, 300ms)     │
+│ Canvas 2D: веер лучей от ноды фаззера к цели                   │
+│   Цвет: Amber (#F59E0B) для фаззинга, Violet (#A855F7) для     │
+│   active scan. Плотность = текущий RPS                         │
+└────────────────────────────────────────────────────────────────┘
+            │
+            ▼
+┌─ ФАЗА 4: ANOMALY FLARE ───────────────────────────────────────┐
+│ SSE: finding.new → anomaly shockwave                          │
+│   Canvas 2D: радиальная вспышка (Amber #F59E0B для warning,    │
+│   Magenta #D946EF для critical) вокруг ноды                    │
+│ Маркер уязвимости: бейдж с CWE/severity на ноде               │
+│ NodeHudWhisperer: контекст находки (finding title, CWE, risk)  │
+│   Кнопка → открыть в Results                                   │
+└────────────────────────────────────────────────────────────────┘
+            │
+            ▼
+┌─ ФАЗА 5: SYNTHESIS ───────────────────────────────────────────┐
+│ SSE: run.complete → все потоки стягиваются                     │
+│ Итоговые ноды: Allure / Dojo — статус допуска                  │
+│ Граф стабилизируется, zoom возвращается к fitView              │
+│ Бейдж: PASSED (Emerald) / FAILED (Red) / WARNING (Amber)      │
+│ Кнопка «Результаты» → переход в Results / Акт                 │
+└────────────────────────────────────────────────────────────────┘
+```
+
+### План реализации
+
+Все компоненты, кроме `FuzzerStrikeOverlay`, уже существуют и работают. Основная работа — адаптация их с entity-графа на Step Deck сценария.
+
+| ID | Статус | Суть | Файлы | Est |
+|---|---|---|---|---|---|
+| **WR-1** | **✅ 22 авг (код)** | **Telemetry Bridge.** `useWarRoomTelemetry.ts` — SSE → Zustand: 6 типов. proper test pending. | `useWarRoomTelemetry.ts` | 3h |
+| **WR-2** | **✅ 22 авг (код)** | **War Room Layout Switcher.** CSS-класс `pk-war-room`, War Room bar. proper test pending. | `ScenarioFlow.tsx` | 2h |
+| **WR-3** | **✅ 22 авг (код)** | **Camera Director.** `useReactFlow().fitView()` через `consumeCameraFocus()`. proper test pending. | `ScenarioFlow.tsx` | 2h |
+| **WR-4** | **✅ 22 авг (код)** | **Step LED Pipeline.** `LedIndicator` — 6 состояний. proper test pending. | `StepPillRow.tsx` | 2h |
+| **WR-5** | **✅ 22 авг (код)** | **Node HUD Whisperer.** Чип под хедером ноды. proper test pending. | `ScenarioDeckNode.tsx` | 1.5h |
+| **WR-6** | **✅ 22 авг (код)** | **Fuzzer Strike Overlay.** CHARGE → STRIKE, 30 лучей. proper test pending. | `FuzzerStrikeOverlay.tsx` | 4h |
+| **WR-7** | **✅ 22 авг (код)** | **Anomaly Shockwave.** Кольцо + вспышка. proper test pending. | `FuzzerStrikeOverlay.tsx` | 2h |
+| **WR-8** | **✅ 22 авг (код)** | **Synthesis Gate.** PASSED/FAILED bar. proper test pending. | `ScenarioFlow.tsx` | 1.5h |
+
+### Честность (Zero Fake FX — принцип)
+
+| Принцип | Правило | Нарушение |
+|---|---|---|
+| Все эффекты — от SSE | Цвет, скорость, плотность лучей = реальные данные из `diary_bus` | Захардкоженные таймеры, зацикленные гифки |
+| 0% CPU / 60 FPS | Только 2D Canvas + SVG + CSS `transform`. `requestAnimationFrame`, early exit когда нет событий | Three.js, Pixi, WebGL-шейдеры |
+| Эстетика Dark Glass | `#0B0F17` фон, 2px лазеры, палитра Cyan/Violet/Amber/Emerald/Magenta | Мультяшные градиенты, круглые пузыри |
+| Тактильный ритм | Нагнетание (300ms charge) → burst (200ms). Контраст между ожиданием и ударом | Монотонное мигание |
+| Управление у оператора | UI всегда кликабелен, анимации не блокируют. Кнопка «Стоп» в любой фазе | Блокировка интерфейса на время анимации |
+
+### Зависимости и порядок
+
+```
+SC-4 (Step Deck) ──┐
+SC-5 (Pill Row) ───┼──→ WR-1 (Telemetry Bridge)
+SC-7 (Step Debug) ─┘        │
+                             ├──→ WR-2 (Layout Switcher)  ──┐
+                             ├──→ WR-3 (Camera Director)    ├──→ WR-6 (Fuzzer Strike)
+                             ├──→ WR-4 (Step LED Pipeline)  │    WR-7 (Anomaly Shockwave)
+                             └──→ WR-5 (Node HUD)           │         │
+                                                            └──── WR-8 (Synthesis Gate)
+```
+
+### Приёмка (на evolve — после поднятия из evolve в active)
+
+- [ ] Нажать «Запустить» в `#/studio-v2` → сайдбары свернулись, header показывает WAR ROOM.
+- [ ] Камера сфокусировалась на первом шаге.
+- [ ] LED'ы переключаются по мере прохождения шагов: queued → running → success.
+- [ ] При входе в фаззер — zoom-out, зарядка, веер лучей.
+- [ ] При находке — вспышка, маркер на ноде, HUD Whisperer с контекстом.
+- [ ] При завершении — fitView, бейдж PASSED/FAILED, кнопка «Результаты».
+- [ ] Кнопка «Стоп» работает в любой момент, анимации гаснут.
+- [ ] `tsc --noEmit` чистый, 60 FPS на протяжении всего прогона.
+
+### Out of scope (жёстко)
+
+- ❌ WebGL / Three.js / Pixi. Только 2D Canvas + SVG + CSS.
+- ❌ Звуковые эффекты. Без явного тогла пользователем — никогда.
+- ❌ War Room без реального прогона. Нет прогона — нет War Room. Никаких «демо-режимов» с фейковыми событиями.
+- ❌ Замена существующего `StudioGraphExplorer`. Entity-граф живёт своей жизнью.
+
+---
+
+## Эпик DP — порт Design Playground на shadcn/ui + Tailwind v4 (10 задач, 22.5h)
+
+> **new · 23 августа 2026.** Полный порт дизайнерского полигона (`#/design-playground`) на shadcn/ui + Tailwind CSS v4 + добавление обучающей вкладки Tailwind for Designers & Workshop.
+> **Сервис-помощник:** не продуктовый FRIEND, а утилита для дизайнера (Вера) и инженеров.
+> **Автор оригинала:** Boss. **Профиль:** `prettyk-pure`.
+> **Документ:** [`sanctuary/DESIGN-WORKBENCH.md`](../sanctuary/DESIGN-WORKBENCH.md).
+
+### Исходное состояние
+
+14 файлов (4278 строк) на унаследованном стеке + inline-стилях. 8 вкладок-лабораторий:
+- Input Particles (12 анатомических паттернов инпутов)
+- Buttons & Switches (8 стилей кнопок)
+- SecOps Combat Forms (живые формы + marketplace)
+- Component Matrix (матрица с density/stress-контролами)
+- Typography (песочница шрифтов + 4 канон-локкапа с оптическими оффсетами)
+- Brandbook & Gradients (5 градиентов, 6 threat-токенов, 6 палитр, WCAG)
+- Spacing & Depth (шкала отступов, радиусы, тени, z-index)
+- Tailwind for Designers & Workshop (шпаргалка токенов, библия Refactoring UI, живая песочница)
+
+8 глобальных пресетов стиля, 5 фонов канваса, копирование сниппетов, ссылки на маркетплейсы.
+
+### Задачи порта (10 задач · 22.5h)
+
+| ID | Статус | Суть | Est |
+|---|---|---|---|
+| **DP-1** | **✅ 23 авг** | **Инфраструктура.** Перевести навигацию по вкладкам на shadcn Tabs. Заменить структурные компоненты (Card, Typography, Divider, Tooltip) на shadcn-эквиваленты. Убрать все унаследованные импорты. | 2.5h |
+| **DP-2** | **✅ 23 авг** | **Пресеты и фон.** Перенести 8 `GlobalDesignPreset` на Tailwind-конфиг + CSS-переменные. Фон канваса — через Tailwind-классы. Сохранить мост к `theme/tokens`. | 2.0h |
+| **DP-3** | **✅ 23 авг** | **Input Particles.** 12 вариантов инпутов: перевести на shadcn Input, inline-стили на Tailwind utility classes. Сохранить копирование сниппетов и ссылки на Origin UI/21st.dev. | 3.0h |
+| **DP-4** | **✅ 23 авг** | **Buttons & Switches.** 8 стилей кнопок: shadcn Button с cva-вариантами. Segmented → ToggleGroup. Switch → shadcn Switch. | 2.0h |
+| **DP-5** | **✅ 23 авг** | **SecOps Combat Forms.** Перевести формы скоупа и фаззинга на shadcn-компоненты (Input, Select, Slider, Radio, Checkbox, Progress). Сохранить симуляцию launch pipeline. | 2.5h |
+| **DP-6** | **✅ 23 авг** | **Component Matrix.** Матрица компонентов на shadcn. Density-тогглы через Tailwind-варианты (`compact`/`comfortable`/`spacious`). State-тогглы через data-атрибуты или псевдоклассы. | 3.5h |
+| **DP-7** | **✅ 23 авг** | **Typography.** Песочница шрифтов (`GT Eesti Pro`, `Golos`, `JetBrains Mono`) — перевести Select/Slider на shadcn. Локкапы PrettyK — вычистить унаследованные обёртки. | 2.0h |
+| **DP-8** | **✅ 23 авг** | **Brandbook & Gradients.** Перевести Tag, Card на shadcn Badge/Card. WCAG-калькулятор — оставить логику, заменить UI на Tailwind. | 1.5h |
+| **DP-9** | **✅ 23 авг** | **Spacing & Depth.** Перевести Card/Typography на shadcn. Статическая вкладка — минимальные изменения. | 1.0h |
+| **DP-10** | **✅ 23 авг** | **Tailwind for Designers & Workshop.** Полноценный гид для Веры (почему Tailwind важен дизайнеру, шпаргалка 5 столпов, ссылки на *Refactoring UI* и скринкасты Steve Schoger) + живой Monaco-редактор с превью. Ноль внешних зависимостей. | 2.5h |
+
+### Приёмка
+
+- [x] Открыть `#/design-playground` → все 8 вкладок работают (7 оригинальных + Tailwind for Designers & Workshop).
+- [x] 8 пресетов переключаются, компоненты реагируют.
+- [x] 5 фонов канваса переключаются (включая Dot Grid и Soft Studio Grey).
+- [x] Копирование сниппетов работает.
+- [x] WCAG-калькулятор показывает контраст.
+- [x] Симуляция launch pipeline работает.
+- [x] Вкладка Tailwind for Designers: инфо-блок с библией и туториалами + интерактивная песочница.
+- [x] Ноль унаследованных импортов в `design-playground/`.
+- [x] `tsc --noEmit` чистый.
+- [x] После порта: старый `styles.css` не содержит design-playground-специфичных стилей.
+
+### Out of scope
+
+- ❌ Переписывать систему пресетов. Только замена транспорта: inline-стили → Tailwind-классы + CSS-переменные.
+- ❌ Менять дизайн-решения. Порт — это перевод, не редизайн.
+- ❌ Удалять старый design-playground до полной приёмки нового.
 
 ---
 
@@ -856,7 +1139,7 @@ Boss проверяет контракты, доводит сборку и со�
 
 > **NEW · 16 августа 2026.** Максим: «нарезка корпусов из discovery». Коробка одной кнопкой: URL → grab network → spider cluster search → extract → process corpus → form list → activeScan → passiveScan → repeat? → report. **0 actions юзером** (не ввёл ни одного локатора), но куча потенциальных уязвимостей.
 > **Идея:** после discovery (spider/passive) весь сырой трафик прогнать через процессинг DOM + Network-начинки → из «фарша» выделить локаторы/параметры → эвристически «пробудить» запросы (click → слушать afterclick network) → накидать в context корпус (200 или эвристические) → activeScan уже профаззит это дерьмо.
-> **Стены:** ZAP = discovery + passive + опциональный activeScan. Свой фаззинг (payloads/мутации) — не зависит от ZAP. Webswing ZAP → legacy, выпиливаем когда свой фаззинг закроет ручной тык. Не пишем свой spider/activeScan с нуля (ZAP закрывает бесплатно). Не тащим RJSF/JSON Schema.
+> **Стены:** ZAP = discovery + passive + опциональный activeScan. Свой фаззинг (payloads/мутации) — не зависит от ZAP. Не пишем свой spider/activeScan с нуля (ZAP закрывает бесплатно). Не тащим RJSF/JSON Schema.
 
 ### Нарезка (фазы — сверху вниз по потоку данных)
 

@@ -559,7 +559,7 @@ def finalize_reports(
         )
 
         if zap_report_path is None:
-            logger.info("Manifest produced no ZAP report path (last_zap_report)")
+            logger.info("Wired produced no ZAP report path (last_zap_report)")
         elif os.path.exists(str(zap_report_path)):
             logger.info("ZAP report on disk: %s", zap_report_path)
         else:
@@ -661,7 +661,7 @@ def finalize_reports(
                                 pass
                         except Exception as exc:
                             logger.debug("executive conclusion: %s", exc)
-                        # hooks / акт видят отфильтрованные ACTIVE counts + collapse
+                        # hooks / акт видят отфильтрованные ACTIVE counts + collapse + suppression
                         evidence["dojo"] = {
                             **dojo_meta,
                             "stats": counts,
@@ -670,6 +670,8 @@ def finalize_reports(
                             "collapse": collapsed,
                             "executive": executive,
                         }
+                        # DOJO-S-3: pull suppressed findings statuses
+                        _resolve_suppressed_into_evidence(evidence["dojo"], dojo_meta)
             else:
                 logger.error("DefectDojo import failed for %s", xml_path)
                 status["dojo_ok"] = False
@@ -840,6 +842,30 @@ def _notify_hook_safe(notify, service: str, url: str, **kwargs) -> None:
         notify(service, url, **kwargs)
     except Exception as exc:
         logger.debug("%s hook push: %s", service, exc)
+
+
+def _resolve_suppressed_into_evidence(dojo_evidence: Dict[str, Any], dojo_meta: Dict[str, Any]) -> None:
+    """DOJO-S-3: pull suppressed finding statuses from Dojo into evidence."""
+    test_id = dojo_meta.get("test_id")
+    engagement_id = dojo_meta.get("engagement_id")
+    if not test_id and not engagement_id:
+        return
+    try:
+        from adapters.defectdojo_client import list_findings_suppressed
+
+        suppressed = list_findings_suppressed(test_id=test_id, engagement_id=engagement_id)
+        if suppressed.get("ok"):
+            dojo_evidence["suppressed_count"] = suppressed.get("suppressed_count", 0)
+            dojo_evidence["suppressed_kinds"] = suppressed.get("suppressed_kinds", {})
+            dojo_evidence["suppressed_findings"] = [
+                {"title": str(f.get("title", "")), "severity": str(f.get("severity", "")),
+                 "false_p": bool(f.get("false_p")), "risk_accepted": bool(f.get("risk_accepted")),
+                 "mitigated": bool(f.get("mitigated")), "out_of_scope": bool(f.get("out_of_scope")),
+                 "active": bool(f.get("active"))}
+                for f in suppressed.get("findings", [])[:20]
+            ]
+    except Exception as exc:
+        logger.debug("dojo suppressed pull: %s", exc)
 
 
 def _resolve_results_hook_notify():
