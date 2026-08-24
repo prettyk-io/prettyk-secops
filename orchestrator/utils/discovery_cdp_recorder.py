@@ -1,14 +1,20 @@
 # -*- coding: utf-8 -*-
-"""Discovery Engine — CDP Recorder (Boss).
+"""Discovery Engine — CDP Recorder (legacy, delegated to PW-4).
 
-Слушает fill/click/navigate через CDP, извлекает элементы через F1+F2,
-строит Discovery IR через диспетчер сессий.
+PW-4: Now delegates to discovery_pw_recorder.py for Playwright-native API.
+Kept for backwards-compat — callers may still import from this module.
 """
 from __future__ import annotations
 
-import json
 from typing import Any, Optional
 
+from utils.discovery_pw_recorder import (
+    AXSnapshot,
+    DiscoveryRecorder,
+    NetworkEvent,
+    _safe_id,
+    discover_page,
+)
 from lab.discovery_session import (
     create_or_update_family,
     add_transition,
@@ -40,9 +46,9 @@ def record_ax_snapshot(
     url: str,
     ax_nodes: list[dict[str, Any]],
 ) -> Optional[dict[str, Any]]:
-    """Process CDP accessibility snapshot: extract elements, build candidates, store in IR.
+    """Process accessibility snapshot: extract elements, build candidates, store in IR.
 
-    Called by the CDP listener after each page load or mutation.
+    Backwards-compat wrapper — prefers Playwright-native snapshot via discovery_pw_recorder.
     """
     route = route_from_url(url or "")
     family_id = f"pf_{_safe_id(route)}"
@@ -81,10 +87,3 @@ def record_action(
         url_change=to_route,
         response_class=response_class,
     )
-
-
-def _safe_id(text: str) -> str:
-    """Turn URL path into a safe identifier fragment."""
-    clean = (text or "").strip().strip("/").replace("https://", "").replace("http://", "")
-    result = "".join(c if c.isalnum() or c in "_-" else "_" for c in clean)
-    return result[:40] or "root"

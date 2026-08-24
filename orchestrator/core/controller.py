@@ -50,15 +50,10 @@ logger = logging.getLogger("controller")
 # Порты ZAP задаёт инфраструктура раннера, не манифест.
 # Main 8080 — для zapv2 (официальный клиент ходит через этот слушатель).
 # Browser proxy 8099 — доп. Local Server (Network API addLocalServer), чтобы
-# MITM-трафик браузера не делил сокет с API-клиентом.
-# Concurrent lab: Webswing API/proxy :8090/:8199, UI host :8082
-# (compose + docs/webswing-daemon-stand.md).
+# MITM-трафик браузера не делил сокет с API-клиентом. Demon-only (webswing removed 2026-08-22).
 # https://www.zaproxy.org/docs/desktop/addons/network/options/localservers/
 DEFAULT_ZAP_PORT = 8080
 DEFAULT_ZAP_BROWSER_PROXY_PORT = 8099
-DEFAULT_WEBSWING_API_PORT = 8090
-DEFAULT_WEBSWING_PROXY_PORT = 8199
-DEFAULT_WEBSWING_UI_PORT = 8082
 
 
 class Controller:

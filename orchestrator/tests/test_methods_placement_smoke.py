@@ -54,8 +54,8 @@ def _stub_for_param(name: str) -> str:
         return "css"
     if n in ("selector_value", "source_value", "target_value"):
         return ".x"
-    if "timeout" in n or "seconds" in n or "minutes" in n:
-        return "1"
+    if "timeout" in n or "seconds" in n or "minutes" in n or "port" in n:
+        return "8080"
     if n in ("index", "row_index", "col_index", "x_offset", "y_offset"):
         return "0"
     if "text" in n or "message" in n or "name" in n or "title" in n:
@@ -202,18 +202,30 @@ _NAMELESS_BY_DESIGN: Dict[str, frozenset] = {
     ),
     # get_element_by_index — сырой WebElement не отдаём в язык; session_diary — служебное.
     "webdriver": frozenset({"get_element_by_index", "session_diary"}),
+    "browser": frozenset({"get_local_storage_entries", "get_session_storage_entries"}),
     # Считает High-алерты для quality gate, шагом не вызывается.
     "zap": frozenset({
         "summarize_high_alerts",
         "summarize_alerts_for_live",
         "domains_csv_to_include_regexes",
         "_alert_filter_level",
-        # G-36 helpers — зовутся из apply_manifest_auth / BrowserAuth, не keyword.
+        # G-36 helpers — зовутся из apply_wired_auth / BrowserAuth, не keyword.
         "set_http_authentication",
         "set_auth_verification_autodetect",
         "set_session_management_autodetect",
         "stop_client_spider",
+        "bind_run_wired",
+        "enable_all_passive_scanners",
+        "list_grpc_services",
+        "passive_records_to_scan",
+        "passive_scan_wait_seconds",
+        "prepare_and_import_chain",
+        "stop_all_spiders",
+        "unary_grpc_call",
     }),
+    "http": frozenset({"bind_run_wired", "set_proxy"}),
+    "grpc": frozenset({"bind_run_wired", "set_proxy"}),
+    "connector": frozenset({"bind_run_wired"}),
 }
 
 

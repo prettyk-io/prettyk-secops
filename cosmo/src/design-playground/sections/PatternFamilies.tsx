@@ -287,7 +287,7 @@ function SecOpsFormsSuite({ preset, backdrop }: { preset: GlobalDesignPreset; ba
                 onClick={() => setAttackMode(mode.id as typeof attackMode)}
                 style={{
                   padding: '12px 14px',
-                  borderRadius: preset.id === 'neubrutalism' ? 0 : preset.id === 'pill-soft' ? 12 : 8,
+                  borderRadius: backdrop.isLight ? 8 : 8,
                   border: active
                     ? `1.5px solid #38bdf8`
                     : backdrop.isLight ? '1px solid #cbd5e1' : '1px solid rgba(255, 255, 255, 0.1)',
@@ -333,7 +333,7 @@ function SecOpsFormsSuite({ preset, backdrop }: { preset: GlobalDesignPreset; ba
                 onClick={toggle}
                 style={{
                   padding: '10px 12px',
-                  borderRadius: preset.id === 'neubrutalism' ? 0 : preset.id === 'pill-soft' ? 10 : 8,
+                  borderRadius: backdrop.isLight ? 8 : 8,
                   border: `1.5px solid ${selected ? vec.color : backdrop.isLight ? '#cbd5e1' : 'rgba(255, 255, 255, 0.1)'}`,
                   background: selected
                     ? `${vec.color}15`

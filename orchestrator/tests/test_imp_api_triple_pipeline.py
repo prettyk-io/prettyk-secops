@@ -34,7 +34,7 @@ def _lab_dry(monkeypatch):
         SDL.write_text("type Query {\n  health: String\n}\n", encoding="utf-8")
 
 
-def _bank_manifest():
+def _bank_wired():
     return SimpleNamespace(
         debug_mode=False,
         scan_base_url=lambda: "http://127.0.0.1:8090",
@@ -130,7 +130,7 @@ def test_triple_controller_pipe_dry():
     if not PROTO_PACK.is_dir():
         pytest.skip("lab proto_pack missing")
 
-    wired = _bank_manifest()
+    wired = _bank_wired()
     zap = ZapAdapter.__new__(ZapAdapter)
     zap._connected = False
     zap._zap = None
@@ -166,13 +166,13 @@ def test_triple_controller_pipe_dry():
     ctrl.language_engine = LanguageEngine()
     ctrl.page_resolver = None
     ctrl.adapters = {"zap": zap, "http": http, "grpc": grpc}
-    ctrl._manifest_problems = []
+    ctrl._wired_problems = []
     ctrl.last_zap_report = None
     ctrl.wired = wired
     ctrl.action_factory = factory
     ctrl._diary = lambda *a, **k: None
     ctrl._attach_call_details = lambda *a, **k: None
-    ctrl._enrich_manifest_error = lambda e, **k: e
+    ctrl._enrich_wired_error = lambda e, **k: e
     ctrl._diary_high_alerts = lambda: None
     ctrl._parse_constructor = lambda raw: parse_constructor(raw, factory)
 

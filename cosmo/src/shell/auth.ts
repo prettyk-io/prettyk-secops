@@ -69,7 +69,7 @@ const USERS: Record<AuthUser, UserRow> = {
   'admin-service@spaceport.cbr.ru': {
     password: 'verysecure',
     role: 'admin_service',
-    displayName: 'Администратор Сервиса',
+    displayName: 'Администратор',
   },
   'expert-sec@spaceport.cbr.ru': {
     password: 'verysecure',
@@ -83,8 +83,8 @@ const USERS: Record<AuthUser, UserRow> = {
   },
   admin: {
     password: 'verysecure',
-    role: 'admin_sec',
-    displayName: 'Администратор ИБ',
+    role: 'admin_service',
+    displayName: 'Администратор',
   },
   debug: {
     password: 'verysecure',
@@ -128,7 +128,7 @@ function canonicalRole(role: LabRole | null | undefined): LabRole {
 const ROLE_DISPLAY: Record<LabRole, string> = {
   admin_sec: 'Администратор ИБ',
   admin_abnormal: 'Администратор НШР',
-  admin_service: 'Администратор Сервиса',
+  admin_service: 'Администратор',
   sec_expert: 'Эксперт ИБ',
   user: 'Пользователь',
   admin_ib: 'Администратор ИБ',
@@ -199,6 +199,20 @@ export function canSelectWebswing(user: AuthUser | null | undefined): boolean {
 
 export function canimportWired(user: AuthUser | null | undefined): boolean {
   return capsForUser(user).canimportWired;
+}
+
+export function canAccessControl(user: AuthUser | null | undefined): boolean {
+  if (!user) return false;
+  if (user === 'admin' || user === 'debug' || user === 'admin-service@spaceport.cbr.ru') return true;
+  const role = roleOf(user);
+  return role === 'admin_service' || role === 'admin_sec' || role === 'admin_ib';
+}
+
+export function canAccessSecOpsControl(user: AuthUser | null | undefined): boolean {
+  if (!user) return false;
+  if (user === 'admin' || user === 'debug' || user === 'admin-sec@spaceport.cbr.ru') return true;
+  const role = roleOf(user);
+  return role === 'admin_sec' || role === 'admin_ib' || role === 'admin_service';
 }
 
 export function readSession(): AuthUser | null {

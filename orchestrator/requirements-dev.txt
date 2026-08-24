@@ -1,12 +1,10 @@
 # Dev/CI: runtime + тестовый/генер. стек (G-26 lite — без дублей runtime-пинов)
 -r requirements.txt
-allure-combine>=0.1.0,<1
+allure-combine>=1.0.0,<2
 pytest>=7.0.0,<9
 pytest-html>=4.0.0,<5
-pyyaml>=6.0.0,<7
 webdriver-manager>=4.0.0,<5
 tenacity>=8.0.0,<10
-requests-enhanced>=0.9.0,<1
 pydantic-settings>=2.0.0,<3
 defusedxml>=0.7.0,<1
-jsonschema>=4.0.0,<5
+beautifulsoup4>=4.12.0,<5

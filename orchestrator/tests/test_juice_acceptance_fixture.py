@@ -13,10 +13,10 @@ JUICE = ROOT / "docs" / "acceptance" / "fixtures" / "operator_juice_editor.sanit
 
 
 def test_operator_juice_fixture_validate_only_zero():
-    from core.wired_validate import validate_manifest_file
+    from core.wired_validate import validate_wired_file
 
     assert JUICE.is_file(), JUICE
-    issues, wired = validate_manifest_file(JUICE)
+    issues, wired = validate_wired_file(JUICE)
     assert issues == [], issues
     assert wired is not None
 

@@ -10,10 +10,11 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from core.wired_validate import validate_manifest_file
+from core.wired_validate import validate_wired_file
+from models.wired import Wired
 
 
-def test_manual_manifest_validate_ok(tmp_path: Path):
+def test_manual_Wired_validate_ok(tmp_path: Path):
     path = tmp_path / "manual.json"
     path.write_text(
         json.dumps(
@@ -34,7 +35,7 @@ def test_manual_manifest_validate_ok(tmp_path: Path):
         ),
         encoding="utf-8",
     )
-    issues, wired = validate_manifest_file(path)
+    issues, wired = validate_wired_file(path)
     assert issues == [], issues
     assert wired is not None
-    assert Wired.infrastructure.zap_mode == "webswing"
+    assert wired.infrastructure.zap_mode == "webswing"

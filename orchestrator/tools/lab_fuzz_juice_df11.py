@@ -45,7 +45,7 @@ def _policy(max_requests: int) -> SimpleNamespace:
     )
 
 
-def _manifest_sniper(corpus: str, max_requests: int) -> SimpleNamespace:
+def _wired_sniper(corpus: str, max_requests: int) -> SimpleNamespace:
     fuzzer = SimpleNamespace(
         id="juice_df11_sniper",
         label="DF-11 sniper MASK",
@@ -68,7 +68,7 @@ def _manifest_sniper(corpus: str, max_requests: int) -> SimpleNamespace:
     )
 
 
-def _manifest_pitchfork(max_requests: int) -> SimpleNamespace:
+def _wired_pitchfork(max_requests: int) -> SimpleNamespace:
     fuzzer = SimpleNamespace(
         id="juice_df11_pitchfork",
         label="DF-11 pitchfork MASK_1/MASK_2",
@@ -94,7 +94,7 @@ def _manifest_pitchfork(max_requests: int) -> SimpleNamespace:
     )
 
 
-def _manifest_tab(max_requests: int) -> SimpleNamespace:
+def _wired_tab(max_requests: int) -> SimpleNamespace:
     fuzzer = SimpleNamespace(
         id="juice_df11_tab",
         label="DF-11 TAB slots",
@@ -150,13 +150,13 @@ def main() -> int:
 
     for mode in modes:
         if mode == "sniper":
-            wired = _manifest_sniper(args.corpus, args.max_requests)
+            wired = _wired_sniper(args.corpus, args.max_requests)
             fuzzer_id = "juice_df11_sniper"
         elif mode == "pitchfork":
-            wired = _manifest_pitchfork(args.max_requests)
+            wired = _wired_pitchfork(args.max_requests)
             fuzzer_id = "juice_df11_pitchfork"
         else:
-            wired = _manifest_tab(args.max_requests)
+            wired = _wired_tab(args.max_requests)
             fuzzer_id = "juice_df11_tab"
 
         try:

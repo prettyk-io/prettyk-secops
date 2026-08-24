@@ -24,11 +24,11 @@ def load_wired(file_path):
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
-        from core.wired_secretref import prepare_manifest_data
-        from models.wired import strip_legacy_manifest_dict
+        from core.wired_secretref import prepare_wired_data
+        from models.wired import strip_legacy_wired_dict
 
-        data, secret_seeds = prepare_manifest_data(data)
-        data = strip_legacy_manifest_dict(data)
+        data, secret_seeds = prepare_wired_data(data)
+        data = strip_legacy_wired_dict(data)
         wired = Wired.model_validate(data)
         logger.info(f"Структура загружена: {file_path}")
         return wired
@@ -39,11 +39,11 @@ def load_wired(file_path):
         sys.exit(1)
 
 
-def run_validate_only(wired_path: str, schema_path: str | None) -> int:
-    """Schema + Pydantic + constructors; без Controller/ZAP/Grid. 0 ok, 1 fail."""
-    from core.wired_validate import validate_manifest_file
+def run_validate_only(wired_path: str) -> int:
+    """Pydantic + constructors; без Controller/ZAP/Grid. 0 ok, 1 fail."""
+    from core.wired_validate import validate_wired_file
 
-    issues, _manifest = validate_manifest_file(wired_path, schema_path)
+    issues, _manifest = validate_wired_file(wired_path)
     if not issues:
         logger.info("validate-only: OK (%s)", wired_path)
         return 0
@@ -98,17 +98,12 @@ def main():
     parser.add_argument(
         "--validate-only",
         action="store_true",
-        help="Validate schema/Pydantic/constructors and exit (no ZAP/Grid)",
-    )
-    parser.add_argument(
-        "--schema",
-        default=None,
-        help="JSON Schema path (default: docs/Wired.json)",
+        help="Validate Pydantic/constructors and exit (no ZAP/Grid)",
     )
     args = parser.parse_args()
 
     if args.validate_only:
-        sys.exit(run_validate_only(args.wired, args.schema))
+        sys.exit(run_validate_only(args.wired))
 
     ensure_reports_dirs()
 

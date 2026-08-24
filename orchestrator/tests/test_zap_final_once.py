@@ -23,8 +23,8 @@ from models.wired import (
     Meta,
     Scenario,
     SecurityConfiguration,
+    TestSuites,
 )
-from models.wired import TestSuites as ManifestSuites
 
 
 def _stub_controller(monkeypatch, *, scenarios):
@@ -45,7 +45,7 @@ def _stub_controller(monkeypatch, *, scenarios):
 
     ctrl = Controller.__new__(Controller)
     ctrl.last_zap_report = None
-    ctrl.wired = Manifest(
+    ctrl.wired = Wired(
         meta=Meta(assessment_purpose="scheduled"),
         infrastructure=Infrastructure(zap_mode="demon", browser_type="chrome-headless"),
         security_configuration=SecurityConfiguration(
@@ -54,12 +54,12 @@ def _stub_controller(monkeypatch, *, scenarios):
             scan_policy="custom_policy",
             auth_type="Без авторизации",
         ),
-        test_suites=ManifestSuites(scenarios=scenarios),
+        test_suites=TestSuites(scenarios=scenarios),
     )
     ctrl.global_stream = DataStream()
     ctrl.language_engine = LanguageEngine()
     ctrl.page_resolver = None
-    ctrl._manifest_problems = []
+    ctrl._wired_problems = []
     ctrl.quality_gate_failed = False
     ctrl.quality_gate_summary = None
     ctrl.auth_bootstrap_result = None
@@ -72,15 +72,15 @@ def _stub_controller(monkeypatch, *, scenarios):
     ctrl.reporter = MagicMock()
     ctrl._diary = lambda *a, **k: None
     ctrl._attach_call_details = lambda *a, **k: None
-    ctrl._enrich_manifest_error = lambda e, **k: e
+    ctrl._enrich_wired_error = lambda e, **k: e
     ctrl._diary_high_alerts = lambda: None
     ctrl._export_data_modules = lambda stream: None
     ctrl._export_suite_imports = lambda stream: None
-    ctrl._report_manifest_problems = lambda **k: None
-    ctrl._seed_manifest_stream = lambda: None
+    ctrl._report_wired_problems = lambda **k: None
+    ctrl._seed_wired_stream = lambda: None
     ctrl._log_declarative_gap = lambda: None
     ctrl._session_name = lambda: "unit"
-    ctrl.collect_manifest_problems = lambda: []
+    ctrl.collect_wired_problems = lambda: []
     return ctrl
 
 
@@ -133,14 +133,25 @@ def test_zap_final_still_once_when_scenario_fails(monkeypatch):
     assert calls["n"] == 1
 
 
-def test_zap_final_reuses_manifest_html_report(tmp_path):
+def test_zap_final_reuses_Wired_html_report(tmp_path):
     report = tmp_path / "wired-zap.html"
     report.write_text("<html>report</html>", encoding="utf-8")
     zap = MagicMock()
     ctrl = Controller.__new__(Controller)
+    ctrl.wired = Wired(
+        meta=Meta(assessment_purpose="scheduled"),
+        infrastructure=Infrastructure(zap_mode="demon", browser_type="chrome-headless"),
+        security_configuration=SecurityConfiguration(
+            base_url_override="http://example.test",
+            allowed_extra_domains="",
+            scan_policy="custom_policy",
+            auth_type="Без авторизации",
+        ),
+        test_suites=TestSuites(scenarios=[]),
+    )
     ctrl.adapters = {"zap": zap}
     ctrl.last_zap_report = str(report)
 
     ctrl._attach_final_zap_report()
 
-    zap.generate_report.assert_not_called()
+    zap.generate_report.assert_called()

@@ -29,7 +29,13 @@ export default defineConfig({
     host: true,
     // Dev API: песочница + валидатор конструкторов → tools/data_playground.py :8765
     // Live: метаданные и результаты → Live (idle) :8767
+    // Auth: Better Auth spike server → auth-server.ts :3001
     proxy: {
+      '/api/auth': {
+        target: 'http://127.0.0.1:3001',
+        changeOrigin: true,
+        secure: false,
+      },
       '/api': {
         target: 'http://127.0.0.1:8765',
         changeOrigin: true,

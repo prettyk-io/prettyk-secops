@@ -12,7 +12,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from core.wired_validate import validate_manifest_file
+from core.wired_validate import validate_wired_file
 from utils.paths import REPO_ROOT, RUNS_DIR, ensure_runs_dir
 
 _lock = threading.Lock()
@@ -119,7 +119,7 @@ def _import_search_roots() -> list[Path]:
     return [
         REPO_ROOT,
         REPO_ROOT / "orchestrator",
-        REPO_ROOT / "orchestrator" / "manifests" / "lab",
+        REPO_ROOT / "orchestrator" / "wired" / "lab",
     ]
 
 
@@ -316,7 +316,7 @@ def materialize_suite_imports(wired: dict, run_dir: Path) -> None:
     if missing:
         raise ValueError(
             "imports: файл не найден для lab-run (ожидался resource_contents, "
-            "рядом с манифестом или в lab/resources): " + ", ".join(missing)
+            "рядом с wired или в lab/resources): " + ", ".join(missing)
         )
 
 
@@ -428,7 +428,7 @@ def _act_flags_from_wired(wired: Dict[str, Any]) -> Dict[str, Any]:
     return out
 
 
-def _prepare_run_manifest(
+def _prepare_run_wired(
     wired: dict,
     *,
     run_dir: Path,
@@ -450,7 +450,7 @@ def _prepare_run_manifest(
         encoding="utf-8",
     )
     if not stub:
-        issues, _validated = validate_manifest_file(wired_path, None)
+        issues, _validated = validate_wired_file(wired_path)
         if issues:
             raise ValueError("; ".join(issues[:12]))
     return wired_path
@@ -629,7 +629,7 @@ def start_run(
             if isinstance(chain_bindings, dict)
             else None
         )
-        wired_path = _prepare_run_manifest(
+        wired_path = _prepare_run_wired(
             wired,
             run_dir=run_dir,
             stub=stub,

@@ -2,16 +2,17 @@ import { useState } from 'react';
 import { ComponentGallery } from './ComponentGallery';
 import { InputVault } from './InputVault';
 import { ControlsVault } from './ControlsVault';
+import { IconGallery } from './IconGallery';
 import { type GlobalDesignPreset, GLOBAL_STYLE_PRESETS } from '../data/styleSystem';
 import { type CanvasBackdrop, CANVAS_BACKDROPS } from '../data/canvasBackdrops';
-import { LayoutGrid, Keyboard, Sliders } from 'lucide-react';
+import { LayoutGrid, Keyboard, Sliders, Sparkles } from 'lucide-react';
 
 export interface ComponentCatalogProps {
   preset?: GlobalDesignPreset;
   backdrop?: CanvasBackdrop;
 }
 
-type CatalogSubTab = 'matrix' | 'inputs' | 'controls';
+type CatalogSubTab = 'matrix' | 'inputs' | 'controls' | 'icons';
 
 export function ComponentCatalog({
   preset = GLOBAL_STYLE_PRESETS[0]!,
@@ -37,6 +38,12 @@ export function ComponentCatalog({
       label: 'Buttons & Switches',
       icon: <Sliders className="size-3.5 text-emerald-400" />,
       count: '8 Controls',
+    },
+    {
+      id: 'icons',
+      label: '3D Studio Icons',
+      icon: <Sparkles className="size-3.5 text-amber-400" />,
+      count: 'Curated 3D',
     },
   ];
 
@@ -73,6 +80,7 @@ export function ComponentCatalog({
         {subTab === 'matrix' && <ComponentGallery preset={preset} backdrop={backdrop} />}
         {subTab === 'inputs' && <InputVault preset={preset} backdrop={backdrop} />}
         {subTab === 'controls' && <ControlsVault preset={preset} backdrop={backdrop} />}
+        {subTab === 'icons' && <IconGallery preset={preset} backdrop={backdrop} />}
       </div>
     </div>
   );

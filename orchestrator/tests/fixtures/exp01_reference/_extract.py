@@ -10,7 +10,7 @@ out_dir = 'orchestrator/tests/fixtures/exp01_reference'
 os.makedirs(out_dir, exist_ok=True)
 os.makedirs(f'{out_dir}/resources', exist_ok=True)
 
-src = 'orchestrator/manifests/lab/resources/r_2.txt'
+src = 'orchestrator/wired/lab/resources/r_2.txt'
 dst = f'{out_dir}/resources/r_2.txt'
 if os.path.exists(src):
     shutil.copy2(src, dst)

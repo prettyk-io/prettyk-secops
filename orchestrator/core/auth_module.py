@@ -814,7 +814,7 @@ def find_auth_module(wired: Any, module_id: str) -> Any:
     return None
 
 
-def load_auth_profile_from_manifest(
+def load_auth_profile_from_wired(
     wired: Any, module_id: str
 ) -> Tuple[Optional[AuthProfile], List[str]]:
     notes: List[str] = []
@@ -822,7 +822,7 @@ def load_auth_profile_from_manifest(
     if not mid:
         notes.append("module_id пуст")
         return None, notes
-    mod = find_auth_module(Wired, mid)
+    mod = find_auth_module(wired, mid)
     if mod is None:
         notes.append(f"auth-модуль {mid!r} не найден")
         return None, notes
@@ -867,13 +867,13 @@ def _append_resolved_auth_profile(
     if mid in seen:
         notes.append(f"compose: cycle skip {mid!r}")
         return
-    profile, mod_notes = load_auth_profile_from_manifest(Wired, mid)
+    profile, mod_notes = load_auth_profile_from_wired(wired, mid)
     notes.extend(mod_notes)
     if profile is None:
         return
     if profile.kind == "compose":
         nested, nested_notes = expand_compose_profile(
-            Wired, profile, visited=seen, depth=depth + 1
+            wired, profile, visited=seen, depth=depth + 1
         )
         notes.extend(nested_notes)
         out.extend(nested)
@@ -907,7 +907,7 @@ def expand_compose_profile(
     out: List[AuthProfile] = []
     for mid in ids:
         _append_resolved_auth_profile(
-            Wired,
+            wired,
             mid,
             seen=seen,
             depth=depth,
@@ -928,7 +928,7 @@ def resolve_active_auth_profiles(
         notes.append("active_auth_module пуст")
         return [], notes
     if len(ids) == 1:
-        profile, mod_notes = load_auth_profile_from_manifest(Wired, ids[0])
+        profile, mod_notes = load_auth_profile_from_wired(Wired, ids[0])
         notes.extend(mod_notes)
         if profile is None:
             return [], notes
@@ -938,7 +938,7 @@ def resolve_active_auth_profiles(
     out: List[AuthProfile] = []
     for mid in ids:
         _append_resolved_auth_profile(
-            Wired, mid, seen=set(), depth=0, out=out, notes=notes
+            wired, mid, seen=set(), depth=0, out=out, notes=notes
         )
     return out, notes
 

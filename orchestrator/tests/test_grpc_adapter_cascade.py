@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 PROTO_PACK = ROOT / "services" / "kdt-api-lab" / "proto_pack"
 
 
-def _manifest():
+def _Wired():
     return SimpleNamespace(
         scan_base_url=lambda: "http://127.0.0.1:8090",
         scan_allowed_extra_domains=lambda: "127.0.0.1|localhost",
@@ -58,7 +58,7 @@ def test_list_services_and_unary_module_id():
     if not PROTO_PACK.is_dir():
         pytest.skip("lab proto_pack missing")
     ad = GrpcAdapter()
-    ad.bind_run_wired(_manifest(), str(ROOT))
+    ad.bind_run_wired(_Wired(), str(ROOT))
     raw = ad.list_services("bank_grpc")
     payload = json.loads(raw) if isinstance(raw, str) else raw
     assert payload.get("ok") is True
@@ -72,6 +72,6 @@ def test_list_services_and_unary_module_id():
 
 def test_legacy_host_first_arg_rejected():
     ad = GrpcAdapter()
-    ad.bind_run_wired(_manifest(), str(ROOT))
+    ad.bind_run_wired(_Wired(), str(ROOT))
     with pytest.raises(WiredError, match="устаревшая"):
         ad.unary_call("127.0.0.1:50051", "AccountService/Ping", "{}")

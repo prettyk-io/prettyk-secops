@@ -99,7 +99,7 @@ def test_export_then_crawl_via_stream():
     )
     ctrl = Controller.__new__(Controller)
     ctrl.language_engine = LanguageEngine()
-    ctrl._manifest_problems = []
+    ctrl._wired_problems = []
     ctrl.wired = SimpleNamespace(
         test_suites=SimpleNamespace(test_data_constructor=[mod], imports=[]),
         security_configuration=SimpleNamespace(base_url_override="http://juice-shop:3000"),

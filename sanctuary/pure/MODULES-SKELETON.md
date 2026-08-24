@@ -78,7 +78,7 @@ flowchart TB
 | `ManifestSoT` | JSON-манифест = machine SoT формы | **FRIEND** [`manifest-sot.md`](manifest-sot.md) | — | — |
 | `runtime` блок | Grid ≠ Live ≠ Allure ≠ Dojo | **FRIEND** [`runtime-shell.md`](runtime-shell.md) | — | — |
 | lab contour | lab_up обязательный vs opt-in | **FRIEND** [`lab-up.md`](lab-up.md) | — | — |
-| `ZAP` | demon vs webswing; dual ports | **FRIEND** [`zap-dual.md`](zap-dual.md) | — | — |
+| `ZAP` | demon; порты :8080/:8099 | **FRIEND** [`zap-dual.md`](zap-dual.md) | — | — |
 | security | loopback / MITM / disablekey | **FRIEND** [`security-lab.md`](security-lab.md) | — | — |
 | `Admit` / `ActPkg` | две оси; акт optional | **FRIEND** [`admission.md`](admission.md) | — | — |
 | honest | слот ≠ runtime | **FRIEND** [`honest-contract.md`](honest-contract.md) | — | — |

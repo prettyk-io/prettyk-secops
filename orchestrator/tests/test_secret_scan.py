@@ -51,7 +51,7 @@ def test_scan_zip(tmp_path):
     assert any(h["location"] == "run/leak.txt" for h in hits)
 
 
-def test_scan_run_manifest_and_cuts(tmp_path):
+def test_scan_run_wired_and_cuts(tmp_path):
     from utils.secret_scan import scan_run_dir_for_secrets
 
     run = tmp_path / "run1"
@@ -77,7 +77,7 @@ def test_no_false_akia_on_short_token():
     assert scan_text_for_secrets('{"aws_access_key_id":"EXAMPLE"}') == []
 
 
-def test_zip_priority_manifest_and_cuts(tmp_path):
+def test_zip_priority_Wired_and_cuts(tmp_path):
     zpath = tmp_path / "p.zip"
     with zipfile.ZipFile(zpath, "w") as zf:
         zf.writestr("meta/package.json", '{"ok":true}')

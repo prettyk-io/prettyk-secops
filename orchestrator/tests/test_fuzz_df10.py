@@ -56,7 +56,7 @@ class _FakeZap:
         return list(self._messages)
 
 
-def _wave_manifest(*, session_replay=True, headers=None, message=None, base="http://juice-shop:3000"):
+def _wave_Wired(*, session_replay=True, headers=None, message=None, base="http://juice-shop:3000"):
     fuzzer = SimpleNamespace(
         id="df10_wave",
         algorithm="triples",
@@ -169,7 +169,7 @@ def test_suite_wave_session_replay_fallback_merges_headers():
     ]
     zap = _FakeZap(messages=messages)
     summary = SuiteFuzzerRunner(
-        _wave_manifest(session_replay=True, message=None),
+        _wave_Wired(session_replay=True, message=None),
         zap,
         _FakeStream(),
     ).run("df10_wave")
@@ -186,7 +186,7 @@ def test_suite_wave_session_missing_hard_fail():
     zap = _FakeZap(messages=[])
     with pytest.raises(WiredError, match="session_missing"):
         SuiteFuzzerRunner(
-            _wave_manifest(session_replay=True),
+            _wave_Wired(session_replay=True),
             zap,
             _FakeStream(),
         ).run("df10_wave")
@@ -196,7 +196,7 @@ def test_suite_wave_session_missing_hard_fail():
 def test_suite_wave_explicit_cookie_skips_history():
     zap = _FakeZap(messages=[])
     summary = SuiteFuzzerRunner(
-        _wave_manifest(
+        _wave_Wired(
             session_replay=True,
             headers={"Cookie": "token=explicit"},
         ),

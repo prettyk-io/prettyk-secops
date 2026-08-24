@@ -6,7 +6,7 @@
 Отвечает за enterprise-часть friend-request:
 
   1. **EncryptedVault** — AES-256-GCM шифрование секретов at-rest (ключ ``KDT_VAULT_KEY``
-     или производный от ``KDT_MANIFEST_KEY``). Формат ``kdt:vault:v1:<b64 nonce>:<b64 ct>``.
+     или производный от ``KDT_WIRED_KEY``). Формат ``kdt:vault:v1:<b64 nonce>:<b64 ct>``.
   2. **mask_secret** — маскирование Bearer/JWT/password в логах и JSON-отчётах.
   3. **OAuth2 / OIDC** — Authorization Code + PKCE, Client Credentials, Password Grant.
   4. **extract_session_tokens** — JWT/Bearer/JSESSIONID из JSON/headers/cookies.
@@ -53,8 +53,8 @@ _SECRET_KEY_HINTS = (
 
 def _vault_key() -> bytes:
     """32-байтный AES-256 ключ: ``KDT_VAULT_KEY`` (hex/base64/raw) или SHA-256 от
-    ``KDT_MANIFEST_KEY``. Без ключа — детерминированный dev-ключ (не для prod)."""
-    raw = pk_env("VAULT_KEY") or pk_env("MANIFEST_KEY") or ""
+    ``KDT_WIRED_KEY``. Без ключа — детерминированный dev-ключ (не для prod)."""
+    raw = pk_env("VAULT_KEY") or pk_env("WIRED_KEY") or ""
     if raw:
         try:
             data = bytes.fromhex(raw)

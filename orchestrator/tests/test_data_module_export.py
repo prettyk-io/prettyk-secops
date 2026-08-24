@@ -23,7 +23,7 @@ def _ctrl_with_modules(modules, *, base_url="http://juice-shop:3000"):
     ctrl = Controller.__new__(Controller)
     ctrl.language_engine = LanguageEngine()
     ctrl.page_resolver = None
-    ctrl._manifest_problems = []
+    ctrl._wired_problems = []
     ctrl.last_zap_report = None
     stream = DataStream()
     data = DataAdapter()
@@ -53,7 +53,7 @@ def _ctrl_with_modules(modules, *, base_url="http://juice-shop:3000"):
     ctrl._parse_constructor = parse
     ctrl._diary = lambda *a, **k: None
     ctrl._attach_call_details = lambda *a, **k: None
-    ctrl._enrich_manifest_error = lambda e, **k: e
+    ctrl._enrich_wired_error = lambda e, **k: e
     ctrl._diary_high_alerts = lambda: None
     ctrl.wired = SimpleNamespace(
         test_suites=SimpleNamespace(test_data_constructor=modules, imports=[]),

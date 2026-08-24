@@ -8,11 +8,11 @@
     "skip": 0
   },
   "paths": {
-    "allure_results": "C:\\Users\\mails\\Documents\\zap-kdt\\reports\\allure-results\\f93b03ede817",
-    "allure_report": "C:\\Users\\mails\\Documents\\zap-kdt\\reports\\allure-report",
-    "allure_project_id": "f93b03ede817",
-    "zap_html": "C:\\Users\\mails\\Documents\\zap-kdt\\reports\\zap-results\\zap-final.html",
-    "zap_xml": "C:\\Users\\mails\\Documents\\zap-kdt\\reports\\zap-results\\juice_dojo.xml",
+    "allure_results": "D:\\prettyk-dev\\reports\\allure-results\\0f56a765-2d40-4389-8c0f-81db3f7e2ea5",
+    "allure_report": "D:\\prettyk-dev\\reports\\allure-report",
+    "allure_project_id": "0f56a765-2d40-4389-8c0f-81db3f7e2ea5",
+    "zap_html": "D:\\prettyk-dev\\reports\\scanner-results\\zap-final.html",
+    "zap_xml": "D:\\prettyk-dev\\reports\\scanner-results\\juice_dojo.xml",
     "live": "http://127.0.0.1:8767/"
   },
   "zap_mode": "demon",
@@ -24,33 +24,33 @@
     "critical": 0,
     "high": 1,
     "medium": 6,
-    "low": 14,
-    "info": 7
+    "low": 12,
+    "info": 6
   },
   "finding_collapse": {
     "kind": "kdt_finding_collapse",
     "version": 1,
-    "raw_count": 28,
-    "cluster_count": 20,
+    "raw_count": 25,
+    "cluster_count": 19,
     "systemic_clusters": 13,
     "totals": {
       "critical": 0,
       "high": 1,
       "medium": 6,
-      "low": 7,
+      "low": 6,
       "info": 6
     },
     "clusters": [
       {
-        "fingerprint": "f3138c1c4c366450",
-        "title": "SQL Injection",
+        "fingerprint": "d2c3b832bf3ffba3",
+        "title": "PII Disclosure",
         "severity": "high",
-        "cwe": "89",
-        "rule_id": "40018",
+        "cwe": "359",
+        "rule_id": "10062",
         "systemic": false,
         "instance_count": 1,
         "sample_endpoints": [
-          "1091"
+          "1714"
         ],
         "sample_params": []
       },
@@ -63,7 +63,7 @@
         "systemic": true,
         "instance_count": 1,
         "sample_endpoints": [
-          "1093"
+          "1715"
         ],
         "sample_params": []
       },
@@ -76,7 +76,7 @@
         "systemic": true,
         "instance_count": 1,
         "sample_endpoints": [
-          "1100"
+          "1722"
         ],
         "sample_params": []
       },
@@ -89,7 +89,7 @@
         "systemic": true,
         "instance_count": 1,
         "sample_endpoints": [
-          "1103"
+          "1726"
         ],
         "sample_params": []
       },
@@ -102,7 +102,7 @@
         "systemic": true,
         "instance_count": 1,
         "sample_endpoints": [
-          "1095"
+          "1717"
         ],
         "sample_params": []
       },
@@ -115,7 +115,7 @@
         "systemic": true,
         "instance_count": 1,
         "sample_endpoints": [
-          "1106"
+          "1731"
         ],
         "sample_params": []
       },
@@ -128,7 +128,7 @@
         "systemic": false,
         "instance_count": 1,
         "sample_endpoints": [
-          "1107"
+          "1732"
         ],
         "sample_params": []
       },
@@ -139,13 +139,13 @@
         "cwe": "319",
         "rule_id": "10035",
         "systemic": true,
-        "instance_count": 6,
+        "instance_count": 5,
         "sample_endpoints": [
-          "1066",
-          "1068",
-          "1070",
-          "1079",
-          "1080"
+          "1691",
+          "1693",
+          "1702",
+          "1703",
+          "1704"
         ],
         "sample_params": []
       },
@@ -158,9 +158,9 @@
         "systemic": true,
         "instance_count": 3,
         "sample_endpoints": [
-          "1071",
-          "1072",
-          "1126"
+          "1694",
+          "1695",
+          "1750"
         ],
         "sample_params": []
       },
@@ -173,20 +173,7 @@
         "systemic": true,
         "instance_count": 1,
         "sample_endpoints": [
-          "1108"
-        ],
-        "sample_params": []
-      },
-      {
-        "fingerprint": "b4eb60910c29ba53",
-        "title": "Cross Site Scripting Weakness (Persistent in JSON Response)",
-        "severity": "low",
-        "cwe": "79",
-        "rule_id": "40014",
-        "systemic": false,
-        "instance_count": 1,
-        "sample_endpoints": [
-          "1121"
+          "1733"
         ],
         "sample_params": []
       },
@@ -199,7 +186,7 @@
         "systemic": false,
         "instance_count": 1,
         "sample_endpoints": [
-          "1122"
+          "1746"
         ],
         "sample_params": []
       },
@@ -212,7 +199,7 @@
         "systemic": true,
         "instance_count": 1,
         "sample_endpoints": [
-          "1124"
+          "1748"
         ],
         "sample_params": []
       },
@@ -225,21 +212,7 @@
         "systemic": true,
         "instance_count": 1,
         "sample_endpoints": [
-          "1128"
-        ],
-        "sample_params": []
-      },
-      {
-        "fingerprint": "91f64f3bbf450718",
-        "title": "Information Disclosure - Sensitive Information in URL",
-        "severity": "info",
-        "cwe": "598",
-        "rule_id": "10024",
-        "systemic": false,
-        "instance_count": 2,
-        "sample_endpoints": [
-          "1067",
-          "1069"
+          "1752"
         ],
         "sample_params": []
       },
@@ -252,7 +225,20 @@
         "systemic": false,
         "instance_count": 1,
         "sample_endpoints": [
-          "1129"
+          "1753"
+        ],
+        "sample_params": []
+      },
+      {
+        "fingerprint": "91f64f3bbf450718",
+        "title": "Information Disclosure - Sensitive Information in URL",
+        "severity": "info",
+        "cwe": "598",
+        "rule_id": "10024",
+        "systemic": false,
+        "instance_count": 1,
+        "sample_endpoints": [
+          "1692"
         ],
         "sample_params": []
       },
@@ -265,7 +251,7 @@
         "systemic": true,
         "instance_count": 1,
         "sample_endpoints": [
-          "1131"
+          "1755"
         ],
         "sample_params": []
       },
@@ -278,7 +264,7 @@
         "systemic": true,
         "instance_count": 1,
         "sample_endpoints": [
-          "1086"
+          "1709"
         ],
         "sample_params": []
       },
@@ -291,7 +277,7 @@
         "systemic": true,
         "instance_count": 1,
         "sample_endpoints": [
-          "1074"
+          "1697"
         ],
         "sample_params": []
       },
@@ -304,20 +290,20 @@
         "systemic": false,
         "instance_count": 1,
         "sample_endpoints": [
-          "1135"
+          "1759"
         ],
         "sample_params": []
       }
     ],
     "top_findings": [
       {
-        "name": "SQL Injection",
+        "name": "PII Disclosure",
         "risk": "high",
         "count": 1,
-        "fingerprint": "f3138c1c4c366450",
+        "fingerprint": "d2c3b832bf3ffba3",
         "systemic": false,
         "sample_endpoints": [
-          "1091"
+          "1714"
         ]
       },
       {
@@ -327,7 +313,7 @@
         "fingerprint": "acfbfa89c9abb1a4",
         "systemic": true,
         "sample_endpoints": [
-          "1093"
+          "1715"
         ]
       },
       {
@@ -337,7 +323,7 @@
         "fingerprint": "3b987b7f8a0f1c14",
         "systemic": true,
         "sample_endpoints": [
-          "1100"
+          "1722"
         ]
       },
       {
@@ -347,7 +333,7 @@
         "fingerprint": "82982cb3a16a5935",
         "systemic": true,
         "sample_endpoints": [
-          "1103"
+          "1726"
         ]
       },
       {
@@ -357,7 +343,7 @@
         "fingerprint": "9c2dcf1095f28031",
         "systemic": true,
         "sample_endpoints": [
-          "1095"
+          "1717"
         ]
       },
       {
@@ -367,7 +353,7 @@
         "fingerprint": "4ad560846a9be346",
         "systemic": true,
         "sample_endpoints": [
-          "1106"
+          "1731"
         ]
       },
       {
@@ -377,21 +363,21 @@
         "fingerprint": "fcde32d3c7fa9868",
         "systemic": false,
         "sample_endpoints": [
-          "1107"
+          "1732"
         ]
       },
       {
         "name": "Strict-Transport-Security Header Not Set",
         "risk": "low",
-        "count": 6,
+        "count": 5,
         "fingerprint": "d6c2cca120c0a5b3",
         "systemic": true,
         "sample_endpoints": [
-          "1066",
-          "1068",
-          "1070",
-          "1079",
-          "1080"
+          "1691",
+          "1693",
+          "1702",
+          "1703",
+          "1704"
         ]
       },
       {
@@ -401,9 +387,9 @@
         "fingerprint": "0657ca8f0e4a4a09",
         "systemic": true,
         "sample_endpoints": [
-          "1071",
-          "1072",
-          "1126"
+          "1694",
+          "1695",
+          "1750"
         ]
       },
       {
@@ -413,17 +399,7 @@
         "fingerprint": "ca310bdfbee52eb1",
         "systemic": true,
         "sample_endpoints": [
-          "1108"
-        ]
-      },
-      {
-        "name": "Cross Site Scripting Weakness (Persistent in JSON Response)",
-        "risk": "low",
-        "count": 1,
-        "fingerprint": "b4eb60910c29ba53",
-        "systemic": false,
-        "sample_endpoints": [
-          "1121"
+          "1733"
         ]
       },
       {
@@ -433,7 +409,7 @@
         "fingerprint": "f3095e7f33e0d0cb",
         "systemic": false,
         "sample_endpoints": [
-          "1122"
+          "1746"
         ]
       },
       {
@@ -443,7 +419,7 @@
         "fingerprint": "a31cbdd6380bdaaa",
         "systemic": true,
         "sample_endpoints": [
-          "1124"
+          "1748"
         ]
       },
       {
@@ -453,18 +429,7 @@
         "fingerprint": "1ecb472731ac3dea",
         "systemic": true,
         "sample_endpoints": [
-          "1128"
-        ]
-      },
-      {
-        "name": "Information Disclosure - Sensitive Information in URL",
-        "risk": "info",
-        "count": 2,
-        "fingerprint": "91f64f3bbf450718",
-        "systemic": false,
-        "sample_endpoints": [
-          "1067",
-          "1069"
+          "1752"
         ]
       },
       {
@@ -474,7 +439,17 @@
         "fingerprint": "e56aa89c6119a5dc",
         "systemic": false,
         "sample_endpoints": [
-          "1129"
+          "1753"
+        ]
+      },
+      {
+        "name": "Information Disclosure - Sensitive Information in URL",
+        "risk": "info",
+        "count": 1,
+        "fingerprint": "91f64f3bbf450718",
+        "systemic": false,
+        "sample_endpoints": [
+          "1692"
         ]
       },
       {
@@ -484,7 +459,7 @@
         "fingerprint": "af92fa6ad986ec90",
         "systemic": true,
         "sample_endpoints": [
-          "1131"
+          "1755"
         ]
       },
       {
@@ -494,7 +469,7 @@
         "fingerprint": "cf82fcd90adac4fd",
         "systemic": true,
         "sample_endpoints": [
-          "1086"
+          "1709"
         ]
       },
       {
@@ -504,7 +479,7 @@
         "fingerprint": "a090e88978f42875",
         "systemic": true,
         "sample_endpoints": [
-          "1074"
+          "1697"
         ]
       },
       {
@@ -514,7 +489,7 @@
         "fingerprint": "b4c254b7d755bf09",
         "systemic": false,
         "sample_endpoints": [
-          "1135"
+          "1759"
         ]
       }
     ]
@@ -522,8 +497,9 @@
   "executive": {
     "executive_class": "High",
     "recommendations": [
+      "Исполнение: сбой (exit 1) — evidence/прогон не завершён штатно; допуск по ACTIVE считать недействительным до повторного успешного прогона.",
       "Заключение: высокий уровень риска — закрыть ACTIVE High/Critical (critical=0, high=1) до следующего допуска.",
-      "Кластер: SQL Injection — high×1.",
+      "Кластер: PII Disclosure — high×1.",
       "Кластер: Application Error Disclosure — medium×1 (site-wide).",
       "Кластер: Content Security Policy (CSP) Header Not Set — medium×1 (site-wide).",
       "Кластер: Cross-Domain Misconfiguration — medium×1 (site-wide).",
@@ -533,11 +509,11 @@
       "critical": 0,
       "high": 1,
       "medium": 6,
-      "low": 14,
-      "info": 7
+      "low": 12,
+      "info": 6
     },
     "source": "dojo_findings",
-    "execution_fault": false
+    "execution_fault": true
   },
   "allure_summary": {
     "passed": 1,
@@ -548,5 +524,5 @@
     "status": "has_failures"
   },
   "executive_class": "High",
-  "built_at": 1787330100.0901206
+  "built_at": 1787414178.5048056
 }

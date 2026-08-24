@@ -23,11 +23,10 @@
 | [`alpha-stable-sync.mdc`](.opencode/rules/alpha-stable-sync.mdc) | Home `alpha-stable`; без авто-коммитов; не тащить код с docs |
 | [`operator-no-subagents-no-worktree.mdc`](.opencode/rules/operator-no-subagents-no-worktree.mdc) | Без Task/worktree |
 | [`operator-no-frontend-push.mdc`](.opencode/rules/operator-no-frontend-push.mdc) | Без push `frontend` без приказа |
-| [`schema-sot.mdc`](.opencode/rules/schema-sot.mdc) | SoT = `docs/manifest.json` |
 | [`docs-canon.mdc`](.opencode/rules/docs-canon.mdc) | Hub = монолит + SOLID; 2FA; friend/canon-requests `ready`\|`evolve`; backlog шапка «Сырое / evolve»; void не воскрешать |
 | [`product-forks.mdc`](.opencode/rules/product-forks.mdc) | Коробка `secops-lab-pure` (default) ‖ pack `cosmo-custom` (портал Cosmo/ЦБ); [`docs/profiles/`](docs/profiles/) |
 | [`stand-shell-abort.mdc`](.opencode/rules/stand-shell-abort.mdc) | abort шелла ≠ мёртвый Vite |
-| [`stand-lab-ops.mdc`](.opencode/rules/stand-lab-ops.mdc) | Стартуй/чисти; allure3-secops; пульты; Webswing не дефолт |
+| [`stand-lab-ops.mdc`](.opencode/rules/stand-lab-ops.mdc) | Стартуй/чисти; allure3-secops; пульты |
 | [`cbr-cosmo-only.mdc`](.opencode/rules/cbr-cosmo-only.mdc) | `sanctuary/custom/cosmo/cbr-specific/` только локально, в git не коммитить |
 
 Skills (все — global `C:\Users\mails\.agents\skills\`): `secops-lab` (lab start/clean / allure3-secops / Docker stack) · `vps-editor` (VPS `/editor` check/deploy — без temp-скриптов) · `ru-text` · `browser-hands-pure` / `browser-hands-remote` (UI dig) · `bankvm-ssh` (gap2/VM). Продукт-специфика (hub 2FA, git-vise, Fuzzer FE↔BE, иконки) — в rules и `docs/agent-entrypoint.md`, **не** в отдельных skills.
@@ -51,7 +50,7 @@ Explorer icons: rule [`.opencode/rules/explorer-theme-icons.mdc`](.opencode/rule
 
 Канон: global skill `secops-lab` · rule [`.opencode/rules/stand-lab-ops.mdc`](.opencode/rules/stand-lab-ops.mdc) · [`docs/stand.md`](docs/stand.md).
 
-- **Стартуй всё** → обязательный compose (Grid/allure3-secops/scanner **demon**/Juice) + ensure UI + Live idle. **Webswing не дефолт** — только `zap_mode=webswing` или явная просьба.
+- **Стартуй всё** → обязательный compose (Grid/allure3-secops/ZAP **demon**/Juice) + ensure UI + Live idle.
 - **Почисти и стартуй** → allure3-secops + Live (+ Dojo hint) → старт. Не prod.
 - **После правок FE:** playground restart если Python API; фронт — ensure с телом формы.
 - В ответе после «подними» — пульты **автоматом** (в т.ч. Webswing URL):
@@ -61,13 +60,11 @@ allure3-secops (канон)
 http://127.0.0.1:5050/
 DefectDojo
 http://127.0.0.1:8081/  admin/admin
-PrettyK Live
+KDT Live
 http://127.0.0.1:8767/
 Editor
 http://localhost:5173/
-Scanner Webswing
-http://127.0.0.1:8082/zap
-scanner API
+ZAP demon API
 http://127.0.0.1:8080/
 ```
 

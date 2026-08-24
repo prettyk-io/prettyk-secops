@@ -115,7 +115,7 @@ def load_checks_registry() -> Dict[str, Any]:
 
 def save_checks_registry(body: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
     """
-    Replace registry from PUT body {version, items}.
+    Merge registry by check_id (newer updated_at wins) + write atomically.
     Returns (http_status, payload).
     """
     if not isinstance(body, dict):
@@ -126,12 +126,14 @@ def save_checks_registry(body: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
             "ok": False,
             "error": f"version must be {CHECKS_REGISTRY_VERSION}",
         }
-    items = _normalize_items(body.get("items"))
+    incoming = _normalize_items(body.get("items"))
+    existing = _read_registry_items()
+    merged = _merge_by_check_id(existing, incoming)
     path = _ensure_registry_dir()
     saved_at = _now_iso()
     payload = {
         "version": CHECKS_REGISTRY_VERSION,
-        "items": items,
+        "items": merged,
         "saved_at": saved_at,
     }
     tmp = path.with_suffix(path.suffix + ".tmp")
@@ -149,8 +151,40 @@ def save_checks_registry(body: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
     return 200, {
         "ok": True,
         "version": CHECKS_REGISTRY_VERSION,
-        "items": items,
+        "items": merged,
         "saved_at": saved_at,
         "path": str(path),
-        "count": len(items),
+        "count": len(merged),
     }
+
+
+def _read_registry_items() -> List[Dict[str, Any]]:
+    path = checks_registry_path()
+    if not path.is_file():
+        return []
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return []
+    if not isinstance(data, dict) or data.get("version") != CHECKS_REGISTRY_VERSION:
+        return []
+    return _normalize_items(data.get("items"))
+
+
+def _merge_by_check_id(
+    existing: List[Dict[str, Any]],
+    incoming: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    by_id: Dict[str, Dict[str, Any]] = {}
+    for item in existing:
+        cid = str(item.get("check_id") or "")
+        if cid:
+            by_id[cid] = item
+    for item in incoming:
+        cid = str(item.get("check_id") or "")
+        if not cid:
+            continue
+        prev = by_id.get(cid)
+        if not prev or str(item.get("updated_at") or "") > str(prev.get("updated_at") or ""):
+            by_id[cid] = item
+    return sorted(by_id.values(), key=lambda it: str(it.get("updated_at") or ""), reverse=True)

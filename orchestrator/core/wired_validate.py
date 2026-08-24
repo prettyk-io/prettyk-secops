@@ -204,10 +204,6 @@ def collect_wired_problems(
     return problems
 
 
-def default_schema_path() -> Path:
-    return Path(__file__).resolve().parents[2] / "docs" / "Wired.json"
-
-
 # Паритет с FE redactSecrets.ts (режим B → "***").
 REDACT_PLACEHOLDER = "***"
 _SECRET_KEY_EXACT = frozenset(
@@ -261,63 +257,14 @@ def collect_redact_mask_problems(data: Any, path: str = "") -> List[str]:
     return problems
 
 
-def validate_json_schema(data: dict, schema_path: Optional[Path] = None) -> List[str]:
-    """JSON Schema vs docs/Wired.json. Пустой список = ok."""
-    try:
-        import jsonschema
-    except ImportError:
-        return [
-            "schema: пакет jsonschema не установлен "
-            "(pip install -r requirements-dev.txt)"
-        ]
-
-    path = Path(schema_path) if schema_path else default_schema_path()
-    with open(path, "r", encoding="utf-8") as f:
-        schema = json.load(f)
-    validator_cls = getattr(jsonschema, "Draft202012Validator", None) or jsonschema.Draft7Validator
-    validator = validator_cls(schema)
-    errors = sorted(validator.iter_errors(data), key=lambda e: list(e.path))
-    out: List[str] = []
-    for err in errors:
-        loc = "/".join(str(p) for p in err.path) or "(root)"
-        out.append(f"schema {loc}: {err.message}")
-    return out
-
-
-# allOf manual: properties false + parent required — сырой jsonschema орёт; FE/effective — нет.
-_MANUAL_SCHEMA_HIDDEN = (
-    "base_url_override",
-    "allowed_extra_domains",
-    "zap_mode",
-    "browser_type",
-    "security_configuration",
-    "test_suites",
-    "scanning_and_fuzzing_targets",
-)
-
-
-def filter_manual_schema_artifacts(data: dict, schema_issues: List[str]) -> List[str]:
-    """Убрать шум allOf для assessment_purpose=manual (форма прячет поля)."""
-    meta = data.get("meta") if isinstance(data.get("meta"), dict) else {}
-    if meta.get("assessment_purpose") != "manual":
-        return schema_issues
-    kept: List[str] = []
-    for msg in schema_issues:
-        if any(name in msg for name in _MANUAL_SCHEMA_HIDDEN):
-            continue
-        kept.append(msg)
-    return kept
-
-
-def validate_manifest_file(
+def validate_wired_file(
     wired_path: str | Path,
-    schema_path: Optional[str | Path] = None,
 ) -> Tuple[List[str], Any]:
     """
     Полный контур validate-only.
-    Возвращает (issues, manifest_or_None). issues пуст → ok.
+    Возвращает (issues, wired_or_None). issues пуст → ok.
     """
-    from models.wired import Wired, strip_legacy_manifest_dict
+    from models.wired import Wired, strip_legacy_wired_dict
 
     path = Path(wired_path)
     issues: List[str] = []
@@ -329,16 +276,10 @@ def validate_manifest_file(
     except OSError as e:
         return [f"io: {e}"], None
 
-    # Схема = правда: legacy-ключи (depends_on, app_type, …) дропаем до schema check.
-    data = strip_legacy_manifest_dict(data)
+    data = strip_legacy_wired_dict(data)
 
     for p in collect_redact_mask_problems(data):
         issues.append(p)
-
-    schema_issues = validate_json_schema(
-        data, Path(schema_path) if schema_path else None
-    )
-    issues.extend(filter_manual_schema_artifacts(data, schema_issues))
 
     try:
         wired = Wired.model_validate(data)

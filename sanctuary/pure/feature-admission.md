@@ -1,7 +1,7 @@
 # FEATURE-ADMISSION: конвейер допуска фич в коробку
 
 > **CANON** — hub topic. Slice: **16 августа 2026** (2FA: зачисление по явной просьбе владельца).
-> Как фича/идея попадает в pure-коробку (`secops-lab-pure`), включая ништяки, «подсмотренные» у Cosmo.
+> Как фича/идея попадает в pure-коробку (`prettyk-pure`), включая ништяки, «подсмотренные» у Cosmo.
 > Реестр: [`INDEX.md`](INDEX.md). Смежное: [`split-canon.md`](split-canon.md) (коробка vs интеграция),
 > [`enterprise-friends-required.md`](enterprise-friends-required.md) (планка enterprise),
 > [`friend-lifecycle.md`](friend-lifecycle.md) (коридоры идей). Патчи через 2FA.

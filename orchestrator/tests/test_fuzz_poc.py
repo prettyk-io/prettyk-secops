@@ -86,7 +86,7 @@ def _module(corpus_name="fuzz_payloads", **limits):
     )
 
 
-def _manifest(module, *, base="http://juice-shop:3000"):
+def _Wired(module, *, base="http://juice-shop:3000"):
     return SimpleNamespace(
         test_suites=SimpleNamespace(test_data_constructor=[module]),
         security_configuration=SimpleNamespace(base_url_override=base),
@@ -106,7 +106,7 @@ def test_runner_flags_server_error_and_writes_evidence():
     corpus = ["safe-1", "boom-payload", "safe-2"]
     zap = _FakeZap()
     stream = _FakeStream(corpus)
-    summary = FuzzRunner(_manifest(_module()), zap, stream).run("q_fuzz")
+    summary = FuzzRunner(_Wired(_module()), zap, stream).run("q_fuzz")
 
     assert summary["cases_total"] == 3
     assert summary["anomalies_total"] == 1
@@ -135,7 +135,7 @@ def test_runner_bounds_corpus_by_max_requests():
     corpus = [f"p{i}" for i in range(50)]
     zap = _FakeZap(boom_marker="__never__")
     stream = _FakeStream(corpus)
-    summary = FuzzRunner(_manifest(_module(max_requests=5)), zap, stream).run("q_fuzz")
+    summary = FuzzRunner(_Wired(_module(max_requests=5)), zap, stream).run("q_fuzz")
     assert summary["cases_total"] == 5
 
 
@@ -155,7 +155,7 @@ def test_runner_rejects_out_of_origin_url():
         },
     )
     with pytest.raises(WiredError, match="origin"):
-        FuzzRunner(_manifest(module), _FakeZap(), _FakeStream(["a"])).run("q_fuzz")
+        FuzzRunner(_Wired(module), _FakeZap(), _FakeStream(["a"])).run("q_fuzz")
 
 
 def test_assert_same_origin_helper():
@@ -404,7 +404,7 @@ def test_load_string_corpus_truncate_and_empty():
 
 def test_empty_corpus_via_runner():
     with pytest.raises(WiredError, match="пуст"):
-        FuzzRunner(_manifest(_module()), _FakeZap(), _FakeStream([])).run("q_fuzz")
+        FuzzRunner(_Wired(_module()), _FakeZap(), _FakeStream([])).run("q_fuzz")
 
 
 def test_corpus_hard_cap_even_if_list_huge():
@@ -428,7 +428,7 @@ def test_redact_skips_short_payload_markers():
 
 def test_live_projection_titles_redact_payloads():
     corpus = ["SECRET-PAYLOAD-XYZ", "safe"]
-    summary = FuzzRunner(_manifest(_module()), _FakeZap(), _FakeStream(corpus)).run(
+    summary = FuzzRunner(_Wired(_module()), _FakeZap(), _FakeStream(corpus)).run(
         "q_fuzz"
     )
     titles = live_projection_titles(summary)
@@ -443,7 +443,7 @@ def test_live_projection_titles_redact_payloads():
 
     # с аномалией
     summary2 = FuzzRunner(
-        _manifest(_module()), _FakeZap(), _FakeStream(["boom-x"])
+        _Wired(_module()), _FakeZap(), _FakeStream(["boom-x"])
     ).run("q_fuzz")
     titles2 = live_projection_titles(summary2)
     assert len(titles2) == 3  # summary + digest + anomaly
@@ -677,13 +677,13 @@ def test_execution_title_for_fuzz_run():
 
 
 def test_adapter_requires_bound_stream():
-    adapter = FuzzAdapter(_manifest(_module()), _FakeZap())
+    adapter = FuzzAdapter(_Wired(_module()), _FakeZap())
     with pytest.raises(WiredError, match="DataStream"):
         adapter.run("q_fuzz")
 
 
 def test_adapter_run_delegates_after_bind():
-    adapter = FuzzAdapter(_manifest(_module()), _FakeZap())
+    adapter = FuzzAdapter(_Wired(_module()), _FakeZap())
     adapter.bind(_FakeStream(["safe"]))
     summary = adapter.run("q_fuzz")
     assert summary["module_id"] == "q_fuzz"

@@ -12,6 +12,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from utils.diary_bus import clear_ci_meta, set_meta
+from utils.env_dual import pk_env
 from utils.live_server import default_novnc_url, start_live_server
 
 logger = logging.getLogger("orchestrator")
@@ -23,7 +24,6 @@ def _env_flag(name: str) -> bool:
 
 def _maybe_start_gha_poller() -> None:
     """RES-G opt-in: KDT_GHA_POLL=1 + TOKEN/REPO → background watch → Live ci/status."""
-from utils.env_dual import pk_env
     if not _env_flag("KDT_GHA_POLL"):
         return
     try:

@@ -10,11 +10,11 @@ from core.gate_policy import (
     evaluate_admission_gate,
     normalize_severity_counts,
 )
+from utils.env_dual import pk_env
 
 
 def package_recalc_enabled() -> bool:
     """KDT_PACKAGE_RECALC_GATE — default on; 0/false выключает."""
-from utils.env_dual import pk_env
     raw = (pk_env("PACKAGE_RECALC_GATE") or "1").strip().lower()
     return raw not in {"0", "false", "off", "no", ""}
 

@@ -1,5 +1,5 @@
 ---
-description: Коробка secops-lab-pure (default) vs portal pack cosmo-custom (Cosmo/ЦБ); бумага, не git.
+description: Коробка prettyk-pure (default) vs portal pack cosmo-custom (Cosmo/ЦБ); бумага, не git.
 alwaysApply: true
 ---
 
@@ -11,7 +11,7 @@ alwaysApply: true
 
 | ID | Смысл |
 |---|---|
-| **`secops-lab-pure`** | **Default. Коробка** SecOps Lab / KDT — до внедрения в чужой portal. |
+| **`prettyk-pure`** | **Default. Коробка** SecOps Lab / PrettyK — до внедрения в чужой portal. |
 | **`cosmo-custom`** | **Integration pack:** коробка встраивается в **портал Cosmo** (кейс ЦБ). |
 
 Cosmo = portal банка, не второй бренд коробки.  
@@ -21,7 +21,7 @@ Cosmo = portal банка, не второй бренд коробки.
 
 ## Поведение агента
 
-1. Неясный скоуп → **коробка** (`secops-lab-pure`).  
+1. Неясный скоуп → **коробка** (`prettyk-pure`).  
 2. Лесенка / bringup / «встройка в Cosmo» → **`cosmo-custom`**.  
 3. Не создавать `git branch pack/*|fork/*` / worktree без явной команды.  
 4. Не плодить второй `docs/manifest.json`.  

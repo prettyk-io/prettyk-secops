@@ -146,14 +146,14 @@ def redact_notes(notes: Sequence[str]) -> List[str]:
 
 def write_investigate_evidence(
     *,
-    manifest_dir: Optional[Path],
+    wired_dir: Optional[Path],
     module_id: str,
     payload: Dict[str, Any],
 ) -> Optional[Path]:
     """Sidecar under run/wired dir for later package pickup (8c)."""
-    if manifest_dir is None:
+    if wired_dir is None:
         return None
-    root = Path(manifest_dir)
+    root = Path(wired_dir)
     meta = root / "meta"
     try:
         meta.mkdir(parents=True, exist_ok=True)

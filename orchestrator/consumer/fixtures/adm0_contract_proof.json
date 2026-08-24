@@ -1,0 +1,51 @@
+{
+  "regulation": {
+    "meta": {
+      "assessment_purpose": "manual",
+      "generate_act": false
+    },
+    "infrastructure": {
+      "base_url_override": "http://127.0.0.1:3000",
+      "browser_type": "chrome-headless",
+      "zap_mode": "demon"
+    }
+  },
+  "editor": {
+    "scenarios": [
+      {
+        "scenario_name": "ADM-0 smoke — Juice Shop Open + Search",
+        "description": "Common contract proof: open, dismiss banner, search, verify",
+        "steps": [
+          {
+            "constructor": "Открыть http://127.0.0.1:3000",
+            "description": "Navigate to Juice Shop"
+          },
+          {
+            "constructor": "Пауза 2",
+            "description": "Wait for page load"
+          },
+          {
+            "constructor": "Нажать css button[aria-label='Close Welcome Banner']",
+            "description": "Dismiss welcome banner"
+          },
+          {
+            "constructor": "Пауза 1",
+            "description": "Wait for banner animation"
+          },
+          {
+            "constructor": "Нажать css button[aria-label='Open search bar']",
+            "description": "Open search bar"
+          },
+          {
+            "constructor": "Ввести css input[type='text'] apple",
+            "description": "Search for apple juice"
+          },
+          {
+            "constructor": "Пауза 2",
+            "description": "Wait for search results"
+          }
+        ]
+      }
+    ]
+  }
+}

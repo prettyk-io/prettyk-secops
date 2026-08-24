@@ -93,7 +93,7 @@ AUTH_ENV_HEADER_VALUE = "KDT_AUTH_HEADER_VALUE"
 
 
 @dataclass
-class AfManifestHints:
+class AfWiredHints:
     """Извлечённые из манифеста подсказки для генерации AF."""
 
     openapi_url: Optional[str] = None
@@ -197,12 +197,12 @@ def _extra_include_paths_from_csv(domains_csv: str, base_url: str) -> List[str]:
 
 
 def _replacer_hint(
-    hints: AfManifestHints,
+    hints: AfWiredHints,
     *,
     description: str,
     match_string: str,
     replacement: str,
-) -> AfManifestHints:
+) -> AfWiredHints:
     hints.use_replacer_auth = True
     hints.replacer_rules.append(
         {
@@ -225,8 +225,8 @@ def _is_browser_auth_kind(kind: str) -> bool:
 
 
 def _auth_hints_replacer(
-    kind: str, details: Mapping[str, Any], hints: AfManifestHints
-) -> Optional[AfManifestHints]:
+    kind: str, details: Mapping[str, Any], hints: AfWiredHints
+) -> Optional[AfWiredHints]:
     if kind == _BEARER:
         return _replacer_hint(
             hints,
@@ -256,8 +256,8 @@ def _auth_hints(
     auth_type: Optional[str],
     auth_details: Optional[Mapping[str, Any]],
     base_url: str,
-) -> AfManifestHints:
-    hints = AfManifestHints()
+) -> AfWiredHints:
+    hints = AfWiredHints()
     kind = (auth_type or "").strip() or _NONE
     hints.auth_type = kind
     hints.auth_details = dict(auth_details or {})
@@ -291,7 +291,7 @@ def _auth_hints(
     return hints
 
 
-def _scan_urls_from_manifest(wired: Mapping[str, Any]) -> tuple[str, str]:
+def _scan_urls_from_wired(wired: Mapping[str, Any]) -> tuple[str, str]:
     infra = wired.get("infrastructure") or {}
     if not isinstance(infra, Mapping):
         infra = {}
@@ -305,11 +305,11 @@ def _scan_urls_from_manifest(wired: Mapping[str, Any]) -> tuple[str, str]:
     return base_url, allowed
 
 
-def hints_from_manifest(wired: Mapping[str, Any]) -> AfManifestHints:
+def hints_from_wired(wired: Mapping[str, Any]) -> AfWiredHints:
     sec = wired.get("security_configuration") or {}
     if not isinstance(sec, Mapping):
         sec = {}
-    base_url, allowed = _scan_urls_from_manifest(wired)
+    base_url, allowed = _scan_urls_from_wired(wired)
 
     hints = _auth_hints(
         str(sec.get("auth_type") or _NONE),
@@ -332,7 +332,7 @@ def hints_from_manifest(wired: Mapping[str, Any]) -> AfManifestHints:
     return hints
 
 
-def _use_client_spider(profile: str, hints: AfManifestHints) -> bool:
+def _use_client_spider(profile: str, hints: AfWiredHints) -> bool:
     # app_architecture снята со схемы — Client Spider только на crawler-профиле.
     _ = hints
     return profile == "crawler"
@@ -434,7 +434,7 @@ def _form_auth_context_lines(details: Mapping[str, Any]) -> List[str]:
     return lines
 
 
-def _auth_context_lines(hints: AfManifestHints, base_url: str) -> List[str]:
+def _auth_context_lines(hints: AfWiredHints, base_url: str) -> List[str]:
     """Строки authentication / users / sessionManagement внутри context."""
     kind = hints.auth_type
     if kind in (_NONE, "") or hints.auth_skip_note:
@@ -453,7 +453,7 @@ def _auth_context_lines(hints: AfManifestHints, base_url: str) -> List[str]:
     return []
 
 
-def _env_vars_lines(hints: AfManifestHints) -> List[str]:
+def _env_vars_lines(hints: AfWiredHints) -> List[str]:
     """env.vars — placeholders для секретов (значения из системного env при runPlan)."""
     kind = hints.auth_type
     if kind in (_NONE, ""):
@@ -483,7 +483,7 @@ def _env_vars_lines(hints: AfManifestHints) -> List[str]:
 
 
 def _af_header_comments(
-    profile: str, scan_policy: str, hints: AfManifestHints
+    profile: str, scan_policy: str, hints: AfWiredHints
 ) -> List[str]:
     lines = [
         f"# ZAP AF plan — profile={profile} scan_policy={scan_policy}",
@@ -501,7 +501,7 @@ def _af_header_comments(
     return lines
 
 
-def _af_env_block(ctx: str, url: str, hints: AfManifestHints) -> List[str]:
+def _af_env_block(ctx: str, url: str, hints: AfWiredHints) -> List[str]:
     include = url + ".*"
     lines = [
         "env:",
@@ -532,7 +532,7 @@ def _af_env_block(ctx: str, url: str, hints: AfManifestHints) -> List[str]:
 def _af_setup_jobs(
     ctx: str,
     url: str,
-    hints: AfManifestHints,
+    hints: AfWiredHints,
     *,
     include_alert_filter_job: bool,
     alert_filter_rules: Optional[Sequence[Mapping[str, Any]]] = None,
@@ -637,7 +637,7 @@ def build_af_plan(
     alert_filter_rules: Optional[Sequence[Mapping[str, Any]]] = None,
     logout_avoidance: bool = True,
     har_sequence_name: Optional[str] = None,
-    hints: Optional[AfManifestHints] = None,
+    hints: Optional[AfWiredHints] = None,
 ) -> str:
     """
     Собрать YAML AF как текст.
@@ -653,15 +653,15 @@ def build_af_plan(
         raise ValueError("base_url пуст — нужен security_configuration.base_url_override")
     ctx = (context_name or DEFAULT_CONTEXT).strip() or DEFAULT_CONTEXT
     profile = profile_for_scan_policy(scan_policy)
-    manifest_hints = hints or AfManifestHints()
-    use_client = _use_client_spider(profile, manifest_hints)
+    wired_hints = hints or AfWiredHints()
+    use_client = _use_client_spider(profile, wired_hints)
 
     lines: List[str] = []
-    lines.extend(_af_header_comments(profile, scan_policy, manifest_hints))
-    lines.extend(_af_env_block(ctx, url, manifest_hints))
+    lines.extend(_af_header_comments(profile, scan_policy, wired_hints))
+    lines.extend(_af_env_block(ctx, url, wired_hints))
     lines.extend(
         _af_setup_jobs(
-            ctx, url, manifest_hints, include_alert_filter_job=include_alert_filter_job,
+            ctx, url, wired_hints, include_alert_filter_job=include_alert_filter_job,
             alert_filter_rules=alert_filter_rules,
         )
     )
@@ -882,7 +882,7 @@ def _jobs_for_profile(
     return out
 
 
-def plan_from_manifest_dict(
+def plan_from_wired_dict(
     wired: Mapping[str, Any],
     *,
     context_name: str = DEFAULT_CONTEXT,
@@ -891,9 +891,9 @@ def plan_from_manifest_dict(
     sec = wired.get("security_configuration") or {}
     if not isinstance(sec, Mapping):
         raise ValueError("security_configuration отсутствует или не объект")
-    base_url, _allowed = _scan_urls_from_manifest(wired)
+    base_url, _allowed = _scan_urls_from_wired(wired)
     scan_policy = str(sec.get("scan_policy") or "custom_policy")
-    hints = hints_from_manifest(wired)
+    hints = hints_from_wired(wired)
     return build_af_plan(
         base_url=base_url,
         context_name=context_name,
@@ -915,7 +915,7 @@ def write_af_plan(
     path = Path(output_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     if wired is not None:
-        text = plan_from_manifest_dict(
+        text = plan_from_wired_dict(
             wired,
             context_name=context_name,
             report_file=report_file or path.stem,

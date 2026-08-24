@@ -3,8 +3,8 @@
 """
 CLI: манифест → ZAP AF YAML (G-38). Только пишет файл, не запускает план.
 
-  py -3.11 tools/gen_af_plan.py --wired manifests/x.json -o plans/out.yaml
-  py -3.11 tools/gen_af_plan.py --base-url http://juice-shop:3000 --policy custom_policy -o plans/out.yaml
+  py -3.13 tools/gen_af_plan.py --wired wired/x.json -o plans/out.yaml
+  py -3.13 tools/gen_af_plan.py --base-url http://juice-shop:3000 --policy custom_policy -o plans/out.yaml
 """
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ if str(ROOT) not in sys.path:
 from core.af_plan import (  # noqa: E402
     DEFAULT_CONTEXT,
     build_af_plan,
-    plan_from_manifest_dict,
+    plan_from_wired_dict,
 )
 
 
@@ -46,7 +46,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.wired:
         data = json.loads(Path(args.wired).read_text(encoding="utf-8"))
-        text = plan_from_manifest_dict(
+        text = plan_from_wired_dict(
             data, context_name=args.context, report_file=Path(args.output).stem
         )
     elif args.base_url:

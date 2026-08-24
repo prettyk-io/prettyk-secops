@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import App from '../App';
 import { CloseCheckModal } from '../checks/CloseCheckModal';
 import type { CheckCloseGuard } from '../checks/closeGuard';
@@ -14,17 +14,21 @@ import {
   navigateHash,
   parseHash,
   readHashRoute,
+  syncDocumentTitle,
   type HashRoute,
 } from '../checks/hashRoute';
 import type { CheckView } from '../checks/types';
 import { freshCheckWiredData } from './freshCheck';
 import {
   canAccessAdmin,
+  canAccessControl,
+  canAccessSecOpsControl,
   canimportWired,
   canSelectPreRelease,
   displayNameOf,
   logout,
   readSession,
+  writeSession,
   roleOf,
   type AuthUser,
 } from './auth';
@@ -36,10 +40,17 @@ import { AdminPage } from './AdminPage';
 import { LabWorkspace } from '../lab/LabWorkspace';
 import { DesignPlayground } from '../design-playground/DesignPlayground';
 import { StudioV2 } from '../studio/StudioV2';
+import { ControlPanel } from '../control/ControlPanel';
+import { SecOpsControl } from '../admin/SecOpsControl';
+import { SecOpsControlPure } from '../admin/views/SecOpsControlPure';
+import { DashboardPage } from '../dashboard/DashboardPage';
 import { ShellAmbientVideo } from './ShellAmbientVideo';
+import { ProfileDrawer } from './ProfileDrawer';
 import { buildWiredFromDeploy, titleFromDeploy } from '../admin/buildWiredFromDeploy';
 import { getDeploy, linkCheckToDeploy } from '../admin/deployStore';
 import { StudioSetupPage } from './StudioSetupPage';
+
+const AdminShowcase = lazy(() => import('../design-admin/AdminShowcase').then(m => ({ default: m.AdminShowcase })));
 
 function routeWantsAmbient(route: HashRoute, authed: boolean): boolean {
   if (!authed) {
@@ -67,10 +78,22 @@ function guardAdminRoute(route: HashRoute, user: AuthUser | null): HashRoute {
 }
 
 export function AppShell(): React.JSX.Element {
-  const [user, setUser] = useState<AuthUser | null>(() => readSession());
-  const [route, setRoute] = useState<HashRoute>(() =>
-    readSession() ? defaultAuthedRoute() : parseHash(window.location.hash || '#/home'),
-  );
+  const [user, setUser] = useState<AuthUser | null>(() => {
+    const existing = readSession();
+    if (existing) return existing;
+    if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+      writeSession('admin');
+      return 'admin';
+    }
+    return null;
+  });
+  const [route, setRoute] = useState<HashRoute>(() => {
+    const session = readSession() ?? ((typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) ? 'admin' : null);
+    if (session) {
+      return defaultAuthedRoute();
+    }
+    return parseHash(window.location.hash || '#/home');
+  });
   const [workspaceKey, setWorkspaceKey] = useState(0);
   const [closeOpen, setCloseOpen] = useState(false);
   const [pendingRoute, setPendingRoute] = useState<HashRoute | null>(null);
@@ -151,6 +174,10 @@ export function AppShell(): React.JSX.Element {
       window.removeEventListener('storage', onStorage);
     };
   }, []);
+
+  useEffect(() => {
+    syncDocumentTitle(route);
+  }, [route]);
 
   const go = useCallback((next: HashRoute) => {
     const guarded = guardAdminRoute(next, readSession());
@@ -453,16 +480,26 @@ export function AppShell(): React.JSX.Element {
       />
     );
   } else if (route.kind === 'admin' && canAccessAdmin(user)) {
+    main = <SecOpsControlPure />;
+  } else if (route.kind === 'control' && canAccessControl(user)) {
+    main = <ControlPanel />;
+  } else if (route.kind === 'control') {
     main = (
-      <AdminPage
-        onBackHome={() => go({ kind: 'home' })}
-        onLogout={handleLogout}
-        onInitFromDeploy={startFromDeploy}
-        onOpenCheck={(checkId, view) => {
-          openCheck(checkId, view, { kind: 'admin' });
-        }}
-      />
+      <div className="dark h-screen w-screen flex items-center justify-center bg-[#080c16] text-white font-sans">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-rose-400 mb-2">403</h1>
+          <p className="text-slate-400">Access Denied — admin_service only</p>
+          <button
+            onClick={() => go({ kind: 'home' })}
+            className="mt-4 px-4 py-1.5 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 text-sm"
+          >
+            Back to Home
+          </button>
+        </div>
+      </div>
     );
+  } else if (route.kind === 'dashboard') {
+    main = <DashboardPage />;
   } else if (route.kind === 'studio-v2') {
     main = (
       <div className="dark h-screen w-screen flex flex-col overflow-hidden" style={{ background: "#09090b" }}>
@@ -482,6 +519,12 @@ export function AppShell(): React.JSX.Element {
     );
   } else if (route.kind === 'design-playground') {
     main = <DesignPlayground />;
+  } else if (route.kind === 'design-admin') {
+    main = (
+      <Suspense fallback={<div className="dark h-screen w-screen flex items-center justify-center bg-[#080c16] text-slate-400 text-sm">Loading Admin Showcase…</div>}>
+        <AdminShowcase />
+      </Suspense>
+    );
   } else if (route.kind === 'check') {
     const item = getCheck(route.checkId);
     main = item ? (
@@ -516,6 +559,8 @@ export function AppShell(): React.JSX.Element {
         onOpenHistory={() => go({ kind: 'history' })}
         onOpenAdmin={() => go({ kind: 'admin' })}
         onOpenLab={() => go({ kind: 'lab' })}
+        onOpenControl={() => go({ kind: 'control' })}
+        onOpenDashboard={() => go({ kind: 'dashboard' })}
         onStartFresh={startFresh}
         onStartSetup={startSetup}
         onStartImported={startImported}
@@ -536,6 +581,8 @@ export function AppShell(): React.JSX.Element {
         onOpenHistory={() => go({ kind: 'history' })}
         onOpenAdmin={() => go({ kind: 'admin' })}
         onOpenLab={() => go({ kind: 'lab' })}
+        onOpenControl={() => go({ kind: 'control' })}
+        onOpenDashboard={() => go({ kind: 'dashboard' })}
         onStartFresh={startFresh}
         onStartSetup={startSetup}
         onStartImported={startImported}
@@ -571,6 +618,7 @@ export function AppShell(): React.JSX.Element {
         onDiscardAndLeave={handleDiscardAndLeave}
         onStay={handleStay}
       />
+      <ProfileDrawer />
     </>
   );
 }

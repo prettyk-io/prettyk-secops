@@ -16,7 +16,6 @@ flowchart TB
   LabUp --> UI[Editor_plus_playground]
   LabUp --> Live[KDT_Live_idle]
   LabUp -.->|flag| Dojo[DefectDojo]
-  OptIn[zap_webswing_up] -.-> Swing[Webswing]
 ```
 
 | Входит в `lab_up` | Не входит |
@@ -35,7 +34,6 @@ flowchart TB
 | DefectDojo | `http://127.0.0.1:8081/` | только если `-IncludeDefectDojo` |
 | PrettyK Live | `http://127.0.0.1:8767/` | `/api/meta` |
 | Editor | `http://localhost:5173/` | HTML shell (не белый экран) |
-| ZAP Webswing | `http://127.0.0.1:8082/zap` | down → пометить; не default |
 | ZAP demon API | `http://127.0.0.1:8080/` | `/JSON/core/view/version/` |
 
 ## 3. Тезисы ops
@@ -45,9 +43,8 @@ flowchart TB
 3. Live idle не гасить «заодно»; clean Live: diary/meta/`results_hooks.json`, процесс жив.  
 4. FE: Python API playground → ensure/restart; только UI → HMR; мёртвый `:5173` → ensure.  
 5. Shell abort Cursor ≠ смерть Vite/Live ([`stand-shell-abort`](../../.opencode/rules/stand-shell-abort.mdc)).  
-6. Webswing — [`zap-dual.md`](zap-dual.md); не часть default up.  
-7. Artifacts: soft `legal_hold` / package secrets gate — ops рычаги ([`nav-check.md`](nav-check.md) · cheatsheet); не prod SLA.
+6. Artifacts: soft `legal_hold` / package secrets gate — ops рычаги ([`nav-check.md`](nav-check.md) · cheatsheet); не prod SLA.
 
 ## 4. Честность
 
-Это **lab**, не SLA банка. Dojo/Webswing/api-lab — opt-in флаги; без флага = не врать «весь контур вверх».
+Это **lab**, не SLA банка. Dojo/api-lab — opt-in флаги; без флага = не врать «весь контур вверх».

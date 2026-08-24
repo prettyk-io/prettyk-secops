@@ -79,7 +79,7 @@ def resolve_chain_arg(
     wired: Any,
     arg: str,
     *,
-    manifest_dir: Optional[Path] = None,
+    wired_dir: Optional[Path] = None,
 ) -> ResolvedChain:
     raw = (arg or "").strip()
     out = ResolvedChain(module_id=raw, sequence_name=raw, har_as=raw)
@@ -100,7 +100,7 @@ def resolve_chain_arg(
         out.notes.append(f"модуль Цепь: {raw}")
         return out
 
-    imp = _find_har_import(Wired, raw)
+    imp = _find_har_import(wired, raw)
     if imp is not None:
         path = getattr(imp, "path", None)
         if path is None and isinstance(imp, dict):
@@ -109,8 +109,8 @@ def resolve_chain_arg(
         out.har_as = raw
         out.sequence_name = raw
         out.notes.append(f"imports har_file as={raw}")
-        if manifest_dir is not None:
-            candidate = (Path(manifest_dir) / rel).resolve()
+        if wired_dir is not None:
+            candidate = (Path(wired_dir) / rel).resolve()
             if candidate.is_file():
                 out.har_path = candidate
             else:
@@ -129,11 +129,11 @@ def resolve_chain_arg(
 def _work_har_path(
     *,
     har_as: str,
-    manifest_dir: Optional[Path],
+    wired_dir: Optional[Path],
 ) -> Path:
     name = (har_as or "chain").strip() or "chain"
-    if manifest_dir is not None:
-        dest = Path(manifest_dir) / "resources" / f"{name}.har"
+    if wired_dir is not None:
+        dest = Path(wired_dir) / "resources" / f"{name}.har"
         dest.parent.mkdir(parents=True, exist_ok=True)
         return dest
     dest = ensure_runs_dir() / "_chain_exec" / f"{name}.har"
@@ -144,7 +144,7 @@ def _work_har_path(
 def prepare_chain_har(
     resolved: ResolvedChain,
     *,
-    manifest_dir: Optional[Path] = None,
+    wired_dir: Optional[Path] = None,
     bindings: Optional[Dict[str, str]] = None,
     verb: str = "Цепь",
 ) -> Path:
@@ -159,7 +159,7 @@ def prepare_chain_har(
             )
         except ChainError as exc:
             raise WiredError(f"{verb} materialize: {exc}") from exc
-        path = _work_har_path(har_as=resolved.har_as, manifest_dir=manifest_dir)
+        path = _work_har_path(har_as=resolved.har_as, wired_dir=wired_dir)
         path.write_text(str(built.get("har_text") or ""), encoding="utf-8")
         resolved.notes.extend(built.get("notes") or [])
         return path

@@ -10,7 +10,7 @@ def test_import_graphql_file_uses_endurl_and_file(monkeypatch):
     from adapters.zap_adapter import ZapAdapter
 
     zap = object.__new__(ZapAdapter)
-    zap._run_manifest = SimpleNamespace(
+    zap._run_wired = SimpleNamespace(
         scan_base_url=lambda: "http://host.docker.internal:8090"
     )
     zap._last_graphql_import = None

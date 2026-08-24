@@ -1,0 +1,25 @@
+# Тестовая цель для локальной отладки (OWASP Juice Shop).
+# Публичный juice-shop.herokuapp.com регулярно лежит, отдавая Heroku "Application error",
+# поэтому смоук гоняем по своей копии.
+#
+#   docker compose -f services/docker-compose.target.yml up -d
+#
+# Адреса:
+#   из браузера/ZAP (внутри kdt-net) — http://juice-shop:3000
+#   с хоста — http://127.0.0.1:3000
+
+services:
+  juice-shop:
+    # S-02: pin после smoke R; кандидат GitHub release 2026-06-23
+    image: bkimminich/juice-shop:v20.1.1
+    container_name: juice-shop
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    networks:
+      - kdt-net
+
+networks:
+  kdt-net:
+    external: true
+    name: kdt-net

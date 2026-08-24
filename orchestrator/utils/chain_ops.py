@@ -918,7 +918,7 @@ def suggest_chain_fuzzer_id(har_as: str, module_id: str = "") -> str:
     return f"chain_{safe}"
 
 
-def _manifest_fuzzer_ids(wired: Any) -> List[str]:
+def _wired_fuzzer_ids(wired: Any) -> List[str]:
     suites = getattr(wired, "test_suites", None)
     ids: List[str] = []
     for item in getattr(suites, "fuzzers", None) or []:
@@ -932,7 +932,7 @@ def _manifest_fuzzer_ids(wired: Any) -> List[str]:
 
 def resolve_chain_fuzzer_id(wired: Any, *, har_as: str, module_id: str) -> str:
     """Pick existing fuzzer: chain_har → module_id → error hint."""
-    ids = _manifest_fuzzer_ids(wired)
+    ids = _wired_fuzzer_ids(wired)
     hint = suggest_chain_fuzzer_id(har_as, module_id)
     if hint in ids:
         return hint
@@ -1026,7 +1026,7 @@ def bindings_from_properties_text(text: str) -> Tuple[Dict[str, str], List[str]]
     return out, notes
 
 
-def _manifest_data_modules(wired: Any) -> List[Any]:
+def _wired_data_modules(wired: Any) -> List[Any]:
     if isinstance(wired, dict):
         suites = wired.get("test_suites")
     else:
@@ -1055,7 +1055,7 @@ def data_module_editor_text(wired: Any, module_id: str) -> str:
     mid = (module_id or "").strip()
     if not mid:
         return ""
-    for mod in _manifest_data_modules(wired):
+    for mod in _wired_data_modules(wired):
         if isinstance(mod, dict):
             mid_m = str(mod.get("id") or "").strip()
             mtype = str(mod.get("module_type") or "")

@@ -24,7 +24,7 @@
 **Airgap:** бандл самодостаточен. Никаких CDN, Google Fonts, внешних API. Всё вкомпилено.
 
 **CI / пайплайн:**
-- `secops-lab-pure` (CANON BASE) — **без спецификации CI**. Поддерживает GitHub Actions, GitLab CI, Jenkins; коробка не привязывается к вендору.
+- `prettyk-pure` (CANON BASE) — **без спецификации CI**. Поддерживает GitHub Actions, GitLab CI, Jenkins; коробка не привязывается к вендору.
 - `cosmo` (INTEGRATION) — **GitLab CI** (на базе DjiGit — РФ-approved форк GitLab; по тексту — «GitLab»). Стек заказчика.
 - Обкатка/CI у нас — **GitHub Actions** (репозиторий уже на GitHub). GitLab для интеграционного пайпа заказчика, не для нашего обкаточного CI.
 

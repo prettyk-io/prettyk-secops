@@ -1,4 +1,4 @@
-﻿syntax = "proto3";
+syntax = "proto3";
 service Greeter {
   rpc SayHello (HelloRequest) returns (HelloReply);
 }

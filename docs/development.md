@@ -4,7 +4,7 @@
 
 ## 1. Требования
 
-- Python `3.11.x`;
+- Python `3.13.x`;
 - Node.js `20.19+` либо `22.12+`;
 - npm с поддержкой `package-lock.json`;
 - Docker Compose v2 для интеграционного стенда;
@@ -13,7 +13,7 @@
 Runtime-зависимости перечислены в `orchestrator/requirements.txt`, тестовые и вспомогательные — в `orchestrator/requirements-dev.txt`:
 
 ```powershell
-py -3.11 -m venv .venv
+py -3.13 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --upgrade pip
 .\.venv\Scripts\python.exe -m pip install `
   -r orchestrator\requirements.txt `

@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from utils.api_module_runtime import find_api_module
+from utils.env_dual import pk_env
 
 CONNECTOR_MODULE_TYPE = "Коннектор"
 ENV_LIVE = "KDT_CONNECTOR_LIVE"
@@ -235,7 +236,7 @@ def resolve_connector_module(wired: Any, module_id: str) -> ResolvedConnector:
     if not mid:
         out.notes.append("пустой идентификатор модуля Коннектор")
         return out
-    mod = find_api_module(Wired, mid, module_types=[CONNECTOR_MODULE_TYPE])
+    mod = find_api_module(wired, mid, module_types=[CONNECTOR_MODULE_TYPE])
     if mod is None:
         out.notes.append(f"модуль Коннектор не найден: {mid}")
         return out
@@ -919,7 +920,7 @@ def probe_after_fuzz_meta(
             "connector_probe": False,
             "connector_probe_notes": [f"{env_enable}=1 но нет module_id / {env_module}"],
         }
-    resolved = resolve_connector_module(Wired, mid)
+    resolved = resolve_connector_module(wired, mid)
     ctype = (resolved.connector_type or "").strip()
     if ctype == LOG_CONNECTOR_TYPE:
         out = query_logs_payload(resolved, query=query)

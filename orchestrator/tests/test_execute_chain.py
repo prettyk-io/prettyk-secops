@@ -79,7 +79,7 @@ def test_resolve_chain_module(tmp_path):
     )
     suites = SimpleNamespace(test_data_constructor=[mod], imports=[])
     wired = SimpleNamespace(test_suites=suites)
-    resolved = resolve_chain_arg(Wired, "flow_me", manifest_dir=tmp_path)
+    resolved = resolve_chain_arg(Wired, "flow_me", wired_dir=tmp_path)
     assert resolved.from_module is True
     assert resolved.har_as == "me"
 
@@ -105,8 +105,8 @@ def test_execute_and_scan_chain_module(tmp_path, monkeypatch):
     )
 
     zap = ZapAdapter.__new__(ZapAdapter)
-    zap._run_manifest = wired
-    zap._manifest_dir = tmp_path
+    zap._run_wired = wired
+    zap._wired_dir = tmp_path
     zap._ensure_connected = lambda: None
     zap._zap = MagicMock()
     calls = []
@@ -135,10 +135,10 @@ def test_execute_and_scan_chain_module(tmp_path, monkeypatch):
 
 def test_execute_chain_missing_raises():
     zap = ZapAdapter.__new__(ZapAdapter)
-    zap._run_manifest = SimpleNamespace(
+    zap._run_wired = SimpleNamespace(
         test_suites=SimpleNamespace(test_data_constructor=[], imports=[])
     )
-    zap._manifest_dir = None
+    zap._wired_dir = None
     with pytest.raises(WiredError, match="ВыполнитьЦепь"):
         zap.execute_chain_module("nope")
 
@@ -196,8 +196,8 @@ def test_investigate_chain_module_phase_order(tmp_path, monkeypatch):
     )
 
     zap = ZapAdapter.__new__(ZapAdapter)
-    zap._run_manifest = wired
-    zap._manifest_dir = tmp_path
+    zap._run_wired = wired
+    zap._wired_dir = tmp_path
     zap._ensure_connected = lambda: None
     zap._zap = MagicMock()
     zap.context_name = "prev_ctx"
@@ -345,8 +345,8 @@ def test_prepare_chain_module_imports_setup(tmp_path):
         test_suites=SimpleNamespace(test_data_constructor=[mod], imports=[])
     )
     zap = ZapAdapter.__new__(ZapAdapter)
-    zap._run_manifest = wired
-    zap._manifest_dir = tmp_path
+    zap._run_wired = wired
+    zap._wired_dir = tmp_path
     zap._ensure_connected = lambda: None
     calls = []
 

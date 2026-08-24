@@ -70,7 +70,7 @@ _STEP_DESCRIPTORS: Dict[WireTarget, StepDescriptor] = {
     ("zap", "generate_report"): StepDescriptor(
         "Сканер", "Сформировать отчёт", ("format", "output_file")
     ),
-    ("zap", "apply_manifest_auth"): StepDescriptor(
+    ("zap", "apply_wired_auth"): StepDescriptor(
         "Сканер", "ПрименитьAuth", ("context_name", "module_id")
     ),
     ("zap", "import_openapi_spec"): StepDescriptor(
@@ -538,7 +538,7 @@ _FACADE_ZAP: Dict[str, WireTarget] = {
     "СтатусПлана": ("zap", "automation_plan_progress"),
     "ОстановитьПлан": ("zap", "stop_automation_plan"),
     "СгенерироватьПлан": ("zap", "generate_automation_plan"),
-    "ПрименитьAuth": ("zap", "apply_manifest_auth"),
+    "ПрименитьAuth": ("zap", "apply_wired_auth"),
     "BrowserAuth": ("zap", "set_browser_based_auth"),
     "Отчёт": ("zap", "generate_report"),
     "ЛогАтаки": ("zap", "log_attack"),
@@ -1021,21 +1021,28 @@ def resolve_call(text: str) -> Optional[str]:
     if is_facade(name):
         rest = rest.strip()
         if not rest:
+            direct_target = lookup_method_id(name)
+            if direct_target is not None:
+                return _wire_from_target(direct_target, "")
             return None
         m2 = re.match(r"^(\S+)(?:\s+(.*))?$", rest, re.DOTALL)
-        if not m2:
-            return None
-        method_name, args_rest = m2.group(1), m2.group(2) or ""
-        label_wire = _label_discovery_wire(method_name, args_rest)
-        if label_wire is not None:
-            # Драйвер Нажать > Войти — facade + label mode
+        if m2:
+            method_name, args_rest = m2.group(1), m2.group(2) or ""
+            label_wire = _label_discovery_wire(method_name, args_rest)
+            if label_wire is not None:
+                # Драйвер Нажать > Войти — facade + label mode
+                target = lookup_facade_method(name, method_name)
+                if target is not None and label_wire.startswith("webdriver|"):
+                    return label_wire
             target = lookup_facade_method(name, method_name)
-            if target is not None and label_wire.startswith("webdriver|"):
-                return label_wire
-        target = lookup_facade_method(name, method_name)
-        if target is None:
-            return None
-        return _wire_from_target(target, args_rest)
+            if target is not None:
+                return _wire_from_target(target, args_rest)
+        # Fallback: `name` may be a direct MethodId itself (e.g. `Сканер juice_ctx 1`),
+        # where `rest` contains arguments, not a facade submethod.
+        direct_target = lookup_method_id(name)
+        if direct_target is not None:
+            return _wire_from_target(direct_target, rest)
+        return None
 
     label_wire = _label_discovery_wire(name, rest)
     if label_wire is not None:

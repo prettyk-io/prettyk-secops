@@ -65,6 +65,15 @@ prettyk-dev/
 | **SC** | **STUDIO-CANVAS — prettyK Studio v2: shadcn/ui + Tailwind v4 + React Flow canvas + Step Deck + pill-based конструктор** | **ACTIVE — 22 авг (SC-1…8 код сдан, evolve до proper test)** | § Эпик STUDIO-CANVAS ниже · [`sanctuary/pure/studio-stack.md`](../sanctuary/pure/studio-stack.md) · [`friend-requests/SCENARIO-CANVAS-STEP-DECK.md`](friend-requests/SCENARIO-CANVAS-STEP-DECK.md) |
 | **SC-WAR** | **WAR ROOM — тактический конвейер запуска: 5 фаз, SSE-телеметрия, Canvas 2D, фотонные импульсы** | **evolve — 22 авг (WR-1…8 код сдан, proper test не применён)** | § Эпик SC-WAR ниже · [`friend-requests/CANVAS-EXECUTION-WAR-ROOM.md`](friend-requests/CANVAS-EXECUTION-WAR-ROOM.md) |
 | **DP** | **DESIGN PLAYGROUND — полный порт на shadcn/ui + Tailwind v4 + вкладка Tailwind for Designers** | **CLOSED — 23 авг (DP-1…10 ✅ 22.5h)** | § Эпик DP ниже · [`sanctuary/DESIGN-WORKBENCH.md`](../sanctuary/DESIGN-WORKBENCH.md) |
+| **DP-ADM** | **DESIGN PLAYGROUND: Admin Showcase — MUI-галерея компонентов (21h)** | **CLOSED — 24 авг (DP-ADM-0…10 ✅ 21h)** | § Эпик DP-ADM ниже · [`docs/research/2026-08-23-admin-showcase-plan.md`](research/2026-08-23-admin-showcase-plan.md) |
+| **ADM** | **ADM-V3 — Minimal Theme Integration: Cyber-Enterprise Admin Shell (Theme Extraction + AdminShowcase + Battle Panels)** | **ACTIVE — 24 авг (Boss: theme extraction, Flash: showcase wiring, Keeper: приёмка)** | § Эпик ADM-V3 ниже |
+| **AUTH-PROF** | **USER-PROFILES — Единая система профилей, гранулярный RBAC, PAT токены и настройки** | **CLOSED — 24 авг (B-1…3 ✅, F-1…3 ✅, tsc 0, vitest 39/39). PoC сдан; production backend → AUTH-SPIKE.** | § Эпик AUTH-PROF ниже · [`docs/research/2026-08-24-user-profiles-and-rbac.md`](research/2026-08-24-user-profiles-and-rbac.md) |
+| **AUTH-SPIKE** | **BETTER-AUTH — Production Auth Backend: сравнение Better Auth vs Keycloak, интеграционный spike** | **CLOSED — 24 авг (spike accepted: Boss 10/10 + Flash 6/6, tsc 0, vitest 48/48)** | § Эпик AUTH-SPIKE ниже · [`docs/spike/2026-08-25-auth-comparison.md`](spike/2026-08-25-auth-comparison.md) |
+| **AUTH-PROD** | **PRODUCTION-AUTH — Production Auth Boundary: Better Auth → PostgreSQL, миграции, секреты в OpenBao** | **NEW — 24 авг (spike closed; production не начинать до согласования SQLite↔PostgreSQL)** | § Эпик AUTH-PROD ниже |
+| **PK-CI** | **PRETTYK-CI — Security Pipeline Platform: свой security pipeline + адаптеры к внешним CI/CD** | **NEW — 24 авг (концепт → нарезка; весь эпик → Boss)** | § Эпик PRETTYK-CI ниже · [`docs/research/2026-08-24-prettyk-ci-concept.md`](research/2026-08-24-prettyk-ci-concept.md) |
+| **PK-TRM** | **WEB-IDE-TERMINAL — Security Workbench: терминал + Monaco-интеллект + evidence-linked IDE** | **NEW — 24 авг (концепт → нарезка; весь эпик → Flash)** | § Эпик WEB-IDE-TERMINAL ниже · [`docs/research/2026-08-24-web-ide-terminal-concept.md`](research/2026-08-24-web-ide-terminal-concept.md) |
+| **ADM-PURE** | **SecOps Control для pure — Applications / Targets / Runs / Findings / Policies** | **EVOLVE — 24 авг (концепция согласована на уровне направления; код не начинать)** | § Эпик ADM-PURE ниже |
+| **ADM-V2** | **ADM-V2 — Новая админка (Control Panel / SecOps Control / Dashboard) + Automation Lab Wedge** | **CLOSED — 23 авг (поверхности сданы; ADM-5 superseded для pure)** | § Эпик ADM-V2 ниже · [`docs/research/2026-08-23-admin-poc-plan.md`](research/2026-08-23-admin-poc-plan.md) |
 | **INT** | **INTRUDER-PRO — фаззер, режимы Burp (Sniper/Pitchfork/Cluster Bomb) + Grep Match/Extract** | **CLOSED — 17 авг (INT-1…3 ✅)** | § Эпик INTRUDER-PRO ниже · [`friend-requests/INTRUDER-PRO-ADVANCED-ATTACKS.md`](friend-requests/INTRUDER-PRO-ADVANCED-ATTACKS.md) |
 | **AUTH-V** | **AUTH-CHAIN-VAULT — мульти-профильная pre-flight авторизация, цепочки токенов и ZAP Replacer injection** | **CLOSED — 17 авг (AUTH-1…3 ✅)** | § Эпик AUTH-CHAIN-VAULT ниже |
 | **DOJO-S** | **DEFECTDOJO-AUTO-SYNC — автоматическая синхронизация находок и дедупликация** | **ACTIVE — Flash** | § Эпик DEFECTDOJO-AUTO-SYNC ниже |
@@ -2037,6 +2046,804 @@ DoD → точечные тесты → backlog → commit+push origin/dev → �
 
 ---
 
+## Эпик ADM-V2 — Новая админка + Automation Lab Wedge (CLOSED · 23 авг 2026; ADM-5 superseded для pure)
+
+> **Research:** [`docs/research/2026-08-23-admin-poc-plan.md`](research/2026-08-23-admin-poc-plan.md)  
+> **Стратегия:** двухуровневая продуктовая линейка — Automation Lab (бросовая цена, входной продукт) и SecOps Lab (Enterprise).  
+> **Ветка:** `dev`. Статус: `evolve / PoC-planning`. Код не писать до приказа.
+
+### Что хотим получить
+
+Три чистые поверхности на **React Admin (MUI, MIT core, $0)** вместо legacy-монолита на antd (13 секций):
+1. **Control Panel (`#/control`)** — инфра-админка для `admin_service`: здоровье демонов, Retention, Vault.
+2. **SecOps Control (`#/admin`)** — ИБ-администрирование для `admin_sec`: приложения/цели, проверки и прогоны, находки, политики гейтов.
+3. **Dashboard (`#/dashboard`)** — агрегированный фид результатов для всех ролей.
+
+> **Стек (забетонирован 23 авг):**
+> - **Админ-панели:** [React Admin](https://marmelab.com/react-admin/) + Material UI (MIT, $0). RBAC / Audit Log — заглушки до первого enterprise-чека (дальше: EE €145/мес или сами за ~50h).
+> - **Studio / Canvas / War Room:** shadcn/ui + Tailwind v4 (без изменений).
+> - **Рантайм:** единый Playwright Browser Core + Actions/DSL/Wired.
+> - **Иерархия:** Box → Org → Space → Project → Check/Run. Подробно в [`docs/research/2026-08-23-additional-architecture-round.md`](research/2026-08-23-additional-architecture-round.md).
+
+Плюс продуктовый Wedge: Automation Lab как облегчённый entry-point продукт (Common DSL/Wired/Canvas без ZAP/Dojo/Allure) → естественный апгрейд до SecOps Lab.
+
+### Нарезка PoC (не код, карточки для обсуждения и приказа)
+
+| ID | Суть | Приёмочный GWT | Est |
+|---|---|---|---|
+| **ADM-0** | **Contract Proof:** один Automation Flow + один Security Check через общий runtime | **Given:** общий Browser Core/Actions/DSL/Wired. **When:** сценарий из 4–5 шагов запускается в режиме Automation и Security. **Then:** оба возвращают success/failure через один runner envelope; Automation не требует ZAP/Dojo/Allure; Security добавляет scan-specific findings без изменения DSL. | 4h |
+| **ADM-1** | **Backup/audit legacy Admin** | **Given:** старая админка (antd, 13 секций). **When:** делается аудит. **Then:** создан каталог `legacy/admin-old/` с полным слепком; в документе перечислены модули на вынос (deployStore, adminApi, deriveKpi, notifyRules и др.) и модули на утилизацию (antd UI). | 2h |
+| **ADM-2** | **Skeleton Control Panel** для `admin_service`: React Admin (MUI) shell, роутинг `#/control` | **Given:** пустой Control. **When:** `admin_service` заходит в `#/control`. **Then:** видит тёмный телеметрический shell c placeholder-карточками здоровья демонов. `sec_expert` и `user` получают 403/редирект. | 3h |
+| **ADM-3** | **Retention в Control Panel:** React Admin-интерфейс на существующий Retention API | **Given:** Retention API работает. **When:** `admin_service` открывает панель Retention. **Then:** видит состояние хранилища, задаёт TTL, запускает очистку; старый antd RetentionPanel удалён. | 2h |
+| **ADM-4** | **Skeleton SecOps Control:** React Admin (MUI) shell, роутинг `#/admin`, доступ `admin_sec` + `admin_abnormal` | **Given:** пустой SecOps Control. **When:** `admin_sec` заходит в `#/admin`. **Then:** видит shell с DataGrid и формами. Старый `AdminLayout.tsx` заменён на redirect/заглушку. | 3h |
+| **ADM-5** | **Deploy Registry + Blank provisioning в SecOps Control** | **SUPERSEDED для pure:** deploy остаётся cosmo/integration-направлением; в pure заменяется target-centric концепцией ADM-PURE ниже. Исторический прототип не расширять как ядро продукта. | 3h |
+| **ADM-6** | **Skeleton Dashboard:** React Admin (MUI) shell, роутинг `#/dashboard`, полиморфные карточки результатов | **Given:** есть минимум 1 Automation-прогон и 1 Security-прогон. **When:** пользователь открывает `#/dashboard`. **Then:** видит фид с полиморфными карточками: Automation — скриншот + шаги; Security — severity breakdown + Dojo/Allure links. Ролевая фильтрация работает. | 3h |
+| **ADM-7** | **Automation Lab concept doc:** документ-концепт двухуровневой линейки и GTM Wedge | **Given:** решение о продуктовом разделении. **When:** Keeper пишет документ. **Then:** описан состав Automation Lab, отличия от SecOps Lab, ценовое позиционирование, профили поставки (light vs full compose). | 2h |
+| **ADM-8** | **Industry validation:** отделить подтверждённые competitive facts от маркетинговых гипотез | **Given:** research по aqua/Testim/ACCELQ/Katalon. **When:** Keeper проверяет документацию конкурентов. **Then:** сформирована таблица подтверждённых/неподтверждённых отличий; claims готовы к внешнему использованию. | 2h |
+| **ADM-9** | **Интеграционная проверка:** три панели живут рядом, роли работают, legacy не сломан | **Given:** реализованы ADM-0…6. **When:** Flash выполняет acceptance-сценарии, Keeper принимает. **Then:** три поверхности не конфликтуют; `#/admin`, `#/control`, `#/dashboard` переключаются; старые роуты не ломают новую админку. | 2h |
+| | | **ИТОГО ADM-V2 PoC** | **26h** |
+
+### Распределение: Boss vs Keeper (Flash только ADM-3,5,9)
+
+| Этап | Кто делает | Что именно | Est |
+|---|---|---|---|
+| **ADM-0** | Boss | Код: общий runtime, два consumer-профиля, contract proof | 4h |
+| **ADM-1** | Boss + Keeper | Boss: слепок `legacy/admin-old/`, удаление antd UI. Keeper: документ salvage-list (что выдираем — deployStore, adminApi, deriveKpi, notifyRules etc.) | 2h |
+| **ADM-2** | Boss | Код: React Admin (MUI) shell для Control Panel | 3h |
+| **ADM-3** | Flash | Код: Retention UI на React Admin (MUI) поверх готового API | 2h |
+| **ADM-4** | Boss | Код: React Admin (MUI) shell для SecOps Control | 3h |
+| **ADM-5** | Flash | Код: Deploy Registry + Blank provisioning | 3h |
+| **ADM-6** | Boss | Код: React Admin (MUI) shell для Dashboard | 3h |
+| **ADM-7** | **Keeper** ✅ | Документ: Automation Lab concept, GTM Wedge, профили поставки | 2h |
+| **ADM-8** | **Keeper** ✅ | Исследование: таблица фактов/гипотез по конкурентам (aqua/Testim/ACCELQ/Katalon) | 2h |
+| **ADM-9** | Flash + **Keeper** (приёмка) | Flash гоняет acceptance-сценарии, Keeper принимает по GWT | 2h |
+
+**Итог:**
+- Boss: ADM-0,1,2,4,6 = **15h**
+- Flash: ADM-3,5,9 = **7h** (ждёт ADM-2 и ADM-4 от Boss'а)
+- Keeper: ADM-7 ✅, ADM-8 ✅, salvage-документ ADM-1, приёмка ADM-9
+
+### План Keeper'а (своё)
+
+Пока Boss пишет код (ADM-0,1,2,4,6 = 15h), Keeper делает:
+
+1. **ADM-1 salvage-документ** — список файлов/модулей из `cosmo/src/admin/`:
+   - Что выдираем (чистая логика: deployStore, adminApi, deriveKpi, notifyRules, applyDojoProgram, collectAdminRuns, buildWiredFromDeploy, syncEvidenceFromLive).
+   - Что утилизируем (весь antd UI: AdminLayout, PageContainer, ProTable/ProForm/ProCard и их обёртки).
+   - Формат: markdown-таблица с именем файла, типом (логика/UI) и решением (salvage/discard).
+
+2. **ADM-7 ✅ сделано** — [`docs/research/2026-08-23-automation-lab-concept.md`](research/2026-08-23-automation-lab-concept.md)
+
+3. **ADM-8 ✅ сделано** — [`docs/research/2026-08-23-industry-validation.md`](research/2026-08-23-industry-validation.md)
+
+4. **Приёмка ADM-9** — когда Flash сдаст интеграционные сценарии, Keeper принимает по GWT.
+
+5. **Синхронизация** — держит research ↔ backlog актуальным после каждого этапа.
+
+## Эпик ADM-PURE — SecOps Control: Applications, Runs, Findings & Policies (EVOLVE · 24 авг 2026)
+
+> **QUEUE / evolve — не CANON.** Это зафиксированное продуктовое решение для pure после обсуждения с Максимом. Код не начинать до отдельного приказа и декомпозиции Boss.
+> **Профиль:** `secops-lab-pure`. **Граница:** pure-ядро ИБ-операций отдельно от cosmo-custom/CI/CD-интеграций.
+
+### Ч — что сказал заказчик
+
+> «Пока Deploy как явление у нас сильно не проросло — переобдумаем его. Deploy был скорее cosmo канон, мы под него старую админку затачивали. Сейчас pure приоритет и мне что-то подсказывает что не особо кто в индустрии голову этим ебет именно как мы под банк. Это больше про интеграцию, будем когда надо думать об этом уже когда pure solid будет, согласен? Переобдумаем может концепцию? Что нам надо на SecOps Control #/admin по уму разуму?
+> Просто вот deploy мы хотели чисто чтоб URL атаки тянуть. Нам в теории надо будет вообще например результаты деплоя подтягивать. Условно интегрировать нашу коробку в CI/CD принимая на вход деплой. Или в т.ч. быть хабом куда эти записи о деплоях бы падали хуком условно. Что думаешь о таком брат?»
+
+### И — продуктовый интент
+
+`#/admin` в pure — командный пункт ИБ-операций. Администратор управляет объектами, которые проверяются, политиками допуска, прогонами и находками. Deploy не должен быть обязательным центром навигации или обязательным объектом pure-модели.
+
+Термины:
+
+- **Application** — стабильная прикладная сущность, которую команда защищает.
+- **Target** — конкретная проверяемая поверхность приложения; URL или другой адрес — её часть.
+- **Check** — описание проверки, которую запускают для цели.
+- **Run** — один фактический запуск проверки.
+- **Finding** — нормализованная находка, связанная с целью и запуском.
+- **Policy** — правило, по которому результат запуска получает gate-вердикт.
+- **Deploy event** — внешнее событие от CI/CD; не обязательная сущность pure-ядра.
+
+### С — сценарии и требования
+
+| ID | Что получает пользователь | Приёмочный сценарий GWT |
+|---|---|---|
+| **ADM-PURE-1** | Обзор состояния ИБ-контуров | **Given:** в системе есть приложения, запуски и находки. **When:** `admin_sec` открывает `#/admin`. **Then:** видит активные запуски, последние результаты, открытые Critical/High находки и текущие gate-вердикты. **Edge:** при пустых данных видит честные empty-states, а не нулевые «успешные» метрики. |
+| **ADM-PURE-2** | Реестр приложений и целей | **Given:** приложение ещё не заведено или уже существует. **When:** `admin_sec` создаёт/открывает приложение и добавляет проверяемую цель. **Then:** цель получает стабильную карточку, отображает адрес, последнее состояние проверки, число активных находок и действие «Новая проверка». **Negative:** некорректный или пустой адрес не создаёт цель и объясняет ошибку. |
+| **ADM-PURE-3** | Переход от цели к проверкам | **Given:** у цели есть хотя бы один запуск. **When:** пользователь открывает цель или нажимает «История». **Then:** видит связанные проверки и прогоны с датой, статусом, gate-вердиктом и переходом к результатам. **Edge:** незавершённый запуск явно помечен running; недоступность источника не отображается как completed/pass. |
+| **ADM-PURE-4** | Управление gate-политиками | **Given:** у администратора есть право менять политики. **When:** он создаёт, редактирует, включает или выключает policy. **Then:** в списке видны её условия и состояние. **Negative:** выключенная policy не влияет на gate; изменение не переписывает исторический вердикт уже завершённого запуска. |
+| **ADM-PURE-5** | Честный gate по результату запуска | **Given:** запуск завершился и для него выбрана действующая policy. **When:** система оценивает находки. **Then:** пользователь видит `passed`, `warning` или `failed` с объяснением по severity/правилу. **Edge:** отсутствие данных, ошибка проверки или недоступность источника не превращаются в `passed`. |
+| **ADM-PURE-6** | Единый реестр находок | **Given:** несколько приложений и запусков содержат находки. **When:** пользователь открывает Findings. **Then:** видит агрегированный список с severity, целью, статусом, CWE/типом, первым и последним обнаружением; фильтры не смешивают разные цели. **Edge:** повторное обнаружение той же логической находки не создаёт визуальный дубликат без объяснения. |
+| **ADM-PURE-7** | История запусков | **Given:** цель проверялась несколько раз. **When:** пользователь открывает Runs. **Then:** видит хронологию запусков, их статусы, policy/gate и ссылку на результат. **Edge:** running, failed, cancelled и unavailable различаются визуально и текстом. |
+
+### Т — DoD pure-среза
+
+- `#/admin` открывается как SecOps Control для `admin_sec` и показывает Overview, Applications/Targets, Policies, Findings и Runs.
+- Пользователь может пройти путь `Application → Target → New Check → Run → Findings → Gate` без создания Deploy.
+- Target сохраняет стабильную идентичность между повторными запусками и не дублируется из-за повторного открытия той же цели.
+- Policy оценивает результат запуска; изменение policy не переписывает историю прошлых запусков.
+- Empty, running, failed, unavailable и no-permission состояния различимы и не маскируются под успех.
+- Каждая находка имеет понятную связь с целью и запуском; список не теряет контекст при фильтрации.
+- В интерфейсе pure нет обязательного шага «создать deploy», чтобы начать проверку URL.
+- Запрещённая роль не получает рабочий control plane через прямой переход на `#/admin`.
+
+### О — ограничения
+
+**В этот pure-срез не входят:**
+
+- Deploy Registry как основная вкладка или обязательная сущность.
+- Поля и workflow, нужные только для банковской лестницы App → Build → Deploy.
+- CI/CD webhook, приём deploy events и callback в pipeline.
+- Импорт результатов внешних сканеров и нормализация сторонних отчётов.
+- Автоматическое создание проверки по каждому входящему deploy event.
+- Cosmo-портал, банковские роли и портал-специфичные URL.
+- Переписывание Control Panel, Studio/Canvas, War Room и Dashboard.
+- Перенос deploy-логики в pure до появления согласованного integration contract.
+
+### Будущий integration-контур
+
+Когда pure-ядро устойчиво, отдельный integration-профиль может принимать deploy event от CI/CD. Событие должно разрешать или создать Application/Target, прикрепить provenance билда, запустить проверку по политике и вернуть наружу результат gate. Отдельным потоком позже рассматривается приём внешних scan reports.
+
+Критерий готовности integration-контракта: можно однозначно ответить, что является источником истины для Application, Target, Run, Finding и Gate, а deploy остаётся триггером/контекстом, а не подменяет эти сущности.
+
+### Решение на сейчас
+
+- Текущий pure-интерфейс Deploy Registry не расширять.
+- ADM-5 считать superseded для pure, а не полноценным DoD коробки.
+- Target-centric модель подготовить как следующий продуктовый срез после текущей визуальной волны ADM-V3.
+- Cosmo-specific deploy ladder сохранить только как отдельное integration/evolve-направление.
+
+---
+
+## Эпик AUTH-PROF — Единая система профилей пользователей, гранулярный RBAC и PAT-токены (CLOSED · 24 авг 2026)
+
+> **Статус: PoC сдан.** UI-контракт реализован и пригоден как view-model.  
+> **НЕ является production auth backend.** `localStorage` — не источник истины. Криптография сессий и lifecycle токенов на клиенте — небезопасно.  
+> **Production backend → Эпик AUTH-SPIKE (ниже).**  
+> **Research:** [`docs/research/2026-08-24-user-profiles-and-rbac.md`](research/2026-08-24-user-profiles-and-rbac.md)  
+> **Профиль:** `secops-lab-pure` (автономное ядро) + `cosmo-custom` (SSO/IdP-адаптер).
+
+### Доставка (факт)
+
+| Кто | ID | Задача | Статус |
+|---|---|---|---|
+| **Boss** | B-1 | `profileStore.ts` — Unified Profile Store, Capabilities матрица, useUserProfile хук | ✅ |
+| **Boss** | B-2 | `adminAuthProvider.ts` — Forward-compatible React Admin authProvider | ✅ |
+| **Boss** | B-3 | `tokenEngine.ts` — PAT генератор, маскировка, list/revoke/validate | ✅ |
+| **Flash** | F-1 | `ProfileDrawer.tsx` — Cyber Glass Drawer, 3 вкладки, 248 lines | ✅ |
+| **Flash** | F-2 | Header Wiring — ShellChrome бейдж → openDrawer на всех поверхностях | ✅ |
+| **Flash** | F-3 | Preferences + Locales — реактивная смена темы/шрифта/языка в Drawer | ✅ |
+
+### Чек-лист приёмки
+
+- [x] `tsc --noEmit` — 0 ошибок.
+- [x] `vitest` targeted/auth — 39/39 pass (Boss 35 + Flash 4).
+- [x] Profile Drawer открывается кликом по бейджу в хедере на всех поверхностях.
+- [x] Смена имени/темы/шрифта в Drawer мгновенно обновляет UI без F5.
+- [x] PAT: создание, список, маска `pk_live_****`, отзыв.
+- [x] Capabilities матрица типизирована, хардкод ролей в UI заменён.
+
+### Важное ограничение
+
+**Текущий код — UI PoC, не production auth.**
+
+- `profileStore.ts` хранит профиль в `localStorage` → небезопасно.
+- `tokenEngine.ts` генерирует токены клиент-сайд → не является authority.
+- `adminAuthProvider.ts` — адаптер к `localStorage`, не к реальному auth service.
+- Сессии, refresh, revoke, rate limits, audit — отсутствуют.
+
+**Эти файлы не выбрасываем, а переводим в статус view-model / UI-адаптера.**  
+Реальный auth backend — Better Auth (см. AUTH-SPIKE ниже).
+
+### Что сделано (файлы)
+
+- `cosmo/src/auth/profileStore.ts` — типы UserProfile/UserCapability/UserPreferences/PAT, Zustand store, capability matrix, persistence
+- `cosmo/src/auth/adminAuthProvider.ts` — React Admin authProvider bridge
+- `cosmo/src/auth/tokenEngine.ts` — PAT lifecycle
+- `cosmo/src/auth/profileStore.test.ts` — 29 тестов
+- `cosmo/src/auth/index.ts` — barrel
+- `cosmo/src/shell/useProfileStore.ts` — Zustand store (identity, preferences, tokens, drawer)
+- `cosmo/src/shell/ProfileDrawer.tsx` — Cyber Dark Glass Drawer (3 tabs, 248 lines)
+- `cosmo/src/shell/ShellChrome.tsx` — useProfileStore.openDrawer() на клик по бейджу
+- `cosmo/src/shell/AppShell.tsx` — ProfileDrawer глобально
+- `cosmo/src/locales/types.ts` — profile section types
+- `cosmo/src/locales/ru.ts` — profile.ru словарь
+- `cosmo/src/locales/en.ts` — profile.en словарь
+
+---
+
+## Эпик AUTH-SPIKE — Better Auth vs Keycloak: Production Auth Backend Spike (CLOSED · 24 авг 2026 — spike accepted)
+
+> **Срочность:** КРИТИЧЕСКАЯ. Текущий `profileStore.ts` — **UI PoC на localStorage**. Не является production auth.  
+> **Задача:** завтра (25 авг) провести технический spike: развернуть Better Auth, подключить к Vite-фронту, сравнить с Keycloak.
+
+### Ч — что сказал заказчик (verbatim)
+
+> «А мы точно движок профилей ни у кого откопипастить уже реализованый не могли на изи чем вот щас башку ебать будем? Наверняка есть же супер решения для этого? Просканируй инет.»
+>
+> «Пиши в беклог все это брат. Завтра сделаем. Свою хуйню сделали. Завтра сделаем как американцы сказали. А потом сравним.»
+
+### И — продуктовый интент
+
+Заменить самописный `localStorage`-профиль на production-grade auth backend, который обеспечивает: серверные сессии, refresh/revoke токенов, RBAC/permissions, управление пользователями, API keys (PAT), OIDC/SAML SSO, аудит — без написания собственного криптографического кода.
+
+### Исследование Keeper (24 авг 2026)
+
+**Проведён полный скан рынка.** Проанализированы и проверены через живые docs/API:
+
+| Решение | Лицензия | Что закрывает | Вердикт |
+|---|---|---|---|
+| **Better Auth v1.7** | MIT | Auth, users, profile, sessions, RBAC, admin, orgs, API keys, OIDC/SAML, multi-session, cookie cache, stateless mode | 🥇 **Лучший fit.** TypeScript, plugin-архитектура, почти 1:1 с нашими требованиями. Требует Node/TS backend. |
+| **Keycloak 26.7.2** | Apache 2.0 | OIDC, SAML, LDAP/AD, MFA/TOTP, WebAuthn/passkeys, users/groups/roles, sessions, admin console, account console, SCIM, audit events, identity brokering, organizations, workflows | 🥈 **Enterprise-стандарт.** Тяжёлый (Java), но полностью самодостаточный. PAT/API keys — слабее, нужен доп. сервис. |
+| **SuperTokens** | Apache 2.0 / EE | Self-hosted auth, sessions, MFA, roles, multi-tenancy, user dashboard | Хорош для auth/sessions, но API keys и enterprise SSO слабее Better Auth. Java-бэкенд. |
+| **Ory Kratos + Keto** | Apache 2.0 | Identity (Kratos) + authorization (Keto), Ory Permission Language, Zanzibar-based | Сильно мощнее, но требует сборки нескольких сервисов. Нет admin UI из коробки. |
+| **Authentik** | MIT / Enterprise | Self-hosted IdP/SSO, users, groups, flows, OIDC/SAML/LDAP/SCIM, admin UI | Хорош как SSO-шлюз, не как app-owned profile backend. |
+| **ZITADEL** | Apache 2.0 | Cloud-native IdP, OIDC, SAML, multi-tenancy, users, PAT, metadata | Cloud-first, self-hosted сложнее. PAT и metadata API хорошие. |
+| **FastAPI Users** | MIT | Ready-to-use auth routes для FastAPI | Наш стек (Python), но проект в **maintenance mode**. Нет RBAC/PAT/admin уровня. |
+| **Casbin** | Apache 2.0 | Authorization engine: RBAC, ABAC, ReBAC, policy DSL | Только authorization, не identity/sessions/tokens. **Дополнение, не замена.** |
+| **React Admin `ra-rbac`** | EE €145/мес | UI-level permissions | Не хранит пользователей, не управляет сессиями. **UI-слой, не backend.** |
+
+**Источники (живые docs, все проверены 24 авг):**
+- [Better Auth — Introduction](https://www.better-auth.com/docs/introduction)
+- [Better Auth — User & Accounts](https://www.better-auth.com/docs/concepts/users-accounts)
+- [Better Auth — Admin plugin](https://www.better-auth.com/docs/plugins/admin)
+- [Better Auth — Organization plugin](https://www.better-auth.com/docs/plugins/organization)
+- [Better Auth — API Key plugin](https://www.better-auth.com/docs/plugins/api-key)
+- [Better Auth — Session Management](https://www.better-auth.com/docs/concepts/session-management)
+- [Better Auth — SSO plugin (OIDC/SAML)](https://www.better-auth.com/docs/plugins/sso)
+- [Better Auth — Multi Session](https://www.better-auth.com/docs/plugins/multi-session)
+- [Keycloak — Server Admin Guide](https://www.keycloak.org/docs/latest/server_admin/)
+- [Keycloak — JavaScript Adapter](https://www.keycloak.org/securing-apps/javascript-adapter)
+- [React Admin — Auth Provider Setup](https://marmelab.com/react-admin/Authentication.html)
+- [React Admin — RBAC (ra-rbac)](https://marmelab.com/react-admin/AuthRBAC.html)
+- [Supertokens Core](https://github.com/supertokens/supertokens-core)
+- [Ory Keto](https://www.ory.sh/docs/keto)
+- [Ory Kratos Quickstart](https://www.ory.sh/docs/kratos/quickstart)
+- [ZITADEL Quickstart](https://zitadel.com/docs/guides/start/quickstart)
+- [ZITADEL Users](https://zitadel.com/docs/concepts/structure/users)
+- [Authentik Docs](https://goauthentik.io/docs/)
+- [Casbin Overview](https://casbin.org/docs/overview)
+- [FastAPI Users](https://github.com/fastapi-users/fastapi-users)
+
+### С — сценарии и требования к spike
+
+| ID | Что получает пользователь | Приёмочный сценарий GWT |
+|---|---|---|
+| **AUTH-SPIKE-1** | Better Auth service развёрнут и доступен локально | **Given:** Docker / Node.js окружение. **When:** запущен Better Auth. **Then:** сервис отвечает на `/api/auth/*`, создана база, миграции применены. |
+| **AUTH-SPIKE-2** | Логин/логаут через реальный сервер | **Given:** Better Auth запущен. **When:** пользователь вводит логин/пароль в текущем UI. **Then:** сессия создаётся на сервере, cookies установлены, `getSession` возвращает профиль. Logout очищает сессию. |
+| **AUTH-SPIKE-3** | Профиль пользователя читается из серверной сессии | **Given:** пользователь авторизован. **When:** открыт Profile Drawer. **Then:** имя, email, роль — из серверной сессии, не из localStorage. Preferences сохраняются в user metadata. |
+| **AUTH-SPIKE-4** | RBAC / Capabilities через серверные роли | **Given:** пользователь имеет роль `admin_sec`. **When:** фронт запрашивает permissions. **Then:** массив `UserCapability[]` маппится из серверной матрицы ролей, UI гварды работают. |
+| **AUTH-SPIKE-5** | PAT / API Keys через серверный плагин | **Given:** пользователь авторизован. **When:** создаёт API key через Drawer. **Then:** ключ создаётся на сервере (Better Auth API Key plugin), маска корректна, отзыв работает. |
+| **AUTH-SPIKE-6** | React Admin authProvider подключён к реальному auth | **Given:** Better Auth работает. **When:** открыт Admin (`#/admin`). **Then:** `authProvider.login` идёт в Better Auth, `getIdentity` возвращает профиль, `getPermissions` — capabilities, `checkError` обрабатывает 401. |
+| **AUTH-SPIKE-7** | Сравнение с Keycloak | **Given:** оба сервиса развёрнуты локально. **When:** выполнены одинаковые сценарии (логин, сессия, роли, токены, админка). **Then:** документированы плюсы/минусы каждого, выбрана цель для production. |
+
+### Сравнительная таблица: Better Auth vs Keycloak (для spike)
+
+| Критерий | Better Auth | Keycloak |
+|---|---|---|
+| Язык / стек | TypeScript, Node.js | Java (Quarkus) |
+| Лицензия | MIT | Apache 2.0 |
+| Запуск | `npm install` + `npx auth migrate` | Docker Compose / JAR |
+| Размер | ~500 KB npm package | ~200 MB Docker image |
+| Users / Profiles | ✅ (user table + additional fields + metadata) | ✅ (user profile, attributes, managed/unmanaged) |
+| Sessions | ✅ (cookie-based, refresh, revoke, multi-session, cookie cache, stateless) | ✅ (sessions, offline, transient, revocation) |
+| RBAC / Permissions | ✅ (access control, custom roles, `hasPermission`) | ✅ (realm roles, client roles, composite, fine-grained admin) |
+| Admin Panel | ✅ (CLI create-admin + plugin endpoints) | ✅ (Admin Console — built-in UI) |
+| Account Console | ❌ (нужен самописный UI) | ✅ (Account Console — built-in) |
+| Organizations / Tenants | ✅ (org plugin: members, teams, invitations) | ✅ (organizations, domains, members, IdP linking) |
+| API Keys / PAT | ✅ (API Key plugin: create, verify, list, revoke, rate limits, permissions, metadata) | ⚠️ (через Service Account + client credentials; не полноценный PAT) |
+| OIDC Provider | ✅ (SSO plugin: OIDC, SAML, auto-discovery) | ✅ (OIDC, full OpenID Connect provider) |
+| OIDC Client | ✅ (SSO plugin) | ✅ |
+| SAML | ✅ (SSO plugin: SP-initiated, IdP-initiated, signed AuthnRequests, assertion replay protection) | ✅ |
+| LDAP / AD | ❌ | ✅ |
+| MFA / 2FA | ✅ (TOTP, passkeys — через плагины) | ✅ (OTP, WebAuthn, passkeys, recovery codes) |
+| Identity Brokering | ⚠️ (SSO plugin, но не полноценный identity broker) | ✅ (Social, OIDC, SAML, Kubernetes, SPIFFE) |
+| Audit Events | ⚠️ (через database hooks) | ✅ (login events, admin events, listeners) |
+| SCIM | ❌ | ✅ |
+| Multi-Tenancy | ✅ (organization plugin) | ✅ (realms — полная изоляция) |
+| Self-Hosted | ✅ | ✅ |
+| Операционная сложность | Низкая (встроен в код, schema-миграции автоматические) | Средняя-высокая (отдельный сервис, конфигурация realms/clients/scopes/mappers) |
+| Соответствие нашим требованиям | **~90%** (нет LDAP, SCIM; admin UI самописный) | **~85%** (нет чистого PAT; тяжелее оперировать; admin UI встроенный) |
+
+### Рекомендация Keeper
+
+```text
+┌─────────────────────────────────────────────────────────┐
+│           Production Auth Backend Decision               │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  🥇 Better Auth — для текущего продукта                  │
+│     • Самый точный fit: профили, RBAC, PAT, сессии       │
+│     • TypeScript — единый стек с фронтом                 │
+│     • Минимальная операционная сложность                 │
+│     • Легко встроить как auth boundary                   │
+│                                                          │
+│  🥈 Keycloak — для enterprise deployment                 │
+│     • Когда нужен LDAP/Active Directory                  │
+│     • Когда нужен встроенный Admin/Account Console       │
+│     • Когда требования compliance (FAPI, OAuth 2.1...)   │
+│     • Когда заказчик уже использует Keycloak             │
+│                                                          │
+│  ❌ НЕ рекомендую:                                       │
+│     • FastAPI Users — maintenance mode                   │
+│     • Ory — слишком много сборки для MVP                 │
+│     • Casbin вместо auth — это authorization layer       │
+│     • Свой движок криптографии / сессий / токенов        │
+│                                                          │
+└─────────────────────────────────────────────────────────┘
+```
+
+### План spike (завтра, 25 авг)
+
+```text
+Волна 1 — Better Auth Standalone (Boss)
+  1. Поднять минимальный Better Auth service.
+  2. Настроить email/password, sessions, admin plugin.
+  3. Подключить текущий Vite фронт к Better Auth.
+  4. Проверить: login → getSession → имя в хедере.
+  5. Проверить: Profile Drawer читает профиль из серверной сессии.
+  6. Проверить: Preferences сохраняются в user metadata.
+  7. Проверить: роли маппятся на UserCapability[].
+  8. Проверить: PAT/API keys через API Key plugin.
+  9. Проверить: React Admin authProvider → `#/admin` работает.
+
+Волна 2 — Keycloak Comparison (Boss, параллельно или последовательно)
+  1. Поднять Keycloak через Docker Compose.
+  2. Настроить realm, client, roles.
+  3. Подключить keycloak-js к Vite.
+  4. Проверить: login → сессия → профиль.
+  5. Проверить: роли маппятся на capabilities.
+  6. Проверить: Service Account / PAT.
+  7. Сравнить: таблица плюсов/минусов.
+
+Волна 3 — Flash (параллельно с Boss)
+  1. Сохранить ProfileDrawer как UI.
+  2. Обновить useProfileStore: чтение из Better Auth / Keycloak, не localStorage.
+  3. Адаптировать adminAuthProvider под реальный auth backend.
+  4. Маппинг ролей → capabilities сохранить.
+  5. PAT UI оставить, бэкенд заменить на API keys.
+
+Волна 4 — Решение и переход
+  1. Сравнительный отчёт.
+  2. Выбор production auth backend.
+  3. Миграция текущего PoC на выбранный backend.
+  4. Удаление localStorage как authority.
+```
+
+### Т — DoD spike
+
+- Better Auth service запущен локально и отвечает на запросы.
+- Login/logout работают через реальный сервер (не localStorage).
+- `getSession` возвращает профиль с именем, email, ролью.
+- Preferences сохраняются в user metadata и переживают перезагрузку.
+- Роли маппятся на `UserCapability[]`, UI гварды работают.
+- PAT создаётся/отзывается через серверный API key plugin.
+- React Admin `authProvider` подключён к Better Auth.
+- Keycloak альтернативно проверен, задокументированы различия.
+- Принято решение: Better Auth или Keycloak для production.
+
+### О — ограничения
+
+- Не пишем production auth до завершения spike и выбора backend.
+- Не выбрасываем текущий ProfileDrawer/useProfileStore до подтверждения миграции.
+- Не добавляем OIDC/SAML/LDAP до необходимости (pure box работает автономно).
+- Не усложняем: для spike достаточно email/password + sessions + RBAC + API keys.
+- Не делаем миграцию существующих пользователей (PoC → production).
+
+### Go/No-Go gates (на завтра)
+
+1. **Auth gate:** Better Auth service развёрнут, login/logout работают через сервер.
+2. **Profile gate:** имя/email/роль из серверной сессии отображаются в хедере/Drawer.
+3. **RBAC gate:** серверные роли маппятся на `UserCapability[]`, UI гварды работают.
+4. **PAT gate:** API key создаётся/отзывается через серверный плагин.
+5. **Admin gate:** React Admin `authProvider` работает с реальным auth.
+6. **Comparison gate:** Keycloak проверен, документированы различия, принято решение.
+
+### Что НЕ делаем
+
+- ❌ Не пишем свой криптографический движок сессий/токенов.
+- ❌ Не храним профиль в `localStorage` как authority.
+- ❌ Не используем `tokenEngine.ts` для production PAT.
+- ❌ Не откладываем выбор backend на неопределённый срок.
+- ❌ Не подключаем OIDC/SAML SSO до необходимости.
+- ❌ Не делаем миграцию данных из текущего PoC — начнём с чистого backend.
+
+### Продуктовая стратегия (обновлённая)
+
+```text
+Frontend (React/Vite + ProfileDrawer + adminAuthProvider — view-model)
+        │
+        ├── Production Auth Backend (Better Auth или Keycloak)
+        │   ├─ Users / Accounts / Sessions
+        │   ├─ RBAC / Permissions
+        │   ├─ PAT / API Keys
+        │   ├─ Admin Operations
+        │   └─ Audit Events
+        │
+        └── Future: OIDC/SAML SSO Bridge
+            ├─ Keycloak / AD FS / Azure AD
+            └─ IdP Claims → PrettyK Capabilities
+```
+
+### Итог приёмки AUTH-SPIKE (24 авг 2026)
+
+**Вердикт Keeper: принято как spike. ✅**
+
+| Проверка | Результат |
+|---|---|
+| `tsc --noEmit` | **0 ошибок** |
+| `profileStore.test.ts` | 29/29 ✅ |
+| `auth.test.ts` | 3/3 ✅ |
+| `hashRoute.test.ts` | 3/3 ✅ |
+| `AdminShowcase.test.ts` | 13/13 ✅ |
+| Итого заявленных | **48/48** ✅ |
+
+**Принятое решение (документировано):** Better Auth — основной auth-провайдер; Keycloak — запасной enterprise-слот (OIDC/SAML/LDAP).
+
+**Граница (что это НЕ закрывает):** spike закрыт, но это **не production auth**. Production не начинать до согласования. Открытые разрывы:
+
+1. **SQLite ↔ PostgreSQL.** Spike работает на `spike-auth.db` (SQLite). Канон `infra-stack.md` уже зачислил **PostgreSQL 16** как source of truth. Линия «Pure Box = SQLite, один бинарник» и линия «Docker-first enterprise = PostgreSQL» не разрешены — требуется явное решение владельца.
+2. **Миграции.** Схема создаётся вручную `scripts/migrate-db.ts`. Для production — официальные адаптеры Better Auth (drizzle/kysely → PostgreSQL) + версионированные миграции.
+3. **Секреты.** Auth secret/session key и `KDT_WIRED_KEY` должны уйти в OpenBao, не в env/compose.
+4. **Hardening.** `requireEmailVerification: false`, dev `trustedOrigins` — допустимо только для spike. Production: email verification, rate limiting на auth endpoints, 2FA/TOTP, audit.
+5. **Дубль `adminAuthProvider.ts`** (`src/auth/` + `src/admin/`) — техдолг, не блокер; развести при production-миграции.
+
+---
+
+## Эпик AUTH-PROD — Production Auth Boundary (NEW · 24 авг 2026)
+
+> **Срочность:** P0 (после разрешения SQLite↔PostgreSQL).  
+> **Цель:** превратить spike в production auth boundary, а не ещё один самописный велосипед.
+
+### Ч — что сказал заказчик (verbatim)
+
+> «Свою хуйню сделали. Завтра сделаем как американцы сказали. А потом сравним.» → сравнение сдано, выбрана цель.
+
+### И — продуктовый интент
+
+Пользователь логинится один раз; его сессия, роли (capabilities), PAT и preferences живут в **durable источнике истины** и переживают рестарт стенда. Ни один секрет не лежит в коде/env. Frontend никогда не видит master key, database password или OpenBao token.
+
+### С — сценарии (happy + edge)
+
+| ID | Сценарий GWT |
+|---|---|
+| **AUTH-PROD-1** | **Given:** Better Auth на PostgreSQL. **When:** пользователь логинится. **Then:** сессия в `session`-таблице, `getSession` возвращает профиль после перезапуска сервера. |
+| **AUTH-PROD-2** | **Given:** секрет скомпрометирован. **When:** ротация. **Then:** сессия/key перевыпускается без ручной правки файлов. |
+| **AUTH-PROD-3** | **Given:** новый стенд из compose. **When:** `up -d`. **Then:** миграции применяются автоматически, seed admin создаётся. |
+| **AUTH-PROD-4** | **Given:** email verification включён. **When:** регистрация. **Then:** без подтверждения email сессия не выдаётся. |
+
+### Т — DoD (факты, проверяемые)
+
+- Better Auth подключён к `prettyk-postgres`, `spike-auth.db` удалён/не используется.
+- Миграции версионированы (не ручной `migrate-db.ts`).
+- Auth secrets в OpenBao; ни одного hardcoded password/session key в compose/env.
+- Email verification + rate limiting + 2FA включены.
+- `tsc --noEmit` 0, auth-тесты зелёные.
+- Дубль `adminAuthProvider.ts` разведён в один источник.
+
+### О — ограничения / out-of-scope
+
+- Не пишем production auth до решения владельца по SQLite↔PostgreSQL.
+- Не выбрасываем Keycloak-заготовку (остаётся enterprise-слот).
+- OIDC/SAML/LDAP — по запросу клиента, не сейчас.
+
+---
+
+## Эпик PRETTYK-CI — Security Pipeline Platform (NEW · 24 авг 2026)
+
+> **Срочность:** P0-направление, Wave 1 стартует параллельно с WEB-IDE-TERMINAL.  
+> **Концепт:** [`docs/research/2026-08-24-prettyk-ci-concept.md`](research/2026-08-24-prettyk-ci-concept.md).  
+> **Суть:** свой security-смысл и контракт — свои; generic CI execution — не наш велосипед.  
+> **Владелец эпика:** Boss — весь эпик целиком (вертикальный срез end-to-end, ноль коллизий).
+
+### Ч — что сказал заказчик (verbatim)
+
+> «Нам нужны свои механизмы? Мы однозначно будем подключаемы к любому. Но свой тоже бы надо иметь возможность предоставлять? Брат тулы или свое писать?»
+
+> «Голова ушла на восток. Превращаем концепты в эпики, режем пацанам, пацаны делают»
+
+### И — продуктовый интент
+
+Команда безопасности один раз описывает проверку как понятный граф действий и запускает её либо в самом PrettyK, либо встраивает в существующий CI/CD — без потери scope, policy, approvals, версий инструментов, статусов, findings, evidence и provenance. Пользователь не переписывает один и тот же security intent отдельно для каждого внешнего пайпа.
+
+### Граница «что берём / что строим»
+
+- **Готовое:** внешние CI/CD-системы как хозяева build/deploy, Docker/K8s как исполнение, OpenBao для секретов, S3 для артефактов, OpenTelemetry для корреляции.
+- **Своё:** security pipeline semantics, собственный конвейер, каталог security-компонентов, scope/policy/approvals, finding/evidence lifecycle, native worker execution, run debugger/replay, proof package, адаптеры, единый UI.
+- **Не строим:** свой Jenkins, свой Kubernetes, свой generic shell runner, бесконтрольное исполнение произвольного кода из UI.
+
+### Нарезка
+
+#### Волна 1 — Фундамент (Boss + Flash параллельно)
+
+| ID | Что получает пользователь | Приёмочный GWT | Est | Кто |
+|---|---|---|---|---|
+| **PK-CI-1** | Проверка описывается как граф шагов с зависимостями, параллельными ветками, scope, policy и approvals; описание переживает рестарт стенда и не живёт только в памяти. | **Given:** пользователь собрал проверку с последовательными и параллельными шагами. **When:** стенд перезапущен. **Then:** описание проверки восстанавливается без ручного ввода; зависимости и порядок шагов сохранены. | 5h | Boss |
+| **PK-CI-2** | Собственный запуск проверки выполняется изолированно и имеет честный статус: ожидание → очередь → выполняется → отменяется → успех/провал/отменено/просрочено; повтор не создаёт дублей находок и доказательств. | **Given:** запущена проверка. **When:** воркер пропал или запуск повторён. **Then:** статус честно отражает реальность, повтор не дублирует findings/evidence, зависший запуск переходит в retryable/failed. | 6h | Boss |
+| **PK-CI-3** | Пользователь собирает проверку визуально (граф) и видит тот же смысл в тексте — два вида одного описания, а не два разных источника. | **Given:** описание проверки открыто. **When:** пользователь меняет граф или текст. **Then:** изменения отражаются в другом виде; клик по узлу открывает нужный шаг, клик по шагу подсвечивает узел. | 4h | Boss |
+| **PK-CI-4** | Есть каталог готовых security-шагов (Browser Discovery, ZAP Active Scan, Corpus Fuzzing, Quality Gate, Evidence Pack и т. д.), каждый с видимым назначением, риском, требуемыми правами и выходными артефактами. | **Given:** пользователь открывает каталог. **When:** выбирает шаг и добавляет в проверку. **Then:** видит назначение, риск, права, входы/выходы и добавляет шаг без знания внутренностей инструмента. | 3h | Boss |
+
+#### Волна 2 — Запуск и внешние CI/CD
+
+| ID | Что получает пользователь | Приёмочный GWT | Est | Кто |
+|---|---|---|---|---|
+| **PK-CI-5** | Перед запуском система проверяет scope, policy, approvals и права; действие вне разрешённого scope или без approval блокируется с причиной и попадает в аудит. | **Given:** проверка пытается активную проверку адреса вне scope. **When:** нажат запуск. **Then:** запуск заблокирован до исправления/approval, причина показана, событие в аудите; тихого «ну попробуем» нет. | 4h | Boss |
+| **PK-CI-6** | Проверку можно вызвать из внешнего CI/CD: внешний пайп получает стабильный статус, exit-семантику и ссылку на доказательство. | **Given:** внешний пайп вызвал проверку PrettyK. **When:** проверка завершилась. **Then:** внешний job получает однозначный статус и ссылку на результат; PrettyK не подменяет build/deploy-процесс. | 5h | Boss |
+| **PK-CI-7** | До запуска виден план: какие шаги выполнятся, какие права и секреты нужны (только ссылками), какие gates могут остановить, сколько ресурсов уйдёт. | **Given:** проверка собрана. **When:** пользователь открывает предпросмотр. **Then:** видит полный план с рисками, правами, gates и ресурсами до нажатия запуска. | 3h | Boss |
+| **PK-CI-8** | Импорт/экспорт показывает уровни совместимости (без потерь / эквивалент / с потерями / не поддерживается) и явный список потерь; тихого удаления шага нет. | **Given:** импортируется внешний пайп с неподдерживаемым шагом. **When:** открыт отчёт совместимости. **Then:** пользователь видит точный список потерь и принимает решение; неподдерживаемый шаг не выкидывается молча. | 3h | Boss |
+
+#### Волна 3 — Доказательство и replay
+
+| ID | Что получает пользователь | Приёмочный GWT | Est | Кто |
+|---|---|---|---|---|
+| **PK-CI-9** | Переиспользуемые security-компоненты версионируются; production-проверка не может ссылаться на «последнюю» версию без явного подтверждения. | **Given:** проверка ссылается на компонент. **When:** версия не зафиксирована. **Then:** запуск блокируется до явного выбора версии или digest; история версий видна. | 3h | Boss |
+| **PK-CI-10** | По завершении доступно доказательство: кто, зачем, какой scope, какая policy, какие версии инструментов, какие шаги выполнены, какие findings, какие checksum у артефактов. | **Given:** проверка завершилась. **When:** открыт результат. **Then:** видно полное доказательство с provenance, а не только exit-код. | 4h | Boss |
+| **PK-CI-11** | Из любой находки можно получить минимальный воспроизводимый конвейер (Reproduce) без ручной сборки истории. | **Given:** есть finding. **When:** нажато «Воспроизвести». **Then:** собран минимальный повторяемый конвейер с нужным scope, версиями и входными данными. | 3h | Boss |
+| **PK-CI-12** | Шаг можно отладить: посмотреть вход/выход, повторить только его, повторить с изменённым payload, сравнить два прогона. | **Given:** шаг дал finding или упал. **When:** открыт режим отладки. **Then:** виден вход/выход шага, доступен повтор с изменённым payload и сравнение двух прогонов. | 4h | Boss |
+
+#### Волна 4 — Позже (по реальному спросу)
+
+| ID | Что получает пользователь | Est | Кто |
+|---|---|---|---|
+| **PK-CI-13** | Адаптеры к Jenkins / Tekton / Argo / Azure DevOps. | — | Boss |
+| **PK-CI-14** | AI-подсказки только как suggestion/diff; без права менять scope, policy или запускать destructive-действия. | — | Boss |
+
+### DoD эпика
+
+- Есть собственный security-конвейер с durable состоянием и честной state machine.
+- Одно описание проверки запускается native и подключается к внешнему CI без дублирования смысла.
+- Scope, policy, approval и секреты проходят preflight; нарушение — fail-closed с аудитом.
+- Импорт/экспорт сообщает о потерях явно.
+- Повтор запуска не создаёт неконтролируемые дубликаты.
+- Finding, артефакты и provenance связаны с конкретным запуском.
+- Каждый запуск предъявляет доказательство, из finding можно собрать Reproduce.
+- `latest`, непроверенные образы и непинованные компоненты не проходят production gate.
+
+### Что не делать
+
+- Не писать свой Jenkins/Kubernetes/generic shell runner.
+- Не обещать безусловный lossless-импорт любого vendor DSL.
+- Не добавлять Kafka/RabbitMQ только ради pipeline-слова.
+- Не давать AI право самостоятельно менять scope/policy или запускать destructive actions.
+- Не переписывать доменные движки (DSL, discovery, browser runtime, fuzzing, finding identity).
+
+### Распределение
+
+| Кто | Карточки | Сумма |
+|---|---|---|
+| **Boss** | весь эпик: PK-CI-1…14 | 47h + волна 4 |
+| **Flash** | — | — |
+| **Keeper** | приёмка всех карточек | — |
+
+---
+
+## Эпик WEB-IDE-TERMINAL — Security Workbench (NEW · 24 авг 2026)
+
+> **Срочность:** P0-направление, Wave 1 стартует параллельно с PRETTYK-CI.  
+> **Концепт:** [`docs/research/2026-08-24-web-ide-terminal-concept.md`](research/2026-08-24-web-ide-terminal-concept.md).  
+> **Суть:** терминал — не дырка в хост, а управляемая поверхность execution и evidence. Monaco — Security Mission Control, а не копия VS Code.  
+> **Владелец эпика:** Flash — весь эпик целиком (вертикальный срез end-to-end, ноль коллизий).
+
+### Ч — что сказал заказчик (verbatim)
+
+> «Мы же в нашу Web IDE может нечто вроде терминала даже въебать. почти полноценного. Разве нет?»
+
+> «А что еще в Web IDE можно добавить из меты библейской? Чем мы наш Monaco можем прокачать функционально еще?»
+
+### И — продуктовый интент
+
+Оператор не переключается между Web IDE, SSH, Docker-логами, CI UI, ZAP UI, Allure и файловым менеджером. Web IDE — одно рабочее место: `Intent → DSL → Pipeline → Run → Logs → Findings → Evidence → Replay`. Пользователь всегда понимает, где выполняется команда, какие права у сессии, какой target затронут, что будет сохранено и почему действие разрешено или заблокировано.
+
+### Нарезка
+
+#### Волна 1 — Терминал и безопасная сессия
+
+| ID | Что получает пользователь | Приёмочный GWT | Est | Кто |
+|---|---|---|---|---|
+| **PK-TRM-1** | Терминал — это изолированное рабочее пространство, а не доступ к машине: сессия управляется на стороне бэкенда, без доступа к хосту и соседним пространствам; есть таймаут, стоп/убить и квоты. | **Given:** открыт терминал. **When:** истёк таймаут или нажата остановка. **Then:** сессия честно завершается, команда после истечения не выполняется, ресурсы ограничены, доступ к хосту отсутствует. | 6h | Flash |
+| **PK-TRM-2** | Каждая опасная команда проходит проверку прав и подтверждение; запуск и завершение команды фиксируются в аудите, секреты в выводе редиактятся. | **Given:** введена команда, которая может затронуть target или удалить данные. **When:** команда запускается. **Then:** показывается риск/права и требуется подтверждение; start/finish/exit в аудите; Cookie/Bearer/password/PAT в выводе замаскированы. | 4h | Flash |
+| **PK-TRM-3** | Терминал в IDE: вкладки/сплиты, копирование, поиск, переподключение после обновления страницы без дублирования процесса, честные статусы (подключено/переподключение/истёк). | **Given:** открыт терминал. **When:** страница обновлена при живой сессии. **Then:** подключение восстанавливается к тому же пространству без второго процесса; статус честный. | 4h | Flash |
+| **PK-TRM-4** | Есть структурированная командная консоль: типовые действия (показать run, список evidence, объяснить policy, повторить шаг) — формой с preview, а не raw shell. | **Given:** пользователю нужно типовое действие. **When:** выбрана команда из консоли. **Then:** действие выполняется через форму с предпросмотром прав и результата, без запоминания shell-синтаксиса. | 3h | Flash |
+
+#### Волна 2 — Run Console и evidence
+
+| ID | Что получает пользователь | Приёмочный GWT | Est | Кто |
+|---|---|---|---|---|
+| **PK-TRM-5** | Есть консоль прогона, привязанная к конкретному запуску: живой статус, безопасные логи и процессы без раскрытия секретов; после завершения пространство живёт по retention-политике. | **Given:** воркер выполняет фаззинг. **When:** открыта консоль прогона. **Then:** виден живой статус, логи и использование ресурсов, но не raw-секрет; после завершения пространство очищается по политике. | 5h | Flash |
+| **PK-TRM-6** | Вывод команды можно сохранить как evidence: связанный с прогоном и исполнителем артефакт с checksum и временем, без секретов. | **Given:** команда вывела диагностический результат. **When:** нажато «Сохранить как evidence». **Then:** создан артефакт с checksum/timestamp/исполнителем, секреты отсутствуют, артефакт связан с прогоном. | 3h | Flash |
+| **PK-TRM-7** | Инспектор запрос/ответ показывает обмен с редиактом секретов; из инспектора можно перейти в finding и обратно. | **Given:** в прогоне есть запрос. **When:** открыт инспектор. **Then:** виден запрос/ответ с замаскированными секретами; переход в finding и обратно работает. | 3h | Flash |
+
+#### Волна 3 — Monaco-интеллект
+
+| ID | Что получает пользователь | Приёмочный GWT | Est | Кто |
+|---|---|---|---|---|
+| **PK-TRM-8** | Редактор понимает PrettyK DSL: автодополнение, подсказки, диагностика, навигация, переименование, форматирование и предупреждения об устаревших/опасных конструкциях. | **Given:** открыто описание на DSL. **When:** пользователь редактирует. **Then:** работает автодополнение, подсказки, диагностика и навигация; устаревшие/опасные конструкции подсвечены. | 6h | Flash |
+| **PK-TRM-9** | Редактор показывает ту же проверку как код и как граф; до запуска виден полный план (шаги, права, gates, ресурсы). | **Given:** описание открыто. **When:** переключён вид или открыт предпросмотр. **Then:** код и граф синхронны; план с рисками и правами виден до запуска. | 4h | Flash |
+
+#### Волна 4 — Отладка и evidence-linked
+
+| ID | Что получает пользователь | Приёмочный GWT | Est | Кто |
+|---|---|---|---|---|
+| **PK-TRM-10** | Шаг можно отлаживать на уровне security-действия: точка останова на шаге, состояние шага, причина блокировки, повтор с изменённым входом. | **Given:** шаг дал finding или упал. **When:** открыт отладчик. **Then:** видно состояние шага, причину разрешения/блокировки и возможен повтор с изменённым входом. | 5h | Flash |
+| **PK-TRM-11** | Редактор связан с доказательством: из строки DSL → прогон → finding → артефакт; режим policy lens показывает, что разрешено/требует approval/нарушено/недоступно роли. | **Given:** есть прогон с findings. **When:** открыт редактор и policy lens. **Then:** из строки виден путь к finding и артефакту; цветовая разметка объясняет решение policy. | 4h | Flash |
+
+#### Волна 5 — Позже
+
+| ID | Что получает пользователь | Est | Кто |
+|---|---|---|---|
+| **PK-TRM-12** | Security Playbook Notebook: исполняемые ячейки (намерение, DSL, действие, ожидаемый результат, output, evidence). | — | Flash |
+| **PK-TRM-13** | AI-подсказки только как suggestion/diff; без права менять scope/policy/запускать destructive. | — | Flash |
+
+### DoD эпика
+
+- Есть workspace-терминал, консоль прогона и структурированная командная консоль.
+- Терминал не имеет прямого доступа к хосту и Docker socket.
+- Каждая опасная команда проходит проверку прав/policy; секреты редиактятся.
+- Есть таймаут, idle timeout, отмена, квоты, аудит и redaction.
+- Переподключение не создаёт дубликат процесса.
+- Вывод команды можно сохранить как evidence без утечки секретов.
+- Monaco понимает PrettyK DSL; проверка видна как код и как граф.
+- До запуска доступен план (scope/policy/ресурсы).
+- Шаг можно отладить/повторить без потери provenance.
+- AI — только suggestion + diff + approval.
+
+### Что не делать
+
+- Не делать терминал дырой к хосту, Docker socket или соседним tenant.
+- Не копировать VS Code Workbench целиком.
+- Не делать полноценную IDE для всех языков.
+- Не давать AI право самостоятельного исполнения.
+- Не сохранять raw-транскрипт терминала без redaction.
+- Не запускать security-операции без target authorization и scope.
+
+### Распределение
+
+| Кто | Карточки | Сумма |
+|---|---|---|
+| **Boss** | — | — |
+| **Flash** | весь эпик: PK-TRM-1…13 | 47h + волна 5 |
+| **Keeper** | приёмка всех карточек | — |
+
+---
+
+## Эпик ADM-V3 — Minimal Theme Integration: Cyber-Enterprise Admin Shell (ACTIVE · 24 авг 2026)
+
+## Эпик ADM-V3 — Minimal Theme Integration: Cyber-Enterprise Admin Shell (ACTIVE · 24 авг 2026)
+
+> **Покупка:** Minimal UI Kit v7.7.0 (MUI Store) — лицензия Standard/Plus.  
+> **Архивы:** `Minimal_TypeScript_v7.7.0-pv519o.zip` (36 MB, 6038 entries), `Minimal_JavaScript_v7.7.0-8489jf.zip` (36 MB, 5938 entries), `Minimal_Design_v7.3.0-z8wlwx.zip` (82 MB, `.fig`).  
+> **Reference:** `starter-vite-ts/` — theme primitives. `vite-ts/` — patterns по необходимости.  
+> **Стратегия:** Minimal = **премиальный визуальный слой**, не новый движок. React Admin + MUI остаются.  
+> **Дизайн-инсайт Gemini:** Cyber Minimal — Cyan `#38bdf8` primary, Indigo `#6366f1` secondary, Obsidian `#080c16` canvas, multi-stop тени, soft alpha badges, двойная типографическая сетка Golos UI + JetBrains Mono.
+
+### Текущее состояние (факт, 24 авг)
+
+**Сдано Boss (✅):**
+- `cosmo/src/theme-minimal/` — 22 файла: палитра Cyber Minimal, типографика, тени, custom-shadows, утилиты `minimal-shared`, `MinimalThemeAdapter`, `StyledEngineProvider injectFirst`.
+- `SecOpsControl.tsx`, `ControlPanel.tsx`, `DashboardPage.tsx` — обёрнуты в `MinimalThemeAdapter`.
+- `tsc --noEmit` — **0 ошибок**.
+
+**Не сдано Boss (❌ — критический разрыв):**
+- `core/components/index.ts` — **пустая заглушка** (`export const components = {}`). В архиве Minimal — **44 файла** component overrides: `button.tsx`, `card.tsx`, `table.tsx`, `chip.tsx`, `alert.tsx`, `data-grid.tsx`, `text-field.tsx`, `select.tsx`, `menu.tsx`, `dialog.tsx`, `paper.tsx`, `tabs.tsx`, `tooltip.tsx`, `pagination.tsx`, `stepper.tsx`, `radio.tsx`, `checkbox.tsx`, `switch.tsx`, `slider.tsx`, `progress.tsx`, `avatar.tsx`, `badge.tsx`, `breadcrumbs.tsx`, `drawer.tsx`, `accordion.tsx`, `autocomplete.tsx`, `backdrop.tsx`, `list.tsx`, `popover.tsx`, `rating.tsx`, `skeleton.tsx`, `stack.tsx`, `timeline.tsx`, `link.tsx`, `form.tsx`, `button-fab.tsx`, `button-group.tsx`, `button-icon.tsx`, `button-toggle.tsx`, `svg-icon.tsx`, `mui-x-data-grid.tsx`, `mui-x-date-picker.tsx`, `mui-x-tree-view.tsx`, `index.ts`.
+- `core/mixins/index.ts` — **пустая заглушка** (`export const mixins = {}`). В архиве Minimal — **5 файлов**: `background.ts`, `border.ts`, `global-styles-components.ts`, `mixins.ts`, `text.ts`.
+- `index.ts` — **нет экспорта `minimalTheme`**. Flash'у для F3 нужен `import { minimalTheme } from '../../theme-minimal'`.
+- Без этих 49 файлов MinimalThemeAdapter даёт палитру + типографику, но кнопки/таблицы/чипы/карточки — **vanilla MUI без premium-эффекта**. Multi-stop тени, soft alpha баджи, парящие карточки — не работают.
+
+### Нарезка (двое: Boss + Flash, параллельно)
+
+#### Волна 1 — Параллельный рывок (Boss и Flash одновременно)
+
+**Boss: Theme Completion — закрыть разрывы**
+
+| ID | Суть | Приёмочный GWT | Est |
+|---|---|---|---|
+| **ADM-10** | **Component Overrides:** портировать 44 файла из `starter-vite-ts/src/theme/core/components/` в `cosmo/src/theme-minimal/core/components/`. Адаптировать под Cyber Minimal: цвета заменены на cyan/indigo, тени — на multi-stop, border-radius — по канону 8/12/16px. | **Given:** палитра и типографика Cyber Minimal уже в `theme-minimal`. **When:** все 44 файла портированы и импортированы в `components/index.ts`. **Then:** `components` — не пустой объект; каждый MUI-компонент получает кастомный `styleOverrides` в Minimal-стиле. `tsc --noEmit` — 0 ошибок. | 6h |
+| **ADM-11** | **Mixins:** портировать 5 файлов mixins из архива + адаптировать под Cyber Minimal. | **Given:** mixins сейчас пустые. **When:** портированы `background`, `border`, `text`, `global-styles-components`, `mixins`. **Then:** `mixins` содержат глобальные стили, border-radius-токены, background-градиенты. `tsc --noEmit` — 0 ошибок. | 2h |
+| **ADM-12** | **Экспорт `minimalTheme`:** добавить `export const minimalTheme = createTheme();` в `cosmo/src/theme-minimal/index.ts`. | **Given:** `createTheme()` существует. **When:** экспорт добавлен. **Then:** Flash может сделать `import { minimalTheme } from '../../theme-minimal'`. `tsc --noEmit` — 0 ошибок. | 0.5h |
+
+**Flash: AdminShowcase Wiring**
+
+| ID | Суть | Приёмочный GWT | Est |
+|---|---|---|---|
+| **ADM-13** | **Подключить живые секции:** заменить PlaceholderTabs (вкладки 0,1,2) на реальные `DataGallery`, `FormPatterns`, `NavigationLayout` в `AdminShowcase.tsx`. | **Given:** секции уже лежат в `cosmo/src/design-admin/sections/`. **When:** импорты добавлены, PlaceholderTabs заменены. **Then:** вкладки Data Gallery, Form Patterns, Navigation показывают живой контент (KPI-карточки, Threat DataGrid, Provisioning Wizard, Space Switcher и т.д.). `tsc --noEmit` — 0 ошибок. | 1h |
+| **ADM-14** | **Ленивая загрузка AdminShowcase:** заменить статический `import { AdminShowcase }` на `lazy(() => import(...))` в `AppShell.tsx`, обернуть в `Suspense`. | **Given:** AdminShowcase загружается статически (MUI в бандле всегда). **When:** импорт заменён на lazy + Suspense fallback. **Then:** MUI грузится только при заходе на `#/design-admin`. Кнопка «Back» в Showcase работает. `tsc --noEmit` — 0 ошибок. | 0.5h |
+| **ADM-15** | **5-я тема «Cyber Minimal»:** добавить тему `cyber-minimal` в `ThemeGallery` (тип `AdminThemeId`, карточка в списке). Импорт: `import { minimalTheme } from '../../theme-minimal'`. **Заглушка до сдачи Boss:** пока `minimalTheme` нет — использовать копию `telemetry-cyan` с `// TODO: replace when Boss delivers ADM-12`. | **Given:** `ThemeGallery` показывает 4 темы. **When:** добавлена 5-я карточка. **Then:** переключение на «Cyber Minimal» меняет тему. Пока Boss не сдал — падает на cyan-заглушку. `tsc --noEmit` — 0 ошибок. | 1h |
+| **ADM-16** | **A/B Toggle сравнения:** добавить переключатель «Current Themes / Cyber Minimal» в `ThemeGallery`. Current = 4 старые темы, Minimal = только `cyber-minimal`. | **Given:** 5 тем в галерее. **When:** пользователь переключает тогл. **Then:** в режиме Current видны 4 темы, в Minimal — 1 тема. Один клик — A/B сравнение. `tsc --noEmit` — 0 ошибок. | 1h |
+
+#### Волна 2 — Boss: Визуальная сверка (после ADM-10…12)
+
+| ID | Суть | Приёмочный GWT | Est |
+|---|---|---|---|
+| **ADM-17** | **Визуальная сверка боевых панелей:** после полного theme-minimal проверить `#/admin`, `#/control`, `#/dashboard` — компоненты выглядят в Minimal-стиле (soft badges, multi-stop shadows, custom border-radius). | **Given:** все 44 overrides + 5 mixins портированы. **When:** открыты три панели. **Then:** кнопки, таблицы, чипы, карточки, инпуты — визуально Minimal. DataGrid — custom styled rows. `tsc --noEmit` — 0 ошибок. | 2h |
+| **ADM-18** | **CSS-изоляция:** проверить Emotion injection order, Tailwind preflight, responsive, dark/light режимы. | **Given:** `StyledEngineProvider injectFirst`. **When:** открыты Admin + Canvas/Studio в одном SPA. **Then:** Tailwind-классы не перебиты Emotion; Canvas/Studio не сломаны; dark/light переключается без дефектов. | 1h |
+
+#### Волна 3 — Keeper: Приёмка
+
+| ID | Суть | Приёмочный GWT |
+|---|---|---|
+| **ADM-19** | **Design Admin Showcase:** `#/design-admin` показывает 5 тем, 3 живые секции, A/B toggle, lazy load. | **Given:** ADM-13…16 сданы. **When:** открыт `#/design-admin`. **Then:** Data Gallery (KPI + Threat Grid + Telemetry + Run Cards), Form Patterns (Wizard + Accordion + Alerts), Navigation (Space Switcher + Sidebars + Headers) — все живые. 5 тем переключаются. Toggle сравнения работает. |
+| **ADM-20** | **Battle panels в Minimal:** `#/admin`, `#/control`, `#/dashboard` визуально в Minimal-стиле. | **Given:** ADM-10…12 и ADM-17 сданы. **When:** открыты три панели. **Then:** компоненты выглядят как Minimal (не vanilla MUI): custom card shadows, soft badges, styled DataGrid, form overrides. |
+| **ADM-21** | **CSS-изоляция подтверждена:** Canvas/Studio не сломаны. | **Given:** ADM-18 сдан. **When:** открыты Admin Showcase и Studio v2. **Then:** Tailwind работает, shadcn-компоненты не искажены. |
+| **ADM-22** | **Typecheck и тесты:** `tsc --noEmit` — 0, существующие тесты зелёные. | **Given:** весь код сдан. **When:** запущены `npx tsc --noEmit`, `npx vitest run`. **Then:** 0 ошибок typecheck, все тесты pass. |
+
+### Go/No-Go gates
+
+1. **Theme gate:** 44 компонентных оверрайда + 5 миксинов портированы. Без этого — stop.
+2. **Visual gate:** компоненты в боевых панелях выглядят как Minimal, не vanilla MUI.
+3. **Isolation gate:** Tailwind v4 и shadcn не сломаны.
+4. **Typecheck gate:** 0 ошибок `tsc --noEmit`.
+5. **License gate:** подтверждена лицензия Minimal для коммерческого shipping (отдельная проверка).
+
+### Что НЕ делаем
+
+- ❌ Не заменяем React Admin на Minimal-роутер/auth.
+- ❌ Не тащим Minimal-страницы (e-commerce, CRM, chat, file manager).
+- ❌ Не создаём второй SPA.
+- ❌ Не меняем Canvas/Studio/War Room — они на Tailwind.
+- ❌ Не удаляем старую админку до полной приёмки Minimal.
+
+### Распределение
+
+| Кто | Карточки | Сумма |
+|---|---|---|
+| **Boss** | ADM-10,11,12,17,18 | 11.5h |
+| **Flash** | ADM-13,14,15,16 | 3.5h |
+| **Keeper** | ADM-19,20,21,22 (приёмка) | — |
+| | **ИТОГО ADM-V3** | **15h** |
+
+### Порядок
+
+```text
+Boss: ADM-10 (overrides) + ADM-11 (mixins) ──→ ADM-12 (export minimalTheme)
+                                                    │
+Flash: ADM-13 (sections) + ADM-14 (lazy) ───────────┤
+       ADM-15 (5th theme) + ADM-16 (A/B toggle) ────┘
+                                                    │
+                                            Boss: ADM-17 (visual)
+                                            Boss: ADM-18 (CSS isolation)
+                                                    │
+                                            Keeper: ADM-19…22 (приёмка)
+```
+
+---
+
+## Эпик DP-ADM — Admin Showcase: MUI-галерея компонентов (CLOSED · 24 авг 2026)
+> **План:** [`docs/research/2026-08-23-admin-showcase-plan.md`](research/2026-08-23-admin-showcase-plan.md)  
+> **Источники:** Preline UI (972 блока), MUI Templates, React Admin Demos, AdminKit Pro, shadcn/ui Blocks.  
+> **Цель:** отдельный SPA `#/design-admin` с изолированным `ScopedCssBaseline` и 5 флагманскими шоустопперами. Связка с Design Playground через Design Gateway.
+
+### Топ-5 Шоустопперов (Showstoppers):
+1. **Cyber Threat DataGrid:** неоновые бейджи уязвимостей, аккордеон атаки (Payload → Response → PoC) с подсветкой, быстрый триаж в строке.
+2. **Telemetry Live Pulse Grid:** карточки демонов (ZAP, Live, Allure) с живыми Sparklines, пульсирующие индикаторы (`ping`).
+3. **Blank Provisioning Wizard:** 3-шаговый модальный визард (Target App ➔ Gate Policy ➔ Assign Expert) с превью залоченного холста.
+4. **Polymorphic Run Cards:** 3-секундный триаж (Automation: скриншот зум + селектор; Security: матрица CWE + статус гейта).
+5. **Space & Team Switcher:** Command+K быстрый поиск и переключение пространств («Департамент ИБ», «QA Розница»).
+
+### Нарезка
+
+| ID | Суть | Приёмочный GWT | Est | Кто |
+|---|---|---|---|---|
+| **DP-ADM-0** | **Theme Overview & Figma Kit Tab** | **✅ 24 авг.** **Given:** `#/design-admin`. **When:** открывается вкладка Overview. **Then:** отображается Hero-баннер Cyber Minimal темы, обзор стека, 6 ключевых фич, описание пакета Minimal UI Plus и Figma Design System для Веры. | 2h | Boss |
+| **DP-ADM-1** | **Admin Showcase SPA: Gateway & Скелет** | **✅ 24 авг.** **Given:** `#/design-admin`. **When:** открывается роут. **Then:** рендерится изолированный `ScopedCssBaseline`, 6 табов, ленивая подгрузка MUI, нет CSS-конфликтов с Tailwind. | 2h | Boss |
+| **DP-ADM-2** | **Data Gallery: 15 компонентов + Cyber Threat DataGrid** | **✅ 24 авг.** **Given:** таб Data Gallery. **When:** пользователь выбирает компоненты. **Then:** видит 15 типов (KPI Cards со спарклайнами, Bar/Pie Charts, Chart Grid, Progress Cards, Timelines, User/Order Tables, Tabbed DataGrid, Expandable Threat Grid). | 4h | Boss |
+| **DP-ADM-3** | **Form Patterns: 12 компонентов + Blank Wizard** | **✅ 24 авг.** **Given:** таб Form Patterns. **When:** клик по формам. **Then:** доступны 12 паттернов (3-step Provisioning Wizard, Accordion Form, Selectable Cards, TTL Slider, Alert Banners, Filter Bars, Option Pickers). | 4h | Boss |
+| **DP-ADM-4** | **Navigation & Layout: 6 компонентов + Cmd+K** | **✅ 24 авг.** **Given:** таб Navigation. **When:** тестирование навигации. **Then:** работают Space Switcher, Dashboard Headers, App Navbars, Sidebar Variants (collapsed/expanded), Command Palette (Cmd+K). | 2h | Boss |
+| **DP-ADM-5** | **Theme Studio: 5 MUI-пресетов с live-морфингом** | **✅ 24 авг.** **Given:** таб Themes. **When:** выбор темы (Telemetry Cyan, Defense Purple, Dashboard Teal, Light Contrast, Cyber Minimal). **Then:** все компоненты мгновенно перекрашиваются без перезагрузки; кнопка `[ Copy Theme Config ]`. | 2h | Flash |
+| **DP-ADM-6** | **Live Previews: мост к живым панелям** | **✅ 24 авг.** **Given:** таб Live Previews. **When:** клик по карточке панели. **Then:** бесшовный переход в `#/control`, `#/admin`, `#/dashboard`. | 0.5h | Flash |
+| **DP-ADM-7** | **Design Gateway: вкладка в Design Playground** | **✅ 24 авг.** **Given:** `#/design`. **When:** клик на вкладку «🎛 Admin Showcase». **Then:** мгновенный редирект на `#/design-admin` без утечки стилей. | 0.5h | Flash |
+| **DP-ADM-8** | **Studio Playground: shadcn Dashboard Block + Sidebars** | **✅ 24 авг.** **Given:** `#/design`. **When:** открыты секции Studio. **Then:** добавлены dashboard-01 (charts + data table) и sidebar-03/07 (collapsible submenus). | 2h | Boss |
+| **DP-ADM-9** | **Studio Playground: Login Pages + Settings** | **✅ 24 авг.** **Given:** `#/design`. **When:** просмотр auth-секций. **Then:** отрендерены login-03, login-04 и settings page на shadcn. | 1h | Boss |
+| **DP-ADM-10** | **Интеграция и верификация: tsc + vitest** | **✅ 24 авг.** **Given:** выполнены DP-ADM-0…9. **When:** запуск тестов. **Then:** `tsc --noEmit` 0 ошибок, vitest 100% pass, отсутствие деградации верстки. | 1h | Flash |
+| | | **ИТОГО DP-ADM** | **21h** | |
+
+### Распределение
+
+| Кто | Карточки | Часы |
+|---|---|---|
+| Boss | DP-ADM-0, 1, 2, 3, 4, 8, 9 | 17h |
+| Flash | DP-ADM-5, 6, 7, 10 | 4h |
+
+---
 ## Стены
 
 **CANON:** [`canon/walls.md`](canon/walls.md) · Void: [`canon/INDEX.md`](canon/INDEX.md).  

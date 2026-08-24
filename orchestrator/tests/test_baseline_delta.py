@@ -16,7 +16,7 @@ def _make_finding(fid: str, title: str, severity: str = "medium", **kw):
 PROV_A = DeltaProvenance(
     baseline_id="exp01",
     current_run_id="run-001",
-    manifest_hash="sha256:aaa",
+    wired_hash="sha256:aaa",
     target_scope_hash="sha256:bbb",
     scan_profile="zap-demon-chrome",
     finding_schema_version="finding-v1",
@@ -25,7 +25,7 @@ PROV_A = DeltaProvenance(
 PROV_B = DeltaProvenance(
     baseline_id="exp01",
     current_run_id="run-002",
-    manifest_hash="sha256:zzz",  # different wired
+    wired_hash="sha256:zzz",  # different wired
     target_scope_hash="sha256:bbb",
     finding_schema_version="finding-v1",
 )
@@ -33,7 +33,7 @@ PROV_B = DeltaProvenance(
 PROV_INCOMPLETE = DeltaProvenance(
     baseline_id="exp01",
     current_run_id="run-003",
-    manifest_hash="",
+    wired_hash="",
     target_scope_hash="sha256:bbb",
     finding_schema_version="finding-v1",
 )
@@ -43,7 +43,7 @@ class TestComparabilityGate:
     def test_comparable_when_all_match(self):
         assert comparability_check(PROV_A, PROV_A) == ComparisonStatus.comparable
 
-    def test_incomparable_different_manifest(self):
+    def test_incomparable_different_Wired(self):
         assert comparability_check(PROV_A, PROV_B) == ComparisonStatus.incomparable
 
     def test_artifact_incomplete_missing_hash(self):

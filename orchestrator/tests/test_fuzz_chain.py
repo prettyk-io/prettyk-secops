@@ -81,7 +81,7 @@ def test_fuzz_chain_module_prepare_and_wave():
         security_configuration=SimpleNamespace(base_url_override="https://api.example"),
     )
 
-    zap = SimpleNamespace(_manifest_dir=None)
+    zap = SimpleNamespace(_wired_dir=None)
     calls = []
 
     def fake_prepare(mid):
@@ -144,7 +144,7 @@ def test_fuzz_chain_missing_fuzzer():
             test_data_constructor=[mod], fuzzers=[], imports=[]
         )
     )
-    adapter = FuzzAdapter(Wired, SimpleNamespace(_manifest_dir=None))
+    adapter = FuzzAdapter(Wired, SimpleNamespace(_wired_dir=None))
     adapter.bind(SimpleNamespace())
     try:
         adapter.fuzz_chain_module("flow_x")

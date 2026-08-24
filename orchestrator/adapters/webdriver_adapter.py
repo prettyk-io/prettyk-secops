@@ -139,7 +139,7 @@ class WebDriverAdapter(BaseAdapter):
         # переменной окружения, без правки манифестов.
         self.default_timeout = float(pk_env("ELEMENT_TIMEOUT", self.DEFAULT_TIMEOUT))
         self.mode = self._resolve_mode()
-        self.session_name = session_name or "kdt-run"
+        self.session_name = session_name or "prettyk-run"
         # base_url_override из манифеста — для ОбойтиСтраницы / относительных URL.
         self.base_url = (base_url or "").strip()
         self.allowed_extra_domains = (allowed_extra_domains or "").strip()

@@ -24,7 +24,7 @@ def _bare_controller(execute):
     ctrl.language_engine = LanguageEngine()
     ctrl.action_factory = type("F", (), {"execute": staticmethod(execute)})()
     ctrl.adapters = {"data": None}
-    ctrl._manifest_problems = []
+    ctrl._wired_problems = []
     ctrl.last_zap_report = None
 
     def parse(raw: str):
@@ -34,7 +34,7 @@ def _bare_controller(execute):
     ctrl._parse_constructor = parse
     ctrl._diary = lambda *a, **k: None
     ctrl._attach_call_details = lambda *a, **k: None
-    ctrl._enrich_manifest_error = lambda e, **k: e
+    ctrl._enrich_wired_error = lambda e, **k: e
     ctrl._diary_high_alerts = lambda: None
     return ctrl
 

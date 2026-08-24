@@ -27,7 +27,7 @@ def _ctrl_with_scenarios(scenarios):
     ctrl.global_stream.seed_secret_values = MagicMock()
     ctrl.global_stream.merge = MagicMock()
     ctrl._secret_seeds = []
-    ctrl._manifest_problems = []
+    ctrl._wired_problems = []
     ctrl.scenario_stats = {"ok": 0, "fail": 0, "fail_allowed": 0, "skip": 0}
     ctrl.scenario_outcomes = []
     ctrl.suites_complete = False
@@ -35,9 +35,9 @@ def _ctrl_with_scenarios(scenarios):
     ctrl.last_zap_report = None
     ctrl._await_session_end = lambda: None
     ctrl._attach_final_zap_report = lambda: None
-    ctrl._seed_manifest_stream = lambda: None
+    ctrl._seed_wired_stream = lambda: None
     ctrl._log_declarative_gap = lambda: None
-    ctrl.collect_manifest_problems = lambda: []
+    ctrl.collect_wired_problems = lambda: []
     ctrl._export_suite_imports = lambda s: None
     ctrl._export_data_modules = lambda s: None
     return ctrl

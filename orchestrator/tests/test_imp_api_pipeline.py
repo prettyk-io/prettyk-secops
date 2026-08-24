@@ -15,7 +15,7 @@ from core.constructor_validate import validate_language_script
 from core.controller import Controller
 from core.data_stream import DataStream
 from core.language_engine import LanguageEngine
-from core.wired_validate import build_dry_action_factory, collect_manifest_problems
+from core.wired_validate import build_dry_action_factory, collect_wired_problems
 from core.method_id import ensure_wire, lookup_method_id
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures" / "openapi"
@@ -147,13 +147,13 @@ def test_controller_pipeline_dry_api_steps():
     ctrl.language_engine = LanguageEngine()
     ctrl.page_resolver = None
     ctrl.adapters = {"zap": zap, "webdriver": wd}
-    ctrl._manifest_problems = []
+    ctrl._wired_problems = []
     ctrl.last_zap_report = None
     ctrl.wired = SimpleNamespace(debug_mode=False)
     ctrl.action_factory = factory
     ctrl._diary = lambda *a, **k: None
     ctrl._attach_call_details = lambda *a, **k: None
-    ctrl._enrich_manifest_error = lambda e, **k: e
+    ctrl._enrich_wired_error = lambda e, **k: e
     ctrl._diary_high_alerts = lambda: None
 
     from core.wired_validate import parse_constructor
@@ -189,7 +189,7 @@ def test_controller_pipeline_dry_api_steps():
     assert getattr(wd, "_last_auth_discovery", {}).get("applied") is False
 
 
-def test_manifest_validate_accepts_openapi_pretty():
+def test_wired_validate_accepts_openapi_pretty():
     class _M:
         test_suites = SimpleNamespace(
             scenarios=[
@@ -209,5 +209,5 @@ def test_manifest_validate_accepts_openapi_pretty():
             test_data_constructor=[],
         )
 
-    problems = collect_manifest_problems(_M())
+    problems = collect_wired_problems(_M())
     assert problems == [], problems

@@ -376,7 +376,7 @@ def apply_zap_auth(
 ) -> Dict[str, Any]:
     """
     Настроить ZAP context / Replacer / Auth Helper под auth_type манифеста.
-    Вызывается из ZapAdapter.apply_manifest_auth (явный шаг).
+    Вызывается из ZapAdapter.apply_wired_auth (явный шаг).
     """
     result: Dict[str, Any] = {
         "applied": False,

@@ -1,7 +1,7 @@
 ﻿# CANON hub — реестр «свой»
 
 > Единственный реестр продуктовой narrative-истины для агентов.  
-> Slice: **22 августа 2026** (2FA sealed: рейнеминг KDT→prettyk завершён, zero regressions, канонизирован в pure).  
+> Slice: **23 августа 2026** (2FA sealed: ROLE-MATRIX зачислен; Playwright Browser Core зачислен; Webswing выпилен).  
 > Machine-контракт: Pydantic-модели [`../../orchestrator/models/manifest.py`](../../orchestrator/models/manifest.py). `docs/manifest.json` — legacy JSON Schema (RJSF era), хранится как reference.  
 > Презентация / deck **потом** режется из этого INDEX + topics + [`MODULES-SKELETON.md`](MODULES-SKELETON.md).  
 > Тулы презентации — **void**.
@@ -49,6 +49,8 @@ SOLID для канона — в rule [`docs-canon.mdc`](../../.opencode/rules/d
 
 Сортировка: Product → Runtime → Admission → Authoring → Walls → Void.
 
+> **Алтарь Обители** — [`../ALTAR.md`](../ALTAR.md). Благодарность Boss, Flash, Keeper. Фиксация того, что мы построили. Не FRIEND, не backlog, не evidence — благодарность.
+
 | Тема | Файл | Группа |
 |---|---|---|
 | Честный контракт (слот ≠ runtime) | [`honest-contract.md`](honest-contract.md) | Product |
@@ -78,20 +80,34 @@ SOLID для канона — в rule [`docs-canon.mdc`](../../.opencode/rules/d
 | API-модули (OA / GQL / gRPC каскад) | [`api-modules.md`](api-modules.md) | Authoring |
 | Discovery / label / heal | [`discovery-heal.md`](discovery-heal.md) | Authoring (DISC-1 дно; HEAL+DISC-2 landed) |
 | Runtime shell (Grid / WD / Live) | [`runtime-shell.md`](runtime-shell.md) | Runtime |
+| Playwright Browser Core (launch / attach / context) | [`pw-browser-core.md`](pw-browser-core.md) | Runtime |
+| Studio Stack (фронтенд-зависимости: 2FA sealed) | [`studio-stack.md`](studio-stack.md) | Product / Governance |
 | MONITOR-HUB: Space / ACL / Retention | [`monitor-hub.md`](monitor-hub.md) | Runtime |
 | Lab-up обязательный контур | [`lab-up.md`](lab-up.md) | Runtime / Lab |
 | Stand Port META (порты + команды) | [`stand-port-meta.md`](stand-port-meta.md) | Runtime / Lab |
-| ZAP demon vs Webswing | [`zap-dual.md`](zap-dual.md) | Runtime |
+| Infra Stack (PostgreSQL 16 + Valkey 8: ядро данных) | [`infra-stack.md`](infra-stack.md) | Product / Governance |
+| ZAP demon | [`zap-dual.md`](zap-dual.md) | Runtime |
 | DAST wave (ФаззингВолна) | [`dast-wave.md`](dast-wave.md) | Runtime |
 | Security lab bounds | [`security-lab.md`](security-lab.md) | Runtime / Walls |
 | Допуск ИБ + опциональный акт | [`admission.md`](admission.md) | Admission |
 | Стены | [`walls.md`](walls.md) | Walls |
 
+---
+
+## SATELLITE & SERVICE TOOLING (service-needs — не ядро продукта)
+
+> Внутренний сервисный инструментарий команды. Не канон ядра продукта. 2FA sealed.
+
+| Инструмент | Файл | Статус |
+|---|---|---|
+| DESIGN-WORKBENCH: живой дизайн-полигон (Theme Studio, Catalog, Patterns, Tailwind Sandbox) | [`../DESIGN-WORKBENCH.md`](../DESIGN-WORKBENCH.md) | `service-needs` (2FA sealed) |
+| ROLE-MATRIX (4×4): ролевая архитектура агентов, модели 3.1–3.7, Sanctuary-лор, 2FA-ритуалы | [`ROLE-MATRIX.md`](ROLE-MATRIX.md) | `service-needs` (2FA sealed · 23 авг 2026) |
+
 ### Скелет презентации (из hub)
 
 1. Product — honest-contract · fe-shell · **brand-video** · **monitor-header** · **brand-strategy** · **brand-fonts** · **enterprise-friends-required** · nav-check · admin-integrations · auth-module · auth-slots · connectors  
 2. Authoring — studio-hub · data-modules · manifest-sot · prettyk-core · **chain** · **api-modules** · discovery-heal (DISC-1 дно)  
-3. Runtime — runtime-shell · **monitor-hub** · lab-up · zap-dual · dast-wave · security-lab  
+3. Runtime — runtime-shell · **pw-browser-core** · **monitor-hub** · lab-up · zap-dual · dast-wave · security-lab  
 4. Admission — admission  
 5. Walls — walls + § Void  
 

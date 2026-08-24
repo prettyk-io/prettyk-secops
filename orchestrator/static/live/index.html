@@ -1510,6 +1510,7 @@
       if (qCheckId) {
         resultsCheckId = qCheckId;
         urlBoundCheckId = qCheckId;
+        urlBound = true;
       }
       const qToken = params.get("token");
       if (qToken) {
@@ -2377,11 +2378,25 @@
             meta.last_export_run_id
           ) {
             replayRunId = String(meta.last_export_run_id);
-            applyMeta(meta); // статус уже финальный
+            applyMeta(meta);
             enterReplayMode({
               keepLogs: true,
               currentTime: playhead.currentTime
             });
+            return;
+          }
+
+          // ?check_id= без run_id — прогон уже закончился: авто-переход в replay.
+          if (
+            urlBound &&
+            !replayRunId &&
+            !liveToReplayTransitioned &&
+            metaStatus !== "running" &&
+            meta.last_export_run_id
+          ) {
+            replayRunId = String(meta.last_export_run_id);
+            applyMeta(meta);
+            enterReplayMode({ keepLogs: false });
             return;
           }
 
@@ -2413,10 +2428,31 @@
     /* MON-6: авто-вход в replay, если run_id в query */
     if (replayRunId) {
       enterReplayMode();
-    } else {
+    } else if (!urlBound) {
       /* MH-3: голый :8767/ — HomePage */
       hpInit();
       hpShow();
+    } else {
+      /* ?check_id= без run_id — ждём первый meta, затем replay или live */
+      vncFrame.style.display = "none";
+      statusLabel.textContent = "загрузка...";
+      (async function firstMetaResolve() {
+        try {
+          const res = await fetch("/api/meta", { cache: "no-store" });
+          if (!res.ok) return;
+          const meta = await res.json();
+          const ms = (meta.status || "").toLowerCase();
+          if (ms !== "running" && meta.last_export_run_id) {
+            replayRunId = String(meta.last_export_run_id);
+            applyMeta(meta);
+            enterReplayMode({ keepLogs: false });
+            return;
+          }
+          applyMeta(meta);
+        } catch(_) {
+          applyMeta({});
+        }
+      })();
     }
   </script>
 </body>

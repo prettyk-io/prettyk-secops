@@ -65,7 +65,7 @@ def resolve_report_name(wired: Any = None) -> str:
                 return scenarios[0].scenario_name
             meta = getattr(wired, "meta", None)
             if meta and getattr(meta, "project_id", None):
-                return f"Проверка {meta.project_id}"
+                return "Результаты проверки"
         except Exception:
             pass
     return DEFAULT_REPORT_NAME

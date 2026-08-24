@@ -15,7 +15,7 @@
 | **Allure 3** | 5050 | `services/docker-compose.yml` → `allure3-secops` | `curl http://127.0.0.1:5050/health` |
 | **Allure 2** (legacy) | 5051 | `services/docker-compose.yml` → `allure-light-secops` | `curl http://127.0.0.1:5051/health` |
 | **ZAP demon API** | 8080 | `services/docker-compose.zap.yml` | `curl http://127.0.0.1:8080/JSON/core/view/version/` |
-| **ZAP Webswing** | 8082 | не дефолт | `netstat -ano \| findstr :8082` |
+| **ZAP** | 8080 | default | `netstat -ano \| findstr :8080` |
 | **Selenium Grid** | 4444 | `services/docker-compose.yml` | `curl http://127.0.0.1:4444/status` |
 | **noVNC Chrome** | 7900 | `services/docker-compose.yml` | `netstat -ano \| findstr :7900` |
 | **noVNC Firefox** | 7901 | `services/docker-compose.yml` | `netstat -ano \| findstr :7901` |
@@ -92,7 +92,6 @@ allure3-secops (канон)      http://127.0.0.1:5050/
 DefectDojo            http://127.0.0.1:8081/ admin/admin
 PrettyK Live              http://127.0.0.1:8767/
 Editor                http://localhost:5173/
-ZAP Webswing          http://127.0.0.1:8082/zap
 ZAP demon API         http://127.0.0.1:8080/
 Selenium Grid         http://127.0.0.1:4444/ui/
 Juice Shop            http://127.0.0.1:3000/

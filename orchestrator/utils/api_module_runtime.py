@@ -12,8 +12,9 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 from urllib.parse import urljoin
 
-from core.auth_module import load_auth_profile_from_manifest
+from core.auth_module import load_auth_profile_from_wired
 from core.errors import WiredError
+from models.wired import Wired
 from utils.api_import_lab import dumps_ops, read_local_text
 from utils.attack_target import (
     attack_base_url,
@@ -158,8 +159,8 @@ def _resolve_import_file_path(wired: Any, path: str) -> str:
     p = Path(raw)
     if p.is_file():
         return str(p.resolve())
-    mdir = getattr(wired, "_manifest_dir", None) or getattr(
-        Wired, "manifest_dir", None
+    mdir = getattr(wired, "_wired_dir", None) or getattr(
+        Wired, "wired_dir", None
     )
     candidates = []
     if mdir:
@@ -171,11 +172,11 @@ def _resolve_import_file_path(wired: Any, path: str) -> str:
     raise WiredError(f"файл ресурса не найден: {raw}")
 
 
-def _bind_manifest_dir(wired: Any, manifest_dir: Optional[str]) -> None:
-    if not manifest_dir or getattr(wired, "_manifest_dir", None):
+def _bind_wired_dir(wired: Any, wired_dir: Optional[str]) -> None:
+    if not wired_dir or getattr(wired, "_wired_dir", None):
         return
     try:
-        setattr(Wired, "_manifest_dir", manifest_dir)
+        setattr(Wired, "_wired_dir", wired_dir)
     except Exception:  # noqa: BLE001
         pass
 
@@ -185,18 +186,18 @@ def _resolve_named_import_path(
     *,
     name: str,
     kind: str,
-    manifest_dir: Optional[str],
+    wired_dir: Optional[str],
     missing_note: str,
 ) -> Tuple[Optional[str], List[str]]:
     notes: List[str] = []
-    imp = _find_import(Wired, name, kind)
+    imp = _find_import(wired, name, kind)
     if imp is None:
         notes.append(missing_note)
         return None, notes
     try:
-        _bind_manifest_dir(Wired, manifest_dir)
+        _bind_wired_dir(wired, wired_dir)
         return _resolve_import_file_path(
-            Wired, getattr(imp, "path", "") or ""
+            wired, getattr(imp, "path", "") or ""
         ), notes
     except WiredError as exc:
         notes.append(str(exc))
@@ -209,7 +210,7 @@ def _openapi_spec_from_fields(
     fields: Dict[str, Any],
     *,
     module_id: str,
-    manifest_dir: Optional[str],
+    wired_dir: Optional[str],
 ) -> None:
     mode = (fields.get("spec_mode") or "").strip()
     if not mode:
@@ -221,10 +222,10 @@ def _openapi_spec_from_fields(
         legacy_path = str(fields.get("spec_path") or "").strip()
         if spec_as:
             path, notes = _resolve_named_import_path(
-                Wired,
+                wired,
                 name=spec_as,
                 kind="openapi_spec",
-                manifest_dir=manifest_dir,
+                wired_dir=wired_dir,
                 missing_note=f"ресурс openapi_spec не найден: {spec_as}",
             )
             out.notes.extend(notes)
@@ -242,7 +243,7 @@ def _openapi_spec_from_fields(
         rel = "/openapi.json"
     try:
         out.spec = resolve_attack_relative_or_allowlisted(
-            Wired, rel, label="схема OpenAPI"
+            wired, rel, label="схема OpenAPI"
         )
     except WiredError as exc:
         out.notes.append(str(exc))
@@ -253,7 +254,7 @@ def resolve_openapi_arg(
     wired: Any,
     arg: str,
     *,
-    manifest_dir: Optional[str] = None,
+    wired_dir: Optional[str] = None,
 ) -> ResolvedOpenApi:
     """module id → cascade; иначе raw url/path (lab)."""
     raw = (arg or "").strip()
@@ -261,7 +262,7 @@ def resolve_openapi_arg(
     if not raw:
         out.notes.append("пустой аргумент OpenAPI")
         return out
-    mod = find_api_module(Wired, raw, module_types=[OPENAPI_MODULE_TYPE])
+    mod = find_api_module(wired, raw, module_types=[OPENAPI_MODULE_TYPE])
     if mod is None:
         return out
     fields = _fields_dict(mod, "openapi_fields")
@@ -276,7 +277,7 @@ def resolve_openapi_arg(
         out.base_url = ""
 
     _openapi_spec_from_fields(
-        out, Wired, fields, module_id=raw, manifest_dir=manifest_dir
+        out, wired, fields, module_id=raw, wired_dir=wired_dir
     )
     if not out.spec:
         out.notes.append(f"модуль {raw}: пуста схема OpenAPI")
@@ -302,7 +303,7 @@ def _graphql_schema_from_fields(
     fields: Dict[str, Any],
     *,
     module_id: str,
-    manifest_dir: Optional[str],
+    wired_dir: Optional[str],
     endpoint_rel: str,
 ) -> None:
     mode = _graphql_mode(fields)
@@ -311,10 +312,10 @@ def _graphql_schema_from_fields(
         legacy_sdl = str(fields.get("sdl_path") or "").strip()
         if sdl_as:
             path, notes = _resolve_named_import_path(
-                Wired,
+                wired,
                 name=sdl_as,
                 kind="graphql_sdl",
-                manifest_dir=manifest_dir,
+                wired_dir=wired_dir,
                 missing_note=f"ресурс graphql_sdl не найден: {sdl_as}",
             )
             out.notes.extend(notes)
@@ -335,7 +336,7 @@ def _graphql_schema_from_fields(
     ).strip() or "/graphql"
     try:
         out.schema = resolve_attack_relative_or_allowlisted(
-            Wired, rel, label="схема GraphQL"
+            wired, rel, label="схема GraphQL"
         )
     except WiredError as exc:
         out.notes.append(str(exc))
@@ -346,14 +347,14 @@ def resolve_graphql_arg(
     wired: Any,
     arg: str,
     *,
-    manifest_dir: Optional[str] = None,
+    wired_dir: Optional[str] = None,
 ) -> ResolvedGraphql:
     raw = (arg or "").strip()
     out = ResolvedGraphql(schema=raw)
     if not raw:
         out.notes.append("пустой аргумент GraphQL")
         return out
-    mod = find_api_module(Wired, raw, module_types=[GRAPHQL_MODULE_TYPE])
+    mod = find_api_module(wired, raw, module_types=[GRAPHQL_MODULE_TYPE])
     if mod is None:
         return out
     fields = _fields_dict(mod, "graphql_fields")
@@ -368,7 +369,7 @@ def resolve_graphql_arg(
     ).strip() or "/graphql"
     try:
         out.endpoint = resolve_attack_relative_or_allowlisted(
-            Wired, endpoint_rel, label="GraphQL endpoint"
+            wired, endpoint_rel, label="GraphQL endpoint"
         )
     except WiredError as exc:
         out.notes.append(str(exc))
@@ -376,10 +377,10 @@ def resolve_graphql_arg(
 
     _graphql_schema_from_fields(
         out,
-        Wired,
+        wired,
         fields,
         module_id=raw,
-        manifest_dir=manifest_dir,
+        wired_dir=wired_dir,
         endpoint_rel=endpoint_rel,
     )
     headers = fields.get("headers") or {}
@@ -436,7 +437,7 @@ def static_auth_headers(wired: Any, auth_module_id: str) -> Tuple[Dict[str, str]
     mid = (auth_module_id or "").strip()
     if not mid:
         return {}, notes
-    profile, load_notes = load_auth_profile_from_manifest(Wired, mid)
+    profile, load_notes = load_auth_profile_from_wired(wired, mid)
     notes.extend(load_notes)
     if profile is None:
         return {}, notes

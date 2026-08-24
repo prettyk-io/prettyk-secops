@@ -71,7 +71,7 @@ def resolve_secretref_tree(data: Any) -> Tuple[Any, List[str]]:
     return walk(data), seeds
 
 
-def prepare_manifest_data(data: Any) -> Tuple[Any, List[str]]:
+def prepare_wired_data(data: Any) -> Tuple[Any, List[str]]:
     """G-61 decrypt + G-62 secretref. Порядок: сначала enc, потом ENV."""
     from core.wired_crypto import decrypt_tree, tree_has_encrypted
 

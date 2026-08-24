@@ -44,7 +44,7 @@ describe('shell auth', () => {
     logout();
     expect(login('admin', 'verysecure')).toEqual({ ok: true, user: 'admin' });
     expect(window.sessionStorage.getItem(AUTH_STORAGE_KEY)).toBe('admin');
-    expect(roleOf('admin')).toBe('admin_sec');
+    expect(roleOf('admin')).toBe('admin_service');
 
     logout();
     expect(login('debug', 'verysecure').ok).toBe(true);

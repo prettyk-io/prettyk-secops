@@ -8,11 +8,11 @@ from types import SimpleNamespace
 
 from core.controller import Controller
 from core.data_stream import DataStream
-from core.wired_validate import validate_manifest_file
+from core.wired_validate import validate_wired_file
 from models.wired import SuiteImport
 
 
-def _minimal_manifest(*, import_path: str, as_name: str = "urls") -> dict:
+def _minimal_Wired(*, import_path: str, as_name: str = "urls") -> dict:
     return {
         "meta": {
             "project_id": "imports-relative",
@@ -78,7 +78,7 @@ def _controller(imports, *, wired_path: Path, base="http://juice-shop:3000"):
     return ctrl
 
 
-def test_validate_and_load_resolve_imports_relative_to_manifest_dir(tmp_path: Path):
+def test_validate_and_load_resolve_imports_relative_to_wired_dir(tmp_path: Path):
     """Wired.json + resources/*.txt рядом → validate-only OK, load резолвит path."""
     res_dir = tmp_path / "resources"
     res_dir.mkdir()
@@ -89,11 +89,11 @@ def test_validate_and_load_resolve_imports_relative_to_manifest_dir(tmp_path: Pa
 
     wired_path = tmp_path / "Wired.json"
     wired_path.write_text(
-        json.dumps(_minimal_manifest(import_path="resources/urls.txt")),
+        json.dumps(_minimal_Wired(import_path="resources/urls.txt")),
         encoding="utf-8",
     )
 
-    issues, wired = validate_manifest_file(wired_path)
+    issues, wired = validate_wired_file(wired_path)
     assert issues == [], issues
     assert wired is not None
     assert wired.test_suites.imports[0].path == "resources/urls.txt"

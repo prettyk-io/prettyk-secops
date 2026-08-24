@@ -15,7 +15,7 @@
 ## Требования
 
 - Windows 10/11 и PowerShell;
-- Python 3.11;
+- Python 3.13;
 - Node.js 20.19+ или 22.12+;
 - Docker Engine или Docker Desktop с Compose v2;
 - 8 ГБ свободной памяти, если запускается DefectDojo.
@@ -23,7 +23,7 @@
 ## Установить зависимости
 
 ```powershell
-py -3.11 -m venv .venv
+py -3.13 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --upgrade pip
 .\.venv\Scripts\python.exe -m pip install -r orchestrator\requirements.txt
 

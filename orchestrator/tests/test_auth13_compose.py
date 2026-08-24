@@ -57,7 +57,7 @@ def _mod(mid: str, text: str):
     )
 
 
-def _manifest(*mods):
+def _Wired(*mods):
     return SimpleNamespace(
         test_suites=SimpleNamespace(test_data_constructor=list(mods))
     )
@@ -121,7 +121,7 @@ def test_action_rejects_http_steps():
 
 
 def test_resolve_csv_and_compose_module():
-    man = _manifest(
+    man = _Wired(
         _mod("k", "auth=apikey\nname=X-Key\nvalue=1\n"),
         _mod("b", "auth=bearer\ntoken=bt\n"),
         _mod("c", "auth=compose\nmodules=k,b\n"),
@@ -219,7 +219,7 @@ def test_controller_csv_compose(monkeypatch):
     monkeypatch.delenv("KDT_AUTH_BOOTSTRAP", raising=False)
     from core.controller import Controller
 
-    man = _manifest(
+    man = _Wired(
         _mod("k", "auth=apikey\nname=X-Key\nvalue=1\n"),
         _mod("b", "auth=bearer\ntoken=bt\n"),
     )
@@ -240,7 +240,7 @@ def test_controller_csv_compose(monkeypatch):
 
 def test_compose_cycle_ab_no_recurse():
     """BOT-A1: A→B→A не взрывает стек; cycle skip notes."""
-    man = _manifest(
+    man = _Wired(
         _mod("a", "auth=compose\nmodules=b\n"),
         _mod("b", "auth=compose\nmodules=a\n"),
         _mod("k", "auth=apikey\nname=X-Key\nvalue=1\n"),
@@ -256,7 +256,7 @@ def test_compose_empty_modules_no_silent_legacy(monkeypatch):
     monkeypatch.delenv("KDT_AUTH_BOOTSTRAP", raising=False)
     from core.controller import Controller
 
-    man = _manifest(_mod("c", "auth=compose\nmodules=\n"))
+    man = _Wired(_mod("c", "auth=compose\nmodules=\n"))
     man.security_configuration = SimpleNamespace(
         auth_type="Bearer Token",
         auth_details={"Токен": "should-not-apply"},
@@ -279,7 +279,7 @@ def test_enrich_primenit_auth_compose_not_none(monkeypatch):
 
     from core.controller import Controller
 
-    man = _manifest(
+    man = _Wired(
         _mod("k", "auth=apikey\nname=X-Key\nvalue=1\n"),
         _mod("b", "auth=bearer\ntoken=bt\n"),
         _mod("c", "auth=compose\nmodules=k,b\n"),
@@ -294,7 +294,7 @@ def test_enrich_primenit_auth_compose_not_none(monkeypatch):
     ctrl = object.__new__(Controller)
     ctrl.wired = man
     params = {"module_id": "c"}
-    ctrl._enrich_zap_manifest_params("apply_manifest_auth", params)
+    ctrl._enrich_zap_wired_params("apply_wired_auth", params)
     assert params["auth_type"] != "Без авторизации"
     apps = json.loads(params["auth_applications_json"])
     assert [a["auth_type"] for a in apps] == ["API Key", "Bearer Token"]
@@ -328,7 +328,7 @@ class FakeZap:
         )
 
 
-def test_apply_manifest_auth_compose_multi():
+def test_apply_wired_auth_compose_multi():
     """BOT-A2: ZapAdapter apply multi applications from compose resolve."""
     from adapters.zap_adapter import ZapAdapter
 
@@ -355,7 +355,7 @@ def test_apply_manifest_auth_compose_multi():
             "module_id": "b",
         },
     ]
-    out = ZapAdapter.apply_manifest_auth(
+    out = ZapAdapter.apply_wired_auth(
         zap,
         "ctx",
         auth_applications_json=json.dumps(apps),

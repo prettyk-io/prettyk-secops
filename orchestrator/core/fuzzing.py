@@ -2463,7 +2463,7 @@ class FuzzAdapter:
         resolved = resolve_chain_arg(
             self.wired,
             mid,
-            manifest_dir=getattr(self.zap, "_manifest_dir", None),
+            wired_dir=getattr(self.zap, "_wired_dir", None),
         )
         fields = dict(resolved.chain_fields or {})
         if not fields:

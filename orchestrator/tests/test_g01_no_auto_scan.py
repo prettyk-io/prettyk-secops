@@ -35,7 +35,7 @@ def test_controller_load_with_domains_does_not_apply_or_scan(monkeypatch):
         Controller, "_apply_auth_bootstrap", lambda self: None
     ):
         ctrl = Controller(
-            Manifest(
+            Wired(
                 meta=Meta(assessment_purpose="emergency", emergency_reason="g01"),
                 infrastructure=Infrastructure(
                     zap_mode="demon", browser_type="chrome-headless"

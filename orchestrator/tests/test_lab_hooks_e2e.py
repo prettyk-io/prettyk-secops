@@ -88,7 +88,7 @@ def test_e2e_start_clears_then_finalize_hooks():
     code, started = _http_json(
         "POST",
         f"{PLAY}/api/run/start",
-        {"wired": Wired, "session_name": "hooks-e2e"},
+        {"wired": wired, "session_name": "hooks-e2e"},
         timeout=30,
     )
     assert code == 200, started

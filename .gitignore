@@ -131,6 +131,14 @@ Desktop.ini
 # Local VM pull / experiments
 sandbox/
 
+# Local spike scratch — сессии/куки/БД/скриншоты: в git не коммитить
+cosmo/cookies*.txt
+cosmo/spike-auth.db*
+orchestrator/juice_expensive.png
+
+# Local tooling config (agent permission state)
+permissions.json
+
 
 # Runtime orchestrator summary (not SoT)
 /run_summary.json

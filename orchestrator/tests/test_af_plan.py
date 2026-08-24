@@ -16,7 +16,7 @@ from core.af_plan import (  # noqa: E402
     AUTH_ENV_PASSWORD,
     AUTH_ENV_USERNAME,
     build_af_plan,
-    plan_from_manifest_dict,
+    plan_from_wired_dict,
     profile_for_scan_policy,
 )
 from core.method_id import lookup_facade_method, resolve_call  # noqa: E402
@@ -24,7 +24,7 @@ from adapters.zap_adapter import ZapAdapter  # noqa: E402
 from core.errors import WiredError  # noqa: E402
 from core.controller import Controller  # noqa: E402
 from models.wired import Infrastructure, Wired, Meta, SecurityConfiguration
-from models.wired import TestSuites as ManifestTestSuites
+from models.wired import TestSuites as TestSuites
 
 
 def test_profile_map():
@@ -62,8 +62,8 @@ def test_crawler_profile_no_active():
     assert "type: activeScan" not in text
 
 
-def test_from_manifest_dict():
-    text = plan_from_manifest_dict(
+def test_from_Wired_dict():
+    text = plan_from_wired_dict(
         {
             "security_configuration": {
                 "base_url_override": "http://juice-shop:3000",
@@ -77,7 +77,7 @@ def test_from_manifest_dict():
 
 
 def test_openapi_url_job_before_spider():
-    text = plan_from_manifest_dict(
+    text = plan_from_wired_dict(
         {
             "security_configuration": {
                 "base_url_override": "http://api.example.test",
@@ -99,7 +99,7 @@ def test_openapi_url_job_before_spider():
 
 
 def test_openapi_absent_no_job():
-    text = plan_from_manifest_dict(
+    text = plan_from_wired_dict(
         {
             "security_configuration": {
                 "base_url_override": "http://example.test",
@@ -111,7 +111,7 @@ def test_openapi_absent_no_job():
 
 
 def test_inline_openapi_honest_note_only():
-    text = plan_from_manifest_dict(
+    text = plan_from_wired_dict(
         {
             "security_configuration": {
                 "base_url_override": "http://example.test",
@@ -127,7 +127,7 @@ def test_inline_openapi_honest_note_only():
 
 
 def test_extra_domains_include_paths():
-    text = plan_from_manifest_dict(
+    text = plan_from_wired_dict(
         {
             "security_configuration": {
                 "base_url_override": "http://main.test",
@@ -144,7 +144,7 @@ def test_extra_domains_include_paths():
 
 
 def test_gui_targets_requestor():
-    text = plan_from_manifest_dict(
+    text = plan_from_wired_dict(
         {
             "security_configuration": {
                 "base_url_override": "http://app.test",
@@ -160,7 +160,7 @@ def test_gui_targets_requestor():
 
 
 def test_crawler_profile_includes_spider_client():
-    text = plan_from_manifest_dict(
+    text = plan_from_wired_dict(
         {
             "security_configuration": {
                 "base_url_override": "http://spa.test",
@@ -172,7 +172,7 @@ def test_crawler_profile_includes_spider_client():
 
 
 def test_basic_auth_in_env_uses_vars_not_plaintext():
-    text = plan_from_manifest_dict(
+    text = plan_from_wired_dict(
         {
             "security_configuration": {
                 "base_url_override": "http://secure.test",
@@ -190,7 +190,7 @@ def test_basic_auth_in_env_uses_vars_not_plaintext():
 
 
 def test_bearer_auth_replacer_not_plaintext():
-    text = plan_from_manifest_dict(
+    text = plan_from_wired_dict(
         {
             "security_configuration": {
                 "base_url_override": "http://api.test",
@@ -206,7 +206,7 @@ def test_bearer_auth_replacer_not_plaintext():
 
 
 def test_browser_auth_sso_in_env():
-    text = plan_from_manifest_dict(
+    text = plan_from_wired_dict(
         {
             "security_configuration": {
                 "base_url_override": "http://app.test",
@@ -221,11 +221,11 @@ def test_browser_auth_sso_in_env():
     assert "method: autodetect" in text
 
 
-def test_juice_from_manifest_artifact_matches_generator():
-    seed = ROOT / "manifests" / "juice_af_seed.json"
-    artifact = ROOT / "plans" / "juice-from-Wired.yaml"
+def test_juice_from_Wired_artifact_matches_generator():
+    seed = ROOT / "wired" / "juice_af_seed.json"
+    artifact = ROOT / "plans" / "juice-from-wired.yaml"
     assert seed.is_file(), "juice_af_seed.json must exist"
-    expected = plan_from_manifest_dict(
+    expected = plan_from_wired_dict(
         json.loads(seed.read_text(encoding="utf-8")),
         context_name="juice_ctx",
         report_file="juice-from-wired",
@@ -248,7 +248,7 @@ def test_method_id_plan():
     )
     assert lookup_facade_method("ZAP", "ПрименитьAuth") == (
         "zap",
-        "apply_manifest_auth",
+        "apply_wired_auth",
     )
     assert lookup_facade_method("ZAP", "КраулерКлиент") == (
         "zap",
@@ -284,7 +284,7 @@ def test_controller_init_does_not_run_zap_scans(monkeypatch):
                     auth_type="Bearer Token",
                     auth_details={"Токен": "x"},
                 ),
-                test_suites=ManifestTestSuites(scenarios=[]),
+                test_suites=TestSuites(scenarios=[]),
             )
         )
         ctrl.adapters["zap"] = zap
@@ -342,7 +342,7 @@ def test_client_spider_scan_mock():
     assert client.stop.call_count == 0
 
 
-def test_generate_automation_plan_from_manifest_json(tmp_path):
+def test_generate_automation_plan_from_wired_json(tmp_path):
     adapter = ZapAdapter.__new__(ZapAdapter)
     adapter._connected = True
     out = tmp_path / "gen.yaml"
@@ -358,7 +358,7 @@ def test_generate_automation_plan_from_manifest_json(tmp_path):
     path = ZapAdapter.generate_automation_plan(
         adapter,
         str(out),
-        manifest_json=json.dumps(wired),
+        wired_json=json.dumps(wired),
     )
     text = Path(path).read_text(encoding="utf-8")
     assert "type: openapi" in text

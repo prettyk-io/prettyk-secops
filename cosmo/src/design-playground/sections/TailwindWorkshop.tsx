@@ -117,46 +117,47 @@ export function TailwindWorkshop({
             <div className="flex items-center gap-2.5 mb-1.5">
               <span className="text-xl">📘</span>
               <h2 className={`text-base font-bold m-0 ${backdrop.isLight ? 'text-slate-900' : 'text-slate-100'}`}>
-                Tailwind for Product Designers (Vera's Essential Guide)
+                Tailwind Design Workshop — Token Playground & Live Sandbox
               </h2>
               <Badge variant="cyan" className="text-[10px] font-mono font-bold tracking-wider">
                 DESIGN TOKENS · TAILWIND V4
               </Badge>
             </div>
             <p className={`text-xs ${backdrop.isLight ? 'text-slate-600' : 'text-slate-400'} m-0`}>
-              Why Tailwind matters for UI/UX designers, biblical reference books, token mapping cheat sheets, and live interactive HTML/CSS sandbox.
+              Why Tailwind matters for UI/UX designers, token mapping cheat sheets, and live interactive HTML/CSS sandbox.
             </p>
           </div>
         </div>
       </div>
 
-      {/* 2. Why Tailwind Matters for Designers & Biblical Tutorials */}
+      {/* 2. Why Tailwind Matters for Designers & Practical Resources */}
       <div className="grid grid-cols-[repeat(auto-fit,minmax(340px,1fr))] gap-5 mb-7">
-        {/* Card A: Why It Matters */}
+        {/* Card A: Designer's Toolkit */}
         <div style={backdrop.stageCardStyle} className="p-6 rounded-2xl">
           <div className="flex items-center gap-2 mb-3">
             <Lightbulb className="size-4 text-cyan-400" />
             <span className={`text-sm font-bold ${backdrop.isLight ? 'text-slate-900' : 'text-slate-100'}`}>
-              Why Tailwind is a Designer's Superpower
+              Designer-First Tailwind: Your Visual Playground
             </span>
           </div>
           <p className={`text-xs leading-relaxed mb-3 ${backdrop.isLight ? 'text-slate-700' : 'text-slate-300'}`}>
-            Tailwind is <strong>not about writing code</strong> — it is a <strong>strict system of design constraints</strong>.
-            Instead of picking arbitrary pixel values (like 17px padding or #1a73e8), the designer and developer share the exact same 4px token ladder.
+            Tailwind is a <strong>design token language</strong> that the entire team speaks fluently.
+            Your Figma variables (colors, spacing, radius, typography) map directly to CSS utility classes,
+            making design-dev collaboration seamless and drift-free.
           </p>
           <ul className={`text-xs pl-4 m-0 flex flex-col gap-1.5 ${backdrop.isLight ? 'text-slate-600' : 'text-slate-400'}`}>
-            <li><strong>Zero Handoff Drift:</strong> Figma variables (Colors, Spacing, Radius) map 1:1 to Tailwind classes.</li>
-            <li><strong>Theme Invariance:</strong> Using <code className="text-cyan-400">bg-card</code> instead of hex colors ensures dark/light modes never break.</li>
-            <li><strong>Design in Constraints:</strong> Fixed spacing scale eliminates visual clutter and inconsistent vertical rhythm.</li>
+            <li><strong>Figma → Code, No Friction:</strong> Variables sync 1:1. A color token in Figma is the same token in production.</li>
+            <li><strong>Theme-Agnostic Design:</strong> Using semantic names like <code className="text-cyan-400">bg-card</code> means your palette works across dark/light/cyber/glass out of the box.</li>
+            <li><strong>Constraint-Driven Creativity:</strong> The 4px spacing scale and predefined radius tokens become your creative toolkit, not limitations.</li>
           </ul>
         </div>
 
-        {/* Card B: Biblical Tutorials & Reference Library */}
+        {/* Card B: Practical Design Resources */}
         <div style={backdrop.stageCardStyle} className="p-6 rounded-2xl">
           <div className="flex items-center gap-2 mb-3">
             <BookOpen className="size-4 text-purple-400" />
             <span className={`text-sm font-bold ${backdrop.isLight ? 'text-slate-900' : 'text-slate-100'}`}>
-              Biblical Tutorials & Reference Library
+              Designer Resources & Tutorials
             </span>
           </div>
 
@@ -164,28 +165,42 @@ export function TailwindWorkshop({
             <div className={`flex justify-between items-start pb-2 border-b ${backdrop.isLight ? 'border-slate-300' : 'border-border/30'}`}>
               <div>
                 <span className={`text-xs font-bold block ${backdrop.isLight ? 'text-slate-900' : 'text-slate-100'}`}>
-                  📖 Refactoring UI (Book)
+                  🎨 Figma to Tailwind: Full Mapping Guide
                 </span>
                 <span className={`text-[11px] block ${backdrop.isLight ? 'text-slate-600' : 'text-slate-400'}`}>
-                  By Adam Wathan & Steve Schoger (Tailwind Labs). The #1 UI bible for digital products.
+                  Complete token bridge: Auto Layout → flex/gap, Fills → bg-/border-, Strokes → ring-/outline-.
                 </span>
               </div>
-              <a href="https://www.refactoringui.com" target="_blank" rel="noopener noreferrer" className="text-xs text-cyan-400 inline-flex items-center gap-1 hover:underline">
-                refactoringui.com <ExternalLink className="size-2.5" />
+              <a href="https://www.figma.com/community/file/958383439802195085" target="_blank" rel="noopener noreferrer" className="text-xs text-cyan-400 inline-flex items-center gap-1 hover:underline">
+                Figma Community <ExternalLink className="size-2.5" />
               </a>
             </div>
 
             <div className={`flex justify-between items-start pb-2 border-b ${backdrop.isLight ? 'border-slate-300' : 'border-border/30'}`}>
               <div>
                 <span className={`text-xs font-bold block ${backdrop.isLight ? 'text-slate-900' : 'text-slate-100'}`}>
-                  📺 Steve Schoger UI Screencasts
+                  🖼️ shadcn/ui Figma Kit
                 </span>
                 <span className={`text-[11px] block ${backdrop.isLight ? 'text-slate-600' : 'text-slate-400'}`}>
-                  Masterclass on fewer borders, hierarchy balance, and spacing rhythm.
+                  Official Figma components matching our shadcn/ui primitives exactly.
                 </span>
               </div>
-              <a href="https://www.youtube.com/steveschoger" target="_blank" rel="noopener noreferrer" className="text-xs text-purple-400 inline-flex items-center gap-1 hover:underline">
-                YouTube <ExternalLink className="size-2.5" />
+              <a href="https://ui.shadcn.com/figma" target="_blank" rel="noopener noreferrer" className="text-xs text-purple-400 inline-flex items-center gap-1 hover:underline">
+                ui.shadcn.com <ExternalLink className="size-2.5" />
+              </a>
+            </div>
+
+            <div className={`flex justify-between items-start pb-2 border-b ${backdrop.isLight ? 'border-slate-300' : 'border-border/30'}`}>
+              <div>
+                <span className={`text-xs font-bold block ${backdrop.isLight ? 'text-slate-900' : 'text-slate-100'}`}>
+                  📐 Spacing & Hierarchy Masterclass
+                </span>
+                <span className={`text-[11px] block ${backdrop.isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                  Fewer borders, smarter hierarchy, consistent rhythm. Professional UI design patterns.
+                </span>
+              </div>
+              <a href="https://www.youtube.com/@DesignCourse" target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-400 inline-flex items-center gap-1 hover:underline">
+                DesignCourse <ExternalLink className="size-2.5" />
               </a>
             </div>
 
@@ -198,7 +213,7 @@ export function TailwindWorkshop({
                   Real-time class experimentation sandbox and @theme engine specs.
                 </span>
               </div>
-              <a href="https://play.tailwindcss.com" target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-400 inline-flex items-center gap-1 hover:underline">
+              <a href="https://play.tailwindcss.com" target="_blank" rel="noopener noreferrer" className="text-xs text-amber-400 inline-flex items-center gap-1 hover:underline">
                 play.tailwindcss.com <ExternalLink className="size-2.5" />
               </a>
             </div>

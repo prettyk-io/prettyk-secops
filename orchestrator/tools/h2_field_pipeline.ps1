@@ -16,7 +16,7 @@ param(
     )]
     [string]$Stage = "all",
 
-    [string]$Manifest = "",
+    [string]$Wired = "",
 
     [string]$RunDir = "",
 
@@ -31,10 +31,10 @@ Set-Location $Root
 $Py = Join-Path $Root ".venv\Scripts\python.exe"
 $Main = Join-Path $Root "orchestrator\main.py"
 $DefaultFixture = Join-Path $Root "docs\acceptance\fixtures\operator_juice_editor.sanitized.json"
-$IdleManifest = Join-Path $Root "orchestrator\manifests\webswing_manual_idle.json"
+$IdleWired = Join-Path $Root "orchestrator\wired\webswing_manual_idle.json"
 $Schema = Join-Path $Root "docs\run_summary.schema.json"
 
-if (-not $Manifest) { $Manifest = $DefaultFixture }
+if (-not $Wired) { $Wired = $DefaultFixture }
 if (-not $RunDir) {
     $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
     $RunDir = Join-Path $Root "reports\h2-runs\$stamp"
@@ -69,8 +69,8 @@ function Invoke-Prep {
     if (-not $sha) { $sha = "?" }
     Write-Host "tip=$sha"
     Write-Host "RunDir=$RunDir"
-    Write-Host "Manifest=$Manifest"
-    @{ tip = $sha; run_dir = "$RunDir"; manifest = "$Manifest"; started = (Get-Date).ToString("o") } |
+    Write-Host "Wired=$Wired"
+    @{ tip = $sha; run_dir = "$RunDir"; manifest = "$Wired"; started = (Get-Date).ToString("o") } |
         ConvertTo-Json |
         Set-Content -Encoding utf8 (Join-Path $RunDir "pipeline_meta.json")
 }
@@ -127,8 +127,8 @@ function Invoke-Health {
 function Invoke-Validate {
     Write-Step "validate-only (T-juice-IDE)"
     Assert-Py
-    if (-not (Test-Path $Manifest)) { throw "manifest missing: $Manifest" }
-    & $Py $Main --manifest $Manifest --validate-only
+    if (-not (Test-Path $Wired)) { throw "wired missing: $Wired" }
+    & $Py $Main --wired $Wired --validate-only
     if ($LASTEXITCODE -ne 0) {
         throw "validate-only exit=$LASTEXITCODE (expected 0)"
     }
@@ -138,7 +138,7 @@ function Invoke-Validate {
 function Invoke-Run {
     Write-Step "full run -> KDT_RUN_DIR (P-09 / teardown)"
     Assert-Py
-    if (-not (Test-Path $Manifest)) { throw "manifest missing: $Manifest" }
+    if (-not (Test-Path $Wired)) { throw "wired missing: $Wired" }
     New-Item -ItemType Directory -Force -Path $RunDir | Out-Null
     $env:KDT_RUN_DIR = $RunDir
     if (-not $env:KDT_WEBDRIVER_MODE) {
@@ -146,7 +146,7 @@ function Invoke-Run {
     }
     Write-Host "KDT_RUN_DIR=$env:KDT_RUN_DIR"
     Write-Host "KDT_WEBDRIVER_MODE=$env:KDT_WEBDRIVER_MODE"
-    & $Py $Main --manifest $Manifest
+    & $Py $Main --wired $Wired
     $code = $LASTEXITCODE
     Set-Content -Encoding utf8 (Join-Path $RunDir "process_exit.txt") "$code"
     Write-Host "process exit_code=$code (0=ok, 2=gate High often normal for Juice)"
@@ -181,7 +181,7 @@ function Invoke-Assert {
     }
     Write-Host "gate=$($json.gate)  exit_code=$($json.exit_code)  zap_mode=$($json.zap_mode)"
     if (Test-Path $Schema) {
-        Write-Host "schema ref: $Schema (full jsonschema in CI; here required fields)"
+        Write-Host "schema ref: $Schema"
     }
     $zapDir = Join-Path $Root "reports\scanner-results"
     if (Test-Path $zapDir) {
@@ -194,17 +194,17 @@ function Invoke-Assert {
 }
 
 function Invoke-P10 {
-    Write-Step "P-10: Webswing up + idle manifest (hold)"
+    Write-Step "P-10: Webswing up + idle wired (hold)"
     Assert-Py
     $up = Join-Path $Root "services\zap-webswing-up.ps1"
     if (-not (Test-Path $up)) { throw "missing $up" }
     & powershell -NoProfile -ExecutionPolicy Bypass -File $up
     if ($LASTEXITCODE -ne 0) { throw "zap-webswing-up failed" }
-    if (-not (Test-Path $IdleManifest)) { throw "missing $IdleManifest" }
+    if (-not (Test-Path $IdleWired)) { throw "missing $IdleWired" }
     Write-Host "idle run (empty scenarios -> hold). Stop with Ctrl+C or manifest timeout."
-    Write-Host "manifest: $IdleManifest"
+    Write-Host "wired: $IdleWired"
     $env:KDT_RUN_DIR = $RunDir
-    & $Py $Main --manifest $IdleManifest
+    & $Py $Main --wired $IdleWired
     Write-Host "P-10 process exit=$LASTEXITCODE (record hold in journal 05)"
 }
 
@@ -230,7 +230,7 @@ function Invoke-Journal {
         "| Tip SHA | $sha |",
         "| FE URL | http://127.0.0.1:5173 |",
         "| Playground health | |",
-        "| Manifest | $Manifest |",
+        "| Manifest | $Wired |",
         "| RunDir | $RunDir |",
         "| validate-only | |",
         "| E1..E6 | |",

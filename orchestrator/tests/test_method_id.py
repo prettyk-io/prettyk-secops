@@ -56,8 +56,9 @@ def test_root_promotes_domain_essentials():
 
 
 def test_facade_gates():
-    assert set(facade_names()) == {"HTTP", "ZAP", "Драйвер", "Сессия"}
+    assert set(facade_names()) == {"HTTP", "Сканер", "Драйвер", "Сессия"}
     assert lookup_facade_method("ZAP", "Сканер") == ("zap", "spider_scan")
+    assert lookup_facade_method("Сканер", "Сканер") == ("zap", "spider_scan")
     assert lookup_facade_method("ZAP", "Паук") is None
     assert lookup_facade_method("ZAP", "ПолучитьАлерты") == ("zap", "get_alerts")
     assert lookup_facade_method("ZAP", "Отчёт") == ("zap", "generate_report")

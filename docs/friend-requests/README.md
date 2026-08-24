@@ -35,10 +35,24 @@
 
 ## Текущий реестр заявок (19 авг 2026)
 
-### LANDED — код сдан, на 2FA-промоцию в хаб
+### Satellite & Service-needs (2FA принят — инструментарий команды)
+
+DESIGN-WORKBENCH (`sanctuary/DESIGN-WORKBENCH.md`)
+
+### To Check — на проверке / приёмке
 
 | Файл | Тезис | Lane |
 |---|---|---|
+| [`DEFECTDOJO-AUTO-SYNC.md`](DEFECTDOJO-AUTO-SYNC.md) | Автосинхронизация Dojo | `to check` |
+| [`DEFECTDOJO-BIDIRECTIONAL-SYNC.md`](DEFECTDOJO-BIDIRECTIONAL-SYNC.md) | Двусторонняя синхронизация Dojo | `to check` |
+| [`LAB-INTRUDER-PRO.md`](LAB-INTRUDER-PRO.md) | Станция атак /lab (Burp Killer) | `to check` |
+| [`INTRUDER-PRO-ADVANCED-ATTACKS.md`](INTRUDER-PRO-ADVANCED-ATTACKS.md) | 4 режима атак, Grep Match/Extract | `to check` |
+| [`LAB-ATTACK-SCENARIO-ENGINE.md`](LAB-ATTACK-SCENARIO-ENGINE.md) | Движок сценариев атак /lab | `to check` |
+| [`AUTH-CHAIN-VAULT.md`](AUTH-CHAIN-VAULT.md) | Pre-flight auth, vault токенов, ZAP Replacer | `to check` |
+| [`AUTH-VAULT-CHAIN-INJECTOR.md`](AUTH-VAULT-CHAIN-INJECTOR.md) | Инжектор токенов (Auth Vault & Chain) | `to check` |
+| [`CORPUS-DISCOVERY-ZERO-TOUCH.md`](CORPUS-DISCOVERY-ZERO-TOUCH.md) | Zero-touch корпус discovery | `to check` |
+| [`DISCOVERY-ENGINE-AX-COMPILER.md`](DISCOVERY-ENGINE-AX-COMPILER.md) | Автореверс форм через CDP AX-Tree в PrettyK wired.json (E1–E3) | `to check` |
+| [`RETENTION-AND-CLEANUP.md`](RETENTION-AND-CLEANUP.md) | Управление диском и очистка (бэкенд готов, старый antd-UI убит → ждёт ADM-V2) | `parked / adm-v2` |
 | [`STUDIO-CORE-REDESIGN.md`](STUDIO-CORE-REDESIGN.md) | Реорганизация Студии (Launchpad/Action Hub) | `ready` → LANDED |
 | [`STUDIO-EDITOR-SPLIT-ARCHITECTURE.md`](STUDIO-EDITOR-SPLIT-ARCHITECTURE.md) | Сплит Студия↔Редактор, выпил WireK | `ready` → LANDED |
 | [`STUDIO-GRAPH-EXPLORER.md`](STUDIO-GRAPH-EXPLORER.md) | Граф-эксплорер сущностей (Node Graph) | `ready` → LANDED |
@@ -49,20 +63,10 @@
 | [`EDITOR-PREMIUM-STUDIO.md`](EDITOR-PREMIUM-STUDIO.md) | Премиализация Studio/Editor | `ready` |
 | [`VN-POL-STUDIO-LADDER.md`](VN-POL-STUDIO-LADDER.md) | Полировка лесенки Студии | `ready` |
 | [`VN-IMPORT-EXPORT-AND-POLISH.md`](VN-IMPORT-EXPORT-AND-POLISH.md) | Импорт/экспорт + полиш | `ready` |
-| [`LAB-INTRUDER-PRO.md`](LAB-INTRUDER-PRO.md) | Станция атак /lab (Burp Killer) | `ready` → LANDED |
-| [`INTRUDER-PRO-ADVANCED-ATTACKS.md`](INTRUDER-PRO-ADVANCED-ATTACKS.md) | 4 режима атак, Grep Match/Extract | `ready` → LANDED |
-| [`LAB-ATTACK-SCENARIO-ENGINE.md`](LAB-ATTACK-SCENARIO-ENGINE.md) | Движок сценариев атак /lab | `ready` → LANDED |
 | [`LAB-STATION-UX.md`](LAB-STATION-UX.md) | Пересборка UI станции атак (полная архитектура) | `ready` |
-| [`AUTH-CHAIN-VAULT.md`](AUTH-CHAIN-VAULT.md) | Pre-flight auth, vault токенов, ZAP Replacer | `ready` → LANDED |
-| [`AUTH-VAULT-CHAIN-INJECTOR.md`](AUTH-VAULT-CHAIN-INJECTOR.md) | Инжектор токенов (Auth Vault & Chain) | `ready` → LANDED |
 | [`AUTH_ROLES.md`](AUTH_ROLES.md) | Ролевая модель | `ready` |
-| [`DEFECTDOJO-AUTO-SYNC.md`](DEFECTDOJO-AUTO-SYNC.md) | Автосинхронизация Dojo | `ready` → LANDED |
-| [`DEFECTDOJO-BIDIRECTIONAL-SYNC.md`](DEFECTDOJO-BIDIRECTIONAL-SYNC.md) | Двусторонняя синхронизация Dojo | `ready` → LANDED |
-| [`RETENTION-AND-CLEANUP.md`](RETENTION-AND-CLEANUP.md) | Управление диском и очистка | `ready` → LANDED |
 | [`BLANK-INLINE-PREVIEW.md`](BLANK-INLINE-PREVIEW.md) | Inline-просмотр акта/бланка | `ready` → LANDED |
 | [`ALLURE3-SECOPS-BRAND-AND-INSTANCE.md`](ALLURE3-SECOPS-BRAND-AND-INSTANCE.md) | Allure3 бренд + инстанс | `ready` |
-| [`CORPUS-DISCOVERY-ZERO-TOUCH.md`](CORPUS-DISCOVERY-ZERO-TOUCH.md) | Zero-touch корпус discovery | `ready` → LANDED |
-| [`DISCOVERY-ENGINE-AX-COMPILER.md`](DISCOVERY-ENGINE-AX-COMPILER.md) | Автореверс форм через CDP AX-Tree в PrettyK wired.json (E1–E3) | `ready` → LANDED |
 | [`I18N-LANGUAGE-PACK.md`](I18N-LANGUAGE-PACK.md) | Двуязычный интерфейс (RU / EN) и Language Pack | `ready` |
 | [`QWEN3-ALERT-ASSISTANT.md`](QWEN3-ALERT-ASSISTANT.md) | Локальная AI-модель Qwen3-1.7B для анализа алертов | `ready` |
 | [`MONACO-DAST-INTELLIGENCE.md`](MONACO-DAST-INTELLIGENCE.md) | Умный Monaco-редактор для DAST (4 фазы) | `ready` |

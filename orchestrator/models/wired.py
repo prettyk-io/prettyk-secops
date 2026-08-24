@@ -142,7 +142,7 @@ class Infrastructure(BaseModel):
         default_factory=list,
         title="Заблокированные URL",
     )
-    zap_mode: Literal["demon", "webswing"] = Field("demon", title="Режим работы ZAP")
+    zap_mode: Literal["demon"] = Field("demon", title="Режим работы ZAP")
     browser_type: Literal["chrome", "chrome-headless", "firefox", "firefox-headless"] = Field(
         "chrome", title="Браузер-исполнитель"
     )
@@ -154,10 +154,7 @@ class Infrastructure(BaseModel):
     )
     zap_work_timeout_min: Optional[int] = Field(
         60, ge=10, le=180, title="Таймаут работы ZAP (от 10 до 180 минут)"
-    )
-    webswing_session_timeout_min: Optional[int] = Field(
-        None, ge=30, le=180, title="Длительность сессии"
-    )
+)
     idle_timeout_min: Optional[int] = Field(
         10, ge=5, le=30, title="Таймаут бездействия (от 5 до 30 минут)"
     )
@@ -172,17 +169,10 @@ class Infrastructure(BaseModel):
     )
 
     def session_timeout_min(self) -> int:
-        """Сколько живёт прогон. GUI = webswing_session; демон = zap_work_timeout."""
-        session = self.webswing_session_timeout_min
+        """Сколько живёт прогон — всегда zap_work_timeout."""
         daemon = self.zap_work_timeout_min
-        daemon_from_form = "zap_work_timeout_min" in self.model_fields_set
-
-        if (self.zap_mode == "webswing" or not daemon_from_form) and session is not None:
-            return int(session)
         if daemon is not None:
             return int(daemon)
-        if session is not None:
-            return int(session)
         return 60
 
 

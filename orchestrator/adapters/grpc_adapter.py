@@ -23,18 +23,18 @@ logger = logging.getLogger("orchestrator")
 class GrpcAdapter(BaseAdapter):
     def __init__(self) -> None:
         super().__init__()
-        self._run_manifest = None
-        self._manifest_dir: Optional[str] = None
+        self._run_wired = None
+        self._wired_dir: Optional[str] = None
         self._proxy_url: Optional[str] = None
         self._last_services: Dict[str, Any] = {}
         self._last_unary: Dict[str, Any] = {}
 
-    def bind_run_wired(self, wired, manifest_dir=None) -> None:
-        self._run_manifest = wired
-        if manifest_dir is not None:
-            self._manifest_dir = str(manifest_dir)
-        elif getattr(self, "_manifest_dir", None) is None:
-            self._manifest_dir = None
+    def bind_run_wired(self, wired, wired_dir=None) -> None:
+        self._run_wired = wired
+        if wired_dir is not None:
+            self._wired_dir = str(wired_dir)
+        elif getattr(self, "_wired_dir", None) is None:
+            self._wired_dir = None
 
     def set_proxy(self, proxy_url: Optional[str] = None) -> bool:
         """HTTP CONNECT proxy (как HttpAdapter) — для попадания трафика в ZAP."""
@@ -48,9 +48,9 @@ class GrpcAdapter(BaseAdapter):
         """Список сервисов gRPC по id модуля. MethodId: СписокСервисовgRPC."""
         reject_absolute_host_arg(str(module_id or ""), label="аргумент")
         resolved = resolve_grpc_module(
-            self._run_manifest,
+            self._run_wired,
             str(module_id or ""),
-            manifest_dir=self._manifest_dir,
+            wired_dir=self._wired_dir,
         )
         notes = list(resolved.notes)
         if not resolved.from_module or not resolved.proto_path:
@@ -105,9 +105,9 @@ class GrpcAdapter(BaseAdapter):
         reject_absolute_host_arg(mid, label="идентификатор модуля")
         reject_absolute_host_arg(meth, label="метод")
         resolved = resolve_grpc_module(
-            self._run_manifest,
+            self._run_wired,
             mid,
-            manifest_dir=self._manifest_dir,
+            wired_dir=self._wired_dir,
         )
         notes = list(resolved.notes)
         if not resolved.from_module or not resolved.host:

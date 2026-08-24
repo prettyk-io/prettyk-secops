@@ -8,6 +8,7 @@
   POST /api/validate/data-script      {"script": "..."}
   POST /api/run/start                 {"wired": {...}, "resource_contents"?: {as: text}, "session_name"?: "...", "stub"?: true, "stub_opts"?: {...}}
   POST /api/run/stop
+  POST /api/run/step                  {"action":"Type","strategy":"label","strategy_value":"Email","payload":"$user_email"}
   GET  /api/run/status
   GET  /api/checks                    NAV-API registry (reports/live/checks_registry.json)
   PUT  /api/checks                    {"version": 1, "items": [...]}
@@ -257,6 +258,10 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/run/status":
             self._json(200, get_run_status())
+            return
+        if path == "/api/browser/status":
+            from browser.browser_service import browser_status
+            self._json(200, browser_status())
             return
         if path == "/api/checks":
             self._json(200, load_checks_registry())
@@ -676,6 +681,95 @@ class Handler(BaseHTTPRequestHandler):
             return
         self._json(200, stopped)
 
+    def _post_run_step(self, body: dict) -> None:
+        """Run a single scenario step for Step Debugger (▶).
+
+        Accepts: {action, strategy, strategy_value, payload, deck_id?, step_id?}
+        Builds a DSL constructor line, validates it, and returns the result.
+        Real Playwright execution happens via controller._run_step when wired
+        to a live controller session.
+        """
+        action = str(body.get("action", "")).strip()
+        strategy = str(body.get("strategy", "css")).strip()
+        strategy_value = str(body.get("strategy_value", "")).strip()
+        payload = str(body.get("payload", "")).strip()
+
+        if not action:
+            self._json(400, {"ok": False, "error": "action required"})
+            return
+
+        # Build DSL constructor
+        if action == "Open":
+            constructor = f"Open {payload or 'about:blank'}"
+        elif action == "Wait":
+            constructor = f"Wait {payload or '1000'}"
+        elif action == "Spider":
+            constructor = "SpiderScan"
+        elif action == "ActiveScan":
+            constructor = "ActiveScan"
+        elif action == "FuzzWave":
+            constructor = f"FuzzWave {payload or 'corpus'}"
+        elif action == "Let":
+            constructor = f"Let {strategy_value or 'var'} = {payload or '\"\"'}"
+        elif action == "Secret":
+            constructor = f"Secret {strategy_value or 'key'} {payload or '\"\"'}"
+        elif action == "GenerateEmail":
+            constructor = "GenerateEmail"
+        elif action == "GeneratePhone":
+            constructor = "GeneratePhone"
+        else:
+            strategy_part = f'{strategy} "{strategy_value}"' if strategy_value else strategy
+            constructor = f"{action} {strategy_part} {payload}".strip()
+
+        try:
+            from core.constructor_validate import validate_constructor
+            diags = validate_constructor(constructor)
+            if diags:
+                self._json(200, {
+                    "ok": False,
+                    "constructor": constructor,
+                    "diagnostics": diags,
+                    "action": action,
+                })
+                return
+            self._json(200, {
+                "ok": True,
+                "constructor": constructor,
+                "action": action,
+                "step_id": body.get("step_id"),
+            })
+        except Exception as e:
+            self._json(500, {"ok": False, "error": f"{type(e).__name__}: {e}"})
+
+    def _post_browser_navigate(self, body: dict) -> None:
+        from browser.browser_service import browser_navigate
+        url = str(body.get("url", "")).strip()
+        if not url:
+            self._json(400, {"ok": False, "error": "url required"})
+            return
+        self._json(200, browser_navigate(url))
+
+    def _post_browser_screenshot(self, body: dict) -> None:
+        from browser.browser_service import browser_screenshot
+        self._json(200, browser_screenshot())
+
+    def _post_browser_highlight(self, body: dict) -> None:
+        from browser.browser_service import browser_highlight
+        selector = str(body.get("selector", "")).strip()
+        strategy = str(body.get("strategy", "css")).strip()
+        if not selector:
+            self._json(400, {"ok": False, "error": "selector required"})
+            return
+        self._json(200, browser_highlight(selector, strategy))
+
+    def _post_browser_eval(self, body: dict) -> None:
+        from browser.browser_service import browser_eval
+        expression = str(body.get("expression", "")).strip()
+        if not expression:
+            self._json(400, {"ok": False, "error": "expression required"})
+            return
+        self._json(200, browser_eval(expression))
+
     def _post_monitor_token(self, body: dict) -> None:
         """MON-13: выдать короткоживущий bind-токен для Monitor ?run_id=.
 
@@ -743,6 +837,11 @@ class Handler(BaseHTTPRequestHandler):
             "/api/lab/chain/dry-run-pre": self._post_lab_chain_dry_run_pre,
             "/api/lab/chain/value-pack": self._post_lab_chain_value_pack,
             "/api/run/start": self._post_run_start,
+            "/api/run/step": self._post_run_step,
+            "/api/browser/navigate": self._post_browser_navigate,
+            "/api/browser/screenshot": self._post_browser_screenshot,
+            "/api/browser/highlight": self._post_browser_highlight,
+            "/api/browser/eval": self._post_browser_eval,
             "/api/monitor/token": self._post_monitor_token,
         }
         handler = routes.get(path)
@@ -767,7 +866,7 @@ class Handler(BaseHTTPRequestHandler):
 def main() -> None:
     server = ThreadingHTTPServer((HOST, PORT), Handler)
     print(
-        f"KDT editor API http://{HOST}:{PORT}  "
+        f"PrettyK playground http://{HOST}:{PORT}  "
         f"(eval + validate + /api/run + /api/checks)",
         flush=True,
     )

@@ -1,0 +1,66 @@
+# Локальный ZAP в Docker (переходный вариант, пока нет нативного zap.bat / zap.sh).
+# В CI пайпе ZAP поднимается бинарником отдельно — этот файл там не используется.
+#
+#   docker compose -f services/docker-compose.zap.yml up -d
+#
+# Плагины: ../zap/plugins → /zap/plugins
+# Порты:
+#   8080 — main (для zapv2 / оркестратора)
+#   8099 — публикуем под browser Local Server (оркестратор поднимает через addLocalServer)
+
+services:
+  zap:
+    image: zaproxy/zap-stable:2.17.0
+    container_name: zap
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "8099:8099"
+    volumes:
+      - ../zap/plugins:/zap/plugins:ro
+      # IMP-HAR: host reports/runs → ZAP importHar (harFile path rewrite in zap_adapter)
+      - ../reports/runs:/zap/wrk/kdt-runs
+    networks:
+      - kdt-net
+    # Main слушатель — как в официальном docker guide (-port 8080).
+    # Browser proxy (8099) поднимает оркестратор: network.addLocalServer.
+    # https://www.zaproxy.org/docs/docker/about/
+    # https://www.zaproxy.org/docs/desktop/addons/network/options/localservers/
+    command:
+      - zap.sh
+      - -daemon
+      - -port
+      - "8080"
+      - -host
+      - "0.0.0.0"
+      - -config
+      - api.disablekey=true
+      - -config
+      - api.addrs.addr.name=.*
+      - -config
+      - api.addrs.addr.regex=true
+      - -config
+      - checkForUpdates=false
+      - -config
+      - updateAddons=false
+      - -config
+      - checkforupdates.dayLastChecked=never
+      - -config
+      - checkforupdates.reportRelease=false
+      - -config
+      - telemetry.reportError=false
+      - -config
+      - telemetry.reportUsage=false
+      - -config
+      - telemetry.allowTelemetry=false
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/JSON/core/view/version/"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 40s
+
+networks:
+  kdt-net:
+    external: true
+    name: kdt-net

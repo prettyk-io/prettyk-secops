@@ -41,7 +41,7 @@ def test_suite_import_coerces_string_path():
     assert suites.imports[0].kind == "data_file"
 
 
-def test_export_txt_import_relative_to_manifest(tmp_path: Path):
+def test_export_txt_import_relative_to_Wired(tmp_path: Path):
     txt = tmp_path / "pages.txt"
     txt.write_text("/#/login\n# c\n/#/register\n", encoding="utf-8")
     ctrl = _ctrl(
@@ -110,7 +110,7 @@ def test_export_rejects_non_txt(tmp_path: Path):
         ctrl._export_suite_imports(DataStream())
 
 
-def test_manifest_loads_string_imports(tmp_path: Path):
+def test_wired_loads_string_imports(tmp_path: Path):
     data = {
         "meta": {"assessment_purpose": "scheduled"},
         "infrastructure": {

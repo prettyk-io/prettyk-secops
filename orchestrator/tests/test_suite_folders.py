@@ -8,11 +8,11 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from models.wired import TestSuites as ManifestTestSuites
+from models.wired import TestSuites as TestSuites
 
 
 def test_editor_folders_are_authoring_metadata_on_flat_suites():
-    suites = ManifestTestSuites.model_validate(
+    suites = TestSuites.model_validate(
         {
             "pages": {"login": {"title": "login", "path": "", "constructor": ""}},
             "scenarios": [{"scenario_name": "Вход", "description": "Smoke", "steps": []}],

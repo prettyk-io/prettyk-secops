@@ -13,19 +13,19 @@ import pytest
 from models.wired import Wired
 from core.controller import Controller
 
-def load_manifest(wired_path):
+def load_wired(wired_path):
     with open(wired_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
-    from core.wired_secretref import prepare_manifest_data
+    from core.wired_secretref import prepare_wired_data
 
-    data, secret_seeds = prepare_manifest_data(data)
+    data, secret_seeds = prepare_wired_data(data)
     load_Wired.last_secret_seeds = secret_seeds  # type: ignore[attr-defined]
     return Wired.model_validate(data)
 
 @allure.epic("Security Tests")
 @allure.feature("Scanner + Selenium")
-def test_manifest(wired_path):
-    wired = load_manifest(wired_path)
+def test_wired(wired_path):
+    wired = load_wired(wired_path)
 
     seeds = getattr(load_Wired, "last_secret_seeds", []) or []
     controller = Controller(Wired, secret_seeds=seeds)
@@ -52,4 +52,4 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python wired_runner.py <Wired.json>")
         sys.exit(1)
-    test_manifest(sys.argv[1])
+    test_wired(sys.argv[1])

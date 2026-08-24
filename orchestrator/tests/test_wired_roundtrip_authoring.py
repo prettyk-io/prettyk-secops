@@ -25,9 +25,9 @@ def _run_validate(wired: Path) -> subprocess.CompletedProcess:
 
 
 def test_authoring_roundtrip_fixture_zero_issues():
-    from core.wired_validate import validate_manifest_file
+    from core.wired_validate import validate_wired_file
 
-    issues, wired = validate_manifest_file(AUTHORING_OK)
+    issues, wired = validate_wired_file(AUTHORING_OK)
     assert issues == [], issues
     assert wired is not None
 

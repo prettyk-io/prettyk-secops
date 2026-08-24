@@ -1,0 +1,242 @@
+# Долгоживущие сервисы KDT (данные / пульты).
+# Эфемерные (ZAP в пайпе) сюда не входят.
+#
+# Запуск из корня репозитория:
+#   docker compose -f services/docker-compose.yml up -d
+# Или из этой папки:
+#   docker compose up -d
+#
+# Порты:
+#   4444 — Selenium Grid (WebDriver + UI)
+#   7900 — noVNC Chrome node
+#   7901 — noVNC Firefox node
+#   5050 — allure3-secops (Allure 3 Awesome: dark/ru/SecOps logo, канон)
+#   5051 — allure-light-secops (Allure 2 legacy, запасной контур)
+#   8766 — LLM server (llama.cpp Qwen3-1.7B Q5_K_M, CPU inference)
+#   EXP-01: KDT_AI_ASSISTANT_ENABLED=0 toggles AI off for baseline runs
+#
+# UI: открывать http://127.0.0.1:4444/ или http://127.0.0.1:4444/ui/
+#     (без завершающего слэша /ui — blank page: index.js 404, SeleniumHQ#13757)
+# Live view: noVNC http://127.0.0.1:7900/?autoconnect=1&resize=scale (не вкладка
+# session в Grid UI). Пустой desktop до сессии или при chrome-headless — нормально.
+#
+# Тома артефактов — ../reports (совпадает с orchestrator/utils/paths.py).
+# Docker socket хоста не монтируется (в отличие от бывшего Selenoid).
+
+include:
+  - docker-compose.defectdojo.yml
+  - docker-compose.sonarqube.yml
+  - docker-compose.target.yml
+  - docker-compose.zap.yml
+  - docker-compose.api-lab.yml
+
+services:
+  selenium-hub:
+    image: selenium/hub:4.34.0-20250717
+    container_name: selenium-hub
+    restart: unless-stopped
+    ports:
+      - "4444:4444"
+    environment:
+      - SE_SESSION_TIMEOUT=600
+      # Не отклонять неизвестные caps (напр. устаревшие selenoid:options от KDT).
+      - SE_REJECT_UNSUPPORTED_CAPS=false
+
+  chrome:
+    image: selenium/node-chrome:4.34.0-20250717
+    container_name: selenium-chrome
+    restart: unless-stopped
+    shm_size: 2gb
+    depends_on:
+      - selenium-hub
+    ports:
+      - "7900:7900"
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_SESSION_TIMEOUT=600
+      # Публичный URL Grid с хоста — корректные ссылки в UI / session info.
+      - SE_NODE_GRID_URL=http://127.0.0.1:4444
+      - SE_VNC_NO_PASSWORD=1
+      - SE_SCREEN_WIDTH=1920
+      - SE_SCREEN_HEIGHT=1080
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  firefox:
+    image: selenium/node-firefox:4.34.0-20250717
+    container_name: selenium-firefox
+    restart: unless-stopped
+    shm_size: 2gb
+    depends_on:
+      - selenium-hub
+    ports:
+      - "7901:7900"
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_SESSION_TIMEOUT=600
+      - SE_NODE_GRID_URL=http://127.0.0.1:4444
+      - SE_VNC_NO_PASSWORD=1
+      - SE_SCREEN_WIDTH=1920
+      - SE_SCREEN_HEIGHT=1080
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # Запись видео Chrome (1:1 к node). Клиент: se:recordVideo (по умолчанию вкл.;
+  # выкл. — KDT_SELENIUM_VIDEO=0). Файлы → ../reports/video.
+  chrome-video:
+    image: selenium/video:ffmpeg-7.1-20250717
+    container_name: selenium-chrome-video
+    restart: unless-stopped
+    depends_on:
+      - chrome
+    environment:
+      DISPLAY_CONTAINER_NAME: selenium-chrome
+      SE_NODE_GRID_URL: http://selenium-hub:4444
+      SE_VIDEO_FILE_NAME: auto
+    volumes:
+      - ../reports/video:/videos
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  allure-light-secops:
+    build:
+      context: ./allure-light-secops
+    image: kdt-allure-light-secops:local
+    container_name: allure-light-secops
+    restart: unless-stopped
+    ports:
+      - "5051:5051"
+    volumes:
+      - ../reports/allure-results:/app/allure-results
+      - ../reports/allure-report:/app/default-reports
+    environment:
+      - KEEP_HISTORY=1
+      - KEEP_HISTORY_LATEST=20
+      - ALLURE_RESULTS_DIR=/app/allure-results
+      - ALLURE_REPORT_DIR=/app/default-reports
+      - ALLURE_LANG=ru
+
+  # Allure 3 Awesome (dark + SecOps logo + ru). Дефолт lab — канон :5050.
+  allure3-secops:
+    build:
+      context: ./allure3-secops
+    image: kdt-allure3-secops:local
+    container_name: allure3-secops
+    restart: unless-stopped
+    ports:
+      - "5050:5050"
+    volumes:
+      - ../reports/allure-results:/app/allure-results
+      - ../reports/allure3-report:/app/default-reports
+      - ../reports/live:/app/runs-index:ro
+      - ./allure-brand:/app/brand:ro
+    environment:
+      - KEEP_HISTORY=1
+      - ALLURE_RESULTS_DIR=/app/allure-results
+      - ALLURE_REPORT_DIR=/app/default-reports
+      - RUNS_INDEX_DIR=/app/runs-index
+      - ALLURE_BIN=allure
+      - ALLURE_CONFIG=/app/allurerc.mjs
+      - ALLURE_LOGO=/app/brand/logo.svg
+      - ALLURE_REPORT_NAME=Проверка KDT
+      - ALLURE_THEME=dark
+      - ALLURE_LANG=ru
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:5050/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  llama-server:
+    image: ghcr.io/ggml-org/llama.cpp:server
+    container_name: llama-server
+    restart: unless-stopped
+    # KDT_AI_ASSISTANT_ENABLED=0 → skip LLM; set on host before compose up
+    volumes:
+      - ./llm-model/qwen3-1.7b-q5_k_m.gguf:/models/qwen3-1.7b-q5_k_m.gguf:ro
+    command:
+      - -m
+      - /models/qwen3-1.7b-q5_k_m.gguf
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8768"
+      - -t
+      - "4"
+      - -c
+      - "4096"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8768/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 120s
+
+  llama-server-reasoning:
+    image: ghcr.io/ggml-org/llama.cpp:server
+    container_name: llama-server-reasoning
+    restart: unless-stopped
+    volumes:
+      - ./llm-model/Qwen3-4B-Instruct-2507.Q5_K_M.gguf:/models/qwen3-4b-instruct-2507-q5_k_m.gguf:ro
+    command:
+      - -m
+      - /models/qwen3-4b-instruct-2507-q5_k_m.gguf
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8769"
+      - -t
+      - "4"
+      - -c
+      - "4096"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8769/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 180s
+
+  llm-server:
+    build:
+      context: ..
+      dockerfile: services/llm-server.Dockerfile
+    image: kdt-llm-server:dev
+    container_name: llm-server
+    restart: unless-stopped
+    depends_on:
+      llama-server:
+        condition: service_healthy
+      llama-server-reasoning:
+        condition: service_healthy
+    environment:
+      KDT_AI_ASSISTANT_ENABLED: "${KDT_AI_ASSISTANT_ENABLED:-1}"
+      LLM_MODEL_PATH: /nonexistent
+      LLAMA_HOST: llama-server
+      LLAMA_PORT: "8768"
+      LLAMA_REASONING_HOST: llama-server-reasoning
+      LLAMA_REASONING_PORT: "8769"
+      LLM_FAST_MODEL_NAME: Qwen3-1.7B
+      LLM_REASONING_MODEL_NAME: Qwen3-4B-Instruct-2507
+      LISTEN_PORT: "8766"
+      LLAMA_THREADS: "4"
+      LLAMA_CTX: "4096"
+    ports:
+      - "8766:8766"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8766/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+networks:
+  default:
+    name: kdt-net
+    # Общая сеть с docker-compose.zap.yml и browser nodes.
+    # Создаётся один раз: docker network create kdt-net
+    external: true

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "openrouter/deepseek/deepseek-v4-pro",
+  "default_agent": "keeper",
+  "shell": "powershell",
+  "autoupdate": "notify",
+  "permission": {
+    "bash": {
+      "*": "allow"
+    },
+    "edit": {
+      "*": "allow"
+    },
+    "webfetch": "allow",
+    "question": "allow",
+    "todowrite": "allow",
+    "skill": "allow"
+  }
+}

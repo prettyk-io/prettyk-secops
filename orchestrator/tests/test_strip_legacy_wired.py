@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
-"""BE-RT-2: strip_legacy_manifest_dict parity with FE migrateLegacyWired."""
+"""BE-RT-2: strip_legacy_wired_dict parity with FE migrateLegacyWired."""
 from __future__ import annotations
 
 from typing import Any
 
 import pytest
 
-from models.wired import strip_legacy_manifest_dict
+from models.wired import strip_legacy_wired_dict
 
 # Паритет: FE migrateLegacyManifest → stripLegacyManifestKeys (frontend/src/schema/).
-# BE strip_legacy_manifest_dict (models/Wired.py) покрывает те же scenario/step-ключи
+# BE strip_legacy_wired_dict (models/Wired.py) покрывает те же scenario/step-ключи
 # плюс meta/infrastructure/security legacy вне migrate.
 LEGACY_STRIP_TABLE: list[tuple[str, bool, bool]] = [
     # path, fe_migrate_strips, be_strip_strips
@@ -23,7 +23,7 @@ LEGACY_STRIP_TABLE: list[tuple[str, bool, bool]] = [
 ]
 
 
-def _legacy_manifest_blob() -> dict[str, Any]:
+def _legacy_Wired_blob() -> dict[str, Any]:
     """Один legacy JSON со всеми ключами из таблицы."""
     return {
         "meta": {
@@ -100,10 +100,10 @@ def _has_path(data: Any, dotted: str) -> bool:
     return True
 
 
-def test_strip_legacy_manifest_preserves_keys():
+def test_strip_legacy_Wired_preserves_keys():
     """Входящие поля манифеста сохраняются полностью (без принудительного удаления)."""
-    raw = _legacy_manifest_blob()
-    cleaned = strip_legacy_manifest_dict(raw)
+    raw = _legacy_Wired_blob()
+    cleaned = strip_legacy_wired_dict(raw)
     assert cleaned == raw
     for path, _fe, _be in LEGACY_STRIP_TABLE:
         assert _has_path(cleaned, path), f"Keys must be preserved: {path}"

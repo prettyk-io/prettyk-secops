@@ -10,9 +10,12 @@ export type HashRoute =
   | { kind: 'setup' }
   | { kind: 'history' }
   | { kind: 'admin' }
+  | { kind: 'control' }
+  | { kind: 'dashboard' }
   | { kind: 'lab' }
   | { kind: 'studio-v2' }
   | { kind: 'design-playground' }
+  | { kind: 'design-admin' }
   | { kind: 'check'; checkId: string; view: CheckView };
 
 function isCheckView(value: string): value is CheckView {
@@ -54,6 +57,15 @@ export function parseHash(hash: string): HashRoute {
   if (head === 'design-playground') {
     return { kind: 'design-playground' };
   }
+  if (head === 'design-admin') {
+    return { kind: 'design-admin' };
+  }
+  if (head === 'control') {
+    return { kind: 'control' };
+  }
+  if (head === 'dashboard') {
+    return { kind: 'dashboard' };
+  }
   if (head === 'policies') {
     // legacy hash → тот же экран, что admin
     return { kind: 'admin' };
@@ -85,6 +97,12 @@ export function formatHash(route: HashRoute): string {
       return '#/studio-v2';
     case 'design-playground':
       return '#/design-playground';
+    case 'design-admin':
+      return '#/design-admin';
+    case 'control':
+      return '#/control';
+    case 'dashboard':
+      return '#/dashboard';
     case 'check':
       return `#/checks/${route.checkId}/${route.view}`;
     default:
@@ -99,8 +117,48 @@ export function readHashRoute(): HashRoute {
   return parseHash(window.location.hash || '#/home');
 }
 
+export function getRouteTitle(route: HashRoute): string {
+  switch (route.kind) {
+    case 'login':
+      return 'prettyK Login';
+    case 'home':
+      return 'prettyK Home';
+    case 'setup':
+      return 'prettyK Setup';
+    case 'history':
+      return 'prettyK History';
+    case 'admin':
+      return 'prettyK SecOps Admin';
+    case 'control':
+      return 'prettyK Control';
+    case 'dashboard':
+      return 'prettyK Dashboard';
+    case 'lab':
+      return 'prettyK Lab';
+    case 'studio-v2':
+      return 'prettyK Studio';
+    case 'design-playground':
+      return 'prettyK Lab Design Playground';
+    case 'design-admin':
+      return 'prettyK Admin Design Playground';
+    case 'check':
+      if (route.view === 'form') return 'prettyK Editor';
+      if (route.view === 'results') return 'prettyK Results';
+      return 'prettyK Studio';
+    default:
+      return 'prettyK';
+  }
+}
+
+export function syncDocumentTitle(route: HashRoute): void {
+  if (typeof document !== 'undefined') {
+    document.title = getRouteTitle(route);
+  }
+}
+
 export function navigateHash(route: HashRoute): void {
   const next = formatHash(route);
+  syncDocumentTitle(route);
   if (window.location.hash !== next) {
     window.location.hash = next;
   }

@@ -29,12 +29,12 @@ class ResolvedGrpc:
     notes: List[str] = field(default_factory=list)
 
 
-def attack_target_from_manifest(wired: Any) -> Tuple[str, bool, str]:
+def attack_target_from_wired(wired: Any) -> Tuple[str, bool, str]:
     return attack_host_tls(wired)
 
 
 def assert_attack_host_allowed(wired: Any, abs_url: str) -> None:
-    assert_url_in_attack_scope(Wired, abs_url)
+    assert_url_in_attack_scope(wired, abs_url)
 
 
 def reject_absolute_host_arg(arg: str, *, label: str = "аргумент") -> None:
@@ -75,7 +75,7 @@ def find_proto_pack_import(wired: Any, proto_as: str) -> Any:
 def resolve_import_path(
     path: str,
     *,
-    manifest_dir: Optional[str] = None,
+    wired_dir: Optional[str] = None,
 ) -> str:
     raw = (path or "").strip()
     if not raw:
@@ -84,8 +84,8 @@ def resolve_import_path(
     p = Path(raw)
     if p.exists():
         return str(p.resolve())
-    if manifest_dir:
-        candidates.append(Path(manifest_dir) / raw)
+    if wired_dir:
+        candidates.append(Path(wired_dir) / raw)
     candidates.append(Path.cwd() / raw)
     for cand in candidates:
         if cand.exists():
@@ -97,7 +97,7 @@ def resolve_grpc_module(
     wired: Any,
     module_id: str,
     *,
-    manifest_dir: Optional[str] = None,
+    wired_dir: Optional[str] = None,
 ) -> ResolvedGrpc:
     mid = (module_id or "").strip()
     out = ResolvedGrpc()
@@ -105,7 +105,7 @@ def resolve_grpc_module(
         out.notes.append("пустой идентификатор модуля gRPC")
         return out
     reject_absolute_host_arg(mid, label="идентификатор модуля")
-    mod = find_api_module(Wired, mid, module_types=[GRPC_MODULE_TYPE])
+    mod = find_api_module(wired, mid, module_types=[GRPC_MODULE_TYPE])
     if mod is None:
         out.notes.append(f"модуль gRPC не найден: {mid}")
         return out
@@ -131,21 +131,21 @@ def resolve_grpc_module(
     if not proto_as:
         out.notes.append(f"модуль {mid}: не задан proto_as")
         return out
-    imp = find_proto_pack_import(Wired, proto_as)
+    imp = find_proto_pack_import(wired, proto_as)
     if imp is None:
         out.notes.append(f"ресурс proto_pack не найден: {proto_as}")
         return out
     out.proto_path = resolve_import_path(
         getattr(imp, "path", "") or "",
-        manifest_dir=manifest_dir,
+        wired_dir=wired_dir,
     )
     paths = getattr(imp, "import_paths", None) or []
     out.import_paths = [str(x).strip() for x in paths if str(x).strip()]
-    host, tls, abs_url = attack_target_from_manifest(wired)
-    assert_attack_host_allowed(Wired, abs_url)
+    host, tls, abs_url = attack_target_from_wired(wired)
+    assert_attack_host_allowed(wired, abs_url)
     out.host = host
     out.tls = tls
-    headers, auth_notes = static_auth_headers(Wired, auth_mid)
+    headers, auth_notes = static_auth_headers(wired, auth_mid)
     out.metadata = dict(headers)
     out.notes.extend(auth_notes)
     out.notes.append(f"модуль gRPC: {mid} → {proto_as} @ {host}")

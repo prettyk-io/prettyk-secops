@@ -30,7 +30,7 @@ from models.wired import (
     SecurityConfiguration,
 )
 from models.wired import TestDataConstructorModule as DataModule
-from models.wired import TestSuites as ManifestSuites
+from models.wired import TestSuites as TestSuites
 
 
 def test_datastream_merge_is_explicit_api():
@@ -69,21 +69,21 @@ def _stub_controller(monkeypatch) -> Controller:
 
     ctrl = Controller.__new__(Controller)
     ctrl.last_zap_report = None
-    ctrl.wired = Manifest(
+    ctrl.wired = Wired(
         meta=Meta(assessment_purpose="scheduled"),
-        infrastructure=Infrastructure(zap_mode="demon", browser_type="chrome-headless"),
+        infrastructure=Infrastructure(zap_mode="demon", browser_type="chrome-headless", base_url_override="http://example.test"),
         security_configuration=SecurityConfiguration(
             base_url_override="http://example.test",
             allowed_extra_domains="",
             scan_policy="custom_policy",
             auth_type="Без авторизации",
         ),
-        test_suites=ManifestSuites(scenarios=[]),
+        test_suites=TestSuites(scenarios=[]),
     )
     ctrl.global_stream = DataStream()
     ctrl.language_engine = LanguageEngine()
     ctrl.page_resolver = None
-    ctrl._manifest_problems = []
+    ctrl._wired_problems = []
     ctrl.quality_gate_failed = False
     ctrl.quality_gate_summary = None
     ctrl.auth_bootstrap_result = None
@@ -101,10 +101,10 @@ def _stub_controller(monkeypatch) -> Controller:
     ctrl._attach_final_zap_report = lambda: None
     ctrl._diary = lambda *a, **k: None
     ctrl._attach_call_details = lambda *a, **k: None
-    ctrl._enrich_manifest_error = lambda e, **k: e
+    ctrl._enrich_wired_error = lambda e, **k: e
     ctrl._diary_high_alerts = lambda: None
     ctrl._export_data_modules = lambda stream: None
-    ctrl._report_manifest_problems = lambda **k: None
+    ctrl._report_wired_problems = lambda **k: None
     return ctrl
 
 
@@ -112,7 +112,7 @@ def test_seed_base_url_into_global_stream(monkeypatch):
     """base_url_override → ${base_url} до сценариев; авто-Открыть нет."""
     ctrl = _stub_controller(monkeypatch)
     ctrl._export_suite_imports = lambda stream: None
-    ctrl.wired.test_suites = ManifestSuites(
+    ctrl.wired.test_suites = TestSuites(
         scenarios=[
             Scenario(
                 scenario_name="S1",
@@ -205,7 +205,7 @@ def test_scenario_let_does_not_leak_to_next_scenario(monkeypatch):
             )
         ],
     )
-    ctrl.wired.test_suites = ManifestSuites(scenarios=[s1, s2])
+    ctrl.wired.test_suites = TestSuites(scenarios=[s1, s2])
     with pytest.raises(WiredError, match=r"не объявлена"):
         ctrl.run()
     assert ctrl.global_stream.get("role") is None
@@ -237,7 +237,7 @@ def test_data_module_vars_visible_in_scenario(monkeypatch):
             )
         },
     )
-    ctrl.wired.test_suites = ManifestSuites(
+    ctrl.wired.test_suites = TestSuites(
         test_data_constructor=[mod],
         scenarios=[
             Scenario(
@@ -280,7 +280,7 @@ def test_failed_scenario_does_not_pollute_global(monkeypatch):
         scenario_name="S1 fail",
         steps=[ActionStep(constructor="core|log_message|x", description="fail")],
     )
-    ctrl.wired.test_suites = ManifestSuites(scenarios=[s1])
+    ctrl.wired.test_suites = TestSuites(scenarios=[s1])
     with pytest.raises(RuntimeError, match="boom"):
         ctrl.run()
     assert "x" not in list(ctrl.global_stream.names())
@@ -288,7 +288,7 @@ def test_failed_scenario_does_not_pollute_global(monkeypatch):
     assert ctrl.global_stream.get("base_url") == "http://example.test"
 
 
-def test_fixture_manifest_shared_via_data_module():
+def test_fixture_Wired_shared_via_data_module():
     """JSON-фикстура: shared vars в data-модуле, сценарии только читают."""
     path = Path(__file__).parent / "fixtures" / "constructor_vars_two_scenarios.json"
     raw = path.read_text(encoding="utf-8")

@@ -101,11 +101,25 @@ export interface TranslationDictionary {
   };
   history: { title: string; noInstances: string; replay: string; open: string };
   homeMenu: {
-    newCheck: string; checkHistory: string; importCheck: string;
-    policiesSettings: string;
+    newCheck: string; newCheckSubtitle: string;
+    checkHistory: string; checkHistorySubtitle: string;
+    burpKiller: string; burpKillerSubtitle: string;
+    importCheck: string; policiesSettings: string;
     importPending: string; back: string;
     freshCheckTitle: string; freshCheckSubtitle: string;
     historyCheckTitle: string; importCheckTitle: string;
     policiesSettingsTitle: string; adminSettingsTitle: string;
+    secOpsStudio: string; secOpsLab: string;
+    controlPanel: string; controlPanelSubtitle: string;
+    secOpsControl: string; secOpsControlSubtitle: string;
+    dashboard: string; dashboardSubtitle: string;
+    designPlayground: string; designPlaygroundSubtitle: string;
+    adminShowcase: string; adminShowcaseSubtitle: string;
+    groupChecks: string; groupAdmin: string; groupTools: string;
+  };
+  profile: {
+    title: string; general: string; appearance: string;
+    tokens: string; createToken: string; revokeToken: string;
+    tokenCopied: string; saveSuccess: string;
   };
 }

@@ -18,13 +18,13 @@ from core.method_id import lookup_method_id
 from models.wired import Infrastructure, Wired, Meta, SecurityConfiguration
 
 
-def _minimal_manifest(**infra_kw) -> Manifest:
+def _minimal_Wired(**infra_kw) -> Wired:
     infra = {
         "zap_mode": "demon",
         "browser_type": "chrome-headless",
     }
     infra.update(infra_kw)
-    return Manifest(
+    return Wired(
         meta=Meta(assessment_purpose="scheduled"),
         infrastructure=Infrastructure(**infra),
         security_configuration=SecurityConfiguration(
@@ -79,7 +79,7 @@ def test_manual_without_daemon_timer_uses_session_field():
 
 def test_manual_purpose_forces_webswing_even_without_zap_mode():
     """Форма strip'ает zap_mode → pydantic default demon; manual обязан → webswing."""
-    m = Manifest(
+    m = Wired(
         meta=Meta(assessment_purpose="manual"),
         infrastructure=Infrastructure(
             webswing_session_timeout_min=30,
@@ -127,7 +127,7 @@ def test_shutdown_all_fails_without_api_or_env(monkeypatch):
 def test_controller_arms_timeouts_at_start():
     from core.controller import Controller
 
-    wired = _minimal_manifest(zap_work_timeout_min=60, idle_timeout_min=5)
+    wired = _minimal_Wired(zap_work_timeout_min=60, idle_timeout_min=5)
     with patch.object(Controller, "_init_adapters", lambda self: None):
         with patch.object(Controller, "_register_actions", lambda self: None):
             with patch.object(Controller, "_apply_auth_bootstrap", lambda self: None):
@@ -167,7 +167,7 @@ def test_webswing_hold_awaits_idle_kill(monkeypatch):
     monkeypatch.delenv("KDT_WEBSWING_HOLD", raising=False)
     zap = MagicMock()
     ctrl = Controller.__new__(Controller)
-    ctrl.wired = _minimal_manifest(
+    ctrl.wired = _minimal_Wired(
         zap_mode="webswing",
         idle_timeout_min=5,
         webswing_session_timeout_min=30,
@@ -193,7 +193,7 @@ def test_webswing_hold_disabled(monkeypatch):
 
     monkeypatch.setenv("KDT_WEBSWING_HOLD", "0")
     ctrl = Controller.__new__(Controller)
-    ctrl.wired = _minimal_manifest(zap_mode="webswing")
+    ctrl.wired = _minimal_Wired(zap_mode="webswing")
     ctrl._work_timer = MagicMock()
     ctrl._idle_timer = MagicMock()
     ctrl._idle_seconds = 60.0
@@ -206,7 +206,7 @@ def test_idle_timeout_sec_override(monkeypatch):
     from core.controller import Controller
 
     monkeypatch.setenv("KDT_IDLE_TIMEOUT_SEC", "12")
-    wired = _minimal_manifest(zap_work_timeout_min=60, idle_timeout_min=5)
+    wired = _minimal_Wired(zap_work_timeout_min=60, idle_timeout_min=5)
     with patch.object(Controller, "_init_adapters", lambda self: None):
         with patch.object(Controller, "_register_actions", lambda self: None):
             with patch.object(Controller, "_apply_auth_bootstrap", lambda self: None):
@@ -229,7 +229,7 @@ def test_bootstrap_webswing_calls_start(monkeypatch):
     monkeypatch.delenv("KDT_ZAP_STOP_DAEMON_CMD", raising=False)
     zap = MagicMock()
     ctrl = Controller.__new__(Controller)
-    ctrl.wired = _minimal_manifest(
+    ctrl.wired = _minimal_Wired(
         zap_mode="webswing", webswing_session_timeout_min=30
     )
     ctrl.adapters = {"zap": zap}

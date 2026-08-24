@@ -63,12 +63,12 @@ def test_start_run_ok_and_status(runs_tmp, monkeypatch):
     )
     monkeypatch.setattr("utils.lab_run._pid_alive", lambda pid: True)
     monkeypatch.setattr(
-        "utils.lab_run.validate_manifest_file",
+        "utils.lab_run.validate_wired_file",
         lambda *a, **k: ([], object()),
     )
 
     wired = json.loads(FIX.read_text(encoding="utf-8"))
-    started = lab_run.start_run(Wired, session_name="unit")
+    started = lab_run.start_run(wired, session_name="unit")
     assert started["ok"] is True
     assert started["phase"] == "running"
     assert started["pid"] == 4242
@@ -87,7 +87,7 @@ def test_start_run_rejects_concurrent(runs_tmp, monkeypatch):
     )
     monkeypatch.setattr("utils.lab_run._pid_alive", lambda pid: True)
     monkeypatch.setattr(
-        "utils.lab_run.validate_manifest_file",
+        "utils.lab_run.validate_wired_file",
         lambda *a, **k: ([], object()),
     )
     wired = json.loads(FIX.read_text(encoding="utf-8"))
@@ -96,7 +96,7 @@ def test_start_run_rejects_concurrent(runs_tmp, monkeypatch):
         lab_run.start_run(wired)
 
 
-def test_start_run_rejects_bad_manifest(runs_tmp):
+def test_start_run_rejects_bad_Wired(runs_tmp):
     with pytest.raises(ValueError):
         lab_run.start_run({"meta": {}})
 
@@ -124,7 +124,7 @@ def test_stop_run_terminates_active(runs_tmp, monkeypatch):
     )
     monkeypatch.setattr("utils.lab_run._pid_alive", lambda pid: True)
     monkeypatch.setattr(
-        "utils.lab_run.validate_manifest_file",
+        "utils.lab_run.validate_wired_file",
         lambda *a, **k: ([], object()),
     )
     monkeypatch.setattr("utils.lab_run._kill_pid_tree", lambda pid: None)
@@ -165,7 +165,7 @@ def test_materialize_suite_imports_copies_lab_resource(runs_tmp, tmp_path, monke
             "imports": [{"path": "resources/r_2.txt", "kind": "data_file", "as": "r_2"}]
         }
     }
-    lab_run.materialize_suite_imports(Wired, run_dir)
+    lab_run.materialize_suite_imports(wired, run_dir)
     dest = run_dir / "resources" / "r_2.txt"
     assert dest.is_file()
     assert dest.read_text(encoding="utf-8") == "x\n"
@@ -198,14 +198,14 @@ def test_write_resource_contents_har(runs_tmp):
         }
     }
     lab_run.write_resource_contents(
-        Wired,
+        wired,
         run_dir,
         {"checkout": '{"log":{"entries":[]}}'},
     )
     dest = run_dir / "resources" / "checkout.har"
     assert dest.is_file()
     assert "entries" in dest.read_text(encoding="utf-8")
-    lab_run.materialize_suite_imports(Wired, run_dir)
+    lab_run.materialize_suite_imports(wired, run_dir)
     assert dest.is_file()
 
 
@@ -255,7 +255,7 @@ def test_materialize_chain_modules_writes_har(runs_tmp):
             ],
         }
     }
-    merged = lab_run.materialize_chain_modules(Wired, {}, {"authorization": "Bearer LIVE"})
+    merged = lab_run.materialize_chain_modules(wired, {}, {"authorization": "Bearer LIVE"})
     assert "Bearer LIVE" in merged["me"]
     assert any(
         i.get("as") == "me" and i.get("kind") == "har_file"
@@ -263,7 +263,7 @@ def test_materialize_chain_modules_writes_har(runs_tmp):
     )
     run_dir = runs_tmp / "chain_rc"
     run_dir.mkdir()
-    lab_run.write_resource_contents(Wired, run_dir, merged)
+    lab_run.write_resource_contents(wired, run_dir, merged)
     assert (run_dir / "resources" / "me.har").is_file()
 
 
@@ -281,7 +281,7 @@ def test_playground_run_routes(runs_tmp, monkeypatch):
     )
     monkeypatch.setattr("utils.lab_run._pid_alive", lambda pid: True)
     monkeypatch.setattr(
-        "utils.lab_run.validate_manifest_file",
+        "utils.lab_run.validate_wired_file",
         lambda *a, **k: ([], object()),
     )
 

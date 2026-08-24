@@ -3,7 +3,7 @@
 G-61: Fernet encryption at rest для строковых значений манифеста.
 
 Префикс в JSON: ``kdt:enc:v1:<token>``.
-Ключ: env ``KDT_MANIFEST_KEY`` (url-safe base64, как выдаёт Fernet.generate_key).
+Ключ: env ``KDT_WIRED_KEY`` (url-safe base64, как выдаёт Fernet.generate_key).
 Ключ не кладём в репозиторий и не в бандл фронта.
 """
 from __future__ import annotations
@@ -14,7 +14,7 @@ from typing import Any
 from core.errors import WiredError
 
 ENC_PREFIX = "kdt:enc:v1:"
-ENV_MANIFEST_KEY = "KDT_MANIFEST_KEY"
+ENV_WIRED_KEY = "KDT_WIRED_KEY"
 
 
 def is_encrypted_value(value: Any) -> bool:
@@ -22,10 +22,10 @@ def is_encrypted_value(value: Any) -> bool:
 
 
 def _load_fernet():
-    raw = (os.getenv(ENV_MANIFEST_KEY) or "").strip()
+    raw = (os.getenv(ENV_WIRED_KEY) or "").strip()
     if not raw:
         raise WiredError(
-            f"В манифесте есть {ENC_PREFIX}…, но не задан {ENV_MANIFEST_KEY}. "
+            f"В манифесте есть {ENC_PREFIX}…, но не задан {ENV_WIRED_KEY}. "
             "Сгенерируйте ключ: python -c \"from cryptography.fernet import Fernet; "
             "print(Fernet.generate_key().decode())\""
         )
@@ -40,7 +40,7 @@ def _load_fernet():
         return Fernet(key), InvalidToken
     except Exception as exc:
         raise WiredError(
-            f"{ENV_MANIFEST_KEY} не является ключом Fernet (url-safe base64, 32 байта)"
+            f"{ENV_WIRED_KEY} не является ключом Fernet (url-safe base64, 32 байта)"
         ) from exc
 
 

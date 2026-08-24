@@ -13,7 +13,7 @@ if str(ROOT) not in sys.path:
 
 from core.data_stream import SECRET_LOG_MASK, DataStream
 from core.errors import WiredError
-from core.wired_secretref import prepare_manifest_data, resolve_secretref_tree
+from core.wired_secretref import prepare_wired_data, resolve_secretref_tree
 
 
 def test_resolve_env_ref(monkeypatch):
@@ -63,14 +63,14 @@ def test_stream_secretref_string(monkeypatch):
 def test_prepare_order_enc_then_env(monkeypatch):
     from cryptography.fernet import Fernet
 
-    from core.wired_crypto import ENV_MANIFEST_KEY, encrypt_string
+    from core.wired_crypto import ENV_WIRED_KEY, encrypt_string
 
     key = Fernet.generate_key().decode("ascii")
-    monkeypatch.setenv(ENV_MANIFEST_KEY, key)
+    monkeypatch.setenv(ENV_WIRED_KEY, key)
     monkeypatch.setenv("KDT_NESTED", "from-env")
     # enc вокруг plaintext, не вокруг ENV-ссылки — типичный кейс: либо enc, либо ENV.
     enc = encrypt_string("only-enc")
-    data, seeds = prepare_manifest_data(
+    data, seeds = prepare_wired_data(
         {"a": enc, "b": "${ENV:KDT_NESTED}"}
     )
     assert data["a"] == "only-enc"

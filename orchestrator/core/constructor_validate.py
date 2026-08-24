@@ -78,6 +78,7 @@ def _filter_at_directive_lines(lines: List[str]) -> tuple[List[str], List[str]]:
     for ln in lines:
         if _is_at_directive_line(ln):
             at_lines.append(ln.strip())
+            script_lines.append("")
         else:
             script_lines.append(ln)
     return script_lines, at_lines

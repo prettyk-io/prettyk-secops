@@ -85,9 +85,9 @@ def resolve_attack_relative_or_allowlisted(
     if not raw:
         raise WiredError(f"{label}: пустой путь")
     if raw.startswith(("http://", "https://")):
-        assert_url_in_attack_scope(Wired, raw)
+        assert_url_in_attack_scope(wired, raw)
         return raw
     base = attack_base_url(wired)
     joined = urljoin(base if base.endswith("/") else base + "/", raw.lstrip("/"))
-    assert_url_in_attack_scope(Wired, joined)
+    assert_url_in_attack_scope(wired, joined)
     return joined

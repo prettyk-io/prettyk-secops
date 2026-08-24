@@ -82,7 +82,7 @@ def _hook_urls(h: Dict[str, Any]) -> Tuple[Optional[str], Optional[str]]:
     return a.get("report_url"), d.get("report_url")
 
 
-def _base_manifest(**meta_extra: Any) -> Dict[str, Any]:
+def _base_wired(**meta_extra: Any) -> Dict[str, Any]:
     meta = {
         "assessment_purpose": "emergency",
         "emergency_reason": "trial act-gates pipe",
@@ -174,7 +174,7 @@ def main(argv: List[str] | None = None) -> int:
             },
         )
         rid = _start(
-            _base_manifest(generate_act=True),
+            _base_wired(generate_act=True),
             {"sleep_s": 0.2, "exit_code": 0, "gate": "pass"},
             "c1-pass",
         )
@@ -217,7 +217,7 @@ def main(argv: List[str] | None = None) -> int:
     # --- C2 fail_gate butta ---
     try:
         rid = _start(
-            _base_manifest(generate_act=True),
+            _base_wired(generate_act=True),
             {
                 "sleep_s": 0.15,
                 "dojo_butta_high": True,
@@ -244,7 +244,7 @@ def main(argv: List[str] | None = None) -> int:
     # --- C3 fail before hooks ---
     try:
         rid = _start(
-            _base_manifest(generate_act=True),
+            _base_wired(generate_act=True),
             {"sleep_s": 0.1, "fail_before_hooks": True},
             "c3-crash",
         )
@@ -267,7 +267,7 @@ def main(argv: List[str] | None = None) -> int:
             "POST",
             f"{PLAY}/api/run/start",
             {
-                "wired": _base_manifest(generate_act=True),
+                "wired": _base_wired(generate_act=True),
                 "session_name": "c4-stop",
                 "stub": True,
                 "stub_opts": {"sleep_s": 8.0, "exit_code": 0},
@@ -287,7 +287,7 @@ def main(argv: List[str] | None = None) -> int:
     # --- N1 generate_act false → zip omit ---
     try:
         rid = _start(
-            _base_manifest(generate_act=False),
+            _base_wired(generate_act=False),
             {"sleep_s": 0.15, "exit_code": 0, "gate": "pass"},
             "n1-no-act",
         )
@@ -314,7 +314,7 @@ def main(argv: List[str] | None = None) -> int:
     # --- N2 fail_run VOID → zip omit admission ---
     try:
         rid = _start(
-            _base_manifest(generate_act=True),
+            _base_wired(generate_act=True),
             {"sleep_s": 0.1, "fail_before_hooks": True},
             "n2-void",
         )
@@ -354,7 +354,7 @@ def main(argv: List[str] | None = None) -> int:
     # --- N3 fail_gate + generate_act → zip include ---
     try:
         rid = _start(
-            _base_manifest(generate_act=True),
+            _base_wired(generate_act=True),
             {
                 "sleep_s": 0.15,
                 "dojo_butta_high": True,
@@ -399,7 +399,7 @@ def main(argv: List[str] | None = None) -> int:
     # --- N4 pass_watch soft ---
     try:
         rid = _start(
-            _base_manifest(generate_act=True),
+            _base_wired(generate_act=True),
             {
                 "sleep_s": 0.15,
                 "exit_code": 0,

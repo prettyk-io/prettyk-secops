@@ -10,7 +10,7 @@ import pytest
 from core.errors import WiredError
 from utils.grpc_module_runtime import (
     assert_attack_host_allowed,
-    attack_target_from_Wired,
+    attack_target_from_wired,
     reject_absolute_host_arg,
     resolve_grpc_module,
 )
@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[2]
 PROTO_PACK = ROOT / "services" / "kdt-api-lab" / "proto_pack"
 
 
-def _manifest(*, proto_as="bank_proto", proto_path=None, allow="127.0.0.1|localhost"):
+def _Wired(*, proto_as="bank_proto", proto_path=None, allow="127.0.0.1|localhost"):
     path = str(proto_path or PROTO_PACK)
     return SimpleNamespace(
         scan_base_url=lambda: "http://127.0.0.1:8090",
@@ -54,8 +54,8 @@ def _manifest(*, proto_as="bank_proto", proto_path=None, allow="127.0.0.1|localh
 
 
 def test_attack_target_from_base_url():
-    m = _manifest()
-    host, tls, abs_url = attack_target_from_manifest(m)
+    m = _Wired()
+    host, tls, abs_url = attack_target_from_wired(m)
     assert host == "127.0.0.1:8090"
     assert tls is False
     assert abs_url.startswith("http://127.0.0.1:8090")
@@ -72,8 +72,8 @@ def test_reject_absolute_host_in_args():
 def test_resolve_grpc_module_cascade():
     if not PROTO_PACK.is_dir():
         pytest.skip("lab proto_pack missing")
-    m = _manifest()
-    resolved = resolve_grpc_module(m, "bank_grpc", manifest_dir=str(ROOT))
+    m = _Wired()
+    resolved = resolve_grpc_module(m, "bank_grpc", wired_dir=str(ROOT))
     assert resolved.from_module
     assert resolved.host == "127.0.0.1:8090"
     assert resolved.proto_as == "bank_proto"
@@ -81,6 +81,6 @@ def test_resolve_grpc_module_cascade():
 
 
 def test_assert_deny_foreign_host():
-    m = _manifest(allow="127.0.0.1")
+    m = _Wired(allow="127.0.0.1")
     with pytest.raises(WiredError, match="разрешен"):
         assert_attack_host_allowed(m, "http://evil.test/")

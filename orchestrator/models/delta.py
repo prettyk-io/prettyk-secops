@@ -35,7 +35,7 @@ class DeltaProvenance:
     baseline_id: str = ""
     current_run_id: str = ""
     current_check_id: str = ""
-    manifest_hash: str = ""
+    wired_hash: str = ""
     target_scope_hash: str = ""
     scan_profile: str = ""
     finding_schema_version: str = "finding-v1"

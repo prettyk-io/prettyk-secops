@@ -374,7 +374,7 @@ def test_controller_language_if_step():
     ctrl = Controller.__new__(Controller)
     ctrl.language_engine = LanguageEngine()
     ctrl.adapters = {"data": data}
-    ctrl._manifest_problems = []
+    ctrl._wired_problems = []
     ctrl.last_zap_report = None
     factory = ActionFactory()
     factory.register("data", "let", data.let)
@@ -396,7 +396,7 @@ def test_controller_language_if_step():
     ctrl._parse_constructor = parse
     ctrl._diary = lambda *a, **k: None
     ctrl._attach_call_details = lambda *a, **k: None
-    ctrl._enrich_manifest_error = lambda e, **k: e
+    ctrl._enrich_wired_error = lambda e, **k: e
     ctrl._diary_high_alerts = lambda: None
 
     step = SimpleNamespace(
@@ -428,7 +428,7 @@ def test_controller_run_step_loop_list_append():
     ctrl.language_engine = LanguageEngine()
     ctrl.page_resolver = None
     ctrl.adapters = {"data": data}
-    ctrl._manifest_problems = []
+    ctrl._wired_problems = []
     ctrl.last_zap_report = None
     factory = ActionFactory()
     factory.register("data", "let", data.let)
@@ -452,7 +452,7 @@ def test_controller_run_step_loop_list_append():
     ctrl._parse_constructor = parse
     ctrl._diary = lambda *a, **k: None
     ctrl._attach_call_details = lambda *a, **k: None
-    ctrl._enrich_manifest_error = lambda e, **k: e
+    ctrl._enrich_wired_error = lambda e, **k: e
     ctrl._diary_high_alerts = lambda: None
 
     step = SimpleNamespace(
@@ -488,7 +488,7 @@ def test_controller_context_pretty():
     ctrl = Controller.__new__(Controller)
     ctrl.language_engine = LanguageEngine()
     ctrl.adapters = {"data": data}
-    ctrl._manifest_problems = []
+    ctrl._wired_problems = []
     factory = ActionFactory()
     factory.register("data", "let", data.let)
     ctrl.action_factory = factory
@@ -508,7 +508,7 @@ def test_controller_context_pretty():
     ctrl._parse_constructor = parse
     ctrl._diary = lambda *a, **k: None
     ctrl._attach_call_details = lambda *a, **k: None
-    ctrl._enrich_manifest_error = lambda e, **k: e
+    ctrl._enrich_wired_error = lambda e, **k: e
 
     ctx = SimpleNamespace(id="unused", constructor='Пусть ${email} = "a@b.c"')
     ctrl._apply_context_item(ctx, stream)

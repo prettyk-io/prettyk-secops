@@ -9,10 +9,10 @@ PrettyK — среда для функциональных и динамичес
 
 ## Попробовать PrettyK
 
-Требуются Windows 10/11, Python 3.11, Node.js и Docker.
+Требуются Windows 10/11, Python 3.13, Node.js и Docker.
 
 ```powershell
-py -3.11 -m venv .venv
+py -3.13 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r orchestrator\requirements.txt
 
 Set-Location frontend

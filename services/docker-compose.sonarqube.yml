@@ -1,0 +1,67 @@
+# Локальный SonarQube Community Build + PostgreSQL (INFRA-10).
+# НЕ для банка «как есть». Не в обязательном lab_up — только явный старт.
+#
+# Порт UI: 9000.
+# Сеть: kdt-net (как DefectDojo / ZAP).
+#
+#   docker network create kdt-net 2>nul
+#   docker compose -f services/docker-compose.sonarqube.yml up -d
+#   # первый boot: 2–5 мин, затем http://127.0.0.1:9000/  admin/admin
+#
+# Стоп (volumes сохраняются):
+#   docker compose -f services/docker-compose.sonarqube.yml down
+
+services:
+  sonarqube:
+    image: sonarqube:community
+    container_name: sonarqube
+    depends_on:
+      sonarqube-db:
+        condition: service_healthy
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://sonarqube-db:5432/sonar
+      SONAR_JDBC_USERNAME: sonar
+      SONAR_JDBC_PASSWORD: sonar
+      # Docker Desktop / WSL2: bootstrap check Elasticsearch иногда падает на vm.max_map_count
+      SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: "true"
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+      - sonarqube_temp:/opt/sonarqube/temp
+    ports:
+      - "${SONAR_PORT:-9000}:9000"
+    networks:
+      - kdt-net
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+
+  sonarqube-db:
+    image: postgres:16-alpine
+    container_name: sonarqube-db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      POSTGRES_USER: sonar
+      POSTGRES_PASSWORD: sonar
+      POSTGRES_DB: sonar
+    volumes:
+      - sonarqube_postgres:/var/lib/postgresql/data
+    networks:
+      - kdt-net
+
+volumes:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
+  sonarqube_temp:
+  sonarqube_postgres:
+
+networks:
+  kdt-net:
+    external: true

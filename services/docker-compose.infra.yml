@@ -1,0 +1,55 @@
+# Infra stack: PostgreSQL 16 (source of truth) + Valkey 8 (cache / pub-sub / job queue).
+# CANON: sanctuary/pure/infra-stack.md §2. Алтарь §11-12.
+#
+# Запуск из корня репозитория:
+#   docker compose -f services/docker-compose.infra.yml up -d
+#
+# Порты:
+#   5432 — PostgreSQL 16
+#   6379 — Valkey 8 (Redis-совместимый)
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: prettyk-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: prettyk
+      POSTGRES_PASSWORD: prettyk
+      POSTGRES_DB: prettyk
+    volumes:
+      - prettyk_postgres:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U prettyk -d prettyk"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    container_name: prettyk-valkey
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: valkey-server --save 60 1 --loglevel warning
+    volumes:
+      - prettyk_valkey:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+volumes:
+  prettyk_postgres:
+  prettyk_valkey:
+
+networks:
+  default:
+    name: prettyk-net
+    external: true

@@ -17,7 +17,7 @@ from cryptography.fernet import Fernet
 from core.errors import WiredError
 from core.wired_crypto import (
     ENC_PREFIX,
-    ENV_MANIFEST_KEY,
+    ENV_WIRED_KEY,
     decrypt_string,
     decrypt_tree,
     encrypt_string,
@@ -29,7 +29,7 @@ from core.wired_crypto import (
 @pytest.fixture
 def fernet_key(monkeypatch):
     key = Fernet.generate_key().decode("ascii")
-    monkeypatch.setenv(ENV_MANIFEST_KEY, key)
+    monkeypatch.setenv(ENV_WIRED_KEY, key)
     return key
 
 
@@ -56,14 +56,14 @@ def test_decrypt_tree_nested(fernet_key):
 
 
 def test_missing_key_raises(monkeypatch):
-    monkeypatch.delenv(ENV_MANIFEST_KEY, raising=False)
-    with pytest.raises(WiredError, match=ENV_MANIFEST_KEY):
+    monkeypatch.delenv(ENV_WIRED_KEY, raising=False)
+    with pytest.raises(WiredError, match=ENV_WIRED_KEY):
         decrypt_string(f"{ENC_PREFIX}not-a-real-token")
 
 
 def test_wrong_key_raises(fernet_key, monkeypatch):
     enc = encrypt_string("x")
-    monkeypatch.setenv(ENV_MANIFEST_KEY, Fernet.generate_key().decode("ascii"))
+    monkeypatch.setenv(ENV_WIRED_KEY, Fernet.generate_key().decode("ascii"))
     with pytest.raises(WiredError, match="Не удалось расшифровать"):
         decrypt_string(enc)
 

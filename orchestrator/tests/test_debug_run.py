@@ -12,7 +12,7 @@ import pytest
 from core.debug_run import (
     apply_debug_admission_void,
     is_debug_paused,
-    manifest_debug_mode,
+    wired_debug_mode,
     set_debug_paused,
     set_live_debug_flags,
     wait_while_paused,
@@ -27,7 +27,7 @@ class _Infra:
         self.debug_mode = debug_mode
 
 
-class _Manifest:
+class _Wired:
     def __init__(self, debug_mode=False):
         self.infrastructure = _Infra(debug_mode)
 
@@ -52,9 +52,9 @@ def live_tmp(tmp_path, monkeypatch):
     diary_bus.clear()
 
 
-def test_manifest_debug_mode_reads_infra():
-    assert manifest_debug_mode(_Manifest(True)) is True
-    assert manifest_debug_mode(_Manifest(False)) is False
+def test_wired_debug_mode_reads_infra():
+    assert wired_debug_mode(_Wired(True)) is True
+    assert wired_debug_mode(_Wired(False)) is False
 
 
 def test_apply_debug_admission_void():

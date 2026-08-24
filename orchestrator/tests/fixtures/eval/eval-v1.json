@@ -56,7 +56,7 @@
       {
         "id": "D08",
         "name": "Incompatible manifest",
-        "scenario": "Different manifest_hash or target_scope_hash",
+        "scenario": "Different wired_hash or target_scope_hash",
         "expected": "comparison_status=incomparable, no FIXED badge",
         "category": "deterministic"
       },
@@ -243,8 +243,8 @@
       "findings_count": 28
     },
     "manifest_incompatible": {
-      "description": "Different manifest_hash, same findings",
-      "manifest_hash": "sha256:deadbeef"
+      "description": "Different wired_hash, same findings",
+      "wired_hash": "sha256:deadbeef"
     }
   }
 }

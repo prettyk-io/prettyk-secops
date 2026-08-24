@@ -93,14 +93,14 @@ class HttpAdapter(BaseAdapter):
             "retries_used": 0,
             "timeouts": 0
         }
-        self._run_manifest = None
+        self._run_wired = None
         self._proxy_url = None
         
         logger.info(f"HttpAdapter initialized with base_url={base_url}, retries={retries}, timeout=({timeout_connect}, {timeout_read})")
 
     def bind_run_wired(self, wired) -> None:
         """Controller: Manifest для резолва module id (OA/GQL traffic)."""
-        self._run_manifest = wired
+        self._run_wired = wired
 
     def set_proxy(self, proxy_url, proxy_type="http"):
         """
@@ -136,7 +136,7 @@ class HttpAdapter(BaseAdapter):
         )
 
         resolved = resolve_openapi_arg(
-            getattr(self, "_run_manifest", None),
+            getattr(self, "_run_wired", None),
             str(module_id_or_spec or ""),
         )
         inv = inventory_openapi(resolved.spec)
@@ -147,7 +147,7 @@ class HttpAdapter(BaseAdapter):
             return dumps_runtime(payload)
         base = resolved.base_url or str(inv.get("base_url") or "")
         headers, auth_notes = static_auth_headers(
-            getattr(self, "_run_manifest", None),
+            getattr(self, "_run_wired", None),
             resolved.auth_module_id,
         )
         notes.extend(auth_notes)
@@ -183,7 +183,7 @@ class HttpAdapter(BaseAdapter):
         )
 
         resolved = resolve_graphql_arg(
-            getattr(self, "_run_manifest", None),
+            getattr(self, "_run_wired", None),
             str(module_id or ""),
         )
         notes = list(resolved.notes)
@@ -200,7 +200,7 @@ class HttpAdapter(BaseAdapter):
             q = default_graphql_query(inv.get("operations") or [])
         headers = dict(resolved.headers)
         auth_headers, auth_notes = static_auth_headers(
-            getattr(self, "_run_manifest", None),
+            getattr(self, "_run_wired", None),
             resolved.auth_module_id,
         )
         notes.extend(auth_notes)

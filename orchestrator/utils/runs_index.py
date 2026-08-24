@@ -9,9 +9,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from utils.env_dual import pk_env
+
 try:
     from utils.diary_bus import LIVE_DIR
-from utils.env_dual import pk_env
 except Exception:  # pragma: no cover
     LIVE_DIR = Path(__file__).resolve().parents[2] / "reports" / "live"
 

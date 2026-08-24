@@ -42,9 +42,9 @@ def comparability_check(
         return ComparisonStatus.incomparable
 
     # Manifest hash must be present and match
-    if not baseline_provenance.manifest_hash or not current_provenance.manifest_hash:
+    if not baseline_provenance.wired_hash or not current_provenance.wired_hash:
         return ComparisonStatus.artifact_incomplete
-    if baseline_provenance.manifest_hash != current_provenance.manifest_hash:
+    if baseline_provenance.wired_hash != current_provenance.wired_hash:
         return ComparisonStatus.incomparable
 
     # Target scope hash must be present and match

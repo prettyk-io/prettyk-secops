@@ -9,9 +9,9 @@ FIX = ORCH / "fixtures"
 
 
 def test_validate_fuzzers_ok():
-    from core.wired_validate import validate_manifest_file
+    from core.wired_validate import validate_wired_file
 
-    issues, wired = validate_manifest_file(FIX / "validate_fuzzers_ok.json")
+    issues, wired = validate_wired_file(FIX / "validate_fuzzers_ok.json")
     assert issues == [], issues
     assert wired is not None
     fuzzers = wired.test_suites.fuzzers

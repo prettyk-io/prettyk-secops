@@ -1,33 +1,32 @@
-# ZAP — demon vs Webswing
+# ZAP — demon
 
-> **CANON** — hub topic. Slice: **11 августа 2026**.  
-> Lab detail / порты / скрипты: [`../webswing-daemon-stand.md`](../webswing-daemon-stand.md).  
-> Contour: [`lab-up.md`](lab-up.md). Roles: [`runtime-shell.md`](runtime-shell.md).  
+> **CANON** — hub topic. Slice: **22 августа 2026** (Webswing выпилен).  
+> Lab detail / порты / скрипты: [`lab-up.md`](lab-up.md) · [`runtime-shell.md`](runtime-shell.md).  
 > Реестр: [`INDEX.md`](INDEX.md).
 
-## 1. Два режима
+## 1. Единственный режим
 
 ```mermaid
 flowchart LR
-  Manifest[zap_mode] -->|demon| Daemon[ZAP_daemon_API]
-  Manifest -->|webswing| Swing[ZAP_Webswing_UI]
-  Daemon --> Auto[orchestrator_auto]
-  Swing --> Manual[operator_Desktop_ZAP]
+   Manifest[zap_mode] --> Daemon[ZAP_daemon_API]
+   Daemon --> Auto[orchestrator_auto]
 ```
 
 | Режим | Зачем | Дефолт lab |
 |---|---|---|
-| **demon** (`zap_mode=demon`) | API для автоматики / волны | **да** — `lab_up` |
-| **webswing** | Desktop ZAP в браузере (Sites/History/AS) | **нет** — opt-in |
+| **demon** (`zap_mode=demon`) | API для автоматики / волны / фаззинга | **да** — `lab_up` |
 
 ## 2. Тезисы
 
-1. Webswing **не** часть обязательного `lab_up`; поднимать `zap-webswing-up.ps1` или явный `zap_mode=webswing`.  
-2. Dual-stand: demon API + Webswing API/UI одновременно — порты **разведены** (не гасить demon из‑за `:8080`).  
-3. Lab якоря (пример): demon API `:8080` / proxy `:8099`; Webswing UI `:8082` / API `:8090` / proxy `:8199`.  
-4. В пультах URL Webswing давать всегда; если контейнер down — пометить, не врать «жив».  
-5. ZAP ≠ браузерная ферма ([`runtime-shell.md`](runtime-shell.md)).
+1. ZAP работает как демон — API на `:8080`, MITM-прокси на `:8099`.  
+2. Никакого GUI. PrettyK Live + Allure + Dojo закрывают мониторинг.  
+3. ZAP ≠ браузерная ферма ([`runtime-shell.md`](runtime-shell.md)).  
+4. Контракт wired: `zap_mode` — только `"demon"`. Webswing удалён 2026-08-22.
 
-## 3. Не смешивать
+## 3. Почему Webswing убран
 
-Allure / Live / Grid — другие роли. Ручной Desktop ZAP не заменяет demon для CI-автоматики.
+- ZAP GUI в браузере — рудимент эпохи Selenium  
+- PrettyK Live + diary + Allure-отчёт покрывают весь мониторинг  
+- `:8082`, `:8090`, `:8199` — лишние порты и контейнер  
+- Упрощает стенд: меньше compose-файлов, меньше bootstrap-кода, меньше документации  
+(End of file)
