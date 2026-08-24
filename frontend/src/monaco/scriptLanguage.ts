@@ -28,6 +28,7 @@ import {
   createPrettykReferenceProvider,
 } from './prettykNavigation';
 import { createPrettykSignatureHelpProvider } from './prettykSignatureHelp';
+import { formatPrettykDocument } from './prettykFormat';
 import { createPrettykDocumentSymbolProvider } from './prettykSymbols';
 import {
   collectPrettykSemanticSpans,
@@ -211,6 +212,7 @@ type FeatureDisposables = {
   hover?: { dispose: () => void };
   signature?: { dispose: () => void };
   semantic?: { dispose: () => void };
+  formatting?: { dispose: () => void };
 };
 
 const FEATURES_KEY = '__pkScriptLanguageFeatures';
@@ -238,6 +240,7 @@ export function registerScriptLanguageFeatures(monaco: typeof monacoNs): void {
   store.hover?.dispose();
   store.signature?.dispose();
   store.semantic?.dispose();
+  store.formatting?.dispose();
   store.completion = monaco.languages.registerCompletionItemProvider(
     PRETTYK_LANGUAGE_ID,
     createPrettykCompletionProvider(monaco),
@@ -290,4 +293,23 @@ export function registerScriptLanguageFeatures(monaco: typeof monacoNs): void {
     },
   );
   registerSpiderCompletionProvider(monaco);
+  store.formatting = monaco.languages.registerDocumentFormattingEditProvider(
+    PRETTYK_LANGUAGE_ID,
+    {
+      provideDocumentFormattingEdits(model) {
+        const { formatted } = formatPrettykDocument(model.getValue());
+        const lastLine = model.getLineCount();
+        const lastCol = model.getLineMaxColumn(lastLine);
+        return [{
+          range: {
+            startLineNumber: 1,
+            startColumn: 1,
+            endLineNumber: lastLine,
+            endColumn: lastCol,
+          },
+          text: formatted,
+        }];
+      },
+    },
+  );
 }

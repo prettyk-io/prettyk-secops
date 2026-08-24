@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Copy orchestrator/data/fuzz/pack.json → cosmo/src/generated/fuzz_pack.json.
+"""Copy orchestrator/data/fuzz/pack.json → frontend/src/generated/fuzz_pack.json.
 
 Source of truth for curated intent corpora is the orchestrator pack.
 Studio imports the FE mirror; do not edit the mirror by hand.

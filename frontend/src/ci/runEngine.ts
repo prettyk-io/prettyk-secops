@@ -89,6 +89,8 @@ export interface RunEngine {
   transition(id: string, event: RunEvent, reason?: string): TransitionResult;
   retry(id: string, actor?: string): RunRecord | null;
   cancel(id: string, reason?: string): TransitionResult;
+  /** Воркер продлевает lease; ttlMs — длительность аренды. */
+  renewLease(id: string, ttlMs: number): RunRecord | null;
   recordFinding(runId: string, dedupKey: string, payload: unknown, meta?: Partial<FindingRecord>): FindingRecord | null;
   recordEvidence(runId: string, dedupKey: string, payload: unknown, meta?: Partial<EvidenceRecord>): EvidenceRecord | null;
   listFindings(runId: string): FindingRecord[];
@@ -98,9 +100,9 @@ export interface RunEngine {
   _reset(): void;
 }
 
-export function createRunEngine(storage?: KVStorage): RunEngine {
+export function createRunEngine(storage?: KVStorage, clock: () => number = Date.now): RunEngine {
   const store = storage ?? createStorage();
-  const now = () => new Date().toISOString();
+  const now = () => new Date(clock()).toISOString();
 
   function readRun(id: string): RunRecord | null {
     const raw = store.get(RUN_PREFIX + id);
@@ -238,6 +240,19 @@ export function createRunEngine(storage?: KVStorage): RunEngine {
       return { ok: false, error: `Cannot cancel from ${run.state}` };
     },
 
+    renewLease(id, ttlMs) {
+      const run = readRun(id);
+      if (!run) return null;
+      if (run.state !== 'running') return null;
+      const updated: RunRecord = {
+        ...run,
+        leaseExpiresAt: new Date(clock() + ttlMs).toISOString(),
+        updatedAt: now(),
+      };
+      writeRun(updated);
+      return updated;
+    },
+
     recordFinding(runId, dedupKey, payload, meta) {
       const run = readRun(runId);
       if (!run) return null;
@@ -279,7 +294,7 @@ export function createRunEngine(storage?: KVStorage): RunEngine {
       return readRecords<EvidenceRecord>(EVIDENCE_PREFIX, runId);
     },
 
-    recoverStale(nowMs = Date.now()) {
+    recoverStale(nowMs = clock()) {
       const recovered: RunRecord[] = [];
       for (const key of store.keys()) {
         if (!key.startsWith(RUN_PREFIX)) continue;

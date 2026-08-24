@@ -19,10 +19,10 @@ Write-Host '  Docker OK' -ForegroundColor Green
 # 2. Coverage
 Write-Host '[2/6] Coverage stubs' -ForegroundColor Cyan
 New-Item -ItemType Directory -Force -Path "$root/reports" | Out-Null
-New-Item -ItemType Directory -Force -Path "$root/cosmo/coverage" | Out-Null
+New-Item -ItemType Directory -Force -Path "$root/frontend/coverage" | Out-Null
 '<?xml version="1.0" encoding="UTF-8"?><coverage version="1"/>' | Out-File -Encoding utf8 -FilePath "$root/reports/coverage-backend.xml" -NoNewline
 '<?xml version="1.0"?><testsuite name="stub" tests="0"/>' | Out-File -Encoding utf8 -FilePath "$root/reports/sonar-no-xunit.xml" -NoNewline
-'SF:stub.ts\nend_of_record' | Out-File -Encoding ascii -FilePath "$root/cosmo/coverage/lcov.info"
+'SF:stub.ts\nend_of_record' | Out-File -Encoding ascii -FilePath "$root/frontend/coverage/lcov.info"
 Write-Host '  ready' -ForegroundColor Green
 
 # 3. SonarQube

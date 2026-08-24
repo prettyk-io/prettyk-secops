@@ -6,9 +6,9 @@ files = [
     'prettyk-backend:orchestrator/utils/discovery_candidate_builder.py',
     'prettyk-backend:orchestrator/utils/baseline_delta.py',
     'prettyk-backend:orchestrator/utils/finding_identity.py',
-    'prettyk-frontend:cosmo/src/admin/BaselineDelta.tsx',
-    'prettyk-frontend:cosmo/src/admin/PreflightAdvisoryStrip.tsx',
-    'prettyk-frontend:cosmo/src/studio/ScenarioPhaseFolder.tsx',
+    'prettyk-frontend:frontend/src/admin/BaselineDelta.tsx',
+    'prettyk-frontend:frontend/src/admin/PreflightAdvisoryStrip.tsx',
+    'prettyk-frontend:frontend/src/studio/ScenarioPhaseFolder.tsx',
 ]
 ck = ','.join(files)
 url = f'http://127.0.0.1:9000/api/issues/search?projectKeys=prettyk-backend,prettyk-frontend&statuses=OPEN&ps=100&componentKeys={ck}'

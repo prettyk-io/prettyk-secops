@@ -77,8 +77,8 @@ yarn-error.log*
 # Login ambient (десятки MB — не в git; poster webp — можно коммитить)
 frontend/public/media/*.mp4
 frontend/public/media/*.webm
-cosmo/public/media/*.mp4
-cosmo/public/media/*.webm
+frontend/public/media/*.mp4
+frontend/public/media/*.webm
 deploy_vps/www/*.mp4
 deploy_vps/www/**/*.mp4
 deploy_vps/www/**/*.webm
@@ -132,8 +132,8 @@ Desktop.ini
 sandbox/
 
 # Local spike scratch — сессии/куки/БД/скриншоты: в git не коммитить
-cosmo/cookies*.txt
-cosmo/spike-auth.db*
+frontend/cookies*.txt
+frontend/spike-auth.db*
 orchestrator/juice_expensive.png
 
 # Local tooling config (agent permission state)
@@ -148,14 +148,14 @@ permissions.json
 .sonar/
 
 # vnext workspace artifacts
-cosmo/test-results/
-cosmo/playwright-report/
+frontend/test-results/
+frontend/playwright-report/
 
 .sonar-token.tmp
 
 # Отраслевой пакет бланков/ассетов (CBR / ЦБ) — только локально, в git не коммитить
 # (см. rule .opencode/rules/cbr-cosmo-only.mdc). Бэкап: %USERPROFILE%\cbr-backup-*.zip
-/sanctuary/canon/custom/cosmo/cbr-specific/
+/sanctuary/custom/cosmo/cbr-specific/
 
 
 # LLM model (QWEN3-ALERT-ASSISTANT) — 1.2GB, не коммитить

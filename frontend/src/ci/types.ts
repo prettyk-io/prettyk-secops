@@ -233,11 +233,15 @@ export interface DedupRecord {
 export interface FindingRecord extends DedupRecord {
   severity?: string;
   title?: string;
+  /** Шаг, породивший finding (для Reproduce / Debugger). */
+  stepId?: string;
 }
 
 export interface EvidenceRecord extends DedupRecord {
   checksum?: string;
   kind?: string;
+  /** Шаг, породивший evidence. */
+  stepId?: string;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

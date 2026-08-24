@@ -28,7 +28,7 @@ ZERO_COBERTURA = """<?xml version="1.0" encoding="UTF-8"?>
 </coverage>
 """
 ZERO_LCOV = """TN:
-SF:cosmo/src/.sonar-coverage-placeholder.ts
+SF:frontend/src/.sonar-coverage-placeholder.ts
 DA:1,0
 LF:1
 LH:0
