@@ -375,7 +375,7 @@ export type AiClassifyResult = {
 
 const AI_LIVE_BASE = LIVE_BASE;
 
-/** EXP-01: включён ли Qwen3-ассистент (KDT_AI_ASSISTANT_ENABLED=1). */
+/** EXP-01: включён ли Qwen3-ассистент (PK_AI_ASSISTANT_ENABLED=1). */
 export async function fetchAiEnabled(fetchImpl: typeof fetch = fetch): Promise<boolean> {
   try {
     const res = await fetchImpl(`${AI_LIVE_BASE}/api/ai/status`, { cache: 'no-store' });

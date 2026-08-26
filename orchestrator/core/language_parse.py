@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Парсер pretty language-скрипта → AST (канон)."""
 from __future__ import annotations
 

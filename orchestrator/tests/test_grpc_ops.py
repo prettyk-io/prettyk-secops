@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 import pytest
@@ -45,22 +45,22 @@ def test_proto_reject_empty():
 
 
 def test_reflection_skipped_by_default(monkeypatch):
-    monkeypatch.delenv("KDT_GRPC_REFLECTION", raising=False)
+    monkeypatch.delenv("PK_GRPC_REFLECTION", raising=False)
     res = try_server_reflection(host="localhost:50051")
     assert res["skipped"] is True
     assert res["attempted"] is False
 
 
 def test_unary_harness_bolvan(monkeypatch):
-    monkeypatch.delenv("KDT_GRPC_UNARY", raising=False)
+    monkeypatch.delenv("PK_GRPC_UNARY", raising=False)
     res = unary_call_harness(host="localhost:50051", method="Greeter/SayHello")
     assert res["ok"] is True
     assert res["skipped"] is True
-    assert any("KDT_GRPC_UNARY" in n for n in res["notes"])
+    assert any("PK_GRPC_UNARY" in n for n in res["notes"])
 
 
 def test_unary_harness_live_flag_uses_bank_path(monkeypatch):
-    monkeypatch.setenv("KDT_GRPC_UNARY", "1")
+    monkeypatch.setenv("PK_GRPC_UNARY", "1")
 
     def _fake_live(**kwargs):
         assert "50051" in kwargs["host"] or kwargs["host"]
@@ -90,19 +90,19 @@ def test_unary_harness_live_flag_uses_bank_path(monkeypatch):
 def test_grpc_dial_target_api_lab_remap(monkeypatch):
     from utils.grpc_ops import _grpc_dial_target
 
-    monkeypatch.delenv("KDT_GRPC_PORT", raising=False)
+    monkeypatch.delenv("PK_GRPC_PORT", raising=False)
     target, notes = _grpc_dial_target("127.0.0.1:8090")
     assert target == "127.0.0.1:50051"
     assert any("remap" in n for n in notes)
 
-    monkeypatch.setenv("KDT_GRPC_PORT", "50051")
+    monkeypatch.setenv("PK_GRPC_PORT", "50051")
     target2, notes2 = _grpc_dial_target("127.0.0.1:8090")
     assert target2 == "127.0.0.1:50051"
-    assert any("KDT_GRPC_PORT" in n for n in notes2)
+    assert any("PK_GRPC_PORT" in n for n in notes2)
 
 
 def test_unary_harness_import_error_not_silent_bolvan(monkeypatch):
-    monkeypatch.setenv("KDT_GRPC_UNARY", "1")
+    monkeypatch.setenv("PK_GRPC_UNARY", "1")
     import builtins
 
     real_import = builtins.__import__

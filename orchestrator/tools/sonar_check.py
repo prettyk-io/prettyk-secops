@@ -1,4 +1,4 @@
-import json, urllib.request, base64
+﻿import json, urllib.request, base64
 cred = base64.b64encode(b'admin:thereIsNoShameInIt#1').decode()
 files = [
     'prettyk-backend:orchestrator/utils/discovery_compiler.py',

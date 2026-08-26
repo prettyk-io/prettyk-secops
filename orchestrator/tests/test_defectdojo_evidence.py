@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 from adapters.defectdojo_client import (
     _parse_import_payload,
     build_dojo_engagement_url,
@@ -8,9 +8,9 @@ from adapters.defectdojo_client import (
 
 
 def test_engagement_mode_check(monkeypatch):
-    monkeypatch.setenv("KDT_DEFECTDOJO_ENGAGEMENT_MODE", "check")
+    monkeypatch.setenv("PK_DEFECTDOJO_ENGAGEMENT_MODE", "check")
     assert engagement_mode() == "check"
-    monkeypatch.setenv("KDT_DEFECTDOJO_ENGAGEMENT_MODE", "fixed")
+    monkeypatch.setenv("PK_DEFECTDOJO_ENGAGEMENT_MODE", "fixed")
     assert engagement_mode() == "fixed"
 
 
@@ -82,11 +82,11 @@ def test_build_engagement_url():
 def test_import_detailed_check_mode_posts_auto_create(monkeypatch, tmp_path):
     xml = tmp_path / "zap.xml"
     xml.write_text("<xml/>", encoding="utf-8")
-    monkeypatch.setenv("KDT_DEFECTDOJO_URL", "http://dojo.test")
-    monkeypatch.setenv("KDT_DEFECTDOJO_TOKEN", "tok")
-    monkeypatch.setenv("KDT_DEFECTDOJO_ENGAGEMENT_MODE", "check")
-    monkeypatch.setenv("KDT_META_PROJECT_ID", "ib-web")
-    monkeypatch.setenv("KDT_CHECK_ID", "chk_1")
+    monkeypatch.setenv("PK_DEFECTDOJO_URL", "http://dojo.test")
+    monkeypatch.setenv("PK_DEFECTDOJO_TOKEN", "tok")
+    monkeypatch.setenv("PK_DEFECTDOJO_ENGAGEMENT_MODE", "check")
+    monkeypatch.setenv("PK_META_PROJECT_ID", "ib-web")
+    monkeypatch.setenv("PK_CHECK_ID", "chk_1")
 
     captured = {}
 

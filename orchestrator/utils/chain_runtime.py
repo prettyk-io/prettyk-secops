@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Цепь: resolve / materialize HAR + PrettyK seeds (без режим=)."""
 from __future__ import annotations
 

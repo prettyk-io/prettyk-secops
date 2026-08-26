@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """G-06 --validate-only без ZAP/Grid."""
 from __future__ import annotations
 

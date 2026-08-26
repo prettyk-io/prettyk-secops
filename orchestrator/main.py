@@ -1,4 +1,4 @@
-from utils.env_dual import pk_env
+﻿from utils.env_dual import pk_env
 import os
 import sys
 import json
@@ -93,7 +93,7 @@ def _resolve_admission_counts(controller, report_status: dict):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="KDT Framework Runner")
+    parser = argparse.ArgumentParser(description="PrettyK Runner")
     parser.add_argument("--wired", required=True, help="Path to wired JSON")
     parser.add_argument(
         "--validate-only",

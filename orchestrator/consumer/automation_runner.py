@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """AutomationRunner — Playwright-only scenario runner (no ZAP, no Dojo, no Allure).
 
 ADM-0 Contract Proof: same Wired/DSL scenario, two consumers.

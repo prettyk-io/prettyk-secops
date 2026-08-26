@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """manual JSON без zap_mode/base_url — playground start не должен резать schema noise."""
 from __future__ import annotations
 

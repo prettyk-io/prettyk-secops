@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """QG-AF-12: GatePolicy JSON loader."""
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ def test_load_lab_default_file():
 
 def test_write_and_reload_roundtrip(tmp_path, monkeypatch):
     path = tmp_path / "gate_policy.json"
-    monkeypatch.setenv("KDT_GATE_POLICY_PATH", str(path))
+    monkeypatch.setenv("PK_GATE_POLICY_PATH", str(path))
     bundle = bundle_from_public_dict(
         {
             "max_critical": 0,

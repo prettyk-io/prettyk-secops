@@ -323,6 +323,45 @@ body {
   user-select: none;
 }
 
+/* STU-RAILS F4: legacy/reference метки — старые поверхности явно отделены от новых. */
+.pk-legacy-header-badge {
+  font-family: ui-monospace, 'JetBrains Mono', 'SFMono-Regular', Menlo, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  line-height: 1;
+  transform: translateY(-2px);
+}
+
+.pk-legacy-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+  padding: 6px 16px;
+  background: rgba(245, 158, 11, 0.08);
+  border-bottom: 1px solid rgba(245, 158, 11, 0.28);
+}
+
+.pk-legacy-banner-label {
+  font-family: ui-monospace, 'JetBrains Mono', 'SFMono-Regular', Menlo, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fbbf24;
+  white-space: nowrap;
+}
+
+.pk-legacy-banner-hint {
+  font-size: 12px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* РљР°РЅРѕРЅРёС‡РµСЃРєРёР№ Р±СЂРµРЅРґРѕРІС‹Р№ Р»РѕРє-Р°Рї PrettyKMark вЂ” РєРѕРјРїРѕР·РёС‚РЅС‹Р№ PNG (pure/brand/editor/*.png).
  * Р’Р°СЂРёР°РЅС‚С‹: secops (Pretty< SECOPS ||в–¶ LAB), editor (Pretty< EDITOR </>), live (Pretty< LIVE).
  * Р’С‹СЃРѕС‚Р° Р°РґР°РїС‚РёРІРЅР° РїРѕРґ РєРѕРјС„РѕСЂС‚РЅС‹Р№ РїСЂРѕСЃРјРѕС‚СЂ Рё РїР»РѕС‚РЅС‹Р№ Р°РєС†РµРЅС‚ РІ С€Р°РїРєРµ (32px РІ header 56px, 28px РІ live). */
@@ -2314,6 +2353,15 @@ textarea.pk-field-locked-input.ant-input:focus {
   line-height: 1;
   white-space: normal;
   width: 100%;
+}
+
+/* ER-3: обрезка длинных имён (leaf/folder) без развала 24px-строки и guide rails. */
+.pk-studio-tree-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ?????? ????????-???? ????????? ????: ?????? ?? ?????? ???????????? ???????????? ????? (15.4px). */
@@ -6601,5 +6649,78 @@ html[data-pk-button-style='wireframe'] .pk-header-download.ant-btn-primary {
 .pk-mirror-led--failure   { color: #EF4444; animation: pk-led-strobe-red 0.3s ease-in-out 3 forwards; }
 .pk-mirror-led--predicted { color: #A855F7; animation: pk-led-prelight 1.5s ease-in-out infinite; }
 .pk-mirror-led--queued    { color: #475569; opacity: 0.3; }
+
+/* ── PK-EC-10: Secret Badge Glyph Margin ─────────────────────── */
+.pk-secret-badge-glyph {
+  width: 10px !important;
+  margin-left: 2px;
+  opacity: 0.85;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='12' viewBox='0 0 10 12' fill='none'%3E%3Crect x='1' y='5' width='8' height='7' rx='1' fill='rgba(168,85,247,0.7)'/%3E%3Cpath d='M3 5V3a2 2 0 114 0v2' stroke='rgba(168,85,247,0.7)' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: 10px 12px;
+}
+
+/* ── E2: Gutter Run — Play ▶ + Idle ○ glyph margin ────────────── */
+.pk-gutter-idle {
+  width: 12px !important;
+  margin-left: 3px;
+  opacity: 0.25;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Ccircle cx='4' cy='4' r='3' fill='none' stroke='%2364748b' stroke-width='1'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: 8px 8px;
+  transition: opacity 0.15s;
+}
+
+.pk-gutter-play {
+  width: 12px !important;
+  margin-left: 3px;
+  opacity: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='9' viewBox='0 0 8 9'%3E%3Cpolygon points='0,0 8,4.5 0,9' fill='%2367e8f9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: 7px 8px;
+  transition: opacity 0.15s, transform 0.12s;
+  cursor: pointer;
+}
+.pk-gutter-play:hover {
+  opacity: 0.85;
+  transform: scale(1.15);
+}
+
+/* ── CDP-WIRE POC-CDP-4: «✨ Discovered» pulse ────────────── */
+.pk-discovered-line {
+  background: linear-gradient(90deg, rgba(52, 211, 153, 0.20), rgba(52, 211, 153, 0.02)) !important;
+  animation: pk-discovered-fade 1.6s ease-out forwards;
+}
+
+.pk-discovered-gutter {
+  width: 14px !important;
+  margin-left: 2px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%2334d399'%3E%3Cpath d='M12 0C12 6.6 6.6 12 0 12c6.6 0 12 5.4 12 12 0-6.6 5.4-12 12-12-6.6 0-12-5.4-12-12z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: 12px 12px;
+  animation: pk-discovered-pulse 1.6s ease-out forwards;
+}
+
+@keyframes pk-discovered-fade {
+  0% { opacity: 1; }
+  65% { opacity: 0.55; }
+  100% { opacity: 0; }
+}
+
+@keyframes pk-discovered-pulse {
+  0% { opacity: 0; transform: scale(0.4); }
+  30% { opacity: 1; transform: scale(1.25); }
+  100% { opacity: 0; transform: scale(1); }
+}
+
+/* Soft violet tint on secret lines (subtle, not distracting) */
+.pk-secret-badge-line {
+  background: rgba(168, 85, 247, 0.04) !important;
+  border-left: 2px solid rgba(168, 85, 247, 0.2) !important;
+}
 
 

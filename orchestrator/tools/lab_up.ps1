@@ -5,8 +5,8 @@
 
 .DESCRIPTION
   Обязательный контур: Grid, allure3-secops (:5050, канон), scanner,
-  Juice Shop, prettyk-api-lab (REST/GraphQL/gRPC), Editor, playground и idle PrettyK Live.
-  Webswing намеренно не запускается (см. global skill `secops-lab`).
+  Juice Shop, pk-api-lab (REST/GraphQL/gRPC), Editor, playground и idle PrettyK Live.
+  Webswing намеренно не запускается (см. global skill `prettyk-lab`).
   DefectDojo — только -IncludeDefectDojo.
   SonarQube — только -IncludeSonarQube.
   Чистку не делает: перед чистым прогоном lab_clean.ps1 -Target allure,live.
@@ -141,7 +141,7 @@ Ensure-LiveIdle
 Wait-Http -Name 'Allure' -Url 'http://127.0.0.1:5050/health'
 Wait-Http -Name 'scanner daemon' -Url 'http://127.0.0.1:8080/JSON/core/view/version/'
 Wait-Http -Name 'Juice Shop' -Url 'http://127.0.0.1:3000/'
-Wait-Http -Name 'prettyk-api-lab' -Url 'http://127.0.0.1:8090/health' -TimeoutSeconds 120
+Wait-Http -Name 'pk-api-lab' -Url 'http://127.0.0.1:8090/health' -TimeoutSeconds 120
 if ($IncludeDefectDojo) {
     Wait-Http -Name 'DefectDojo' -Url 'http://127.0.0.1:8081/' -TimeoutSeconds 120
 }

@@ -1,4 +1,4 @@
-# Локальный стенд KDT
+# Локальный стенд PrettyK
 
 > Обязательный контур: [`canon/lab-up.md`](canon/lab-up.md) (**CANON**).  
 > Роли Grid / Live / Allure / Dojo: [`canon/runtime-shell.md`](canon/runtime-shell.md).  
@@ -41,7 +41,7 @@ Set-Location ..
 > **После инвазивных правок FE сдавать мёртвый Editor нельзя.**  
 > DoD агента (глаза: форма логина или shell, не белый экран; падение → логи и корень) —  
 > см. [`agent-entrypoint.md`](agent-entrypoint.md) § «DoD: живой Editor после инвазивного FE».  
-> Операционный чеклист стенда — global skill **`secops-lab`** (startup: `lab_up.ps1`).  
+> Операционный чеклист стенда — global skill **`prettyk-lab`** (startup: `lab_up.ps1`).  
 > Обратная ссылка на этот раздел — там же (Jira-style bidirectional).
 
 ### Только интерфейс
@@ -83,8 +83,8 @@ Juice Shop, Editor/playground и idle PrettyK Live, после чего ждёт
 ### 1. Подготовить сеть и каталоги
 
 ```powershell
-docker network inspect prettyk-net *> $null
-if ($LASTEXITCODE -ne 0) { docker network create prettyk-net }
+docker network inspect pk-net *> $null
+if ($LASTEXITCODE -ne 0) { docker network create pk-net }
 
 New-Item -ItemType Directory -Force -Path `
   reports\allure-results, `
@@ -136,9 +136,9 @@ curl.exe -fsS http://127.0.0.1:8767/api/meta
 |---|---|
 | Редактор | [http://localhost:5173/](http://localhost:5173/) |
 | Juice Shop | [http://127.0.0.1:3000/](http://127.0.0.1:3000/) |
-| prettyk-api-lab (REST/OpenAPI) | [http://127.0.0.1:8090/](http://127.0.0.1:8090/health) · [openapi.json](http://127.0.0.1:8090/openapi.json) |
-| prettyk-api-lab GraphQL | [http://127.0.0.1:8090/graphql](http://127.0.0.1:8090/graphql) · [SDL](http://127.0.0.1:8090/graphql/sdl) |
-| prettyk-api-lab gRPC | `127.0.0.1:50051` (`bank.v1.AccountService`) · proto pack `services/prettyk-api-lab/proto_pack` |
+| pk-api-lab (REST/OpenAPI) | [http://127.0.0.1:8090/](http://127.0.0.1:8090/health) · [openapi.json](http://127.0.0.1:8090/openapi.json) |
+| pk-api-lab GraphQL | [http://127.0.0.1:8090/graphql](http://127.0.0.1:8090/graphql) · [SDL](http://127.0.0.1:8090/graphql/sdl) |
+| pk-api-lab gRPC | `127.0.0.1:50051` (`bank.v1.AccountService`) · proto pack `services/pk-api-lab/proto_pack` |
 | PrettyK Live | [http://127.0.0.1:8767/](http://127.0.0.1:8767/) |
 | Chrome noVNC | [http://127.0.0.1:7900/?autoconnect=1&resize=scale](http://127.0.0.1:7900/?autoconnect=1&resize=scale) |
 | Selenium Grid | [http://127.0.0.1:4444/ui/](http://127.0.0.1:4444/ui/) |
@@ -273,8 +273,8 @@ docker compose -f services\docker-compose.defectdojo.yml up -d
 Статический анализ (INFRA-10). Не в обязательном `lab_up` — только явный старт. Нужно ~2–4 ГБ RAM сверх базового контура; первый boot 2–5 мин.
 
 ```powershell
-docker network inspect prettyk-net *> $null
-if ($LASTEXITCODE -ne 0) { docker network create prettyk-net }
+docker network inspect pk-net *> $null
+if ($LASTEXITCODE -ne 0) { docker network create pk-net }
 docker compose -f services\docker-compose.sonarqube.yml up -d
 ```
 
@@ -296,7 +296,7 @@ UI: [http://127.0.0.1:9000/](http://127.0.0.1:9000/). Креды admin — в gi
 | Симптом | Что проверить |
 |---|---|
 | `npm.ps1 cannot be loaded` | используйте `npm.cmd` |
-| `network prettyk-net not found` | повторите подготовку сети |
+| `network pk-net not found` | повторите подготовку сети |
 | Редактор не отвечает | выполните `lab_ensure_ui.ps1`; Vite обычно доступен через `localhost`, не `127.0.0.1`. Логи: `.cursor/logs/vite-dev.log` / `vite-dev.err.log`. Старт UI — вне Job Object агентского шелла (иначе Vite умирает вместе с abort/end-of-turn). |
 | Белая страница, в DevTools `__BUNDLED_DEV__ is not defined` | это известная ошибка Vite 8 HMR-клиента. В `vite.config.ts` есть workaround. Перезапустите только Vite: завершите его терминал и выполните `Set-Location cosmo; npm.cmd run dev`. Убедитесь, что [http://localhost:5173/@vite/client](http://localhost:5173/@vite/client) содержит `const isBundleMode = false;`. |
 | `lab_ensure_ui.ps1` завершился на `curl: (7) Failed to connect` вместо запуска Vite | обновите рабочую копию: скрипт теперь подавляет ожидаемый stderr `curl` и доходит до `Start-Vite`. Для немедленного UI-запуска используйте `Set-Location cosmo; npm.cmd run dev`. |

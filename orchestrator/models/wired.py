@@ -1,4 +1,4 @@
-"""
+﻿"""
 Pydantic-модели манифеста.
 
 Источник правды — docs/Wired.json (JSON Schema / Форма / Редактор).
@@ -16,7 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 StrictModel = ConfigDict(extra="ignore")
 
 
-def strip_legacy_manifest_dict(data: Any) -> Any:
+def strip_legacy_wired_dict(data: Any) -> Any:
     """Нормализует входящий манифест:
     - Плоский {regulation, editor} → legacy-структура
     - base_url/allowed_extra_domains из security_configuration → infrastructure

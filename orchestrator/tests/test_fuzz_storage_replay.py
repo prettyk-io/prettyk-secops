@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """S-1 / S-2: storage → fuzz Authorization + redact names in meta/digest."""
 from __future__ import annotations
 

@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Root = Resolve-Path (Join-Path $ScriptDir "..\..\")
 $Or = Join-Path $Root "orchestrator"
-$Cosmo = Join-Path $Root "cosmo"
+$Frontend = Join-Path $Root "frontend"
 $Py = Join-Path $Root ".venv\Scripts\python.exe"
 
 if (-not (Test-Path (Join-Path $Or "tools\data_playground.py"))) {
@@ -21,7 +21,7 @@ if (-not (Test-Path $Py)) {
 # Editor :5173
 $ed = netstat -ano | Select-String ":5173 .*LISTENING"
 if (-not $ed) {
-    Start-Process -FilePath "cmd" -ArgumentList "/c cd /d `"$Cosmo`" && npm run dev" -WindowStyle Hidden
+    Start-Process -FilePath "cmd" -ArgumentList "/c cd /d `"$Frontend`" && npm run dev" -WindowStyle Hidden
     Write-Host "editor :5173 launched"
 } else {
     Write-Host "editor :5173 alive"

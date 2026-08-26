@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """IMP-HAR: ZAP path rewrite + controller har_file stream."""
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ def test_zap_har_file_for_api_rewrites_under_runs(tmp_path, monkeypatch):
     monkeypatch.setattr("adapters.zap_adapter.RUNS_DIR", runs)
     out = zap_har_file_for_api(str(host))
     assert out.replace("\\", "/").endswith("abc/resources/checkout.har")
-    assert out.startswith("/zap/wrk/kdt-runs/")
+    assert out.startswith("/zap/wrk/pk-runs/")
 
 
 def test_zap_har_file_outside_runs_unchanged(tmp_path, monkeypatch):
@@ -49,7 +49,7 @@ def test_import_har_sequence_uses_rewritten_path(tmp_path, monkeypatch):
     zap._zap = MagicMock()
     assert zap.import_har_sequence("seq", str(har), assert_code=False) is True
     data = zap._zap.urlopen.call_args.kwargs["data"]
-    assert data["harFile"].startswith("/zap/wrk/kdt-runs/")
+    assert data["harFile"].startswith("/zap/wrk/pk-runs/")
     assert data["harFile"].endswith("r1/resources/x.har")
 
 

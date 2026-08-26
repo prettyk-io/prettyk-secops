@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Playwright Adapter — counterpart to WebDriverAdapter.
 
 PW-1: browser lifecycle, navigation, basic interactions.
@@ -400,7 +400,7 @@ class PlaywrightAdapter(BaseAdapter):
     def set_extra_http_headers(self, headers: str):
         """Set extra HTTP headers on all requests from this page.
 
-        headers: JSON string like '{"X-KDT-User":"admin","Authorization":"Bearer ..."}'
+        headers: JSON string like '{"X-PK-User":"admin","Authorization":"Bearer ..."}'
         """
         page = self._ensure_page()
         import json as _json

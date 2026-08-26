@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 RET-API: Менеджер хранилища и очистки артефактов SecOps Lab / Monitor / Runs.
 

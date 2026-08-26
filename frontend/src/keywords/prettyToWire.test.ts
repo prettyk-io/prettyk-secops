@@ -10,16 +10,16 @@ import {
 } from './prettyToWire';
 
 const S1_PRETTY = `Пусть $username = СлучайныйEmail
-Пусть $password_value = "kdt_password"
-Пусть $security_answer = "kdt"
+Пусть $password_value = "pk_password"
+Пусть $security_answer = "pk"
 Пусть $run_id = UUID
 Пусть $stamp = Сейчас "%d.%m %H:%M"
 Пусть $search_q = "Permafrost"
 Лог "прогон $run_id / $stamp, user $username"`;
 
 const S1_WIRE = `core|generate_random_email → username
-data|let|password_value|"kdt_password"
-data|let|security_answer|"kdt"
+data|let|password_value|"pk_password"
+data|let|security_answer|"pk"
 core|generate_uuid → run_id
 core|current_datetime|%d.%m %H:%M → stamp
 data|let|search_q|"Permafrost"
@@ -63,14 +63,14 @@ describe('prettyToWire', () => {
   it('Секрет: только кавычки / $ref; value и склейка — нет', () => {
     expect(isBadSecretRhs('')).toBe(true);
     expect(isBadSecretRhs('value')).toBe(true);
-    expect(isBadSecretRhs('valueПусть $password_value = "kdt_password"')).toBe(true);
-    expect(isBadSecretRhs('"kdt_password"')).toBe(false);
+    expect(isBadSecretRhs('valueПусть $password_value = "pk_password"')).toBe(true);
+    expect(isBadSecretRhs('"pk_password"')).toBe(false);
     expect(isBadSecretRhs('$password_value')).toBe(false);
     expect(
       resolvePrettyDataLine('Секрет $name = valueПусть $password_value = "x"'),
     ).toBeUndefined();
-    expect(resolvePrettyDataLine('Секрет $password_value = "kdt_password"')).toBe(
-      'data|secret|password_value|"kdt_password"',
+    expect(resolvePrettyDataLine('Секрет $password_value = "pk_password"')).toBe(
+      'data|secret|password_value|"pk_password"',
     );
   });
 

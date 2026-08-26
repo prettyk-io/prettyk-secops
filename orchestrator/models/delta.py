@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """QWEN3-ALERT-ASSISTANT W1: delta schemas.
 
 Deterministic delta (always) + AI advisory delta (optional, fail-closed).

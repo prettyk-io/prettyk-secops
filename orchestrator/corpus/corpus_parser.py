@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """CD-2: парсер корпуса — extract параметры/инпуты из ``DiscoveryCorpus``.
 
 Из DOM-снимков вытаскиваем ``<input>/<form>/<select>/<textarea>`` + ``name/type/value``,

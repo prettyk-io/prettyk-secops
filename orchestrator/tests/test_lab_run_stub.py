@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Интеграция Results-потока на болванке lab_run_stub (без Juice)."""
 from __future__ import annotations
 
@@ -34,8 +34,8 @@ def _isolate(monkeypatch, tmp_path):
     monkeypatch.setattr("utils.paths.RUNS_DIR", runs)
     monkeypatch.setattr("utils.lab_run.RUNS_DIR", runs)
     monkeypatch.setattr("utils.lab_run.ensure_runs_dir", lambda: runs)
-    monkeypatch.setenv("KDT_LIVE", "1")
-    monkeypatch.setenv("KDT_LIVE_PORT", "18769")
+    monkeypatch.setenv("PK_LIVE", "1")
+    monkeypatch.setenv("PK_LIVE_PORT", "18769")
     diary_bus.clear()
     diary_bus.clear_results_hooks()
     lab_run.reset_run_state_for_tests()

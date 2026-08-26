@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """test_suites.imports → DataStream (F-02 MVP data_file .txt)."""
 from __future__ import annotations
 

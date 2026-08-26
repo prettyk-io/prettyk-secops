@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 from utils.traffic_insertion_points import (
     TRAFFIC_FEED_ENV,
     extract_observed_insertion_points,

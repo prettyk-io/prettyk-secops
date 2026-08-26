@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 HEAL-B runtime: context gate + DOM candidates + Live clue.
 
@@ -29,8 +29,8 @@ from utils.locator_heal_policy import HealStrategy, choose_heal_strategy
 
 logger = logging.getLogger("orchestrator")
 
-_heal_gate: ContextVar[bool] = ContextVar("kdt_locator_heal_gate", default=False)
-_heal_label: ContextVar[str] = ContextVar("kdt_locator_heal_label", default="")
+_heal_gate: ContextVar[bool] = ContextVar("pk_locator_heal_gate", default=False)
+_heal_label: ContextVar[str] = ContextVar("pk_locator_heal_label", default="")
 _fp_store: Dict[Tuple[str, str], ElementFingerprint] = {}
 _fp_loaded = False
 

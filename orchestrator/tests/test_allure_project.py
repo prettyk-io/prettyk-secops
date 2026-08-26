@@ -1,14 +1,14 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 from pathlib import Path
 
 from utils import allure_project as ap
 
 
 def test_default_mode_flat(monkeypatch, tmp_path):
-    monkeypatch.setenv("KDT_REPORTS_DIR", str(tmp_path))
-    monkeypatch.delenv("KDT_ALLURE_PROJECT_MODE", raising=False)
-    monkeypatch.delenv("KDT_CHECK_ID", raising=False)
-    monkeypatch.delenv("KDT_RUN_ID", raising=False)
+    monkeypatch.setenv("PK_REPORTS_DIR", str(tmp_path))
+    monkeypatch.delenv("PK_ALLURE_PROJECT_MODE", raising=False)
+    monkeypatch.delenv("PK_CHECK_ID", raising=False)
+    monkeypatch.delenv("PK_RUN_ID", raising=False)
     import importlib
 
     from utils import paths as paths_mod
@@ -23,10 +23,10 @@ def test_default_mode_flat(monkeypatch, tmp_path):
 
 
 def test_check_mode_prefers_check_id(monkeypatch, tmp_path):
-    monkeypatch.setenv("KDT_REPORTS_DIR", str(tmp_path))
-    monkeypatch.setenv("KDT_ALLURE_PROJECT_MODE", "check")
-    monkeypatch.setenv("KDT_RUN_ID", "9fe732d1435b")
-    monkeypatch.setenv("KDT_CHECK_ID", "chk_abc-123!")
+    monkeypatch.setenv("PK_REPORTS_DIR", str(tmp_path))
+    monkeypatch.setenv("PK_ALLURE_PROJECT_MODE", "check")
+    monkeypatch.setenv("PK_RUN_ID", "9fe732d1435b")
+    monkeypatch.setenv("PK_CHECK_ID", "chk_abc-123!")
     import importlib
 
     importlib.reload(ap)
@@ -39,10 +39,10 @@ def test_check_mode_prefers_check_id(monkeypatch, tmp_path):
 
 
 def test_check_mode_fallback_to_run_id_when_no_check_id(monkeypatch, tmp_path):
-    monkeypatch.setenv("KDT_REPORTS_DIR", str(tmp_path))
-    monkeypatch.setenv("KDT_ALLURE_PROJECT_MODE", "check")
-    monkeypatch.setenv("KDT_RUN_ID", "9fe732d1435b")
-    monkeypatch.delenv("KDT_CHECK_ID", raising=False)
+    monkeypatch.setenv("PK_REPORTS_DIR", str(tmp_path))
+    monkeypatch.setenv("PK_ALLURE_PROJECT_MODE", "check")
+    monkeypatch.setenv("PK_RUN_ID", "9fe732d1435b")
+    monkeypatch.delenv("PK_CHECK_ID", raising=False)
     import importlib
 
     importlib.reload(ap)
@@ -53,10 +53,10 @@ def test_check_mode_fallback_to_run_id_when_no_check_id(monkeypatch, tmp_path):
 
 
 def test_check_mode_subdir_not_meta_project_id(monkeypatch, tmp_path):
-    monkeypatch.setenv("KDT_REPORTS_DIR", str(tmp_path))
-    monkeypatch.setenv("KDT_ALLURE_PROJECT_MODE", "check")
-    monkeypatch.setenv("KDT_CHECK_ID", "chk_abc-123!")
-    monkeypatch.setenv("KDT_META_PROJECT_ID", "ib-web")  # must NOT become allure id
+    monkeypatch.setenv("PK_REPORTS_DIR", str(tmp_path))
+    monkeypatch.setenv("PK_ALLURE_PROJECT_MODE", "check")
+    monkeypatch.setenv("PK_CHECK_ID", "chk_abc-123!")
+    monkeypatch.setenv("PK_META_PROJECT_ID", "ib-web")  # must NOT become allure id
     import importlib
 
     from utils import paths as paths_mod

@@ -158,6 +158,16 @@ export const authClient = {
     },
   },
 
+  /** Change the current user's password. */
+  async changePassword(currentPassword: string, newPassword: string, revokeOtherSessions = true): Promise<{ ok: boolean; error?: string }> {
+    const fromServer = await _fetch<{ ok: boolean; error?: string }>('/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword, revokeOtherSessions }),
+    });
+    if (fromServer) return fromServer;
+    return { ok: false, error: 'Server unavailable' };
+  },
+
   /** Invalidate the cached session (after logout). */
   clearSession() {
     _cachedSession = null;

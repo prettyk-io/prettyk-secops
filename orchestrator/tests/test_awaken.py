@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """CD-4: awaken — эвристическое пробуждение запросов."""
 from __future__ import annotations
 

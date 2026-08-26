@@ -1,12 +1,12 @@
-# Приказ 66 — старт стенда после перезагрузки
+﻿# Приказ 66 — старт стенда после перезагрузки
 
-> Канон-репо: `D:\prettyk-dev`. Старый `C:\Users\mails\Documents\zap-kdt` — справочно, не стартовать оттуда.
+> Канон-репо: `D:\prettyk-dev`. Старый `C:\Users\mails\Documents\prettyk-dev` — справочно, не стартовать оттуда.
 
 ## 1. Docker (основной стек)
 
 ```powershell
 cd D:\prettyk-dev\services
-docker network create prettyk-net 2>$null
+docker network create pk-net 2>$null
 
 # Основной стек
 docker compose -f docker-compose.yml -f docker-compose.zap.yml -f docker-compose.target.yml up -d
@@ -46,7 +46,7 @@ $env:PK_AI_ASSISTANT_ENABLED = "1"
 docker ps --format "table {{.Names}}\t{{.Status}}"
 
 # Должны быть: selenium-hub, chrome, firefox, chrome-video (Grid)
-#   zap, juice-shop, kdt-api-lab (сканер/цель)
+#   zap, juice-shop, pk-api-lab (сканер/цель)
 #   allure3-secops, allure-light-secops (отчёты)
 #   defectdojo-* (6 штук)
 #   llm-server, llama-server, llama-server-reasoning (QWEN)
@@ -84,9 +84,9 @@ curl.exe -sS --max-time 5 http://127.0.0.1:8767/api/meta                   # →
 | Симптом | Причина | Фикс |
 |---|---|---|
 | Dojo Exited (255) | compose не поднят после перезагрузки | §2 |
-| Dojo up но run падает `нужен KDT_DEFECTDOJO_ENGAGEMENT` | Нет `.env.example` в `services/defectdojo/` | Скопировать из старого репо |
+| Dojo up но run падает `нужен PK_DEFECTDOJO_ENGAGEMENT` | Нет `.env.example` в `services/defectdojo/` | Скопировать из старого репо |
 | `exit_code=1, gate=void` | Dojo import failed | Проверить curl :8081 + engagement ID |
 | QWEN `ai_assistant_enabled: false` | `PK_AI_ASSISTANT_ENABLED` не в окружении | `$env:PK_AI_ASSISTANT_ENABLED = "1"` перед Live |
 | Дубликаты python на портах | Старый процесс жив | `taskkill /IM python.exe /F`, затем `lab_ensure_ui.ps1` |
-| `kdt / juice_shop_test_1` в мониторе | Старый код до фикса | Перезапустить Live — код исправлен |
+| `pk / juice_shop_test_1` в мониторе | Старый код до фикса | Перезапустить Live — код исправлен |
 | SonarQube Exited | compose отдельный | `docker compose -f docker-compose.sonarqube.yml up -d` |

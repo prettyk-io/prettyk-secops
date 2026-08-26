@@ -28,6 +28,7 @@ const NAV_ITEMS: readonly NavItem[] = [
   { id: 'home', label: 'Главная', hint: 'Старт проверки', route: { kind: 'home' } },
   { id: 'history', label: 'История', hint: 'Список проверок', route: { kind: 'history' } },
   { id: 'admin', label: 'Админка', route: { kind: 'admin' } },
+  { id: 'sanctuary-map', label: 'Радар Обители', hint: 'Карта приложения', route: { kind: 'sanctuary-map' } },
 ];
 
 const CREATE_TILES = HUB_ACTION_TILES.filter((tile) => !tile.isStub && !tile.isExternal);

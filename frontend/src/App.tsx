@@ -29,6 +29,7 @@ import { KeywordsContext, type KeywordsState } from './keywords/KeywordsContext'
 import { collectVariables } from './keywords/variables';
 import { collectPageIds } from './keywords/pages';
 import { PrettyKMark } from './components/PrettyKMark';
+import { Badge } from '@/components/ui/badge';
 import { ShellAmbientVideo } from './shell/ShellAmbientVideo';
 import { ThemeToggle } from './shell/ThemeToggle';
 import { LogoutButton } from './shell/LogoutButton';
@@ -48,10 +49,25 @@ import {
   updateCheck,
   upsertCheckRun,
 } from './checks/checksStore';
+import {
+  scheduleDraftSave,
+  flushDraft,
+  restoreDraftIfNewer,
+  markDraftClean,
+  clearDraft,
+} from './checks/draftPersistence';
+import {
+  scheduleRevisionedSave,
+  flushDraftRevisioned,
+  setDraftRevision,
+  onDraftConflict,
+  resolveConflict,
+} from './checks/draftRevision';
 import { consumePendingReplay, peekPendingReplay } from './checks/replayCheck';
 import type { ResourceContentsMap } from './studio/resourceContents';
 import { StudioV2 } from './studio/StudioV2';
-import { StudioWorkspace, STUDIO_MODE_STORAGE_KEY, type StudioMode } from './studio/StudioWorkspace';
+import { StudioWorkspace } from './studio/StudioWorkspace';
+import { EditorWorkbench } from './workbench/EditorWorkbench';
 import { PipelineLaunchButton } from './results/PipelineLaunchButton';
 import { requestAwaitStart } from './results/awaitStartBus';
 import {
@@ -111,7 +127,6 @@ setConstructorContext({ catalog: keywordCatalog, variables: [], pageIds: [] });
 
 const VALIDATION_PASS_VISIBLE_MS = 2_000;
 const SAVE_OK_FLASH_MS = 3_000;
-const DRAFT_SAVE_DELAY_MS = 400;
 
 function resolveSaveIconSrc(isLightTheme: boolean, saveOkFlash: boolean): string {
   if (saveOkFlash) return isLightTheme ? saveEntityOkIconLight : saveEntityOkIcon;
@@ -181,20 +196,6 @@ export default function App({
   const [resourceContents, setResourceContents] = useState<ResourceContentsMap>(
     () => ({ ...initialResources }),
   );
-  const [studioMode, setStudioMode] = useState<StudioMode>(() => {
-    if (typeof window === 'undefined') {
-      return 'editor';
-    }
-    const stored = window.localStorage.getItem(STUDIO_MODE_STORAGE_KEY);
-    return stored === 'front' ? 'front' : 'editor';
-  });
-
-  const handleStudioModeChange = useCallback((next: StudioMode) => {
-    setStudioMode(next);
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(STUDIO_MODE_STORAGE_KEY, next);
-    }
-  }, []);
   const formScrollRef = useRef<HTMLDivElement>(null);
   const editorViewRef = useRef(editorView);
   const formDataRef = useRef(rawFormData);
@@ -337,7 +338,12 @@ export default function App({
     );
   }, [checkId, editorView, onViewChange]);
 
-  // Debounced persist formData
+  // Debounced revisioned draft save to server (PK-WB-S2)
+  useEffect(() => {
+    scheduleRevisionedSave(checkId, rawFormData, resourceContents);
+  }, [rawFormData, resourceContents, checkId]);
+
+  // Debounced persist formData to checksStore (for registry updated_at + remote sync)
   const persistCheck = useCallback(
     (wired: unknown, resources: ResourceContentsMap) => {
       updateCheck(checkId, {
@@ -349,14 +355,47 @@ export default function App({
     [checkId],
   );
 
+  // Draft restore on mount — check server for newer draft (PK-WB-S1/S2)
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      persistCheck(rawFormData, resourceContents);
-    }, DRAFT_SAVE_DELAY_MS);
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [rawFormData, persistCheck, resourceContents]);
+    const item = getCheck(checkId);
+    if (!item) return;
+    restoreDraftIfNewer(checkId, item.updated_at)
+      .then((draft) => {
+        if (draft) {
+          setRawFormData(
+            clampFormDataForRoleCaps(draft.wired, roleCaps),
+          );
+          if (draft.resource_contents) {
+            setResourceContents({ ...draft.resource_contents });
+          }
+          // Restore revision if server sent one (PK-WB-S2)
+          if (typeof draft.meta?.revision === 'number') {
+            setDraftRevision(checkId, draft.meta.revision);
+          }
+        } else {
+          // Mark current state as clean baseline for draft tracking
+          markDraftClean(checkId, rawFormData, resourceContents);
+        }
+      })
+      .catch(() => {
+        /* server offline — use local state */
+        markDraftClean(checkId, rawFormData, resourceContents);
+      });
+    // Run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checkId]);
+
+  // Conflict listener (PK-WB-S2)
+  useEffect(() => {
+    return onDraftConflict((conflict) => {
+      if (conflict.checkId === checkId) {
+        message.warning(
+          `Черновик изменён в другой сессии. Следующее сохранение разрешит конфликт.`,
+          5,
+        );
+      }
+    });
+  }, [checkId, message]);
 
   // Ctrl+S / explicit save
   const handleSaveEntity = useCallback(() => {
@@ -367,16 +406,24 @@ export default function App({
       resource_contents: resources,
       view: editorViewRef.current,
     });
+    // Flush revisioned draft to server immediately + mark clean (PK-WB-S2)
+    void flushDraftRevisioned(checkId, wired, resources).then((result) => {
+      if (result.ok) {
+        markDraftClean(checkId, wired, resources);
+        // ER-5: only flash "saved" after the server confirms — never on conflict.
+        window.clearTimeout(saveOkFlashTimerRef.current);
+        setSaveOkFlash(true);
+        saveOkFlashTimerRef.current = window.setTimeout(() => {
+          setSaveOkFlash(false);
+          saveOkFlashTimerRef.current = undefined;
+        }, SAVE_OK_FLASH_MS);
+      }
+      // result.ok === false → conflict; onDraftConflict listener already warns.
+    });
     openBaselineRef.current = {
       wired,
       resources: { ...resources },
     };
-    window.clearTimeout(saveOkFlashTimerRef.current);
-    setSaveOkFlash(true);
-    saveOkFlashTimerRef.current = window.setTimeout(() => {
-      setSaveOkFlash(false);
-      saveOkFlashTimerRef.current = undefined;
-    }, SAVE_OK_FLASH_MS);
   }, [checkId]);
 
   useEffect(() => {
@@ -775,26 +822,20 @@ export default function App({
                 onClick={goBrandHome}
               />
               {brandTitleNode}
+              {(segmentView === 'studio-old' || segmentView === 'editor-old') && (
+                <Badge
+                  variant="amber"
+                  className="pk-legacy-header-badge select-none"
+                  data-testid="legacy-header-badge"
+                >
+                  LEGACY · REFERENCE
+                </Badge>
+              )}
             </div>
           </div>
           <div className="pk-header-actions">
             <div className="pk-header-entity-actions">
-              <Segmented<StudioMode>
-                size="small"
-                value={studioMode}
-                onChange={(next) => {
-                  handleStudioModeChange(next as StudioMode);
-                  if (segmentView !== 'studio') {
-                    goToView('studio');
-                  }
-                }}
-                options={[
-                  { label: dict.header.studio, value: 'front' },
-                  { label: dict.header.editor, value: 'editor' },
-                ]}
-                className="pk-studio-mode-switch"
-              />
-              {segmentView === 'studio' ? (
+              {segmentView === 'studio' || segmentView === 'editor' ? (
                 <>
                   <Button
                     type="text"
@@ -907,32 +948,101 @@ export default function App({
             </div>
           ) : null}
 
-          {/* ── Редактор ── */}
+          {/* ── Студия (новая, каноническая) ── */}
           {shouldKeepEditorView('studio', editorView, visitedViews) ? (
             <div
               className="pk-studio pk-view-pane"
               hidden={editorView !== 'studio'}
               aria-hidden={editorView !== 'studio'}
             >
-              {studioMode === 'editor' ? (
-                <StudioWorkspace
-                  formData={rawFormData}
-                  onFormDataChange={setFormDataClamped}
-                  resourceContents={resourceContents}
-                  onResourceContentsChange={setResourceContents}
-                  validationFeedback={
-                    editorView === 'studio' ? validationDrawer : undefined
-                  }
-                  validationSuccessVersion={validationSuccessVersion}
-                  onCloseValidationFeedback={closeValidationDrawer}
-                  onCmdValidate={handleValidatePreview}
-                  onCmdBaseline={handlePipelineStart}
-                  studioMode={studioMode}
-                  onStudioModeChange={handleStudioModeChange}
-                />
-              ) : (
-                <StudioV2 />
-              )}
+              <StudioV2
+                checkId={checkId}
+                formData={rawFormData}
+                onFormDataChange={setFormDataClamped}
+                resourceContents={resourceContents}
+                onResourceContentsChange={setResourceContents}
+                onNavigateEditor={() => goToView('editor')}
+              />
+            </div>
+          ) : null}
+
+          {/* ── Редактор (новый, инженерная проекция) ── */}
+          {shouldKeepEditorView('editor', editorView, visitedViews) ? (
+            <div
+              className="pk-studio pk-view-pane"
+              hidden={editorView !== 'editor'}
+              aria-hidden={editorView !== 'editor'}
+            >
+              <EditorWorkbench
+                formData={rawFormData}
+                onFormDataChange={setFormDataClamped}
+                resourceContents={resourceContents}
+                onResourceContentsChange={setResourceContents}
+                onCmdSave={handleSaveEntity}
+                onCmdRun={handlePipelineStart}
+                onCmdValidate={handleValidatePreview}
+                checkId={checkId}
+              />
+            </div>
+          ) : null}
+
+          {/* ── Старая Studio (reference) ── */}
+          {shouldKeepEditorView('studio-old', editorView, visitedViews) ? (
+            <div
+              className="pk-studio pk-view-pane"
+              hidden={editorView !== 'studio-old'}
+              aria-hidden={editorView !== 'studio-old'}
+            >
+              <div className="pk-legacy-banner" role="note" data-testid="legacy-banner-studio-old">
+                <span className="pk-legacy-banner-label">LEGACY · REFERENCE</span>
+                <span className="pk-legacy-banner-hint">
+                  Старая Студия — только для сверки. Работайте в новой Студии.
+                </span>
+              </div>
+              <StudioWorkspace
+                formData={rawFormData}
+                onFormDataChange={setFormDataClamped}
+                resourceContents={resourceContents}
+                onResourceContentsChange={setResourceContents}
+                validationFeedback={
+                  editorView === 'studio-old' ? validationDrawer : undefined
+                }
+                validationSuccessVersion={validationSuccessVersion}
+                onCloseValidationFeedback={closeValidationDrawer}
+                onCmdValidate={handleValidatePreview}
+                onCmdBaseline={handlePipelineStart}
+                studioMode="front"
+              />
+            </div>
+          ) : null}
+
+          {/* ── Старый Editor (reference) ── */}
+          {shouldKeepEditorView('editor-old', editorView, visitedViews) ? (
+            <div
+              className="pk-studio pk-view-pane"
+              hidden={editorView !== 'editor-old'}
+              aria-hidden={editorView !== 'editor-old'}
+            >
+              <div className="pk-legacy-banner" role="note" data-testid="legacy-banner-editor-old">
+                <span className="pk-legacy-banner-label">LEGACY · REFERENCE</span>
+                <span className="pk-legacy-banner-hint">
+                  Старый Редактор — только для сверки. Работайте в новом Редакторе.
+                </span>
+              </div>
+              <StudioWorkspace
+                formData={rawFormData}
+                onFormDataChange={setFormDataClamped}
+                resourceContents={resourceContents}
+                onResourceContentsChange={setResourceContents}
+                validationFeedback={
+                  editorView === 'editor-old' ? validationDrawer : undefined
+                }
+                validationSuccessVersion={validationSuccessVersion}
+                onCloseValidationFeedback={closeValidationDrawer}
+                onCmdValidate={handleValidatePreview}
+                onCmdBaseline={handlePipelineStart}
+                studioMode="editor"
+              />
             </div>
           ) : null}
 

@@ -1,0 +1,367 @@
+{
+  "version": "1",
+  "lastUpdated": "2026-08-27",
+  "nodes": [
+    {
+      "id": "prettyk-core",
+      "label": "PrettyK Pure Box",
+      "subtitle": "Сканерный контур и рабочие интерфейсы",
+      "level": "landscape",
+      "status": "native_v2",
+      "lenses": ["architecture", "flow", "parity", "ideas"],
+      "position": { "x": 0, "y": 0 },
+      "metrics": { "completionPercent": 100 }
+    },
+    {
+      "id": "buddy-runtime",
+      "label": "Buddy Agent Runtime",
+      "subtitle": "Локальный автономный интеллект и оркестрация",
+      "level": "landscape",
+      "status": "native_v2",
+      "lenses": ["architecture", "flow", "ideas"],
+      "position": { "x": 380, "y": 0 },
+      "metrics": { "testCount": 64 }
+    },
+    {
+      "id": "canon-store",
+      "label": "Canon & Sanctuary Store",
+      "subtitle": "Алтарь побед, скрижали, INDEX.md",
+      "level": "landscape",
+      "status": "sealed_canon",
+      "lenses": ["architecture", "ideas"],
+      "docsRef": "sanctuary/pure/INDEX.md",
+      "position": { "x": 760, "y": 0 }
+    },
+    {
+      "id": "lab-stack",
+      "label": "Local Lab & SecOps Stack",
+      "subtitle": "Docker Compose, ZAP, Allure, Dojo, Juice Shop",
+      "level": "landscape",
+      "status": "infrastructure",
+      "lenses": ["architecture", "runtime"],
+      "position": { "x": 0, "y": 280 }
+    },
+    {
+      "id": "durable-storage",
+      "label": "Durable Storage & Secrets",
+      "subtitle": "PostgreSQL, Valkey, MinIO, OpenBao",
+      "level": "landscape",
+      "status": "infrastructure",
+      "lenses": ["architecture"],
+      "position": { "x": 380, "y": 280 }
+    },
+    {
+      "id": "external-world",
+      "label": "External World & Bridges",
+      "subtitle": "Discord, Host CDP Chrome, BankVM SSH",
+      "level": "landscape",
+      "status": "infrastructure",
+      "lenses": ["architecture", "runtime"],
+      "position": { "x": 760, "y": 280 }
+    },
+
+    {
+      "id": "studio-v2",
+      "label": "Studio v2",
+      "subtitle": "Визуальная сборочная лаборатория проверок",
+      "level": "system",
+      "parent": "prettyk-core",
+      "status": "native_v2",
+      "route": "#/checks/<id>/studio",
+      "sourcePaths": ["frontend/src/studio/StudioV2.tsx"],
+      "lenses": ["architecture", "flow", "parity", "ideas"],
+      "metrics": { "completionPercent": 100 }
+    },
+    {
+      "id": "editor-reborn",
+      "label": "Editor Reborn",
+      "subtitle": "Монолитный Monaco-конструктор, 6 корней Explorer",
+      "level": "system",
+      "parent": "prettyk-core",
+      "status": "native_v2",
+      "route": "#/checks/<id>/editor",
+      "sourcePaths": ["frontend/src/workbench/EditorWorkbench.tsx"],
+      "lenses": ["architecture", "flow", "parity", "ideas"],
+      "metrics": { "completionPercent": 100 }
+    },
+    {
+      "id": "check-bridge",
+      "label": "CheckWorkspace Bridge",
+      "subtitle": "Draft persistence, Commit Engine, Semantic Diff",
+      "level": "system",
+      "parent": "prettyk-core",
+      "status": "native_v2",
+      "sourcePaths": ["frontend/src/checks/checksStore.ts"],
+      "lenses": ["architecture", "flow", "parity"]
+    },
+    {
+      "id": "browser-cdp",
+      "label": "Browser Stage & CDP Wire",
+      "subtitle": "Живой мост к Chrome :9222, захват кликов, AX-снимки",
+      "level": "system",
+      "parent": "prettyk-core",
+      "status": "hybrid_mock",
+      "portMeta": { "port": 9222, "protocol": "cdp", "healthEndpoint": "http://127.0.0.1:9222/json/version", "expectedStatus": 200 },
+      "sourcePaths": ["orchestrator/browser/browser_service.py"],
+      "lenses": ["architecture", "runtime", "parity"]
+    },
+    {
+      "id": "buddy-dock",
+      "label": "Buddy CO-PILOT Dock",
+      "subtitle": "LaunchpadHero, SkeletonCard, LiveDiffBanner, StepRadar",
+      "level": "system",
+      "parent": "prettyk-core",
+      "status": "native_v2",
+      "sourcePaths": ["frontend/src/studio/buddy/BuddyDockController.tsx"],
+      "lenses": ["architecture", "flow", "ideas"]
+    },
+    {
+      "id": "execution-plane",
+      "label": "Execution Plane & Fuzzer",
+      "subtitle": "Playwright Core, ZAP Active Scanner, Fast Fuzzer",
+      "level": "system",
+      "parent": "prettyk-core",
+      "status": "hybrid_mock",
+      "lenses": ["architecture", "flow", "runtime"]
+    },
+    {
+      "id": "telemetry-bridge",
+      "label": "Telemetry & Evidence Bridge",
+      "subtitle": "Live Server :8767 (SSE), Evidence Chain",
+      "level": "system",
+      "parent": "prettyk-core",
+      "status": "native_v2",
+      "portMeta": { "port": 8767, "protocol": "sse", "healthEndpoint": "http://127.0.0.1:8767/api/meta", "expectedStatus": 200 },
+      "sourcePaths": ["orchestrator/utils/live_server.py"],
+      "lenses": ["architecture", "runtime", "parity"]
+    },
+    {
+      "id": "admin-control",
+      "label": "Admin & Control Plane",
+      "subtitle": "Реестр приложений, целей, гейт-политик, прогонов",
+      "level": "system",
+      "parent": "prettyk-core",
+      "status": "native_v2",
+      "route": "#/admin",
+      "lenses": ["architecture", "flow"]
+    },
+    {
+      "id": "legacy-archive",
+      "label": "Legacy Reference Archive",
+      "subtitle": "Замороженный снимок старого монолита",
+      "level": "system",
+      "parent": "prettyk-core",
+      "status": "legacy_only",
+      "route": "#/checks/<id>/studio-old",
+      "docsRef": "docs/archive/studio-editor-legacy/",
+      "lenses": ["architecture", "parity", "ideas"]
+    },
+
+    {
+      "id": "buddy-engine",
+      "label": "BuddyEngine",
+      "subtitle": "intent → skeleton → clarify → proposal → run → evidence",
+      "level": "system",
+      "parent": "buddy-runtime",
+      "status": "native_v2",
+      "sourcePaths": ["frontend/src/buddy/buddyEngine.ts"],
+      "lenses": ["architecture", "flow", "ideas"],
+      "metrics": { "testCount": 17 }
+    },
+    {
+      "id": "cdp-step-runner",
+      "label": "makeCdpStepRunner",
+      "subtitle": "Живой bounded run через getBrowserSession",
+      "level": "system",
+      "parent": "buddy-runtime",
+      "status": "native_v2",
+      "sourcePaths": ["frontend/src/buddy/cdpStepRunner.ts"],
+      "lenses": ["architecture", "runtime"],
+      "metrics": { "testCount": 9 }
+    },
+
+    {
+      "id": "zap-demon",
+      "label": "ZAP Demon API",
+      "subtitle": "Active Scanner, прокси :8080",
+      "level": "system",
+      "parent": "lab-stack",
+      "status": "infrastructure",
+      "portMeta": { "port": 8080, "protocol": "http", "healthEndpoint": "http://127.0.0.1:8080/JSON/core/view/version/", "expectedStatus": 200 },
+      "lenses": ["runtime"]
+    },
+    {
+      "id": "allure3",
+      "label": "Allure 3",
+      "subtitle": "Отчёты прогонов :5050",
+      "level": "system",
+      "parent": "lab-stack",
+      "status": "infrastructure",
+      "portMeta": { "port": 5050, "protocol": "http", "healthEndpoint": "http://127.0.0.1:5050/health", "expectedStatus": 200 },
+      "lenses": ["runtime"]
+    },
+    {
+      "id": "defectdojo",
+      "label": "DefectDojo",
+      "subtitle": "Трекинг находок :8081",
+      "level": "system",
+      "parent": "lab-stack",
+      "status": "infrastructure",
+      "portMeta": { "port": 8081, "protocol": "http", "healthEndpoint": "http://127.0.0.1:8081/", "expectedStatus": 200 },
+      "lenses": ["runtime"]
+    },
+    {
+      "id": "juice-shop",
+      "label": "Juice Shop (target)",
+      "subtitle": "Уязвимое приложение-мишень :3000",
+      "level": "system",
+      "parent": "lab-stack",
+      "status": "infrastructure",
+      "portMeta": { "port": 3000, "protocol": "http", "healthEndpoint": "http://127.0.0.1:3000/", "expectedStatus": 200 },
+      "lenses": ["runtime", "flow"]
+    },
+
+    {
+      "id": "canvas-v2",
+      "label": "Canvas v2",
+      "subtitle": "Визуальный граф шагов",
+      "level": "surface",
+      "parent": "studio-v2",
+      "status": "hybrid_mock",
+      "sourcePaths": ["frontend/src/studio/CanvasV2.tsx"],
+      "lenses": ["architecture", "parity"]
+    },
+    {
+      "id": "explorer-v2",
+      "label": "Explorer v2",
+      "subtitle": "Живое дерево 6 корней",
+      "level": "surface",
+      "parent": "studio-v2",
+      "status": "native_v2",
+      "sourcePaths": ["frontend/src/studio/StudioExplorer.tsx"],
+      "lenses": ["architecture", "flow", "parity"]
+    },
+    {
+      "id": "codepanel-v2",
+      "label": "CodePanel (Monaco)",
+      "subtitle": "Конструктор, автодополнение, gutter-run",
+      "level": "surface",
+      "parent": "studio-v2",
+      "status": "native_v2",
+      "lenses": ["architecture", "flow", "parity"]
+    },
+    {
+      "id": "browser-panel",
+      "label": "BrowserPanel",
+      "subtitle": "Вьюпорт живого браузера",
+      "level": "surface",
+      "parent": "studio-v2",
+      "status": "hybrid_mock",
+      "lenses": ["architecture", "runtime"]
+    },
+    {
+      "id": "run-console",
+      "label": "Run Console",
+      "subtitle": "Живая телеметрия run_summary",
+      "level": "surface",
+      "parent": "studio-v2",
+      "status": "native_v2",
+      "lenses": ["runtime"]
+    },
+    {
+      "id": "buddy-dock-ctrl",
+      "label": "BuddyDockController",
+      "subtitle": "Контроллер фаз BuddyEngine",
+      "level": "surface",
+      "parent": "studio-v2",
+      "status": "native_v2",
+      "lenses": ["architecture", "flow", "ideas"]
+    },
+    {
+      "id": "validation-engine",
+      "label": "Validation Engine",
+      "subtitle": "Клиентская + серверная валидация",
+      "level": "surface",
+      "parent": "studio-v2",
+      "status": "native_v2",
+      "lenses": ["architecture", "flow"]
+    },
+
+    {
+      "id": "editor-explorer",
+      "label": "StudioExplorer",
+      "subtitle": "Общее дерево (single source of truth)",
+      "level": "surface",
+      "parent": "editor-reborn",
+      "status": "native_v2",
+      "sourcePaths": ["frontend/src/studio/StudioExplorer.tsx"],
+      "lenses": ["architecture", "flow", "parity"]
+    },
+    {
+      "id": "editor-monaco",
+      "label": "Monaco DSL Editor",
+      "subtitle": "PrettyK-язык, диагностика",
+      "level": "surface",
+      "parent": "editor-reborn",
+      "status": "native_v2",
+      "lenses": ["architecture", "flow"]
+    },
+    {
+      "id": "editor-browser-stage",
+      "label": "BrowserStage + CDP",
+      "subtitle": "Живой CDP-рекордер",
+      "level": "surface",
+      "parent": "editor-reborn",
+      "status": "hybrid_mock",
+      "lenses": ["architecture", "runtime"]
+    },
+    {
+      "id": "editor-diff",
+      "label": "CommitDiffView",
+      "subtitle": "Цепочка доказательств, секреты скрыты",
+      "level": "surface",
+      "parent": "editor-reborn",
+      "status": "native_v2",
+      "lenses": ["architecture", "flow"]
+    }
+  ],
+  "edges": [
+    { "id": "e-core-studio", "source": "prettyk-core", "target": "studio-v2", "type": "dependency", "lenses": ["architecture", "parity"] },
+    { "id": "e-core-editor", "source": "prettyk-core", "target": "editor-reborn", "type": "dependency", "lenses": ["architecture", "parity"] },
+    { "id": "e-core-bridge", "source": "prettyk-core", "target": "check-bridge", "type": "dependency", "lenses": ["architecture"] },
+    { "id": "e-studio-bridge", "source": "studio-v2", "target": "check-bridge", "type": "dependency", "lenses": ["architecture", "parity"] },
+    { "id": "e-editor-bridge", "source": "editor-reborn", "target": "check-bridge", "type": "dependency", "lenses": ["architecture", "parity"] },
+    { "id": "e-bridge-telemetry", "source": "check-bridge", "target": "telemetry-bridge", "type": "data_stream", "lenses": ["architecture", "runtime"] },
+    { "id": "e-studio-canvas", "source": "studio-v2", "target": "canvas-v2", "type": "dependency", "lenses": ["architecture"] },
+    { "id": "e-studio-explorer", "source": "studio-v2", "target": "explorer-v2", "type": "dependency", "lenses": ["architecture", "parity"] },
+    { "id": "e-studio-codepanel", "source": "studio-v2", "target": "codepanel-v2", "type": "dependency", "lenses": ["architecture"] },
+    { "id": "e-studio-browser", "source": "studio-v2", "target": "browser-panel", "type": "dependency", "lenses": ["architecture"] },
+    { "id": "e-studio-console", "source": "studio-v2", "target": "run-console", "type": "dependency", "lenses": ["architecture"] },
+    { "id": "e-studio-buddydock", "source": "studio-v2", "target": "buddy-dock-ctrl", "type": "dependency", "lenses": ["architecture", "ideas"] },
+    { "id": "e-studio-validation", "source": "studio-v2", "target": "validation-engine", "type": "dependency", "lenses": ["architecture"] },
+    { "id": "e-buddydock-ctrl", "source": "buddy-dock", "target": "buddy-dock-ctrl", "type": "dependency", "lenses": ["architecture", "ideas"] },
+    { "id": "e-buddy-engine", "source": "buddy-runtime", "target": "buddy-engine", "type": "dependency", "lenses": ["architecture", "ideas"] },
+    { "id": "e-buddy-cdp", "source": "buddy-runtime", "target": "cdp-step-runner", "type": "dependency", "lenses": ["architecture"] },
+    { "id": "e-engine-dock", "source": "buddy-engine", "target": "buddy-dock", "type": "data_stream", "lenses": ["architecture", "flow", "ideas"] },
+    { "id": "e-cdp-external", "source": "browser-cdp", "target": "external-world", "type": "airgap_barrier", "lenses": ["architecture", "runtime"] },
+    { "id": "e-cdp-browserpanel", "source": "browser-cdp", "target": "browser-panel", "type": "dependency", "lenses": ["architecture"] },
+    { "id": "e-cdp-editorstage", "source": "browser-cdp", "target": "editor-browser-stage", "type": "dependency", "lenses": ["architecture"] },
+    { "id": "e-exec-telemetry", "source": "execution-plane", "target": "telemetry-bridge", "type": "data_stream", "lenses": ["architecture", "runtime", "flow"] },
+    { "id": "e-lab-zap", "source": "lab-stack", "target": "zap-demon", "type": "dependency", "lenses": ["runtime"] },
+    { "id": "e-lab-allure", "source": "lab-stack", "target": "allure3", "type": "dependency", "lenses": ["runtime"] },
+    { "id": "e-lab-dojo", "source": "lab-stack", "target": "defectdojo", "type": "dependency", "lenses": ["runtime"] },
+    { "id": "e-lab-juice", "source": "lab-stack", "target": "juice-shop", "type": "dependency", "lenses": ["runtime", "flow"] },
+    { "id": "e-juice-exec", "source": "juice-shop", "target": "execution-plane", "type": "data_stream", "lenses": ["runtime", "flow"] },
+    { "id": "e-editor-explorer", "source": "editor-reborn", "target": "editor-explorer", "type": "dependency", "lenses": ["architecture"] },
+    { "id": "e-editor-monaco", "source": "editor-reborn", "target": "editor-monaco", "type": "dependency", "lenses": ["architecture"] },
+    { "id": "e-editor-browserstage", "source": "editor-reborn", "target": "editor-browser-stage", "type": "dependency", "lenses": ["architecture"] },
+    { "id": "e-editor-diff", "source": "editor-reborn", "target": "editor-diff", "type": "dependency", "lenses": ["architecture"] },
+    { "id": "e-admin-bridge", "source": "admin-control", "target": "check-bridge", "type": "dependency", "lenses": ["architecture"] },
+
+    { "id": "e-flow-juice-studio", "source": "juice-shop", "target": "studio-v2", "type": "user_step", "label": "открыть проверку", "lenses": ["flow"] },
+    { "id": "e-flow-studio-editor", "source": "studio-v2", "target": "editor-reborn", "type": "user_step", "label": "перейти в редактор", "lenses": ["flow"] },
+    { "id": "e-flow-editor-exec", "source": "editor-reborn", "target": "execution-plane", "type": "user_step", "label": "запустить run", "lenses": ["flow"] },
+    { "id": "e-flow-exec-telemetry", "source": "execution-plane", "target": "telemetry-bridge", "type": "user_step", "label": "собрать evidence", "lenses": ["flow"] },
+    { "id": "e-flow-telemetry-admin", "source": "telemetry-bridge", "target": "admin-control", "type": "user_step", "label": "результаты/экспорт", "lenses": ["flow"] }
+  ]
+}

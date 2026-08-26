@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Бэк #2: порты demon vs webswing (concurrent lab) без Docker."""
 from __future__ import annotations
 
@@ -77,10 +77,10 @@ def test_compose_webswing_publishes_concurrent_ports():
     assert str(DEFAULT_WEBSWING_PROXY_PORT) in compose
     # Host UI mapping default 8082:8080
     assert re.search(
-        rf"KDT_WEBSWING_UI_PORT:-{DEFAULT_WEBSWING_UI_PORT}", compose
+        rf"PK_WEBSWING_UI_PORT:-{DEFAULT_WEBSWING_UI_PORT}", compose
     )
     assert re.search(
-        rf"KDT_WEBSWING_PROXY_PORT:-{DEFAULT_WEBSWING_PROXY_PORT}", compose
+        rf"PK_WEBSWING_PROXY_PORT:-{DEFAULT_WEBSWING_PROXY_PORT}", compose
     )
 
 
@@ -91,8 +91,8 @@ def test_compose_daemon_keeps_classic_ports():
 
 
 def test_controller_demon_default_ports(monkeypatch):
-    monkeypatch.delenv("KDT_ZAP_PORT", raising=False)
-    monkeypatch.delenv("KDT_ZAP_BROWSER_PROXY_PORT", raising=False)
+    monkeypatch.delenv("PK_ZAP_PORT", raising=False)
+    monkeypatch.delenv("PK_ZAP_BROWSER_PROXY_PORT", raising=False)
     ctrl = _controller_with_mocked_adapters(_Wired("demon"))
     assert ctrl.zap_mode == "demon"
     assert ctrl.zap_api_port == DEFAULT_ZAP_PORT
@@ -100,8 +100,8 @@ def test_controller_demon_default_ports(monkeypatch):
 
 
 def test_controller_webswing_default_ports(monkeypatch):
-    monkeypatch.delenv("KDT_ZAP_PORT", raising=False)
-    monkeypatch.delenv("KDT_ZAP_BROWSER_PROXY_PORT", raising=False)
+    monkeypatch.delenv("PK_ZAP_PORT", raising=False)
+    monkeypatch.delenv("PK_ZAP_BROWSER_PROXY_PORT", raising=False)
     ctrl = _controller_with_mocked_adapters(_Wired("webswing"))
     assert ctrl.zap_mode == "webswing"
     assert ctrl.zap_api_port == DEFAULT_WEBSWING_API_PORT
@@ -109,8 +109,8 @@ def test_controller_webswing_default_ports(monkeypatch):
 
 
 def test_controller_env_overrides_webswing_defaults(monkeypatch):
-    monkeypatch.setenv("KDT_ZAP_PORT", "18090")
-    monkeypatch.setenv("KDT_ZAP_BROWSER_PROXY_PORT", "18199")
+    monkeypatch.setenv("PK_ZAP_PORT", "18090")
+    monkeypatch.setenv("PK_ZAP_BROWSER_PROXY_PORT", "18199")
     ctrl = _controller_with_mocked_adapters(_Wired("webswing"))
     assert ctrl.zap_api_port == 18090
     assert ctrl.zap_proxy_port == 18199

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 from core.expr import parse_path, strip_ref
 from core.pretty_data import pretty_line_to_wire
 from core.constructor_validate import validate_constructor
@@ -27,7 +27,7 @@ def test_secret_placeholder_value_rejected():
     from core.pretty_data import pretty_line_to_wire
 
     # Сигнатура name|value как «значение» + склейка следующей строки.
-    bad = 'Секрет $name = valueПусть $password_value = "kdt_password"'
+    bad = 'Секрет $name = valueПусть $password_value = "pk_password"'
     try:
         pretty_line_to_wire(bad)
         raise AssertionError("expected WiredError")
@@ -58,4 +58,4 @@ def test_secret_empty_wire_rejected():
 
 
 def test_secret_quoted_ok():
-    assert validate_constructor('Секрет $password_value = "kdt_password"') == []
+    assert validate_constructor('Секрет $password_value = "pk_password"') == []

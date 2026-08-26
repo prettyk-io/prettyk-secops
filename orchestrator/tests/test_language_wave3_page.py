@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Волна 3: PageResolver + page_call + slots."""
 import sys
 from pathlib import Path

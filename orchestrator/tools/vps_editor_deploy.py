@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Deploy local ``deploy_vps/www/prettyk`` to VPS root DocumentRoot paths.
 
 Usage (from repo root, after package_vps):
@@ -31,9 +31,9 @@ from vps_editor_lib import (  # noqa: E402
 )
 
 APACHE_SNIPPET = ROOT / "deploy_vps" / "apache-prettyk.conf"
-REMOTE_APACHE_SNIPPET = "/etc/apache2/conf-available/kdt-prettyk-root.conf"
+REMOTE_APACHE_SNIPPET = "/etc/apache2/conf-available/prettyk-root.conf"
 # Private root cache — not world-writable /tmp (python:S5443).
-REMOTE_APACHE_APPLY_DIR = "/root/.cache/kdt"
+REMOTE_APACHE_APPLY_DIR = "/root/.cache/pk"
 REMOTE_APACHE_APPLY = f"{REMOTE_APACHE_APPLY_DIR}/vps_apache_root_apply.py"
 LOCAL_APACHE_APPLY = _TOOLS / "vps_apache_root_apply.py"
 
@@ -121,7 +121,7 @@ def apply_apache_root() -> None:
             raise SystemExit("no Apache vhost found for prettyk.io /editor")
 
         for vh in vhosts:
-            ssh_run(client, f"cp -a {vh} {vh}.bak.kdt-root || true")
+            ssh_run(client, f"cp -a {vh} {vh}.bak.pk-root || true")
 
         args = " ".join(vhosts)
         code, out = ssh_run(client, f"python3 {REMOTE_APACHE_APPLY} {args}")
@@ -129,7 +129,7 @@ def apply_apache_root() -> None:
         if code != 0:
             raise SystemExit(f"apache patch failed: {out}")
 
-        _c, conf = ssh_run(client, "a2enconf kdt-prettyk-root 2>&1 || true")
+        _c, conf = ssh_run(client, "a2enconf prettyk-root 2>&1 || true")
         print(f"a2enconf: {conf}")
         code, test = ssh_run(client, "apachectl configtest 2>&1")
         print(test)

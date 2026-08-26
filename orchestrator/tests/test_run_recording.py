@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """MON-5: run_recording — поиск видео по run_id + Range serve."""
 from __future__ import annotations
 

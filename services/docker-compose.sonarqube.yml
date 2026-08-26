@@ -2,9 +2,9 @@
 # НЕ для банка «как есть». Не в обязательном lab_up — только явный старт.
 #
 # Порт UI: 9000.
-# Сеть: kdt-net (как DefectDojo / ZAP).
+# Сеть: pk-net (как DefectDojo / ZAP).
 #
-#   docker network create kdt-net 2>nul
+#   docker network create pk-net 2>nul
 #   docker compose -f services/docker-compose.sonarqube.yml up -d
 #   # первый boot: 2–5 мин, затем http://127.0.0.1:9000/  admin/admin
 #
@@ -32,7 +32,7 @@ services:
     ports:
       - "${SONAR_PORT:-9000}:9000"
     networks:
-      - kdt-net
+      - pk-net
     ulimits:
       nofile:
         soft: 65536
@@ -53,7 +53,7 @@ services:
     volumes:
       - sonarqube_postgres:/var/lib/postgresql/data
     networks:
-      - kdt-net
+      - pk-net
 
 volumes:
   sonarqube_data:
@@ -63,5 +63,5 @@ volumes:
   sonarqube_postgres:
 
 networks:
-  kdt-net:
+  pk-net:
     external: true

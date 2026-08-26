@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
-NAV-API lab: file-backed CheckInstance registry (same JSON shape as FE kdt.checks.v1).
+NAV-API lab: file-backed CheckInstance registry (same JSON shape as FE pk.checks.v1).
 
 Path: reports/live/checks_registry.json
 Playground: GET/PUT /api/checks

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 RES-4: сводка из Traditional ZAP XML (без HTML-скрейпа).
 

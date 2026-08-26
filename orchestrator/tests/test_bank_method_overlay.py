@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Bank MethodId overlay: aliases / extra без форка method_id.py."""
 import json
 import subprocess
@@ -21,7 +21,7 @@ def test_overlay_aliases_and_extra(tmp_path):
     # Изолированный процесс — не портим method_id в остальном pytest.
     script = f"""
 import os, sys
-os.environ["KDT_METHOD_OVERLAY"] = {str(path)!r}
+os.environ["PK_METHOD_OVERLAY"] = {str(path)!r}
 sys.path.insert(0, {str(ROOT)!r})
 from core.method_id import lookup_method_id, method_tier, resolve_call
 assert lookup_method_id("БанкНажать") == ("webdriver", "click")

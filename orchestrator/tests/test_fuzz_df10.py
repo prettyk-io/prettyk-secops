@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """DF-10: session_replay fallback, session_missing hard-fail, session_lost streak."""
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Shared VPS Editor helpers (no secrets in repo).
 
 Credentials: gitignored ``vps-access.md`` at repo root, or env:
@@ -28,7 +28,7 @@ REMOTE_TARGETS = (REMOTE_PRETTYK_LIVE,)
 LOCAL_PRETTYK = ROOT / "deploy_vps" / "www" / "prettyk"
 DEFAULT_HOST = "139.28.240.65"  # NOSONAR python:S1313 — lab VPS host SoT (sonar-access / vps-editor)
 DEFAULT_USER = "root"
-API_UNIT = "kdt-editor-api"
+API_UNIT = "prettyk-editor-api"
 API_HEALTH_LOCAL = "http://127.0.0.1:8765/api/health"
 
 

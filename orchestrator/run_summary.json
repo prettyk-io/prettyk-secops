@@ -2,15 +2,15 @@
   "exit_code": 1,
   "gate": "void",
   "scenarios": {
-    "ok": 0,
-    "fail": 1,
+    "ok": 1,
+    "fail": 0,
     "fail_allowed": 0,
     "skip": 0
   },
   "paths": {
-    "allure_results": "D:\\prettyk-dev\\reports\\allure-results\\0f56a765-2d40-4389-8c0f-81db3f7e2ea5",
+    "allure_results": "D:\\prettyk-dev\\reports\\allure-results\\9d56e65d",
     "allure_report": "D:\\prettyk-dev\\reports\\allure-report",
-    "allure_project_id": "0f56a765-2d40-4389-8c0f-81db3f7e2ea5",
+    "allure_project_id": "9d56e65d",
     "zap_html": "D:\\prettyk-dev\\reports\\scanner-results\\zap-final.html",
     "zap_xml": "D:\\prettyk-dev\\reports\\scanner-results\\juice_dojo.xml",
     "live": "http://127.0.0.1:8767/"
@@ -18,31 +18,28 @@
   "zap_mode": "demon",
   "zap_api_port": 8080,
   "zap_proxy_port": 8099,
-  "honest_contract_notes": [],
+  "honest_contract_notes": [
+    "scan_policy='custom_policy' (нет авто spider/active; явный AF: ZAP СгенерироватьПлан / ZAP План)",
+    "base_url_override → ${base_url} в stream (авто-Открыть нет)",
+    "auth_type='??? ???????????' (Http bootstrap не применён; ZAP — ZAP ПрименитьAuth)"
+  ],
   "admission_void": true,
-  "dojo_stats": {
-    "critical": 0,
-    "high": 1,
-    "medium": 6,
-    "low": 12,
-    "info": 6
-  },
   "finding_collapse": {
-    "kind": "kdt_finding_collapse",
+    "kind": "pk_finding_collapse",
     "version": 1,
-    "raw_count": 25,
-    "cluster_count": 19,
+    "raw_count": 89,
+    "cluster_count": 20,
     "systemic_clusters": 13,
     "totals": {
       "critical": 0,
       "high": 1,
       "medium": 6,
       "low": 6,
-      "info": 6
+      "info": 7
     },
     "clusters": [
       {
-        "fingerprint": "d2c3b832bf3ffba3",
+        "fingerprint": "166304268dd594ba",
         "title": "PII Disclosure",
         "severity": "high",
         "cwe": "359",
@@ -50,33 +47,24 @@
         "systemic": false,
         "instance_count": 1,
         "sample_endpoints": [
-          "1714"
+          "http://juice-shop:3000/api/Cards/"
         ],
         "sample_params": []
       },
       {
-        "fingerprint": "acfbfa89c9abb1a4",
-        "title": "Application Error Disclosure",
-        "severity": "medium",
-        "cwe": "550",
-        "rule_id": "90022",
-        "systemic": true,
-        "instance_count": 1,
-        "sample_endpoints": [
-          "1715"
-        ],
-        "sample_params": []
-      },
-      {
-        "fingerprint": "3b987b7f8a0f1c14",
+        "fingerprint": "a1277420cf3a3ac0",
         "title": "Content Security Policy (CSP) Header Not Set",
         "severity": "medium",
         "cwe": "693",
-        "rule_id": "10038",
+        "rule_id": "10038-1",
         "systemic": true,
-        "instance_count": 1,
+        "instance_count": 5,
         "sample_endpoints": [
-          "1722"
+          "http://juice-shop:3000",
+          "http://juice-shop:3000/",
+          "http://juice-shop:3000/assets/public/images/uploads/%E1%93%9A%E1%98%8F%E1%97%A2-",
+          "http://juice-shop:3000/sitemap.xml",
+          "http://juice-shop:3000/socket.io/?EIO=4&transport=polling&t=Q0g8rVL&sid=DkdhnOQkGWzqIWSTAADS"
         ],
         "sample_params": []
       },
@@ -87,65 +75,114 @@
         "cwe": "264",
         "rule_id": "10098",
         "systemic": true,
-        "instance_count": 1,
+        "instance_count": 5,
         "sample_endpoints": [
-          "1726"
+          "http://juice-shop:3000/",
+          "http://juice-shop:3000/chunk-5K74DZ2F.js",
+          "http://juice-shop:3000/chunk-OKA37M7B.js",
+          "http://juice-shop:3000/chunk-PX7UKXVL.js",
+          "http://juice-shop:3000/chunk-VJL3IV3O.js"
         ],
         "sample_params": []
       },
       {
-        "fingerprint": "9c2dcf1095f28031",
-        "title": "CSP: Failure to Define Directive With No Fallback",
+        "fingerprint": "3546764138bbb35f",
+        "title": "CSP: Failure to Define Directive with No Fallback",
         "severity": "medium",
         "cwe": "693",
-        "rule_id": "10055",
-        "systemic": true,
-        "instance_count": 1,
-        "sample_endpoints": [
-          "1717"
-        ],
-        "sample_params": []
-      },
-      {
-        "fingerprint": "4ad560846a9be346",
-        "title": "Missing Anti-Clickjacking Header",
-        "severity": "medium",
-        "cwe": "1021",
-        "rule_id": "10020",
-        "systemic": true,
-        "instance_count": 1,
-        "sample_endpoints": [
-          "1731"
-        ],
-        "sample_params": []
-      },
-      {
-        "fingerprint": "fcde32d3c7fa9868",
-        "title": "Session ID in URL Rewrite",
-        "severity": "medium",
-        "cwe": "598",
-        "rule_id": "3",
-        "systemic": false,
-        "instance_count": 1,
-        "sample_endpoints": [
-          "1732"
-        ],
-        "sample_params": []
-      },
-      {
-        "fingerprint": "d6c2cca120c0a5b3",
-        "title": "Strict-Transport-Security Header Not Set",
-        "severity": "low",
-        "cwe": "319",
-        "rule_id": "10035",
+        "rule_id": "10055-13",
         "systemic": true,
         "instance_count": 5,
         "sample_endpoints": [
-          "1691",
-          "1693",
-          "1702",
-          "1703",
-          "1704"
+          "http://juice-shop:3000/assets",
+          "http://juice-shop:3000/assets/i18n",
+          "http://juice-shop:3000/assets/public",
+          "http://juice-shop:3000/assets/public/images",
+          "http://juice-shop:3000/assets/public/images/deluxe"
+        ],
+        "sample_params": [
+          "Content-Security-Policy"
+        ]
+      },
+      {
+        "fingerprint": "19968e0f8f1ff762",
+        "title": "Session ID in URL Rewrite",
+        "severity": "medium",
+        "cwe": "598",
+        "rule_id": "3-1",
+        "systemic": false,
+        "instance_count": 5,
+        "sample_endpoints": [
+          "http://juice-shop:3000/socket.io/?EIO=4&transport=polling&t=Q0g8rVW&sid=DkdhnOQkGWzqIWSTAADS",
+          "http://juice-shop:3000/socket.io/?EIO=4&transport=websocket&sid=DkdhnOQkGWzqIWSTAADS",
+          "http://juice-shop:3000/socket.io/?EIO=4&transport=websocket&sid=f9z7wMYLmC558BykAADU",
+          "http://juice-shop:3000/socket.io/?EIO=4&transport=polling&t=Q0g8rVL&sid=DkdhnOQkGWzqIWSTAADS",
+          "http://juice-shop:3000/socket.io/?EIO=4&transport=polling&t=Q0g8uAg&sid=f9z7wMYLmC558BykAADU"
+        ],
+        "sample_params": [
+          "sid"
+        ]
+      },
+      {
+        "fingerprint": "acfbfa89c9abb1a4",
+        "title": "Application Error Disclosure",
+        "severity": "medium",
+        "cwe": "550",
+        "rule_id": "90022",
+        "systemic": true,
+        "instance_count": 2,
+        "sample_endpoints": [
+          "http://juice-shop:3000/api/Hints",
+          "http://juice-shop:3000/api/Hints/"
+        ],
+        "sample_params": []
+      },
+      {
+        "fingerprint": "2c06e11a82817c15",
+        "title": "Missing Anti-clickjacking Header",
+        "severity": "medium",
+        "cwe": "1021",
+        "rule_id": "10020-1",
+        "systemic": true,
+        "instance_count": 1,
+        "sample_endpoints": [
+          "http://juice-shop:3000/socket.io/?EIO=4&transport=polling&t=Q0g8rVL&sid=DkdhnOQkGWzqIWSTAADS"
+        ],
+        "sample_params": [
+          "x-frame-options"
+        ]
+      },
+      {
+        "fingerprint": "ca310bdfbee52eb1",
+        "title": "Application Error Disclosure",
+        "severity": "low",
+        "cwe": "550",
+        "rule_id": "90022",
+        "systemic": true,
+        "instance_count": 13,
+        "sample_endpoints": [
+          "http://juice-shop:3000/api",
+          "http://juice-shop:3000/rest",
+          "http://juice-shop:3000/rest/admin",
+          "http://juice-shop:3000/rest/order-history",
+          "http://juice-shop:3000/rest/products"
+        ],
+        "sample_params": []
+      },
+      {
+        "fingerprint": "5c47a9a624bdb2dc",
+        "title": "Strict-Transport-Security Header Not Set",
+        "severity": "low",
+        "cwe": "319",
+        "rule_id": "10035-1",
+        "systemic": true,
+        "instance_count": 13,
+        "sample_endpoints": [
+          "https://r1---sn-4g5ednrs.gvt1.com/edgedl/chrome/dict/en-us-10-1.bdic?cms_redirect=yes&met=1787413420,&mh=7g&mip=185.207.139.8&mm=28&mn=sn-4g5ednrs&ms=nvh&mt=1787412772&mv=u&mvi=1&pl=24&rmhost=r3---sn-4g5ednrs.gvt1.com&rms=nvh,nvh&shardbypass=sd&smhost=r3---sn-4g5edndr.gvt1.com",
+          "https://redirector.gvt1.com/edgedl/chrome/dict/en-us-10-1.bdic",
+          "https://update.googleapis.com/service/update2/json",
+          "https://update.googleapis.com/service/update2/json?cup2key=15:fpG_mSxGyR9F6IFnOkFzLp3edYPJJJaVoro33ylyNnc&cup2hreq=448b647df34b8169212e0014c9cd9795b5c7a0a638f5d3f4dbb8282894f9ac1b",
+          "https://passwordsleakcheck-pa.googleapis.com/v1/leaks:lookupSingle"
         ],
         "sample_params": []
       },
@@ -156,37 +193,46 @@
         "cwe": "497",
         "rule_id": "10096",
         "systemic": true,
+        "instance_count": 12,
+        "sample_endpoints": [
+          "https://redirector.gvt1.com/edgedl/chrome/dict/en-us-10-1.bdic",
+          "http://edgedl.me.gvt1.com/edgedl/release2/chrome_component/g6fektfeszh2s7own4gtb53vp4_1754/efniojlnjndmcbiieegkicadnoecjjef_1754_all_ezaiziisoa25nj44w22o4ooiiu.crx3",
+          "http://edgedl.me.gvt1.com/edgedl/release2/chrome_component/lqmv43mnell6xhvz3ejb5abade_10731/hfnkpimlhhgieaddgfemjhofmfblmnib_10731_all_adrzxndsw6jkd7v4wjf5i4pg6dra.crx3",
+          "http://juice-shop:3000/",
+          "http://juice-shop:3000/styles.css"
+        ],
+        "sample_params": [
+          "Location"
+        ]
+      },
+      {
+        "fingerprint": "1ecb472731ac3dea",
+        "title": "X-Content-Type-Options Header Missing",
+        "severity": "low",
+        "cwe": "693",
+        "rule_id": "10021",
+        "systemic": true,
         "instance_count": 3,
         "sample_endpoints": [
-          "1694",
-          "1695",
-          "1750"
+          "http://juice-shop:3000/socket.io/?EIO=4&transport=polling&t=Q0g8rVW&sid=DkdhnOQkGWzqIWSTAADS",
+          "http://juice-shop:3000/socket.io/?EIO=4&transport=polling&t=Q0g8rQt",
+          "http://juice-shop:3000/socket.io/?EIO=4&transport=polling&t=Q0g8rVL&sid=DkdhnOQkGWzqIWSTAADS"
         ],
-        "sample_params": []
+        "sample_params": [
+          "x-content-type-options"
+        ]
       },
       {
-        "fingerprint": "ca310bdfbee52eb1",
-        "title": "Application Error Disclosure",
-        "severity": "low",
-        "cwe": "550",
-        "rule_id": "90022",
-        "systemic": true,
-        "instance_count": 1,
-        "sample_endpoints": [
-          "1733"
-        ],
-        "sample_params": []
-      },
-      {
-        "fingerprint": "f3095e7f33e0d0cb",
+        "fingerprint": "e410c1fa81a838d1",
         "title": "Information Disclosure - Debug Error Messages",
         "severity": "low",
         "cwe": "1295",
         "rule_id": "10023",
         "systemic": false,
-        "instance_count": 1,
+        "instance_count": 2,
         "sample_endpoints": [
-          "1746"
+          "http://juice-shop:3000/api/Hints",
+          "http://juice-shop:3000/api/Hints/"
         ],
         "sample_params": []
       },
@@ -197,48 +243,10 @@
         "cwe": "497",
         "rule_id": "2",
         "systemic": true,
-        "instance_count": 1,
+        "instance_count": 2,
         "sample_endpoints": [
-          "1748"
-        ],
-        "sample_params": []
-      },
-      {
-        "fingerprint": "1ecb472731ac3dea",
-        "title": "X-Content-Type-Options Header Missing",
-        "severity": "low",
-        "cwe": "693",
-        "rule_id": "10021",
-        "systemic": true,
-        "instance_count": 1,
-        "sample_endpoints": [
-          "1752"
-        ],
-        "sample_params": []
-      },
-      {
-        "fingerprint": "e56aa89c6119a5dc",
-        "title": "Authentication Request Identified",
-        "severity": "info",
-        "cwe": "0",
-        "rule_id": "10111",
-        "systemic": false,
-        "instance_count": 1,
-        "sample_endpoints": [
-          "1753"
-        ],
-        "sample_params": []
-      },
-      {
-        "fingerprint": "91f64f3bbf450718",
-        "title": "Information Disclosure - Sensitive Information in URL",
-        "severity": "info",
-        "cwe": "598",
-        "rule_id": "10024",
-        "systemic": false,
-        "instance_count": 1,
-        "sample_endpoints": [
-          "1692"
+          "http://juice-shop:3000/rest/admin/application-configuration",
+          "http://juice-shop:3000/rest/order-history"
         ],
         "sample_params": []
       },
@@ -246,53 +254,114 @@
         "fingerprint": "af92fa6ad986ec90",
         "title": "Modern Web Application",
         "severity": "info",
-        "cwe": "0",
+        "cwe": "-1",
         "rule_id": "10109",
         "systemic": true,
-        "instance_count": 1,
+        "instance_count": 5,
         "sample_endpoints": [
-          "1755"
+          "http://juice-shop:3000",
+          "http://juice-shop:3000/",
+          "http://juice-shop:3000/assets/public/images/uploads/%E1%93%9A%E1%98%8F%E1%97%A2-",
+          "http://juice-shop:3000/sitemap.xml",
+          "http://juice-shop:3000/socket.io"
         ],
         "sample_params": []
       },
       {
         "fingerprint": "cf82fcd90adac4fd",
-        "title": "Re-Examine Cache-Control Directives",
+        "title": "Re-examine Cache-control Directives",
         "severity": "info",
         "cwe": "525",
         "rule_id": "10015",
         "systemic": true,
-        "instance_count": 1,
+        "instance_count": 5,
         "sample_endpoints": [
-          "1709"
+          "https://content-autofill.googleapis.com/v1/pages/ChVDaHJvbWUvMTM4LjAuNzIwNC4xNTcSGQn6mWv1E8zkxRIFDZFhlU4hzvygyePn65U=?alt=proto",
+          "https://content-autofill.googleapis.com/v1/pages/ChVDaHJvbWUvMTM4LjAuNzIwNC4xNTcSGQnnnBXs2k70fRIFDQqJ_80hzvygyePn65U=?alt=proto",
+          "https://content-autofill.googleapis.com/v1/pages/ChVDaHJvbWUvMTM4LjAuNzIwNC4xNTcSIAkfjMd8LeLfPxIFDXhvEhkSBQ3OQUx6IZETMaDKNRrt?alt=proto",
+          "https://content-autofill.googleapis.com/v1/pages/ChVDaHJvbWUvMTM4LjAuNzIwNC4xNTcSLgk5xC10LNU7WxIFDWp1l1cSBQ0TMeXDEgUNMT2UMBIFDb30XvIhtR7YGaj5CkA=?alt=proto",
+          "https://content-autofill.googleapis.com/v1/pages/ChVDaHJvbWUvMTM4LjAuNzIwNC4xNTcSLglJko59DXpKAxIFDbcCBwISBQ1pATZaEgUNsTWoahIFDRHp2_ohrIKnflOPi44=?alt=proto"
         ],
-        "sample_params": []
+        "sample_params": [
+          "cache-control"
+        ]
       },
       {
-        "fingerprint": "a090e88978f42875",
-        "title": "Retrieved From Cache",
+        "fingerprint": "4e3d127e19662982",
+        "title": "Retrieved from Cache",
         "severity": "info",
         "cwe": "525",
-        "rule_id": "10050",
+        "rule_id": "10050-2",
         "systemic": true,
-        "instance_count": 1,
+        "instance_count": 5,
         "sample_endpoints": [
-          "1697"
+          "http://edgedl.me.gvt1.com/edgedl/diffgen-puffin/gcmjkmgdlgnkkcocmoeiminaijmmjnii/6ca5bdb9f3e2cd83b7e359729bc6c33c4fe975ec499861d969b3e080320849ff",
+          "http://edgedl.me.gvt1.com/edgedl/diffgen-puffin/obedbbhbpmojnkanicioggnmelmoomoc/e40bb820d29fb9a9bf8935fa5fbe77b363cf9c553cd0c1993bf0a9bec48686e4",
+          "http://edgedl.me.gvt1.com/edgedl/release2/chrome_component/acpeapixpwuzscfa5h5j5m7c4xaa_2025.6.16.0/niikhdgajlphfehepabhhblakbdgeefj_2025.06.16.00_all_acgsomx5qtwgffxcrxwhoksfom7q.crx3",
+          "http://edgedl.me.gvt1.com/edgedl/release2/chrome_component/adcoiseiy5ntys7il5yjkturmn6q_731/lmelglejhemejginpboagddgdfbepgmp_731_all_ZZ_achi3xmfehre4pvb3rjfeddvzdaa.crx3",
+          "http://edgedl.me.gvt1.com/edgedl/release2/chrome_component/almxfnyg25yhugusmtq6atp444_2026.8.3.1/kiabhabjdbkjdpjbpigfodbdjmbglcoo_2026.08.03.01_all_adu3xhpyqeasuy6q6ntx4mq5k2va.crx3"
         ],
         "sample_params": []
       },
       {
-        "fingerprint": "b4c254b7d755bf09",
+        "fingerprint": "1a7d3762fc2ed91c",
         "title": "Session Management Response Identified",
         "severity": "info",
-        "cwe": "0",
+        "cwe": "-1",
         "rule_id": "10112",
+        "systemic": false,
+        "instance_count": 2,
+        "sample_endpoints": [
+          "http://juice-shop:3000/rest/user/login"
+        ],
+        "sample_params": [
+          "authentication.token"
+        ]
+      },
+      {
+        "fingerprint": "3a11542124ffa372",
+        "title": "Authentication Request Identified",
+        "severity": "info",
+        "cwe": "-1",
+        "rule_id": "10111",
         "systemic": false,
         "instance_count": 1,
         "sample_endpoints": [
-          "1759"
+          "http://juice-shop:3000/api/Users/"
         ],
-        "sample_params": []
+        "sample_params": [
+          "email"
+        ]
+      },
+      {
+        "fingerprint": "eb69e4b6c825facb",
+        "title": "Authentication Request Identified",
+        "severity": "info",
+        "cwe": "-1",
+        "rule_id": "10111",
+        "systemic": false,
+        "instance_count": 1,
+        "sample_endpoints": [
+          "http://juice-shop:3000/rest/user/login"
+        ],
+        "sample_params": [
+          "email"
+        ]
+      },
+      {
+        "fingerprint": "6651ffac82665cd1",
+        "title": "Information Disclosure - Sensitive Information in URL",
+        "severity": "info",
+        "cwe": "598",
+        "rule_id": "10024",
+        "systemic": false,
+        "instance_count": 1,
+        "sample_endpoints": [
+          "https://r1---sn-4g5ednrs.gvt1.com/edgedl/chrome/dict/en-us-10-1.bdic?cms_redirect=yes&met=1787413420,&mh=7g&mip=185.207.139.8&mm=28&mn=sn-4g5ednrs&ms=nvh&mt=1787412772&mv=u&mvi=1&pl=24&rmhost=r3---sn-4g5ednrs.gvt1.com&rms=nvh,nvh&shardbypass=sd&smhost=r3---sn-4g5edndr.gvt1.com"
+        ],
+        "sample_params": [
+          "shardbypass"
+        ]
       }
     ],
     "top_findings": [
@@ -300,196 +369,245 @@
         "name": "PII Disclosure",
         "risk": "high",
         "count": 1,
-        "fingerprint": "d2c3b832bf3ffba3",
+        "fingerprint": "166304268dd594ba",
         "systemic": false,
         "sample_endpoints": [
-          "1714"
-        ]
-      },
-      {
-        "name": "Application Error Disclosure",
-        "risk": "medium",
-        "count": 1,
-        "fingerprint": "acfbfa89c9abb1a4",
-        "systemic": true,
-        "sample_endpoints": [
-          "1715"
+          "http://juice-shop:3000/api/Cards/"
         ]
       },
       {
         "name": "Content Security Policy (CSP) Header Not Set",
         "risk": "medium",
-        "count": 1,
-        "fingerprint": "3b987b7f8a0f1c14",
+        "count": 5,
+        "fingerprint": "a1277420cf3a3ac0",
         "systemic": true,
         "sample_endpoints": [
-          "1722"
+          "http://juice-shop:3000",
+          "http://juice-shop:3000/",
+          "http://juice-shop:3000/assets/public/images/uploads/%E1%93%9A%E1%98%8F%E1%97%A2-",
+          "http://juice-shop:3000/sitemap.xml",
+          "http://juice-shop:3000/socket.io/?EIO=4&transport=polling&t=Q0g8rVL&sid=DkdhnOQkGWzqIWSTAADS"
         ]
       },
       {
         "name": "Cross-Domain Misconfiguration",
         "risk": "medium",
-        "count": 1,
+        "count": 5,
         "fingerprint": "82982cb3a16a5935",
         "systemic": true,
         "sample_endpoints": [
-          "1726"
+          "http://juice-shop:3000/",
+          "http://juice-shop:3000/chunk-5K74DZ2F.js",
+          "http://juice-shop:3000/chunk-OKA37M7B.js",
+          "http://juice-shop:3000/chunk-PX7UKXVL.js",
+          "http://juice-shop:3000/chunk-VJL3IV3O.js"
         ]
       },
       {
-        "name": "CSP: Failure to Define Directive With No Fallback",
+        "name": "CSP: Failure to Define Directive with No Fallback",
         "risk": "medium",
-        "count": 1,
-        "fingerprint": "9c2dcf1095f28031",
+        "count": 5,
+        "fingerprint": "3546764138bbb35f",
         "systemic": true,
         "sample_endpoints": [
-          "1717"
-        ]
-      },
-      {
-        "name": "Missing Anti-Clickjacking Header",
-        "risk": "medium",
-        "count": 1,
-        "fingerprint": "4ad560846a9be346",
-        "systemic": true,
-        "sample_endpoints": [
-          "1731"
+          "http://juice-shop:3000/assets",
+          "http://juice-shop:3000/assets/i18n",
+          "http://juice-shop:3000/assets/public",
+          "http://juice-shop:3000/assets/public/images",
+          "http://juice-shop:3000/assets/public/images/deluxe"
         ]
       },
       {
         "name": "Session ID in URL Rewrite",
         "risk": "medium",
-        "count": 1,
-        "fingerprint": "fcde32d3c7fa9868",
+        "count": 5,
+        "fingerprint": "19968e0f8f1ff762",
         "systemic": false,
         "sample_endpoints": [
-          "1732"
+          "http://juice-shop:3000/socket.io/?EIO=4&transport=polling&t=Q0g8rVW&sid=DkdhnOQkGWzqIWSTAADS",
+          "http://juice-shop:3000/socket.io/?EIO=4&transport=websocket&sid=DkdhnOQkGWzqIWSTAADS",
+          "http://juice-shop:3000/socket.io/?EIO=4&transport=websocket&sid=f9z7wMYLmC558BykAADU",
+          "http://juice-shop:3000/socket.io/?EIO=4&transport=polling&t=Q0g8rVL&sid=DkdhnOQkGWzqIWSTAADS",
+          "http://juice-shop:3000/socket.io/?EIO=4&transport=polling&t=Q0g8uAg&sid=f9z7wMYLmC558BykAADU"
         ]
       },
       {
-        "name": "Strict-Transport-Security Header Not Set",
-        "risk": "low",
-        "count": 5,
-        "fingerprint": "d6c2cca120c0a5b3",
+        "name": "Application Error Disclosure",
+        "risk": "medium",
+        "count": 2,
+        "fingerprint": "acfbfa89c9abb1a4",
         "systemic": true,
         "sample_endpoints": [
-          "1691",
-          "1693",
-          "1702",
-          "1703",
-          "1704"
+          "http://juice-shop:3000/api/Hints",
+          "http://juice-shop:3000/api/Hints/"
         ]
       },
       {
-        "name": "Timestamp Disclosure - Unix",
-        "risk": "low",
-        "count": 3,
-        "fingerprint": "0657ca8f0e4a4a09",
+        "name": "Missing Anti-clickjacking Header",
+        "risk": "medium",
+        "count": 1,
+        "fingerprint": "2c06e11a82817c15",
         "systemic": true,
         "sample_endpoints": [
-          "1694",
-          "1695",
-          "1750"
+          "http://juice-shop:3000/socket.io/?EIO=4&transport=polling&t=Q0g8rVL&sid=DkdhnOQkGWzqIWSTAADS"
         ]
       },
       {
         "name": "Application Error Disclosure",
         "risk": "low",
-        "count": 1,
+        "count": 13,
         "fingerprint": "ca310bdfbee52eb1",
         "systemic": true,
         "sample_endpoints": [
-          "1733"
+          "http://juice-shop:3000/api",
+          "http://juice-shop:3000/rest",
+          "http://juice-shop:3000/rest/admin",
+          "http://juice-shop:3000/rest/order-history",
+          "http://juice-shop:3000/rest/products"
         ]
       },
       {
-        "name": "Information Disclosure - Debug Error Messages",
+        "name": "Strict-Transport-Security Header Not Set",
         "risk": "low",
-        "count": 1,
-        "fingerprint": "f3095e7f33e0d0cb",
-        "systemic": false,
-        "sample_endpoints": [
-          "1746"
-        ]
-      },
-      {
-        "name": "Private IP Disclosure",
-        "risk": "low",
-        "count": 1,
-        "fingerprint": "a31cbdd6380bdaaa",
+        "count": 13,
+        "fingerprint": "5c47a9a624bdb2dc",
         "systemic": true,
         "sample_endpoints": [
-          "1748"
+          "https://r1---sn-4g5ednrs.gvt1.com/edgedl/chrome/dict/en-us-10-1.bdic?cms_redirect=yes&met=1787413420,&mh=7g&mip=185.207.139.8&mm=28&mn=sn-4g5ednrs&ms=nvh&mt=1787412772&mv=u&mvi=1&pl=24&rmhost=r3---sn-4g5ednrs.gvt1.com&rms=nvh,nvh&shardbypass=sd&smhost=r3---sn-4g5edndr.gvt1.com",
+          "https://redirector.gvt1.com/edgedl/chrome/dict/en-us-10-1.bdic",
+          "https://update.googleapis.com/service/update2/json",
+          "https://update.googleapis.com/service/update2/json?cup2key=15:fpG_mSxGyR9F6IFnOkFzLp3edYPJJJaVoro33ylyNnc&cup2hreq=448b647df34b8169212e0014c9cd9795b5c7a0a638f5d3f4dbb8282894f9ac1b",
+          "https://passwordsleakcheck-pa.googleapis.com/v1/leaks:lookupSingle"
+        ]
+      },
+      {
+        "name": "Timestamp Disclosure - Unix",
+        "risk": "low",
+        "count": 12,
+        "fingerprint": "0657ca8f0e4a4a09",
+        "systemic": true,
+        "sample_endpoints": [
+          "https://redirector.gvt1.com/edgedl/chrome/dict/en-us-10-1.bdic",
+          "http://edgedl.me.gvt1.com/edgedl/release2/chrome_component/g6fektfeszh2s7own4gtb53vp4_1754/efniojlnjndmcbiieegkicadnoecjjef_1754_all_ezaiziisoa25nj44w22o4ooiiu.crx3",
+          "http://edgedl.me.gvt1.com/edgedl/release2/chrome_component/lqmv43mnell6xhvz3ejb5abade_10731/hfnkpimlhhgieaddgfemjhofmfblmnib_10731_all_adrzxndsw6jkd7v4wjf5i4pg6dra.crx3",
+          "http://juice-shop:3000/",
+          "http://juice-shop:3000/styles.css"
         ]
       },
       {
         "name": "X-Content-Type-Options Header Missing",
         "risk": "low",
-        "count": 1,
+        "count": 3,
         "fingerprint": "1ecb472731ac3dea",
         "systemic": true,
         "sample_endpoints": [
-          "1752"
+          "http://juice-shop:3000/socket.io/?EIO=4&transport=polling&t=Q0g8rVW&sid=DkdhnOQkGWzqIWSTAADS",
+          "http://juice-shop:3000/socket.io/?EIO=4&transport=polling&t=Q0g8rQt",
+          "http://juice-shop:3000/socket.io/?EIO=4&transport=polling&t=Q0g8rVL&sid=DkdhnOQkGWzqIWSTAADS"
+        ]
+      },
+      {
+        "name": "Information Disclosure - Debug Error Messages",
+        "risk": "low",
+        "count": 2,
+        "fingerprint": "e410c1fa81a838d1",
+        "systemic": false,
+        "sample_endpoints": [
+          "http://juice-shop:3000/api/Hints",
+          "http://juice-shop:3000/api/Hints/"
+        ]
+      },
+      {
+        "name": "Private IP Disclosure",
+        "risk": "low",
+        "count": 2,
+        "fingerprint": "a31cbdd6380bdaaa",
+        "systemic": true,
+        "sample_endpoints": [
+          "http://juice-shop:3000/rest/admin/application-configuration",
+          "http://juice-shop:3000/rest/order-history"
+        ]
+      },
+      {
+        "name": "Modern Web Application",
+        "risk": "info",
+        "count": 5,
+        "fingerprint": "af92fa6ad986ec90",
+        "systemic": true,
+        "sample_endpoints": [
+          "http://juice-shop:3000",
+          "http://juice-shop:3000/",
+          "http://juice-shop:3000/assets/public/images/uploads/%E1%93%9A%E1%98%8F%E1%97%A2-",
+          "http://juice-shop:3000/sitemap.xml",
+          "http://juice-shop:3000/socket.io"
+        ]
+      },
+      {
+        "name": "Re-examine Cache-control Directives",
+        "risk": "info",
+        "count": 5,
+        "fingerprint": "cf82fcd90adac4fd",
+        "systemic": true,
+        "sample_endpoints": [
+          "https://content-autofill.googleapis.com/v1/pages/ChVDaHJvbWUvMTM4LjAuNzIwNC4xNTcSGQn6mWv1E8zkxRIFDZFhlU4hzvygyePn65U=?alt=proto",
+          "https://content-autofill.googleapis.com/v1/pages/ChVDaHJvbWUvMTM4LjAuNzIwNC4xNTcSGQnnnBXs2k70fRIFDQqJ_80hzvygyePn65U=?alt=proto",
+          "https://content-autofill.googleapis.com/v1/pages/ChVDaHJvbWUvMTM4LjAuNzIwNC4xNTcSIAkfjMd8LeLfPxIFDXhvEhkSBQ3OQUx6IZETMaDKNRrt?alt=proto",
+          "https://content-autofill.googleapis.com/v1/pages/ChVDaHJvbWUvMTM4LjAuNzIwNC4xNTcSLgk5xC10LNU7WxIFDWp1l1cSBQ0TMeXDEgUNMT2UMBIFDb30XvIhtR7YGaj5CkA=?alt=proto",
+          "https://content-autofill.googleapis.com/v1/pages/ChVDaHJvbWUvMTM4LjAuNzIwNC4xNTcSLglJko59DXpKAxIFDbcCBwISBQ1pATZaEgUNsTWoahIFDRHp2_ohrIKnflOPi44=?alt=proto"
+        ]
+      },
+      {
+        "name": "Retrieved from Cache",
+        "risk": "info",
+        "count": 5,
+        "fingerprint": "4e3d127e19662982",
+        "systemic": true,
+        "sample_endpoints": [
+          "http://edgedl.me.gvt1.com/edgedl/diffgen-puffin/gcmjkmgdlgnkkcocmoeiminaijmmjnii/6ca5bdb9f3e2cd83b7e359729bc6c33c4fe975ec499861d969b3e080320849ff",
+          "http://edgedl.me.gvt1.com/edgedl/diffgen-puffin/obedbbhbpmojnkanicioggnmelmoomoc/e40bb820d29fb9a9bf8935fa5fbe77b363cf9c553cd0c1993bf0a9bec48686e4",
+          "http://edgedl.me.gvt1.com/edgedl/release2/chrome_component/acpeapixpwuzscfa5h5j5m7c4xaa_2025.6.16.0/niikhdgajlphfehepabhhblakbdgeefj_2025.06.16.00_all_acgsomx5qtwgffxcrxwhoksfom7q.crx3",
+          "http://edgedl.me.gvt1.com/edgedl/release2/chrome_component/adcoiseiy5ntys7il5yjkturmn6q_731/lmelglejhemejginpboagddgdfbepgmp_731_all_ZZ_achi3xmfehre4pvb3rjfeddvzdaa.crx3",
+          "http://edgedl.me.gvt1.com/edgedl/release2/chrome_component/almxfnyg25yhugusmtq6atp444_2026.8.3.1/kiabhabjdbkjdpjbpigfodbdjmbglcoo_2026.08.03.01_all_adu3xhpyqeasuy6q6ntx4mq5k2va.crx3"
+        ]
+      },
+      {
+        "name": "Session Management Response Identified",
+        "risk": "info",
+        "count": 2,
+        "fingerprint": "1a7d3762fc2ed91c",
+        "systemic": false,
+        "sample_endpoints": [
+          "http://juice-shop:3000/rest/user/login"
         ]
       },
       {
         "name": "Authentication Request Identified",
         "risk": "info",
         "count": 1,
-        "fingerprint": "e56aa89c6119a5dc",
+        "fingerprint": "3a11542124ffa372",
         "systemic": false,
         "sample_endpoints": [
-          "1753"
+          "http://juice-shop:3000/api/Users/"
+        ]
+      },
+      {
+        "name": "Authentication Request Identified",
+        "risk": "info",
+        "count": 1,
+        "fingerprint": "eb69e4b6c825facb",
+        "systemic": false,
+        "sample_endpoints": [
+          "http://juice-shop:3000/rest/user/login"
         ]
       },
       {
         "name": "Information Disclosure - Sensitive Information in URL",
         "risk": "info",
         "count": 1,
-        "fingerprint": "91f64f3bbf450718",
+        "fingerprint": "6651ffac82665cd1",
         "systemic": false,
         "sample_endpoints": [
-          "1692"
-        ]
-      },
-      {
-        "name": "Modern Web Application",
-        "risk": "info",
-        "count": 1,
-        "fingerprint": "af92fa6ad986ec90",
-        "systemic": true,
-        "sample_endpoints": [
-          "1755"
-        ]
-      },
-      {
-        "name": "Re-Examine Cache-Control Directives",
-        "risk": "info",
-        "count": 1,
-        "fingerprint": "cf82fcd90adac4fd",
-        "systemic": true,
-        "sample_endpoints": [
-          "1709"
-        ]
-      },
-      {
-        "name": "Retrieved From Cache",
-        "risk": "info",
-        "count": 1,
-        "fingerprint": "a090e88978f42875",
-        "systemic": true,
-        "sample_endpoints": [
-          "1697"
-        ]
-      },
-      {
-        "name": "Session Management Response Identified",
-        "risk": "info",
-        "count": 1,
-        "fingerprint": "b4c254b7d755bf09",
-        "systemic": false,
-        "sample_endpoints": [
-          "1759"
+          "https://r1---sn-4g5ednrs.gvt1.com/edgedl/chrome/dict/en-us-10-1.bdic?cms_redirect=yes&met=1787413420,&mh=7g&mip=185.207.139.8&mm=28&mn=sn-4g5ednrs&ms=nvh&mt=1787412772&mv=u&mvi=1&pl=24&rmhost=r3---sn-4g5ednrs.gvt1.com&rms=nvh,nvh&shardbypass=sd&smhost=r3---sn-4g5edndr.gvt1.com"
         ]
       }
     ]
@@ -497,13 +615,12 @@
   "executive": {
     "executive_class": "High",
     "recommendations": [
-      "Исполнение: сбой (exit 1) — evidence/прогон не завершён штатно; допуск по ACTIVE считать недействительным до повторного успешного прогона.",
       "Заключение: высокий уровень риска — закрыть ACTIVE High/Critical (critical=0, high=1) до следующего допуска.",
       "Кластер: PII Disclosure — high×1.",
-      "Кластер: Application Error Disclosure — medium×1 (site-wide).",
-      "Кластер: Content Security Policy (CSP) Header Not Set — medium×1 (site-wide).",
-      "Кластер: Cross-Domain Misconfiguration — medium×1 (site-wide).",
-      "Кластер: CSP: Failure to Define Directive With No Fallback — medium×1 (site-wide)."
+      "Кластер: Content Security Policy (CSP) Header Not Set — medium×5 (site-wide).",
+      "Кластер: Cross-Domain Misconfiguration — medium×5 (site-wide).",
+      "Кластер: CSP: Failure to Define Directive with No Fallback — medium×5 (site-wide).",
+      "Кластер: Session ID in URL Rewrite — medium×5."
     ],
     "risks": {
       "critical": 0,
@@ -512,17 +629,17 @@
       "low": 12,
       "info": 6
     },
-    "source": "dojo_findings",
-    "execution_fault": true
+    "source": "zap_xml",
+    "execution_fault": false
   },
   "allure_summary": {
-    "passed": 1,
-    "failed": 1,
+    "passed": 2,
+    "failed": 0,
     "broken": 0,
     "skipped": 0,
     "total": 2,
-    "status": "has_failures"
+    "status": "ok"
   },
   "executive_class": "High",
-  "built_at": 1787414178.5048056
+  "built_at": 1787607753.8186915
 }

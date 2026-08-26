@@ -1,4 +1,4 @@
-{
+﻿{
   "eval_version": "eval-v1",
   "created": "2026-08-20",
   "description": "Golden eval set for AI SecOps Co-Pilot Wave 1-3 acceptance",
@@ -79,7 +79,7 @@
       {
         "id": "A01",
         "name": "Toggle OFF → 503",
-        "scenario": "KDT_AI_ASSISTANT_ENABLED=0, POST /api/ai/delta",
+        "scenario": "PK_AI_ASSISTANT_ENABLED=0, POST /api/ai/delta",
         "expected": "HTTP 503, body: {error: 'ai_assistant_disabled'}",
         "category": "api"
       },
@@ -130,7 +130,7 @@
       {
         "id": "U01",
         "name": "AI OFF → deterministic delta visible",
-        "scenario": "KDT_AI_ASSISTANT_ENABLED=0, run complete",
+        "scenario": "PK_AI_ASSISTANT_ENABLED=0, run complete",
         "expected": "NEWLY_OBSERVED/NOT_OBSERVED/CHANGED cards visible, AI narrative hidden",
         "category": "ui"
       },
@@ -204,7 +204,7 @@
       {
         "id": "R02",
         "name": "Parallel non-AI run succeeds",
-        "scenario": "KDT_AI_ASSISTANT_ENABLED=0 baseline run",
+        "scenario": "PK_AI_ASSISTANT_ENABLED=0 baseline run",
         "expected": "Full scan completes, all artifacts generated, no AI calls",
         "category": "runtime"
       },

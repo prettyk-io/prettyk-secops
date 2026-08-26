@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Stream scope: seed/data-модуль public; Пусть сценария — private (не leak в соседа)."""
 from __future__ import annotations
 
@@ -53,8 +53,8 @@ def test_datastream_merge_is_explicit_api():
 
 def _stub_controller(monkeypatch) -> Controller:
     """Controller без ZAP/WD; data + core для Пусть / Лог."""
-    monkeypatch.setenv("KDT_AUTH_BOOTSTRAP", "0")
-    monkeypatch.setenv("KDT_QUALITY_GATE", "0")
+    monkeypatch.setenv("PK_AUTH_BOOTSTRAP", "0")
+    monkeypatch.setenv("PK_QUALITY_GATE", "0")
 
     @contextmanager
     def _step(_title):

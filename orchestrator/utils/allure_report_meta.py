@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Wave A: executor / environment / categories into allure-results before generate."""
 from __future__ import annotations
 
@@ -126,7 +126,7 @@ def write_allure_report_meta(results_dir: Path, wired: Any = None) -> Dict[str, 
 
 
 def resolve_allure_service_base() -> str:
-    """KDT_ALLURE_URL wins; else engine 3 → :5050 (канон). Legacy engine 2 → :5051."""
+    """PK_ALLURE_URL wins; else engine 3 → :5050 (канон). Legacy engine 2 → :5051."""
     explicit = (pk_env("ALLURE_URL") or "").strip()
     if explicit:
         return explicit.rstrip("/")

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 Машинный смоук placement: все MethodId / ворота / типовые language-комбо.
 

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """G-40 Alert Filters — unit без живого ZAP."""
 from __future__ import annotations
 

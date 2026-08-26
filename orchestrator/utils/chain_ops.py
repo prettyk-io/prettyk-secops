@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """IMP-CHAIN: record HAR → token slots → materialize → play (sequence/fuzz).
 
 Industry: ZAP Sequence + Burp Stepper-style extract/replace. No silent scan.
@@ -660,7 +660,7 @@ def template_har(
     log["entries"] = entries
     har["log"] = log
     if "creator" not in log:
-        log["creator"] = {"name": "kdt-imp-chain", "version": "1"}
+        log["creator"] = {"name": "pk-imp-chain", "version": "1"}
     return json.dumps(har, ensure_ascii=False, indent=2)
 
 

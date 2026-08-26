@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 Lab e2e: clear hooks on start → spawn short run → Allure+Dojo hooks back.
 

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Генерация HttpSender: маска в запросе → значение ScriptVars.
 
 Не UI Fuzzer ZAP. Скрипт в daemon подменяет mask на global ScriptVar

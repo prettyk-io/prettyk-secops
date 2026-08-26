@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """CD-7: Собственный фаззер мутаций (Burp-killer core).
 
 Чистый Python, без ZAP: генерирует boundary payloads, спецсимволы,

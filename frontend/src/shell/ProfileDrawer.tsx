@@ -6,7 +6,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, Tooltip, Snackbar,
 } from '@mui/material';
 import {
-  Close, Person, Palette, Key, ContentCopy, Add, Delete, Check, Shield,
+  Close, Person, Palette, Key, ContentCopy, Add, Delete, Check, Shield, Lock,
 } from '@mui/icons-material';
 import { useProfileStore, type UserCapability, type PersonalAccessToken } from './useProfileStore';
 import { authClient } from './betterAuthClient';
@@ -93,6 +93,11 @@ export function ProfileDrawer() {
   const [tokenExpiry, setTokenExpiry] = useState(30);
   const [rawToken, setRawToken] = useState('');
   const [copied, setCopied] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
+  const [pwdMsg, setPwdMsg] = useState('');
+  const [pwdError, setPwdError] = useState(false);
 
   const initials = profile.name.split(/\s+/).map(w => w[0]?.toUpperCase() ?? '').slice(0, 2).join('') || '?';
   const p = profile.preferences;
@@ -126,6 +131,28 @@ export function ProfileDrawer() {
     const updated = tokens.filter((t) => t.id !== id);
     setTokens(updated);
     try { localStorage.setItem('pk.tokens.v1', JSON.stringify(updated)); } catch { /* ignore */ }
+  };
+
+  const handleChangePassword = async () => {
+    setPwdMsg(''); setPwdError(false);
+    if (!currentPassword || !newPassword) {
+      setPwdMsg('Заполните оба поля'); setPwdError(true); return;
+    }
+    if (newPassword.length < 6) {
+      setPwdMsg('Пароль должен быть не короче 6 символов'); setPwdError(true); return;
+    }
+    if (newPassword !== newPasswordConfirm) {
+      setPwdMsg('Пароли не совпадают'); setPwdError(true); return;
+    }
+    const result = await authClient.changePassword(currentPassword, newPassword, true);
+    if (result.ok) {
+      setPwdMsg('Пароль изменён. Все остальные сессии отозваны.');
+      setPwdError(false);
+      setCurrentPassword(''); setNewPassword(''); setNewPasswordConfirm('');
+    } else {
+      setPwdMsg(result.error || 'Не удалось сменить пароль');
+      setPwdError(true);
+    }
   };
 
   return (
@@ -165,6 +192,7 @@ export function ProfileDrawer() {
         <Tab icon={<Person sx={{ fontSize: '14px !important' }} />} iconPosition="start" label="Profile" />
         <Tab icon={<Palette sx={{ fontSize: '14px !important' }} />} iconPosition="start" label="Appearance" />
         <Tab icon={<Key sx={{ fontSize: '14px !important' }} />} iconPosition="start" label="Tokens" />
+        <Tab icon={<Lock sx={{ fontSize: '14px !important' }} />} iconPosition="start" label="Security" />
       </Tabs>
 
       <Box sx={{ flex: 1, overflow: 'auto', p: 2.5 }}>
@@ -221,6 +249,43 @@ export function ProfileDrawer() {
             {tokens.length === 0 && (
               <Typography sx={{ color: 'text.secondary', fontSize: 12, textAlign: 'center', py: 4 }}>No API tokens yet.</Typography>
             )}
+          </Box>
+        )}
+
+        {/* ── Tab 3: Security ── */}
+        {tab === 3 && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+            <Typography sx={{ color: 'text.secondary', fontSize: 12 }}>
+              Смена пароля. После смены все остальные сессии будут отозваны.
+            </Typography>
+            <TextField
+              label="Текущий пароль"
+              type="password"
+              fullWidth size="small"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+            />
+            <TextField
+              label="Новый пароль"
+              type="password"
+              fullWidth size="small"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+            />
+            <TextField
+              label="Повторите новый пароль"
+              type="password"
+              fullWidth size="small"
+              value={newPasswordConfirm}
+              onChange={(e) => setNewPasswordConfirm(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleChangePassword(); }}
+            />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Button variant="contained" size="small" onClick={handleChangePassword} sx={{ fontSize: 11 }}>
+                Сменить пароль
+              </Button>
+              {pwdMsg && <Typography sx={{ color: pwdError ? '#ef4444' : '#22c55e', fontSize: 11 }}>{pwdMsg}</Typography>}
+            </Box>
           </Box>
         )}
 

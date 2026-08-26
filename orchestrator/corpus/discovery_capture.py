@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """CD-1: DOM + Network граб при обходе страниц.
 
 ``DiscoveryCorpus`` — нормализованный снимок того, что реально произошло при
@@ -10,7 +10,7 @@
      для «гуляющего» браузера; для API-обхода DOM пуст).
   2. **Network** — ZAP History через `zap.get_messages()`. Браузер и HTTP/gRPC
      адаптеры уже проксируются через ZAP, поэтому весь трафик оседает в History;
-     CDP-событийный сниффинг (BiDi) в KDT не тянем — History даёт то же самое
+     CDP-событийный сниффинг (BiDi) в PK не тянем — History даёт то же самое
      и не зависит от браузера.
 
 Выход — dict с ``DiscoveryCorpus`` (``schema_version``, ``pages``, ``network``),

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 ART-5/6/7: cleanup candidates + disk/Dojo purge by artifact index.
 """
@@ -167,7 +167,7 @@ def export_cleanup_audit(*, dest: Optional[Path] = None) -> Dict[str, Any]:
 
 
 def purge_globally_enabled() -> bool:
-    """KDT_ARTIFACT_PURGE=0 → freeze all execute purge (SURVEY-3 global soft freeze)."""
+    """PK_ARTIFACT_PURGE=0 → freeze all execute purge (SURVEY-3 global soft freeze)."""
     raw = (pk_env("ARTIFACT_PURGE") or "1").strip().lower()
     return raw not in ("0", "false", "no", "off")
 
@@ -299,7 +299,7 @@ def purge_disk_for_check(check_id: str, *, dry_run: bool = False) -> Dict[str, A
             "ok": False,
             "error": "purge_disabled",
             "deleted": [],
-            "skipped": [{"path": "*", "reason": "KDT_ARTIFACT_PURGE=0"}],
+            "skipped": [{"path": "*", "reason": "PK_ARTIFACT_PURGE=0"}],
         }
     entry = get_check_entry(check_id)
     if not entry:

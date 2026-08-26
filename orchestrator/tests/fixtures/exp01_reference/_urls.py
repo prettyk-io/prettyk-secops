@@ -1,4 +1,4 @@
-import requests
+﻿import requests
 
 h = {'Authorization': 'Token dc8ad25a2685b4e5b65603c67925914559b3d28b', 'accept': 'application/json'}
 r = requests.get('http://127.0.0.1:8081/api/v2/products/?name=exp01-baseline', headers=h, timeout=10)

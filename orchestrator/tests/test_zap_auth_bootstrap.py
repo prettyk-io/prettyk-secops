@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """G-36: ZAP ПрименитьAuth — Basic/Bearer/Cookie + SSO note."""
 import sys
 from pathlib import Path
@@ -137,7 +137,7 @@ def test_http_bootstrap_still_ignores_zap(monkeypatch):
         def set_auth_bearer(self, token):
             self.calls.append(token)
 
-    monkeypatch.delenv("KDT_AUTH_BOOTSTRAP", raising=False)
+    monkeypatch.delenv("PK_AUTH_BOOTSTRAP", raising=False)
     http = Http()
     zap = FakeZap()
     out = apply_auth_bootstrap(

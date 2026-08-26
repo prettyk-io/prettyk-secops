@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Пути zap-results и выбор XML для Dojo."""
 
 from pathlib import Path
@@ -8,7 +8,7 @@ from utils import paths as paths_mod
 
 
 def test_artifact_path_zap_results(tmp_path, monkeypatch):
-    monkeypatch.setenv("KDT_REPORTS_DIR", str(tmp_path))
+    monkeypatch.setenv("PK_REPORTS_DIR", str(tmp_path))
     # reload dirs from env
     import importlib
 
@@ -22,7 +22,7 @@ def test_artifact_path_zap_results(tmp_path, monkeypatch):
 
 
 def test_zap_report_path_bare_name(tmp_path, monkeypatch):
-    monkeypatch.setenv("KDT_REPORTS_DIR", str(tmp_path))
+    monkeypatch.setenv("PK_REPORTS_DIR", str(tmp_path))
     import importlib
 
     importlib.reload(paths_mod)
@@ -34,7 +34,7 @@ def test_zap_report_path_bare_name(tmp_path, monkeypatch):
 
 
 def test_resolve_zap_xml_prefers_explicit(tmp_path, monkeypatch):
-    monkeypatch.setenv("KDT_REPORTS_DIR", str(tmp_path))
+    monkeypatch.setenv("PK_REPORTS_DIR", str(tmp_path))
     import importlib
 
     importlib.reload(paths_mod)

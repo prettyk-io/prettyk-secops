@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 СборИнформации: browser teleport + ZAP spider via ZapWorkStream.
 
@@ -26,7 +26,8 @@ _DEFAULT_MODE = "after"
 
 
 def _env_float(name: str, default: float) -> float:
-    raw = (os.environ.get(name) or "").strip()
+    base = name[3:] if name.startswith("PK_") else name
+    raw = (os.environ.get(f"PK_{base}") or "").strip()
     if not raw:
         return default
     try:
@@ -36,7 +37,8 @@ def _env_float(name: str, default: float) -> float:
 
 
 def _env_int(name: str, default: int) -> int:
-    raw = (os.environ.get(name) or "").strip()
+    base = name[3:] if name.startswith("PK_") else name
+    raw = (os.environ.get(f"PK_{base}") or "").strip()
     if not raw:
         return default
     try:
@@ -64,26 +66,26 @@ def resolve_gather_caps(
     mode: Any = None,
 ) -> dict:
     burst = float(burst_sec) if burst_sec not in (None, "") else _env_float(
-        "KDT_GATHER_BURST_SEC", _DEFAULT_BURST
+        "PK_GATHER_BURST_SEC", _DEFAULT_BURST
     )
     settle = float(settle_sec) if settle_sec not in (None, "") else _env_float(
-        "KDT_GATHER_SETTLE_SEC", _DEFAULT_SETTLE
+        "PK_GATHER_SETTLE_SEC", _DEFAULT_SETTLE
     )
     max_u = int(max_urls) if max_urls not in (None, "") else _env_int(
-        "KDT_GATHER_MAX_URLS", 0
+        "PK_GATHER_MAX_URLS", 0
     )
     pscan = (
         float(pscan_timeout_sec)
         if pscan_timeout_sec not in (None, "")
-        else _env_float("KDT_GATHER_PSCAN_SEC", _DEFAULT_PSCAN)
+        else _env_float("PK_GATHER_PSCAN_SEC", _DEFAULT_PSCAN)
     )
     wall = float(wall_sec) if wall_sec not in (None, "") else _env_float(
-        "KDT_GATHER_WALL_SEC", 0.0
+        "PK_GATHER_WALL_SEC", 0.0
     )
     spider = (
         float(spider_sec)
         if spider_sec not in (None, "")
-        else _env_float("KDT_GATHER_SPIDER_SEC", _DEFAULT_SPIDER_AFTER)
+        else _env_float("PK_GATHER_SPIDER_SEC", _DEFAULT_SPIDER_AFTER)
     )
     return {
         "mode": resolve_gather_mode(mode),

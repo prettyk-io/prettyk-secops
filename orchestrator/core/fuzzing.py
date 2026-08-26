@@ -1,4 +1,4 @@
-"""Ядро фаззинг-POC: Campaign → Evidence (не продуктовая поверхность PrettyK).
+﻿"""Ядро фаззинг-POC: Campaign → Evidence (не продуктовая поверхность PrettyK).
 
 Модель как у ZAP/Burp:
   message (шаблон URL или History) → location (одна дырка) → payloads (corpus строк)
@@ -1068,7 +1068,7 @@ def export_fuzz_security_artifacts(
     root.mkdir(parents=True, exist_ok=True)
     run_id = str(summary.get("run_id") or "fuzz-unknown")
     findings: Dict[str, object] = {
-        "kind": "kdt_fuzz_findings_pack",
+        "kind": "pk_fuzz_findings_pack",
         "run_id": run_id,
         "module_id": summary.get("module_id"),
         "target_origin": summary.get("target_origin"),
@@ -1229,7 +1229,7 @@ def build_audit_digest(summary: Dict[str, object]) -> Dict[str, object]:
     location = summary.get("location") if isinstance(summary.get("location"), dict) else {}
     policy = summary.get("policy") if isinstance(summary.get("policy"), dict) else {}
     digest: Dict[str, object] = {
-        "kind": "kdt_fuzz_audit_digest",
+        "kind": "pk_fuzz_audit_digest",
         "run_id": summary.get("run_id"),
         "module_id": summary.get("module_id"),
         "message_source": summary.get("message_source"),
@@ -2134,7 +2134,7 @@ class SuiteFuzzerRunner:
     def _maybe_feed_traffic_targets(
         self, targets: list[Dict[str, Any]], *, base_url: str
     ) -> tuple[list[Dict[str, Any]], Dict[str, object]]:
-        """TRAF-A2: opt-in ``KDT_TRAFFIC_INSERTION_FEED`` → mine History → targets."""
+        """TRAF-A2: opt-in ``PK_TRAFFIC_INSERTION_FEED`` → mine History → targets."""
         meta: Dict[str, object] = {"traffic_feed": False, "traffic_points": 0}
         try:
             from utils.traffic_insertion_points import (

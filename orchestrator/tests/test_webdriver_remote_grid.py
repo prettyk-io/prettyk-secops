@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Remote WebDriver: Selenium Grid capabilities / hub URL (без живого Docker)."""
 import os
 
@@ -11,13 +11,13 @@ from adapters.webdriver_adapter import MODE_LOCAL, MODE_REMOTE, WebDriverAdapter
 @pytest.fixture(autouse=True)
 def _clear_hub_env(monkeypatch):
     for key in (
-        "KDT_WEBDRIVER_MODE",
-        "KDT_SELENIUM_URL",
-        "KDT_SELENOID_URL",
-        "KDT_SELENIUM_VIDEO",
-        "KDT_SELENOID_VIDEO",
-        "KDT_SELENIUM_VERBOSE",
-        "KDT_SELENOID_VERBOSE",
+        "PK_WEBDRIVER_MODE",
+        "PK_SELENIUM_URL",
+        "PK_SELENOID_URL",
+        "PK_SELENIUM_VIDEO",
+        "PK_SELENOID_VIDEO",
+        "PK_SELENIUM_VERBOSE",
+        "PK_SELENOID_VERBOSE",
     ):
         monkeypatch.delenv(key, raising=False)
 
@@ -27,7 +27,7 @@ def test_mode_default_is_remote():
 
 
 def test_mode_override_local(monkeypatch):
-    monkeypatch.setenv("KDT_WEBDRIVER_MODE", "local")
+    monkeypatch.setenv("PK_WEBDRIVER_MODE", "local")
     assert WebDriverAdapter._resolve_mode() == MODE_LOCAL
 
 
@@ -36,13 +36,13 @@ def test_hub_url_default():
 
 
 def test_hub_url_prefers_selenium_over_legacy(monkeypatch):
-    monkeypatch.setenv("KDT_SELENOID_URL", "http://legacy:4444/wd/hub")
-    monkeypatch.setenv("KDT_SELENIUM_URL", "http://grid:4444")
+    monkeypatch.setenv("PK_SELENOID_URL", "http://legacy:4444/wd/hub")
+    monkeypatch.setenv("PK_SELENIUM_URL", "http://grid:4444")
     assert WebDriverAdapter._resolve_selenium_url() == "http://grid:4444"
 
 
 def test_hub_url_legacy_alias(monkeypatch):
-    monkeypatch.setenv("KDT_SELENOID_URL", "http://legacy:4444/wd/hub")
+    monkeypatch.setenv("PK_SELENOID_URL", "http://legacy:4444/wd/hub")
     assert WebDriverAdapter._resolve_selenium_url() == "http://legacy:4444/wd/hub"
 
 
@@ -59,7 +59,7 @@ def test_grid_capabilities_name_and_video_on_by_default():
 
 
 def test_grid_capabilities_video_off_explicit(monkeypatch):
-    monkeypatch.setenv("KDT_SELENIUM_VIDEO", "0")
+    monkeypatch.setenv("PK_SELENIUM_VIDEO", "0")
     adapter = WebDriverAdapter.__new__(WebDriverAdapter)
     adapter.session_name = "s1"
     options = ChromeOptions()

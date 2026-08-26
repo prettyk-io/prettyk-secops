@@ -1,4 +1,4 @@
-import { Handle, Position, type NodeProps } from "@xyflow/react";
+import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StepPillRow } from "./StepPillRow";
@@ -7,7 +7,7 @@ import { useScenarioDeckStore } from "./ScenarioDeckStore";
 
 export interface ScenarioDeckNodeData { deckId:string; title:string; description:string; stepCount:number; }
 
-export function ScenarioDeckNode({data}:NodeProps){
+export function ScenarioDeckNode({data}: NodeProps & { position?: { x: number; y: number } }){
   const d = data as unknown as ScenarioDeckNodeData;
   const decks = useScenarioDeckStore(s=>s.decks); const addStep = useScenarioDeckStore(s=>s.addStep);
   const removeStep = useScenarioDeckStore(s=>s.removeStep); const updateStep = useScenarioDeckStore(s=>s.updateStep);

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Pipeline risk verdict (mirror of frontend/src/results/pipelineVerdict.ts)."""
 from __future__ import annotations
 

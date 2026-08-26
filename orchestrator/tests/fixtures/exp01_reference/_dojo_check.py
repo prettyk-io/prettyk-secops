@@ -1,8 +1,8 @@
-import requests, os
+﻿import requests, os
 
-os.environ['KDT_DEFECTDOJO_URL'] = 'http://127.0.0.1:8081'
-os.environ['KDT_DEFECTDOJO_TOKEN'] = 'dc8ad25a2685b4e5b65603c67925914559b3d28b'
-token = os.environ['KDT_DEFECTDOJO_TOKEN']
+os.environ['PK_DEFECTDOJO_URL'] = 'http://127.0.0.1:8081'
+os.environ['PK_DEFECTDOJO_TOKEN'] = 'dc8ad25a2685b4e5b65603c67925914559b3d28b'
+token = os.environ['PK_DEFECTDOJO_TOKEN']
 headers = {'Authorization': f'Token {token}', 'accept': 'application/json'}
 
 r = requests.get('http://127.0.0.1:8081/api/v2/products/?limit=50', headers=headers, timeout=10)

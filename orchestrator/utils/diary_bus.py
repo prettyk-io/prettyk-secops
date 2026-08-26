@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
-Bus for [KDT-DIARY] → Live SSE.
+Bus for [PK-DIARY] → Live SSE.
 
 In-process queue for the writer process; NDJSON file so a separate idle Live
 process can tail the same stream.
@@ -49,7 +49,7 @@ def _channel_match(wanted: str, event_channel: str) -> bool:
 
 
 def _active_run_id() -> str:
-    """KDT_RUN_ID из окружения дочернего процесса (main.py).
+    """PK_RUN_ID из окружения дочернего процесса (main.py).
     Если не задан — пустая строка; publish не упадёт."""
     return (pk_env("RUN_ID") or "").strip()
 

@@ -40,13 +40,13 @@ Write-Host '  SonarQube UP' -ForegroundColor Green
 
 # 4. Backend
 Write-Host '[4/6] Backend scan' -ForegroundColor Cyan
-$args = 'run','--rm','--network','prettyk-net','-e',"SONAR_TOKEN=$TOKEN",'-v',"${root}:/usr/src",'-w','/usr/src','sonarsource/sonar-scanner-cli:latest','sonar-scanner','-Dproject.settings=sonar-project.backend.properties',"-Dsonar.host.url=$HQ","-Dsonar.token=$TOKEN"
+$args = 'run','--rm','--network','pk-net','-e',"SONAR_TOKEN=$TOKEN",'-v',"${root}:/usr/src",'-w','/usr/src','sonarsource/sonar-scanner-cli:latest','sonar-scanner','-Dproject.settings=sonar-project.backend.properties',"-Dsonar.host.url=$HQ","-Dsonar.token=$TOKEN"
 $p = Start-Process -FilePath 'docker' -ArgumentList $args -NoNewWindow -PassThru -Wait -RedirectStandardOutput "$env:TEMP\sonar-be.log" -RedirectStandardError "$env:TEMP\sonar-be.err"
 Write-Host "  Backend exit=$($p.ExitCode)" -ForegroundColor $(if ($p.ExitCode -eq 0 -or $p.ExitCode -eq $null) { 'Green' } else { 'Yellow' })
 
 # 5. Frontend
 Write-Host '[5/6] Frontend scan' -ForegroundColor Cyan
-$args = 'run','--rm','--network','prettyk-net','-e',"SONAR_TOKEN=$TOKEN",'-v',"${root}:/usr/src",'-w','/usr/src','sonarsource/sonar-scanner-cli:latest','sonar-scanner','-Dproject.settings=sonar-project.frontend.properties',"-Dsonar.host.url=$HQ","-Dsonar.token=$TOKEN"
+$args = 'run','--rm','--network','pk-net','-e',"SONAR_TOKEN=$TOKEN",'-v',"${root}:/usr/src",'-w','/usr/src','sonarsource/sonar-scanner-cli:latest','sonar-scanner','-Dproject.settings=sonar-project.frontend.properties',"-Dsonar.host.url=$HQ","-Dsonar.token=$TOKEN"
 $p = Start-Process -FilePath 'docker' -ArgumentList $args -NoNewWindow -PassThru -Wait -RedirectStandardOutput "$env:TEMP\sonar-fe.log" -RedirectStandardError "$env:TEMP\sonar-fe.err"
 Write-Host "  Frontend exit=$($p.ExitCode)" -ForegroundColor $(if ($p.ExitCode -eq 0 -or $p.ExitCode -eq $null) { 'Green' } else { 'Yellow' })
 

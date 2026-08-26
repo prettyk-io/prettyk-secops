@@ -105,7 +105,7 @@ export function explorerLeafTitleNode(
       data-pk-tree-key={treeKey}
     >
       <ExplorerLeafIcon kind={kind} icons={icons} />
-      {title}
+      <span className="pk-studio-tree-label">{title}</span>
     </span>
   );
 }

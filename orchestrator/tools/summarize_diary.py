@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Print channel/kind counts and sample lines from reports/live/diary.ndjson."""
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 ADM-DOJO-FULL-1: thin active findings list for Live `/api/dojo/findings`.
 
@@ -150,7 +150,7 @@ def fetch_findings_for_project(
 
     rows = [f for f in (listed.get("findings") or []) if isinstance(f, dict)]
     verified_fp = verified_false_p_counts(rows)
-    url_base = (dojo_url or _env("KDT_DEFECTDOJO_URL")).rstrip("/")
+    url_base = (dojo_url or _env("PK_DEFECTDOJO_URL")).rstrip("/")
     engagement_url = None
     for row in rows:
         eng = row.get("test_engagement") or row.get("engagement")

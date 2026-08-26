@@ -2,7 +2,7 @@
 
 > **CANON** — hub topic. Slice: **16 августа 2026** (порт-инцидент `4173`).  
 > Реестр: [`INDEX.md`](INDEX.md). Lab detail: [`lab-up.md`](lab-up.md) · [`runtime-shell.md`](runtime-shell.md).  
-> Skills: global **`secops-lab`** · **`browser-hands-pure`**.  
+> Skills: global **`prettyk-lab`** · **`browser-hands-pure`**.  
 > Порт и команда = из этого документа. Если агент ошибся — он не читал CANON. Хардкод порта = инцидент.
 
 ## 1. Карта портов (из кода, не из головы)
@@ -20,7 +20,7 @@
 | **noVNC Chrome** | 7900 | `services/docker-compose.yml` | `netstat -ano \| findstr :7900` |
 | **noVNC Firefox** | 7901 | `services/docker-compose.yml` | `netstat -ano \| findstr :7901` |
 | **Juice Shop** | 3000 | `services/docker-compose.target.yml` | `curl http://127.0.0.1:3000/` |
-| **prettyk-api-lab** | 8090 | `services/docker-compose.api-lab.yml` | `curl http://127.0.0.1:8090/health` |
+| **pk-api-lab** | 8090 | `services/docker-compose.api-lab.yml` | `curl http://127.0.0.1:8090/health` |
 | **DefectDojo** | 8081 | `services/docker-compose.defectdojo.yml` | `curl http://127.0.0.1:8081/` |
 | **SonarQube** | 9000 | `services/docker-compose.sonarqube.yml` | `curl http://127.0.0.1:9000/api/system/status` |
 | **CDP Chrome** | 9222 | `browser-hands-pure` skill | `curl http://127.0.0.1:9222/json/version` |
@@ -95,6 +95,6 @@ Editor                http://localhost:5173/
 ZAP demon API         http://127.0.0.1:8080/
 Selenium Grid         http://127.0.0.1:4444/ui/
 Juice Shop            http://127.0.0.1:3000/
-prettyk-api-lab           http://127.0.0.1:8090/
+pk-api-lab           http://127.0.0.1:8090/
 SonarQube             http://127.0.0.1:9000/
 ```

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 from utils.live_pers_acl import (
     filter_evidence_list,
     filter_runs_for_caller,
@@ -12,20 +12,20 @@ from utils.live_pers_acl import (
 
 
 def test_resolve_run_owner_user_id(monkeypatch):
-    monkeypatch.delenv("KDT_OWNER_USER", raising=False)
-    monkeypatch.delenv("KDT_USER", raising=False)
+    monkeypatch.delenv("PK_OWNER_USER", raising=False)
+    monkeypatch.delenv("PK_USER", raising=False)
     assert resolve_run_owner_user_id("  alice  ") == "alice"
     assert resolve_run_owner_user_id() is None
-    monkeypatch.setenv("KDT_USER", "from_user")
+    monkeypatch.setenv("PK_USER", "from_user")
     assert resolve_run_owner_user_id() == "from_user"
-    monkeypatch.setenv("KDT_OWNER_USER", "from_owner")
+    monkeypatch.setenv("PK_OWNER_USER", "from_owner")
     assert resolve_run_owner_user_id() == "from_owner"
     assert resolve_run_owner_user_id("explicit") == "explicit"
 
 
 def test_parse_caller_and_matrix():
-    assert parse_caller_user({"X-KDT-User": "debug"}) == "debug"
-    assert parse_caller_user({"Cookie": "a=1; kdt_user=admin; b=2"}) == "admin"
+    assert parse_caller_user({"X-PK-User": "debug"}) == "debug"
+    assert parse_caller_user({"Cookie": "a=1; pk_user=admin; b=2"}) == "admin"
     assert may_view_owner(caller="debug", owner="debug")
     assert not may_view_owner(caller="debug", owner="admin")
     assert may_view_owner(caller="admin", owner="debug")

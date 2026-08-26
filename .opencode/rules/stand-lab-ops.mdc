@@ -6,7 +6,7 @@ alwaysApply: true
 # Стенд: старт и локальная чистка
 
 Владелец говорит коротко — агент делает **полный** lab-контур.  
-Подробный чеклист и ловушки: global skill **`secops-lab`** (читать при старте/чистке).  
+Подробный чеклист и ловушки: global skill **`prettyk-lab`** (читать при старте/чистке).  
 **Порты — CANON: [`sanctuary/canon/stand-port-meta.md`](../../sanctuary/canon/stand-port-meta.md).** Хардкод порта = инцидент.
 
 ## Имена

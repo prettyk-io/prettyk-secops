@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 EvidenceRegistry — persist CheckEvidenceRefs (links + thin meta).
 
@@ -131,7 +131,7 @@ def list_evidence_for_deploy(deploy_id: str) -> List[Dict[str, Any]]:
 
 
 def resolve_check_id_for_run() -> str:
-    """Env KDT_CHECK_ID or synthetic run id — never meta.project_id."""
+    """Env PK_CHECK_ID or synthetic run id — never meta.project_id."""
     explicit = (pk_env("CHECK_ID") or "").strip()
     if explicit:
         return explicit

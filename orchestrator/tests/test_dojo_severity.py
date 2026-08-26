@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """ADM-DOJO-1: /api/dojo/severity envelope honesty."""
 from __future__ import annotations
 

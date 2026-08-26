@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Export SonarQube issues summary for a projectKey (lab helper).
 
 Usage:

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Контроль потока: обёртка тел (много шагов), И/Или/Не, вложенные Если."""
 import sys
 from pathlib import Path

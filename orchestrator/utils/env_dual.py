@@ -1,19 +1,28 @@
-import os
+﻿import os
 
-__all__ = ["pk_env", "pk_env_flag", "pk_env_int"]
+__all__ = ["pk_env", "pk_env_flag", "pk_env_int", "pk_env_name"]
 
 
 def pk_env(name: str, default: str = "") -> str:
-    """PK_{name} with KDT_{name} fallback."""
-    return os.environ.get(f"PK_{name}") or os.environ.get(f"KDT_{name}", default)
+    """PK_{name} env."""
+    return os.environ.get(f"PK_{name}", default)
+
+
+def pk_env_name(name: str, default: str = "") -> str:
+    """PK_* for a name.
+
+    ``pk_env_name("PK_GATE_SEVERITY")`` → ``PK_GATE_SEVERITY``.
+    """
+    base = name[3:] if name.startswith("PK_") else name
+    return os.environ.get(f"PK_{base}", default)
 
 
 def pk_env_flag(name: str, default: str = "1") -> bool:
-    """PK_{name}=1|true|yes or KDT_{name} fallback → bool."""
+    """PK_{name}=1|true|yes → bool."""
     raw = pk_env(name, default).strip().lower()
     return raw in {"1", "true", "yes", "y", "on"}
 
 
 def pk_env_int(name: str, default: str = "0") -> int:
-    """PK_{name} or KDT_{name} fallback → int."""
+    """PK_{name} → int."""
     return int(pk_env(name, default).strip() or default)

@@ -12,9 +12,6 @@ import type { ChecksStoreSnapshot } from './types';
 
 export { CHECKS_API_URL };
 
-const PUSH_DEBOUNCE_MS = 400;
-
-let pushTimer: ReturnType<typeof setTimeout> | undefined;
 let syncEnabled = false;
 
 function isChecksSnapshot(value: unknown): value is ChecksStoreSnapshot {
@@ -67,14 +64,7 @@ export function scheduleChecksPush(snapshot?: ChecksStoreSnapshot): void {
   if (typeof window === 'undefined') {
     return;
   }
-  const snap = snapshot ?? readChecksSnapshot();
-  if (pushTimer !== undefined) {
-    clearTimeout(pushTimer);
-  }
-  pushTimer = setTimeout(() => {
-    pushTimer = undefined;
-    void pushChecksToServer(snap);
-  }, PUSH_DEBOUNCE_MS);
+  void pushChecksToServer(snapshot);
 }
 
 /** Wire persist → debounced PUT. Idempotent. */
@@ -88,12 +78,8 @@ export function enableChecksRemoteSync(): void {
   });
 }
 
-/** Tests: detach hook + clear timer. */
+/** Tests: detach hook. */
 export function __resetChecksRemoteForTests(): void {
   syncEnabled = false;
   setChecksPersistHook(null);
-  if (pushTimer !== undefined) {
-    clearTimeout(pushTimer);
-    pushTimer = undefined;
-  }
 }

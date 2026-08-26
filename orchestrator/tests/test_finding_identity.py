@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """W1 acceptance: finding-v1 fingerprint identity."""
 import pytest
 from models.finding import CanonicalFinding, FINGERPRINT_VERSION

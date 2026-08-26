@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Controller stage-1: hard-fail vs scenario failsafe <!>."""
 from __future__ import annotations
 

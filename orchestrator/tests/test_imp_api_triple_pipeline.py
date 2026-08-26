@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Волна C: OA + GQL + gRPC MethodId-цепочки в одном pipe на болванках."""
 from __future__ import annotations
 
@@ -23,13 +23,13 @@ ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = Path(__file__).resolve().parent / "fixtures" / "openapi"
 OAS = FIXTURES / "petstore-mini.oas3.json"
 SDL = FIXTURES / "mini.sdl"
-PROTO_PACK = ROOT / "services" / "kdt-api-lab" / "proto_pack"
+PROTO_PACK = ROOT / "services" / "pk-api-lab" / "proto_pack"
 
 
 @pytest.fixture(autouse=True)
 def _lab_dry(monkeypatch):
-    monkeypatch.setenv("KDT_API_LAB_DRY", "1")
-    monkeypatch.delenv("KDT_GRPC_UNARY", raising=False)
+    monkeypatch.setenv("PK_API_LAB_DRY", "1")
+    monkeypatch.delenv("PK_GRPC_UNARY", raising=False)
     if not SDL.exists():
         SDL.write_text("type Query {\n  health: String\n}\n", encoding="utf-8")
 
@@ -127,7 +127,7 @@ def test_triple_methodids_validate():
 def test_triple_controller_pipe_dry():
     if not OAS.is_file():
         pytest.skip("OAS fixture missing")
-    if not PROTO_PACK.is_dir():
+    if not PROTO_PACK.is_dir() or not any(PROTO_PACK.rglob("*.proto")):
         pytest.skip("lab proto_pack missing")
 
     wired = _bank_wired()

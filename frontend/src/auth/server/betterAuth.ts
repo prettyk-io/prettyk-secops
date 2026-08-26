@@ -1,67 +1,99 @@
 /**
- * SPIKE-B-1: Better Auth Server Configuration
+ * AUTH-PROD: Better Auth Server Configuration — PostgreSQL.
  *
- * Email/password + sessions + SQLite (прямой better-sqlite3).
- * Таблицы создаются скриптом scripts/migrate-db.ts перед запуском.
+ * Email/password + 2FA (TOTP) + email verification + rate limiting.
+ * Миграции выполняются автоматически через drizzleAdapter.
+ *
+ * База: PostgreSQL. SQLite (spike-auth.db) — удалён.
+ * Секреты: OpenBao (приоритет) → env → dev fallback.
  */
 import { betterAuth } from 'better-auth';
 import { admin, username, customSession } from 'better-auth/plugins';
 import { apiKey } from '@better-auth/api-key';
-import Database from 'better-sqlite3';
+import { twoFactor } from 'better-auth/plugins';
+import { drizzleAdapter } from '@better-auth/drizzle-adapter';
+import type { Pool } from 'pg';
 
-const db = new Database('./spike-auth.db');
-db.pragma('journal_mode = WAL');
+let _auth: any = null;
 
-export const auth = betterAuth({
-  baseURL: 'http://localhost:3001',
-  database: db,
-  emailAndPassword: {
-    enabled: true,
-    requireEmailVerification: false,
-  },
-  session: {
-    cookieCache: {
+export async function initAuth(pool: Pool, secret: string) {
+  if (_auth) return _auth;
+
+  // Drizzle ORM over PostgreSQL
+  const { drizzle } = await import('drizzle-orm/node-postgres');
+  const db = drizzle(pool, { logger: false });
+
+  // Email verification — enabled when SMTP configured
+  const emailVerifyEnabled = process.env.EMAIL_VERIFICATION === 'true';
+
+  _auth = betterAuth({
+    baseURL: process.env.AUTH_BASE_URL || 'http://localhost:3001',
+    secret,
+    database: drizzleAdapter(db, { provider: 'pg' }),
+    emailAndPassword: {
       enabled: true,
-      maxAge: 7 * 24 * 60 * 60,
-    },
-    expiresIn: 7 * 24 * 60 * 60,
-  },
-  user: {
-    additionalFields: {
-      displayName: { type: 'string', required: false },
-      department: { type: 'string', required: false },
-      role: { type: 'string', required: false },
-      preferences: { type: 'string', required: false },
-    },
-  },
-  plugins: [
-    admin({ defaultRole: 'user', adminRole: 'admin' }),
-    username(),
-    apiKey({
-      defaultPrefix: 'pk_live_',
-      enableMetadata: true,
-      keyExpiration: {
-        defaultExpiresIn: null,
-        disableCustomExpiresTime: false,
-        minExpiresIn: 1,
-        maxExpiresIn: 365,
+      requireEmailVerification: emailVerifyEnabled,
+      // Dev-only: лог в консоль (заменить на SMTP/Resend в production)
+      sendVerificationEmail: async (ctx: { user: { email: string }; url: string }) => {
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`\n📧 [DEV] Verification email for ${ctx.user.email}:`);
+          console.log(`   ${ctx.url}\n`);
+        }
+        // TODO: SMTP/Resend integration for production
       },
-    }),
-    customSession(async ({ user, session }) => {
-      const role = (user as any).role ?? 'user';
-      const caps = computeCapabilitiesFromRole(role);
-      return {
-        capabilities: caps,
-        role,
-        displayName: (user as any).displayName ?? user.name ?? user.email,
-        preferences: parsePreferences((user as any).preferences),
-      };
-    }),
-  ],
-  trustedOrigins: ['http://localhost:5173', 'http://127.0.0.1:5173'],
-});
+    },
+    session: {
+      cookieCache: {
+        enabled: true,
+        maxAge: 7 * 24 * 60 * 60,
+      },
+      expiresIn: 7 * 24 * 60 * 60,
+    },
+    user: {
+      additionalFields: {
+        displayName: { type: 'string', required: false },
+        department: { type: 'string', required: false },
+        role: { type: 'string', defaultValue: 'user' },
+        preferences: { type: 'string', required: false },
+      },
+    },
+    plugins: [
+      admin({ defaultRole: 'user', adminRole: 'admin' }),
+      username(),
+      apiKey({
+        defaultPrefix: 'pk_live_',
+        enableMetadata: true,
+        keyExpiration: {
+          defaultExpiresIn: null,
+          disableCustomExpiresTime: false,
+          minExpiresIn: 1,
+          maxExpiresIn: 365,
+        },
+      }),
+      twoFactor({
+        issuer: 'PrettyK',
+      }),
+      customSession(async ({ user }) => {
+        const role = (user as any).role ?? 'user';
+        const caps = computeCapabilitiesFromRole(role);
+        return {
+          capabilities: caps,
+          role,
+          displayName: (user as any).displayName ?? user.name ?? user.email,
+          preferences: parsePreferences((user as any).preferences),
+        };
+      }),
+    ],
+    trustedOrigins: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  });
 
-export default auth;
+  return _auth;
+}
+
+export function getAuth() {
+  if (!_auth) throw new Error('Auth not initialized — call initAuth() first');
+  return _auth;
+}
 
 // ═══════ Helpers ═══════
 import type { UserCapability, UserPreferences } from '../profileStore';

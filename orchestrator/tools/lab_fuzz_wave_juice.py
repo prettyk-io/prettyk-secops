@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Wave L lab: SuiteFuzzer (ФаззингВолна) → Campaign on Juice search.
 
 Harness без полного Controller: тот же SuiteFuzzerRunner, что MethodId.

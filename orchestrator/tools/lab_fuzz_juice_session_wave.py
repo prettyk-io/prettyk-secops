@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """DF-10 lab: Juice login → History session → SuiteFuzzerRunner (ФаззингВолна).
 
 1) POST /rest/user/login напрямую к Juice (реальный login API; ZAP 2.17

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Gather harden: modes / caps / wall (fake WD/ZAP). S3."""
 from __future__ import annotations
 
@@ -44,8 +44,8 @@ class _FakeZap:
 
 
 def test_run_gather_info_after_default(monkeypatch):
-    monkeypatch.delenv("KDT_GATHER_MODE", raising=False)
-    monkeypatch.delenv("KDT_GATHER_BURST_SEC", raising=False)
+    monkeypatch.delenv("PK_GATHER_MODE", raising=False)
+    monkeypatch.delenv("PK_GATHER_BURST_SEC", raising=False)
     wd = _FakeWd()
     zap = _FakeZap()
     summary = run_gather_info(
@@ -66,7 +66,7 @@ def test_run_gather_info_after_default(monkeypatch):
 
 
 def test_run_gather_info_interleaved(monkeypatch):
-    monkeypatch.delenv("KDT_GATHER_BURST_SEC", raising=False)
+    monkeypatch.delenv("PK_GATHER_BURST_SEC", raising=False)
     wd = _FakeWd()
     zap = _FakeZap()
     summary = run_gather_info(
@@ -84,7 +84,7 @@ def test_run_gather_info_interleaved(monkeypatch):
 
 
 def test_max_urls_cap(monkeypatch):
-    monkeypatch.delenv("KDT_GATHER_MAX_URLS", raising=False)
+    monkeypatch.delenv("PK_GATHER_MAX_URLS", raising=False)
     wd = _FakeWd()
     zap = _FakeZap()
     summary = run_gather_info(
@@ -101,15 +101,15 @@ def test_max_urls_cap(monkeypatch):
 
 
 def test_resolve_caps_env(monkeypatch):
-    monkeypatch.delenv("KDT_GATHER_MODE", raising=False)
-    monkeypatch.setenv("KDT_GATHER_BURST_SEC", "9")
+    monkeypatch.delenv("PK_GATHER_MODE", raising=False)
+    monkeypatch.setenv("PK_GATHER_BURST_SEC", "9")
     caps = resolve_gather_caps()
     assert caps["burst_sec"] == 9.0
     assert caps["mode"] == "after"
 
 
 def test_resolve_gather_mode_aliases(monkeypatch):
-    monkeypatch.delenv("KDT_GATHER_MODE", raising=False)
+    monkeypatch.delenv("PK_GATHER_MODE", raising=False)
     assert resolve_gather_mode(None) == "after"
     assert resolve_gather_mode("AFTER") == "after"
     assert resolve_gather_mode("interleaved") == "interleaved"
@@ -119,7 +119,7 @@ def test_resolve_gather_mode_aliases(monkeypatch):
 
 
 def test_empty_urls_no_spider(monkeypatch):
-    monkeypatch.delenv("KDT_GATHER_MODE", raising=False)
+    monkeypatch.delenv("PK_GATHER_MODE", raising=False)
     wd = _FakeWd()
     zap = _FakeZap()
     summary = run_gather_info(
@@ -138,7 +138,7 @@ def test_empty_urls_no_spider(monkeypatch):
 
 
 def test_blank_lines_only_no_silent_success(monkeypatch):
-    monkeypatch.delenv("KDT_GATHER_MODE", raising=False)
+    monkeypatch.delenv("PK_GATHER_MODE", raising=False)
     wd = _FakeWd()
     zap = _FakeZap()
     summary = run_gather_info(
@@ -155,7 +155,7 @@ def test_blank_lines_only_no_silent_success(monkeypatch):
 
 
 def test_relative_url_without_base_raises(monkeypatch):
-    monkeypatch.delenv("KDT_GATHER_MODE", raising=False)
+    monkeypatch.delenv("PK_GATHER_MODE", raising=False)
     wd = _FakeWd(base_url="")
     zap = _FakeZap()
     try:
@@ -166,7 +166,7 @@ def test_relative_url_without_base_raises(monkeypatch):
 
 
 def test_pscan_false_reflected_in_summary(monkeypatch):
-    monkeypatch.delenv("KDT_GATHER_MODE", raising=False)
+    monkeypatch.delenv("PK_GATHER_MODE", raising=False)
     wd = _FakeWd()
     zap = _FakeZap()
     zap.passive_scan_wait_seconds = lambda timeout_seconds=60: False  # noqa: ARG005
@@ -184,7 +184,7 @@ def test_pscan_false_reflected_in_summary(monkeypatch):
 
 
 def test_diary_and_meta_after(monkeypatch):
-    monkeypatch.delenv("KDT_GATHER_MODE", raising=False)
+    monkeypatch.delenv("PK_GATHER_MODE", raising=False)
     published = []
     meta = {}
 
@@ -215,7 +215,7 @@ def test_diary_and_meta_after(monkeypatch):
 
 
 def test_diary_and_meta_interleaved(monkeypatch):
-    monkeypatch.delenv("KDT_GATHER_MODE", raising=False)
+    monkeypatch.delenv("PK_GATHER_MODE", raising=False)
     published = []
     meta = {}
 
@@ -246,7 +246,7 @@ def test_diary_and_meta_interleaved(monkeypatch):
 
 def test_wall_sec_stops_before_after_spider(monkeypatch):
     """wall_hit mid-browse → no BrowseThenSpider burst."""
-    monkeypatch.delenv("KDT_GATHER_MODE", raising=False)
+    monkeypatch.delenv("PK_GATHER_MODE", raising=False)
     wd = _FakeWd()
     zap = _FakeZap()
     # t0=0; first URL check=1 (< wall); second URL check=100 (≥ wall)
@@ -280,8 +280,8 @@ def test_wall_sec_stops_before_after_spider(monkeypatch):
 
 
 def test_after_uses_spider_sec_env(monkeypatch):
-    monkeypatch.setenv("KDT_GATHER_MODE", "after")
-    monkeypatch.setenv("KDT_GATHER_SPIDER_SEC", "42")
+    monkeypatch.setenv("PK_GATHER_MODE", "after")
+    monkeypatch.setenv("PK_GATHER_SPIDER_SEC", "42")
     caps = resolve_gather_caps()
     assert caps["mode"] == "after"
     assert caps["spider_sec"] == 42.0

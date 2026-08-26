@@ -1,4 +1,4 @@
-/**
+﻿/**
  * E2E (Edge CDP): seed check → Results → Запустить → hooks clear → Allure+Dojo ready.
  */
 const { spawn } = require('child_process');
@@ -9,10 +9,10 @@ const EDGE =
   process.env.EDGE_PATH ||
   'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
 const PORT = 9341;
-const EDITOR = process.env.KDT_EDITOR_URL || 'http://localhost:5173/';
+const EDITOR = process.env.PK_EDITOR_URL || process.env.PK_EDITOR_URL || 'http://localhost:5173/';
 const LIVE = 'http://127.0.0.1:8767';
 const PLAY = 'http://127.0.0.1:8765';
-const RUN_TIMEOUT_MS = Number(process.env.KDT_E2E_RUN_MS || 180000);
+const RUN_TIMEOUT_MS = Number(process.env.PK_E2E_RUN_MS || process.env.PK_E2E_RUN_MS || 180000);
 const ROOT = path.resolve(__dirname, '../..');
 
 function sleep(ms) {
@@ -101,7 +101,7 @@ async function main() {
     await sleep(500);
   }
 
-  const userDataDir = path.join(process.env.TEMP || 'C:\\Temp', 'kdt_results_hooks_e2e');
+  const userDataDir = path.join(process.env.TEMP || 'C:\\Temp', 'pk_results_hooks_e2e');
   fs.mkdirSync(userDataDir, { recursive: true });
   const edge = spawn(
     EDGE,
@@ -165,9 +165,9 @@ async function main() {
     };
 
     await evalJson(`(() => {
-      sessionStorage.setItem('kdt.auth.user', 'admin');
-      localStorage.setItem('kdt.checks.v1', ${JSON.stringify(JSON.stringify(seed))});
-      localStorage.setItem('kdt.checks.active', ${JSON.stringify(checkId)});
+      sessionStorage.setItem('pk.auth.user', 'admin');
+      localStorage.setItem('pk.checks.v1', ${JSON.stringify(JSON.stringify(seed))});
+      localStorage.setItem('pk.checks.active', ${JSON.stringify(checkId)});
       location.hash = ${JSON.stringify('#/checks/' + checkId + '/results')};
       location.reload();
       return true;
@@ -176,7 +176,7 @@ async function main() {
 
     const ui = await evalJson(`(() => {
       const btn = document.querySelector('[data-testid="results-card-launch"]');
-      const tiles = [...document.querySelectorAll('.kdt-results-tile')].map((el) => ({
+      const tiles = [...document.querySelectorAll('.pk-results-tile')].map((el) => ({
         label: el.getAttribute('aria-label'),
         tone: el.getAttribute('data-tone'),
         href: el.getAttribute('href'),
@@ -215,7 +215,7 @@ async function main() {
     let greyOk = false;
     for (let i = 0; i < 15; i++) {
       const snap = await evalJson(`(() => {
-        const tiles = [...document.querySelectorAll('.kdt-results-tile')].map((el) => ({
+        const tiles = [...document.querySelectorAll('.pk-results-tile')].map((el) => ({
           label: el.getAttribute('aria-label'),
           tone: el.getAttribute('data-tone'),
           href: el.getAttribute('href'),
@@ -261,7 +261,7 @@ async function main() {
     let greenOk = false;
     for (let i = 0; i < 40; i++) {
       const snap = await evalJson(`(() => {
-        const tiles = [...document.querySelectorAll('.kdt-results-tile')].map((el) => ({
+        const tiles = [...document.querySelectorAll('.pk-results-tile')].map((el) => ({
           label: el.getAttribute('aria-label'),
           tone: el.getAttribute('data-tone'),
           href: el.getAttribute('href'),

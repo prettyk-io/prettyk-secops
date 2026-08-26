@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """ADM-B1: append-only Live runs index (NDJSON lab)."""
 from __future__ import annotations
 

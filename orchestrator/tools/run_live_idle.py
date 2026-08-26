@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Idle CBR SecOps Automation Monitoring wrapper (shared diary.ndjson with orchestrator runs)."""
 import logging
 import os
@@ -19,12 +19,14 @@ logger = logging.getLogger("orchestrator")
 
 
 def _env_flag(name: str) -> bool:
-    return (os.environ.get(name) or "").strip().lower() in ("1", "true", "yes", "on")
+    base = name[3:] if name.startswith("PK_") else name
+    raw = os.environ.get(f"PK_{base}")
+    return (raw or "").strip().lower() in ("1", "true", "yes", "on")
 
 
 def _maybe_start_gha_poller() -> None:
-    """RES-G opt-in: KDT_GHA_POLL=1 + TOKEN/REPO → background watch → Live ci/status."""
-    if not _env_flag("KDT_GHA_POLL"):
+    """RES-G opt-in: PK_GHA_POLL=1 + TOKEN/REPO → background watch → Live ci/status."""
+    if not _env_flag("PK_GHA_POLL"):
         return
     try:
         from utils.gha_poller import load_gha_config_from_env, poll_loop

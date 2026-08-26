@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """URL атаки манифеста: join relative + allowlist (канон Открыть / ОткрытьПоURL)."""
 from __future__ import annotations
 

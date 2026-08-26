@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """GrpcAdapter MethodId cascade (module_id, no host)."""
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from core.errors import WiredError
 from core.method_id import lookup_method_id
 
 ROOT = Path(__file__).resolve().parents[2]
-PROTO_PACK = ROOT / "services" / "kdt-api-lab" / "proto_pack"
+PROTO_PACK = ROOT / "services" / "pk-api-lab" / "proto_pack"
 
 
 def _Wired():
@@ -55,7 +55,7 @@ def test_method_id_wire_grpc_adapter():
 
 
 def test_list_services_and_unary_module_id():
-    if not PROTO_PACK.is_dir():
+    if not PROTO_PACK.is_dir() or not any(PROTO_PACK.rglob("*.proto")):
         pytest.skip("lab proto_pack missing")
     ad = GrpcAdapter()
     ad.bind_run_wired(_Wired(), str(ROOT))
@@ -67,7 +67,7 @@ def test_list_services_and_unary_module_id():
 
     unary = json.loads(ad.unary_call("bank_grpc", "AccountService/Ping", "{}"))
     assert unary.get("module_id") == "bank_grpc"
-    assert unary.get("ok") is True  # bolvan without KDT_GRPC_UNARY
+    assert unary.get("ok") is True  # bolvan without PK_GRPC_UNARY
 
 
 def test_legacy_host_first_arg_rejected():

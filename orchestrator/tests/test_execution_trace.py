@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Semantic trace: actions and control-flow remain a tree outside Allure."""
 from __future__ import annotations
 

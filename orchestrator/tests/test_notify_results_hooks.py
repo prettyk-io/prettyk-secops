@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 import json
@@ -6,8 +6,8 @@ from pathlib import Path
 
 
 def test_notify_results_hook_falls_back_to_file(tmp_path: Path, monkeypatch):
-    monkeypatch.setenv("KDT_LIVE", "1")
-    monkeypatch.setenv("KDT_LIVE_PORT", "58767")
+    monkeypatch.setenv("PK_LIVE", "1")
+    monkeypatch.setenv("PK_LIVE_PORT", "58767")
     live = tmp_path / "live"
     live.mkdir()
     hooks_path = live / "results_hooks.json"
@@ -38,7 +38,7 @@ def test_notify_results_hook_falls_back_to_file(tmp_path: Path, monkeypatch):
 
 def test_notify_results_hook_stores_run_id(tmp_path: Path, monkeypatch):
     """Hook entry carries run_id for per-run filtering."""
-    monkeypatch.setenv("KDT_LIVE", "1")
+    monkeypatch.setenv("PK_LIVE", "1")
     live = tmp_path / "live"
     live.mkdir()
     hooks_path = live / "results_hooks.json"

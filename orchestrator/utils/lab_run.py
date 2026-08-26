@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Lab single-flight runner: Editor → playground → subprocess main.py."""
 from __future__ import annotations
 
@@ -476,7 +476,7 @@ def _run_command(
 
 
 # Lab FE opt-in only — never arbitrary process env from clients.
-_LAB_ENV_ALLOWLIST = frozenset({"KDT_TRAFFIC_INSERTION_FEED"})
+_LAB_ENV_ALLOWLIST = frozenset({"PK_TRAFFIC_INSERTION_FEED"})
 
 
 def _merge_lab_env_overrides(
@@ -497,7 +497,7 @@ def _merge_lab_env_overrides(
     return env
 
 
-_DOJO_KEYS = frozenset({"KDT_DEFECTDOJO_URL", "KDT_DEFECTDOJO_TOKEN", "KDT_DEFECTDOJO_ENGAGEMENT", "KDT_DEFECTDOJO_ENGAGEMENT_MODE", "KDT_DOJO_PRODUCT_NAME", "KDT_DEFECTDOJO_PRODUCT_TYPE"})
+_DOJO_KEYS = frozenset({"PK_DEFECTDOJO_URL", "PK_DEFECTDOJO_TOKEN", "PK_DEFECTDOJO_ENGAGEMENT", "PK_DEFECTDOJO_ENGAGEMENT_MODE", "PK_DOJO_PRODUCT_NAME", "PK_DEFECTDOJO_PRODUCT_TYPE"})
 
 
 def _seed_dojo_env(env: Dict[str, str]) -> None:
@@ -530,15 +530,15 @@ def _lab_env(
     env = os.environ.copy()
     # Dojo env: subprocess inherits from os.environ; seed from .env.example if missing.
     _seed_dojo_env(env)
-    env["KDT_LIVE"] = "1"
+    env["PK_LIVE"] = "1"
     if session_name and session_name.strip():
-        env["KDT_SESSION_NAME"] = session_name.strip()
+        env["PK_SESSION_NAME"] = session_name.strip()
     rid = (run_id or "").strip()
     if rid:
-        env["KDT_RUN_ID"] = rid
+        env["PK_RUN_ID"] = rid
     cid = (check_id or "").strip()
     if cid:
-        env["KDT_CHECK_ID"] = cid
+        env["PK_CHECK_ID"] = cid
     owner = (owner_user_id or "").strip()
     if not owner:
         try:
@@ -548,7 +548,7 @@ def _lab_env(
         except Exception:
             owner = ""
     if owner:
-        env["KDT_OWNER_USER"] = owner
+        env["PK_OWNER_USER"] = owner
     return _merge_lab_env_overrides(env, env_overrides)
 
 
@@ -595,8 +595,8 @@ def start_run(
     stub=True → tools.lab_run_stub (быстрые Allure/Dojo hooks без Juice).
     resource_contents: Editor drafts keyed by imports[].as → files under run_dir.
     chain_bindings: IMP-CHAIN slot_id → fresh value at play.
-    owner_user_id: PERS lab → KDT_OWNER_USER + diary meta (Editor caller).
-    env: allowlisted lab overrides (e.g. KDT_TRAFFIC_INSERTION_FEED) — not SoT.
+    owner_user_id: PERS lab → PK_OWNER_USER + diary meta (Editor caller).
+    env: allowlisted lab overrides (e.g. PK_TRAFFIC_INSERTION_FEED) — not SoT.
     Returns ok payload or raises ValueError / RuntimeError.
     """
     if not isinstance(wired, dict):

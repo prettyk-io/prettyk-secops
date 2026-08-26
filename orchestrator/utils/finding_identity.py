@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """QWEN3-ALERT-ASSISTANT W1: canonical finding-v1 fingerprint.
 
 Stable cross-run identity for ZAP findings.

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Discovery Engine — CDP Recorder (legacy, delegated to PW-4).
 
 PW-4: Now delegates to discovery_pw_recorder.py for Playwright-native API.

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 ZapWorkStream — динамический ZAP-канал для СборИнформации.
 

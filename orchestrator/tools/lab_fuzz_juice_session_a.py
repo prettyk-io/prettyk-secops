@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """POC-A lab: seed History с Cookie → Campaign(source=history) → evidence session-bound.
 
 Бэкенд harness, не PrettyK. Сценарий:
@@ -37,7 +37,7 @@ from utils.diary_bus import publish, set_meta
 BASE_URL = "http://juice-shop:3000"
 SEARCH_URL = f"{BASE_URL}/rest/products/search?q=seed"
 DEFAULT_CORPUS = ROOT / "data" / "fuzz" / "juice_search_lab.txt"
-LAB_COOKIE = "token=kdt-lab-session-poc-a"
+LAB_COOKIE = "token=pk-lab-session-poc-a"
 
 
 def _publish_live(summary: dict) -> list[str]:

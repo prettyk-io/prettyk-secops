@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """W3: Telemetry Event Bus — лёгкие нормализованные события для canvas.
 
 Пишет события в diary_bus как строки JSON, с которыми SSE-клиент

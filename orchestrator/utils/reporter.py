@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 Утилита отчётности PrettyK — не адаптер.
 
@@ -42,7 +42,9 @@ PathLike = Union[str, Path]
 
 
 def _env_flag(name: str, default: str = "1") -> bool:
-    return os.environ.get(name, default).strip().lower() not in {
+    base = name[3:] if name.startswith("PK_") else name
+    raw = os.environ.get(f"PK_{base}", default)
+    return raw.strip().lower() not in {
         "0",
         "false",
         "no",
@@ -201,7 +203,7 @@ def trigger_allure_report(
 ):
     """Дергает allure3-secops generate-report (канон :5050)."""
     if wait is None:
-        wait = _env_flag("KDT_ALLURE_WAIT", "1")
+        wait = _env_flag("PK_ALLURE_WAIT", "1")
     try:
         url = f"{allure_url.rstrip('/')}/generate-report?project_id={project_id}"
         if not wait:
@@ -302,7 +304,7 @@ def read_live_run_summary() -> Optional[Dict[str, Any]]:
 
 
 def write_run_summary(payload: dict) -> Path:
-    """Пишет run_summary.json в KDT_RUN_DIR или cwd; путь — одной строкой в лог."""
+    """Пишет run_summary.json в PK_RUN_DIR или cwd; путь — одной строкой в лог."""
     out = _run_dir() / "run_summary.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     text = json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
@@ -433,8 +435,8 @@ def _finalize_allure_block(
 ) -> None:
     from utils.allure_project import build_allure_report_url, summarize_allure_results_dir
 
-    wait_allure = _env_flag("KDT_ALLURE_WAIT", "1")
-    copy_allure_index = _env_flag("KDT_ALLURE_COPY_INDEX", "0")
+    wait_allure = _env_flag("PK_ALLURE_WAIT", "1")
+    copy_allure_index = _env_flag("PK_ALLURE_COPY_INDEX", "0")
     has_results = results_dir.exists() and any(results_dir.iterdir())
     if not has_results:
         logger.warning(

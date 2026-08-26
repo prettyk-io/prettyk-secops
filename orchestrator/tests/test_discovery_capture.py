@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """CD-1: discovery_capture — DOM + Network граб."""
 from __future__ import annotations
 

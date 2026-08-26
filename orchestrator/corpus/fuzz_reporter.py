@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """CD-8: Интеграция вывода фаззинга в Admission & Report.
 
 Фиксирует аномалии, найденные собственным фаззером (``CorpusFuzzer``),
@@ -145,7 +145,7 @@ def anomaly_to_finding(anomaly: FuzzAnomaly) -> Finding:
         payload=anomaly.payload,
         evidence=anomaly.evidence,
         cwe=_cwe_for(anomaly.kind),
-        rule_id=f"kdt_fuzz_{anomaly.kind}",
+        rule_id=f"pk_fuzz_{anomaly.kind}",
         confidence=2,
         tags=["fuzz", anomaly.kind],
         created_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -307,7 +307,7 @@ def fuzz_findings_report(
     """Полный пакет: anomalies → findings → severity → categories."""
     findings = dedupe_findings(anomalies_to_findings(anomalies))
     return {
-        "kind": "kdt_fuzz_findings_pack",
+        "kind": "pk_fuzz_findings_pack",
         "run_id": run_id,
         "total": len(findings),
         "severity": severity_counts(findings),

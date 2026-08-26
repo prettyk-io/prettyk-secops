@@ -1,4 +1,4 @@
-"""Parse ZAP XML report to structured JSON alerts — as fallback when ZAP API hangs."""
+﻿"""Parse ZAP XML report to structured JSON alerts — as fallback when ZAP API hangs."""
 import json, os, sys, xml.etree.ElementTree as ET
 
 BASE = os.path.dirname(os.path.abspath(__file__))

@@ -1,11 +1,11 @@
-# -*- coding: utf-8 -*-
-"""PERS-1L lab: caller from X-KDT-User / Cookie; strip foreign novnc/hooks.
+﻿# -*- coding: utf-8 -*-
+"""PERS-1L lab: caller from X-PK-User / Cookie; strip foreign novnc/hooks.
 
 MON-13: короткоживущий подписанный bind-токен. Editor → playground mint token
 (owner привязывается к run_id), Live проверяет подпись — «свой инстанс без логина».
 """
 from __future__ import annotations
-from utils.env_dual import pk_env
+from utils.env_dual import pk_env, pk_env_name
 
 import base64
 import hashlib
@@ -21,12 +21,12 @@ from typing import Any, Dict, Mapping, MutableMapping, Optional, Tuple
 ADMIN_USERS = frozenset({"admin", "admin_appsec", "admin_abnormal"})
 
 # Runner/lab: prefer explicit owner env (Editor → playground → subprocess).
-_OWNER_ENV_KEYS = ("KDT_OWNER_USER", "KDT_USER")
+_OWNER_ENV_KEYS = ("PK_OWNER_USER", "PK_USER")
 
 # MON-13: dev-секрет для HMAC bind-токена. В airgap/банке — через env.
 _MONITOR_TOKEN_SECRET = (
     pk_env("MONITOR_TOKEN_SECRET")
-    or "kdt-monitor-bind-dev-secret-2026"
+    or "pk-monitor-bind-dev-secret-2026"
 ).encode("utf-8")
 
 try:
@@ -43,17 +43,17 @@ def resolve_run_owner_user_id(explicit: Optional[str] = None) -> Optional[str]:
     if raw:
         return raw
     for key in _OWNER_ENV_KEYS:
-        val = (os.environ.get(key) or "").strip()
+        val = pk_env_name(key).strip()
         if val:
             return val
     return None
 
 
 def parse_caller_user(headers: Mapping[str, str]) -> Optional[str]:
-    """Lab stub: ``X-KDT-User`` or Cookie ``kdt_user=``."""
+    """Lab stub: ``X-PK-User`` header or Cookie ``pk_user=``."""
     raw = ""
     for key, value in headers.items():
-        if key.lower() == "x-kdt-user":
+        if key.lower() == "x-pk-user":
             raw = str(value or "").strip()
             break
     if raw:
@@ -63,7 +63,7 @@ def parse_caller_user(headers: Mapping[str, str]) -> Optional[str]:
         if key.lower() == "cookie":
             cookie = str(value or "")
             break
-    m = re.search(r"(?:^|;\s*)kdt_user=([^;]+)", cookie)
+    m = re.search(r"(?:^|;\s*)pk_user=([^;]+)", cookie)
     if m:
         return m.group(1).strip()
     return None
@@ -255,7 +255,7 @@ def filter_runs_for_caller(
     - гостевой bind-токен здесь не применяется (специфичен для конкретного run_id).
 
     Эта функция готова к включению — достаточно передать ``caller``
-    из заголовка ``X-KDT-User`` / Cookie в ``_serve_runs_apps``
+    из заголовка ``X-PK-User`` / Cookie в ``_serve_runs_apps``
     (или в ``_serve_runs_index`` для Admin).
     """
     if not caller:

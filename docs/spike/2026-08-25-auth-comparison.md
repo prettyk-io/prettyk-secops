@@ -2,7 +2,7 @@
 
 > **Дата:** 24 августа 2026 г.  
 > **Исполнитель:** Boss (Architecture Spike)  
-> **Статус:** Рекомендация принята
+> **Статус:** Рекомендация принята. Пересмотрена 25 августа 2026: PostgreSQL-only, Keycloak в архив.
 
 ---
 
@@ -33,7 +33,7 @@
 | **Admin панель** | Better Auth admin plugin (встроенная) | Keycloak Admin Console (богатая) | Keycloak 🟢 |
 | **Реакция на F5** | Cookie-based, мгновенно | Token-based, мгновенно | Ничья |
 | **Bundle size impact** | ~15 KB (client) | ~120 KB (keycloak-js) | Better Auth 🟢 |
-| **Pure Box пригодность** | ✅ Один процесс, SQLite | ❌ Docker + PostgreSQL | Better Auth 🟢 |
+| **Pure Box пригодность** | ❌ Требует Docker + PostgreSQL (решение: Compose) | ❌ Docker + PostgreSQL | Keycloak 🟢 |
 | **Enterprise (LDAP/SAML)** | Требует кастомного плагина | ✅ Встроено | Keycloak 🟢 |
 | **Developer Experience** | TypeScript-first, чисто | REST API, Web UI, громоздко | Better Auth 🟢 |
 | **RFC-совместимость** | OAuth2 + сессии | OIDC, SAML, полный спектр | Keycloak 🟢 |
@@ -42,20 +42,20 @@
 
 ## 3. Ключевые выводы
 
-### Better Auth — побеждает по всем критериям Pure Box
+### Better Auth — побеждает. PostgreSQL — безальтернативно
 
-1. **Zero infrastructure overhead.** Один Node.js процесс. SQLite в коробке. Никакого Docker, Java, отдельной БД.
-2. **TypeScript-native.** Схема, хуки, типы — всё из коробки. `customSession` маппит роли на capabilities без лишнего кода.
-3. **API Keys с префиксом `pk_live_`.** Родной плагин, CLI-совместимость.
-4. **Bundle size.** 15 KB клиент vs 120 KB keycloak-js.
+1. **TypeScript-native.** Схема, хуки, типы — всё из коробки. `customSession` маппит роли на capabilities без лишнего кода.
+2. **API Keys с префиксом `pk_live_`.** Родной плагин, CLI-совместимость.
+3. **Bundle size.** 15 KB клиент vs 120 KB keycloak-js.
+4. **PostgreSQL через Compose.** Pure Box поднимает PostgreSQL как часть docker-compose стека — тот же подход, что и для DefectDojo, SonarQube. Никакого SQLite в production. Никакого второго auth-провайдера «на всякий случай».
 
-### Keycloak — для Enterprise (Банки, Госсектор)
+### Keycloak — в архив
 
-1. **OIDC/SAML 2.0 Federation.** Готово из коробки. LDAP, Active Directory, социальные провайдеры.
-2. **Admin Console.** Полноценная Web UI для управления пользователями, клиентами, realm'ами.
-3. **Production-grade.** Миллионы пользователей, кластеризация, аудит.
+1. 400 MB Docker image, Java, отдельный admin — неоправданно для нашего стека.
+2. OIDC/SAML/LDAP — не требуется на текущем этапе. Если потребуется — Better Auth поддерживает OIDC federation через плагины.
+3. Два auth-провайдера = две поверхности атаки, две схемы миграций, два пути отладки.
 
-### Что не делаем в Better Auth (пока)
+### Что не делаем (пока)
 
 - ❌ OIDC/SAML Federation (нужен отдельный плагин или Enterprise Edition)
 - ❌ LDAP/Active Directory синхронизация
@@ -63,16 +63,16 @@
 
 ---
 
-## 4. Рекомендация
+## 4. Рекомендация (пересмотрена 25 августа 2026)
 
-**Принятое решение: Better Auth как основной auth-провайдер.**
+**Принятое решение: Better Auth + PostgreSQL — единый стек. Keycloak в архив.**
 
 ### Аргументы:
 
-1. **Pure Box — наш главный продукт.** Better Auth идеально ложится в коробочную модель: SQLite, один процесс, TypeScript.
-2. **Enterprise-сценарии (Банки) — отложенный слот.** Когда потребуется OIDC/SAML, добавим Keycloak как внешний IdP (Better Auth поддерживает OIDC federation через плагины).
-3. **Скорость разработки.** Better Auth интегрирован в наш код (монорепо), не требует отдельного сервиса и DevOps-поддержки.
-4. **Keycloak остаётся как запасной вариант.** Docker Compose и скрипты настройки сохранены в репо. При необходимости Enterprise-деплоя — поднимаем за 15 минут.
+1. **PostgreSQL — единый source of truth.** Pure Box поднимает PostgreSQL через Docker Compose. DefectDojo и SonarQube уже на нём — не плодим зоопарк. SQLite не нужен.
+2. **Один auth-провайдер.** Better Auth покрывает всё. Два провайдера = две схемы миграций, два пути отладки, две поверхности атаки. Неоправданно.
+3. **Keycloak (400 MB, Java, Quarkus) — в архив.** Docker Compose и скрипты настройки удалены из репо. OIDC/SAML — когда потребуется, Better Auth поддерживает OIDC federation через плагины, без поднятия отдельного IdP-сервера.
+4. **Enterprise-сценарии (Банки) — отложенный слот.** Не через Keycloak, а через OIDC-плагин Better Auth.
 
 ---
 
@@ -83,7 +83,7 @@
 | **Alpha (сейчас)** | Better Auth embedded в Vite dev | ✅ Готово |
 | **Beta** | Миграция `auth.ts` → `BetterAuthProvider` | Следующий спринт |
 | **RC** | Production Postgres, email-верификация, 2FA | Перед v1.0 |
-| **Enterprise** | Keycloak как OIDC-провайдер для Better Auth | По запросу клиента |
+| **Enterprise** | OIDC-плагин Better Auth (не Keycloak) | По запросу клиента |
 
 ---
 
@@ -101,8 +101,8 @@
 | `src/auth/BetterAuthProvider.tsx` | React Context Provider |
 | `src/auth/adminAuthProvider.ts` | React Admin authProvider → Better Auth |
 | `src/auth/apiKeyClient.ts` | API Key management (create/list/revoke) |
-| `src/auth/keycloakAuth.ts` | Keycloak client (keycloak-js) |
-| `src/auth/keycloakAdminAuthProvider.ts` | React Admin → Keycloak bridge |
-| `docker-compose.keycloak.yml` | Keycloak + PostgreSQL |
-| `scripts/setup-keycloak.ts` | Keycloak realm, client, roles, users |
-| `scripts/assign-keycloak-roles.ts` | Role assignment для существующих пользователей |
+| `src/auth/keycloakAuth.ts` | Keycloak client (архив) |
+| `src/auth/keycloakAdminAuthProvider.ts` | React Admin → Keycloak bridge (архив) |
+| `docker-compose.keycloak.yml` | Keycloak + PostgreSQL (архив) |
+| `scripts/setup-keycloak.ts` | Keycloak realm, client, roles (архив) |
+| `scripts/assign-keycloak-roles.ts` | Role assignment (архив) |

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 gRPC PoC-адаптер: список сервисов из proto_pack + unary через harness.
 Хост только из URL атаки; трафик опционально через HTTP CONNECT proxy (ZAP).

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 DEFECTDOJO-BIDIRECTIONAL-SYNC: двунаправленный синк находок с DefectDojo.
 
@@ -75,7 +75,10 @@ def _canonical_key(finding: Mapping[str, Any]) -> str:
     sev = _canonical_severity(finding.get("severity"))
     cwe = str(finding.get("cwe") or "").strip()
     param = str(finding.get("param") or finding.get("parameter") or "").strip().lower()
-    return "|".join([kind, title, sev, cwe, param])
+    # DOJO-S-2 edge: изменение endpoint/attack_type → новая находка
+    endpoint = str(finding.get("url") or finding.get("endpoint") or "").strip().lower()
+    attack_type = str(finding.get("attack_type") or finding.get("attack") or "").strip().lower()
+    return "|".join([kind, title, sev, cwe, param, endpoint, attack_type])
 
 
 def _canonical_severity(raw: Any) -> str:
@@ -92,7 +95,7 @@ def finding_fingerprint(finding: Mapping[str, Any]) -> str:
 
 def finding_unique_id(finding: Mapping[str, Any]) -> str:
     """Стабильный dedup-ключ для Dojo ``unique_id_from_tool`` (SHA256 → 16 hex)."""
-    return "kdt-" + hashlib.sha256(_canonical_key(finding).encode("utf-8")).hexdigest()[:16]
+    return "pk-" + hashlib.sha256(_canonical_key(finding).encode("utf-8")).hexdigest()[:16]
 
 
 def _cwe_int(raw: Any) -> int:
@@ -174,8 +177,8 @@ def _config() -> Tuple[str, str]:
 
     _load_lab_env()
     return (
-        _env("KDT_DEFECTDOJO_URL"),
-        _env("KDT_DEFECTDOJO_TOKEN"),
+        _env("PK_DEFECTDOJO_URL"),
+        _env("PK_DEFECTDOJO_TOKEN"),
     )
 
 
@@ -489,7 +492,7 @@ def sync_status() -> Dict[str, Any]:
         from adapters.defectdojo_client import _env as _dojo_env
 
         dojo_configured = bool(
-            _dojo_env("KDT_DEFECTDOJO_URL") and _dojo_env("KDT_DEFECTDOJO_TOKEN")
+            _dojo_env("PK_DEFECTDOJO_URL") and _dojo_env("PK_DEFECTDOJO_TOKEN")
         )
     except Exception:
         dojo_configured = False

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Мосты между плоскостями сессии: Browser jar ↔ HTTP headers (для ZAP sender).
 
 Не продуктовая поверхность PrettyK. См. docs/session-composition.md.

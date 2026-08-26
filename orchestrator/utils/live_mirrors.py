@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 Сброс зеркал Results на Live (summary / trend / G-20 / evidence).
 

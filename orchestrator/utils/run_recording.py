@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 MON-5: запись видео прогона (Selenium Grid chrome-video → MP4).
 

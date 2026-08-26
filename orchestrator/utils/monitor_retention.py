@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 MON-14: retention артефактов Monitor — on demand purge и ленивый 7-дневный TTL.
 
@@ -46,7 +46,7 @@ def _live_exports_dir() -> Path:
 
 
 def _monitor_retention_seconds() -> float:
-    """TTL из env KDT_MONITOR_RETENTION_DAYS (default 7)."""
+    """TTL из env PK_MONITOR_RETENTION_DAYS (default 7)."""
     import os
 
     val = pk_env("MONITOR_RETENTION_DAYS")

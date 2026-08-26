@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 Мост исполнения для module_type OpenAPI / GraphQL.
 
@@ -16,6 +16,7 @@ from core.auth_module import load_auth_profile_from_wired
 from core.errors import WiredError
 from models.wired import Wired
 from utils.api_import_lab import dumps_ops, read_local_text
+from utils.env_dual import pk_env_name
 from utils.attack_target import (
     attack_base_url,
     resolve_attack_relative_or_allowlisted,
@@ -54,11 +55,11 @@ class ResolvedGraphql:
 
 def env_force_zap_import(*, openapi: bool = True) -> bool:
     if openapi:
-        keys = ("KDT_OPENAPI_ZAP_IMPORT", "KDT_API_ZAP_IMPORT")
+        keys = ("PK_OPENAPI_ZAP_IMPORT", "PK_API_ZAP_IMPORT")
     else:
-        keys = ("KDT_GRAPHQL_ZAP_IMPORT", "KDT_API_ZAP_IMPORT")
+        keys = ("PK_GRAPHQL_ZAP_IMPORT", "PK_API_ZAP_IMPORT")
     for key in keys:
-        raw = (os.environ.get(key) or "").strip().lower()
+        raw = pk_env_name(key).strip().lower()
         if raw in ("1", "true", "yes", "on"):
             return True
     return False
@@ -66,11 +67,11 @@ def env_force_zap_import(*, openapi: bool = True) -> bool:
 
 def env_force_zap_scan(*, openapi: bool = False) -> bool:
     if openapi:
-        keys = ("KDT_OPENAPI_ZAP_SCAN", "KDT_API_ZAP_SCAN")
+        keys = ("PK_OPENAPI_ZAP_SCAN", "PK_API_ZAP_SCAN")
     else:
-        keys = ("KDT_GRAPHQL_ZAP_SCAN", "KDT_API_ZAP_SCAN")
+        keys = ("PK_GRAPHQL_ZAP_SCAN", "PK_API_ZAP_SCAN")
     for key in keys:
-        raw = (os.environ.get(key) or "").strip().lower()
+        raw = pk_env_name(key).strip().lower()
         if raw in ("1", "true", "yes", "on"):
             return True
     return False

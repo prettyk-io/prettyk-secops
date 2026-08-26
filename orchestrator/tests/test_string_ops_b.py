@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Волна B: Подстрока / Заменить / Разделить / Обрезать."""
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 Цикл C: Juice+Grid+ZAP demon — короткий СборИнформации (skipif).
 """

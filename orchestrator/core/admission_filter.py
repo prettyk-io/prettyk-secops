@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """QG-AF: auto-filter Dojo findings → severity counts + audit."""
 from __future__ import annotations
 

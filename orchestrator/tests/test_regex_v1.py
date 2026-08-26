@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Regex v1: условие рег + СовпадаетРег / ЗаменитьРег."""
 from __future__ import annotations
 

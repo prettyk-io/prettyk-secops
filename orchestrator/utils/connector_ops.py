@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """CONN-11…13: Prom/SSH/logs + MQ/DB TCP probe (lab)."""
 from __future__ import annotations
 
@@ -16,14 +16,14 @@ from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from utils.api_module_runtime import find_api_module
-from utils.env_dual import pk_env
+from utils.env_dual import pk_env, pk_env_name
 
 CONNECTOR_MODULE_TYPE = "Коннектор"
-ENV_LIVE = "KDT_CONNECTOR_LIVE"
-ENV_SSH = "KDT_CONNECTOR_SSH"
-ENV_LOGS = "KDT_CONNECTOR_LOGS"
-ENV_MQ = "KDT_CONNECTOR_MQ"
-ENV_DB = "KDT_CONNECTOR_DB"
+ENV_LIVE = "PK_CONNECTOR_LIVE"
+ENV_SSH = "PK_CONNECTOR_SSH"
+ENV_LOGS = "PK_CONNECTOR_LOGS"
+ENV_MQ = "PK_CONNECTOR_MQ"
+ENV_DB = "PK_CONNECTOR_DB"
 LOG_CONNECTOR_TYPE = "Система логгирования"
 MQ_CONNECTOR_TYPE = "Очередь сообщений"
 DB_CONNECTOR_TYPE = "База данных"
@@ -254,7 +254,7 @@ def resolve_connector_module(wired: Any, module_id: str) -> ResolvedConnector:
 
 
 def live_enabled(env_flag: str = ENV_LIVE) -> bool:
-    flag = (os.environ.get(env_flag) or "").strip().lower()
+    flag = pk_env_name(env_flag).strip().lower()
     return flag in ("1", "true", "yes", "on")
 
 
@@ -438,7 +438,7 @@ def ssh_command_payload(
     env_flag: str = ENV_SSH,
     runner=None,
 ) -> Dict[str, Any]:
-    """CONN-12: SSH allowlist command; live при KDT_CONNECTOR_SSH=1 (BatchMode ssh)."""
+    """CONN-12: SSH allowlist command; live при PK_CONNECTOR_SSH=1 (BatchMode ssh)."""
     notes = list(resolved.notes)
     result: Dict[str, Any] = {
         "ok": False,
@@ -601,7 +601,7 @@ def query_logs_payload(
     env_flag: str = ENV_LOGS,
     http_query=query_logs_http,
 ) -> Dict[str, Any]:
-    """CONN logs/SIEM: thin HTTP GET; live при KDT_CONNECTOR_LOGS=1."""
+    """CONN logs/SIEM: thin HTTP GET; live при PK_CONNECTOR_LOGS=1."""
     notes = list(resolved.notes)
     result: Dict[str, Any] = {
         "ok": False,
@@ -766,7 +766,7 @@ def probe_queue_payload(
     env_flag: str = ENV_MQ,
     tcp_probe=probe_tcp_endpoint,
 ) -> Dict[str, Any]:
-    """CONN-13: MQ broker TCP probe; live при KDT_CONNECTOR_MQ=1."""
+    """CONN-13: MQ broker TCP probe; live при PK_CONNECTOR_MQ=1."""
     notes = list(resolved.notes)
     result: Dict[str, Any] = {
         "ok": False,
@@ -829,7 +829,7 @@ def probe_db_payload(
     env_flag: str = ENV_DB,
     tcp_probe=probe_tcp_endpoint,
 ) -> Dict[str, Any]:
-    """CONN-13: DB DSN TCP probe (RO reachability); live при KDT_CONNECTOR_DB=1."""
+    """CONN-13: DB DSN TCP probe (RO reachability); live при PK_CONNECTOR_DB=1."""
     notes = list(resolved.notes)
     result: Dict[str, Any] = {
         "ok": False,
@@ -904,17 +904,17 @@ def probe_after_fuzz_meta(
     module_id: str = "",
     pack: str = "",
     query: str = "",
-    env_module: str = "KDT_CONNECTOR_MODULE",
-    env_enable: str = "KDT_CONNECTOR_AFTER_FUZZ",
+    env_module: str = "PK_CONNECTOR_MODULE",
+    env_enable: str = "PK_CONNECTOR_AFTER_FUZZ",
 ) -> Dict[str, Any]:
     """
     Thin hook после fuzz wave: opt-in probe по типу слота → meta без секретов.
     Prometheus → pack query; Система логгирования → logs GET.
-    Нужны KDT_CONNECTOR_AFTER_FUZZ=1 и module id (арг или KDT_CONNECTOR_MODULE).
+    Нужны PK_CONNECTOR_AFTER_FUZZ=1 и module id (арг или PK_CONNECTOR_MODULE).
     """
     if not live_enabled(env_enable):
         return {}
-    mid = (module_id or "").strip() or (os.environ.get(env_module) or "").strip()
+    mid = (module_id or "").strip() or pk_env_name(env_module).strip()
     if not mid:
         return {
             "connector_probe": False,

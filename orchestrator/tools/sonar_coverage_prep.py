@@ -1,9 +1,9 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 MC-2: подготовить coverage-отчёты для sonar-scanner.
 
 По умолчанию — честный zero-coverage XML/LCOV (не stub «зелёная лампа»).
-С --live / KDT_SONAR_COVERAGE=1 — pytest-cov (not heavy) -> real Cobertura.
+С --live / PK_SONAR_COVERAGE=1 — pytest-cov (not heavy) -> real Cobertura.
 
   py -3 orchestrator/tools/sonar_coverage_prep.py
   py -3 orchestrator/tools/sonar_coverage_prep.py --live

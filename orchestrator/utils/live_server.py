@@ -1,9 +1,9 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
-Tiny HTTP server for KDT Live: noVNC + diary SSE (+ ZAP channel).
+Tiny HTTP server for PK Live: noVNC + diary SSE (+ ZAP channel).
 
 Long-lived shell (idle wrapper or soft-bind). Runner signals run_ended for diary
-export; product teardown must not kill HTTP. Disable with KDT_LIVE=0.
+export; product teardown must not kill HTTP. Disable with PK_LIVE=0.
 """
 from __future__ import annotations
 from utils.env_dual import pk_env
@@ -44,7 +44,7 @@ def live_enabled() -> bool:
 
 
 def ai_assistant_enabled() -> bool:
-    """EXP-01 toggle: KDT_AI_ASSISTANT_ENABLED=1 includes Qwen3 proxy + UI.
+    """EXP-01 toggle: PK_AI_ASSISTANT_ENABLED=1 includes Qwen3 proxy + UI.
 
     Default OFF — сначала снять референс старой системы без AI-разметки.
     """
@@ -81,10 +81,10 @@ class _LiveHandler(BaseHTTPRequestHandler):
         """Editor (Vite) polls /api/meta and results hooks from another origin."""
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        # X-KDT-User: Admin Live fetches (Dojo/evidence/runs) — иначе preflight Failed to fetch
+        # X-PK-User (X-PK-User legacy): Admin Live fetches (Dojo/evidence/runs) — иначе preflight Failed to fetch
         self.send_header(
             "Access-Control-Allow-Headers",
-            "Content-Type, X-KDT-User",
+            "Content-Type, X-PK-User",
         )
 
     def do_OPTIONS(self):
@@ -513,7 +513,7 @@ class _LiveHandler(BaseHTTPRequestHandler):
         # EXP-01: inject AI assistant toggle into meta for FE
         if isinstance(meta, dict):
             meta["ai_assistant_enabled"] = ai_assistant_enabled()
-            # MON-13: expose hex KDT_RUN_ID for monitor deep-link.
+            # MON-13: expose hex PK_RUN_ID for monitor deep-link.
             # Do NOT use session_name in URLs — spaces/slashes break routing.
             hex_run_id = diary_bus._active_run_id()
             if hex_run_id:
@@ -564,7 +564,7 @@ class _LiveHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _accept_gate_policy(self):
-        """Admin → write GatePolicy JSON to KDT_GATE_POLICY_PATH / lab default."""
+        """Admin → write GatePolicy JSON to PK_GATE_POLICY_PATH / lab default."""
         try:
             length = int(self.headers.get("Content-Length") or "0")
         except ValueError:
@@ -1213,7 +1213,7 @@ class _LiveHandler(BaseHTTPRequestHandler):
             from utils.run_ui_summary import read_run_ui_summary
 
             payload = read_run_ui_summary(run_id=run_id) or {
-                "kind": "kdt_run_ui_summary",
+                "kind": "pk_run_ui_summary",
                 "version": 1,
                 "ok": False,
                 "risks": {"critical": 0, "high": 0, "medium": 0, "low": 0, "info": 0},
@@ -1674,7 +1674,7 @@ class _LiveHandler(BaseHTTPRequestHandler):
     def _gate_run_id(self, run_id: str) -> bool:
         """MON-13: вернуть True если доступ разрешён, иначе 403 и False.
 
-        Приоритет: bind-токен (?token=) → caller ACL (X-KDT-User / cookie).
+        Приоритет: bind-токен (?token=) → caller ACL (X-PK-User / cookie).
         """
         rid = (run_id or "").strip()
         if not rid:
@@ -1921,7 +1921,7 @@ class _LiveHandler(BaseHTTPRequestHandler):
         """RES-7 MVP: zip diary + log_cuts + meta + hooks (+ fuzz/run extras)."""
         qs = parse_qs(urlparse(self.path).query)
         run_id = (qs.get("run_id") or [""])[0]
-        # MC-RES-3: ?recalc=0|1 перекрывает KDT_PACKAGE_RECALC_GATE
+        # MC-RES-3: ?recalc=0|1 перекрывает PK_PACKAGE_RECALC_GATE
         recalc_raw = (qs.get("recalc") or [""])[0].strip().lower()
         recalc_gate = None
         if recalc_raw in {"0", "false", "off", "no"}:
@@ -2038,7 +2038,7 @@ def start_live_server(session_name: str = "") -> Optional[str]:
     global _server, _thread, _owns_server
 
     if not live_enabled():
-        logger.info("KDT Live disabled (KDT_LIVE=0)")
+        logger.info("PK Live disabled (PK_LIVE=0)")
         return None
 
     url = live_url()
@@ -2055,7 +2055,7 @@ def start_live_server(session_name: str = "") -> Optional[str]:
             server = ThreadingHTTPServer(("127.0.0.1", port), _LiveHandler)
         except OSError as e:
             logger.info(
-                "KDT Live already on 127.0.0.1:%s (%s) — diary file only; open %s",
+                "PK Live already on 127.0.0.1:%s (%s) — diary file only; open %s",
                 port,
                 e,
                 url,
@@ -2069,7 +2069,7 @@ def start_live_server(session_name: str = "") -> Optional[str]:
 
         thread = threading.Thread(
             target=server.serve_forever,
-            name="kdt-live-http",
+            name="pk-live-http",
             daemon=True,
         )
         _server = server
@@ -2081,7 +2081,7 @@ def start_live_server(session_name: str = "") -> Optional[str]:
             live_url=url,
             session_name=session_name or diary_bus.get_meta().get("session_name") or "",
         )
-        logger.info("KDT Live diary+VNC: %s", url)
+        logger.info("PK Live diary+VNC: %s", url)
         return url
 
 
@@ -2249,15 +2249,15 @@ def notify_results_hook(service: str, report_url: str, **extra) -> Optional[dict
                 data = json.loads(resp.read().decode("utf-8"))
             if isinstance(data, dict) and data.get("ok"):
                 return data
-            logger.warning("KDT Live results/hooks HTTP unexpected: %s", str(data)[:200])
+            logger.warning("PK Live results/hooks HTTP unexpected: %s", str(data)[:200])
         except (HTTPError, URLError, TimeoutError, OSError, json.JSONDecodeError) as e:
-            logger.info("KDT Live results/hooks HTTP miss (%s) — local file bus", e)
+            logger.info("PK Live results/hooks HTTP miss (%s) — local file bus", e)
 
     try:
         hooks = diary_bus.set_results_hook(svc, url, **extra)
         return {"ok": True, "hooks": hooks}
     except (ValueError, OSError) as e:
-        logger.warning("KDT Live results/hooks local push failed: %s", e)
+        logger.warning("PK Live results/hooks local push failed: %s", e)
         return None
 
 
@@ -2285,15 +2285,15 @@ def notify_ci_status(**fields) -> Optional[dict]:
             data = json.loads(resp.read().decode("utf-8"))
         if isinstance(data, dict) and data.get("ok"):
             return data
-        logger.warning("KDT Live ci/status HTTP unexpected: %s", str(data)[:200])
+        logger.warning("PK Live ci/status HTTP unexpected: %s", str(data)[:200])
     except (HTTPError, URLError, TimeoutError, OSError, json.JSONDecodeError) as e:
-        logger.info("KDT Live ci/status HTTP miss (%s) — local apply", e)
+        logger.info("PK Live ci/status HTTP miss (%s) — local apply", e)
 
     try:
         result = apply_ci_status(payload)
         return {"ok": True, **result}
     except (ValueError, OSError) as e:
-        logger.warning("KDT Live ci/status local apply failed: %s", e)
+        logger.warning("PK Live ci/status local apply failed: %s", e)
         return None
 
 
@@ -2344,15 +2344,15 @@ def notify_live_run_ended(
         data = json.loads(body)
         if isinstance(data, dict) and data.get("ok"):
             return data
-        logger.warning("KDT Live run_ended HTTP unexpected: %s", body[:200])
+        logger.warning("PK Live run_ended HTTP unexpected: %s", body[:200])
     except (HTTPError, URLError, TimeoutError, OSError, json.JSONDecodeError) as e:
-        logger.info("KDT Live run_ended HTTP miss (%s) — local snapshot", e)
+        logger.info("PK Live run_ended HTTP miss (%s) — local snapshot", e)
 
     try:
         result = handle_run_ended(run_id=run_id, filter_preset=filter_preset)
         return {"ok": True, **result}
     except (OSError, ValueError) as e:
-        logger.warning("KDT Live run_ended local export failed: %s", e)
+        logger.warning("PK Live run_ended local export failed: %s", e)
         diary_bus.set_meta(status="waiting")
         return None
 
@@ -2380,4 +2380,4 @@ def stop_live_server() -> None:
     except Exception:
         pass
     diary_bus.set_meta(status="finished")
-    logger.info("KDT Live stopped")
+    logger.info("PK Live stopped")

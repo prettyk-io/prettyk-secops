@@ -209,8 +209,8 @@ export function AuthVaultPanel(): React.JSX.Element {
               <Badge status="success" text="Bearer/JWT/password в логах Allure3 и PrettyK Live" />
             </Descriptions.Item>
             <Descriptions.Item label="Ключ">
-              <Typography.Text code>KDT_VAULT_KEY</Typography.Text>
-              <Typography.Text type="secondary"> (или производный от KDT_MANIFEST_KEY)</Typography.Text>
+              <Typography.Text code>PK_VAULT_KEY</Typography.Text>
+              <Typography.Text type="secondary"> (или производный от PK_MANIFEST_KEY)</Typography.Text>
             </Descriptions.Item>
           </Descriptions>
         </ProCard>

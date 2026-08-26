@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 G-62: secretref в манифесте — `${ENV:VAR}` или `secretref:VAR` → os.environ.
 

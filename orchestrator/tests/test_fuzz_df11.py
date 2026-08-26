@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """DF-11: corpus streaming, numbered masks, multi-corpus pitchfork."""
 from __future__ import annotations
 

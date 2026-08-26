@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 RES-5: заключение для руководства (Critical / High / Watch / Pass).
 

@@ -15,6 +15,19 @@ beforeAll(() => {
     configurable: true,
     value: ResizeObserverStub,
   });
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: (query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      dispatchEvent: () => false,
+    }),
+  });
 });
 
 afterEach(() => {
@@ -36,21 +49,19 @@ function renderHome(props: Partial<Parameters<typeof HomePage>[0]> = {}) {
     onStartImported,
     onStartFromDeploy,
     ...render(
-      <ThemeProvider>
-        <HomePage
-          onOpenHistory={onOpenHistory}
-          onOpenAdmin={onOpenAdmin}
-          onStartFresh={onStartFresh}
-          onStartSetup={onStartSetup}
-          onStartImported={onStartImported}
-          onStartFromDeploy={onStartFromDeploy}
-          playEnter={props.playEnter}
-          onEnterPlayed={props.onEnterPlayed}
-          canAccessAdmin={props.canAccessAdmin}
-          canimportWired={props.canimportWired}
-          roleLabel={props.roleLabel}
-        />
-      </ThemeProvider>,
+      <HomePage
+        onOpenHistory={onOpenHistory}
+        onOpenAdmin={onOpenAdmin}
+        onStartFresh={onStartFresh}
+        onStartSetup={onStartSetup}
+        onStartImported={onStartImported}
+        onStartFromDeploy={onStartFromDeploy}
+        playEnter={props.playEnter}
+        onEnterPlayed={props.onEnterPlayed}
+        canAccessAdmin={props.canAccessAdmin}
+        canimportWired={props.canimportWired}
+        roleLabel={props.roleLabel}
+      />,
     ),
   };
 }
@@ -91,42 +102,34 @@ describe('HomePage EntryPoint', () => {
   });
 
   it('playEnter: класс enter на stage', () => {
-    vi.stubGlobal(
-      'matchMedia',
-      vi.fn().mockReturnValue({
-        matches: false,
-        media: '(prefers-reduced-motion: reduce)',
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        addListener: vi.fn(),
-        removeListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-      }),
-    );
+    window.matchMedia = vi.fn().mockReturnValue({
+      matches: false,
+      media: '(prefers-reduced-motion: reduce)',
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    });
     renderHome({ playEnter: true });
     expect(screen.getByTestId('home-stage').className).toContain('pk-home-stage--enter');
-    vi.unstubAllGlobals();
   });
 
   it('prefers-reduced-motion: enter снимается и onEnterPlayed', async () => {
-    vi.stubGlobal(
-      'matchMedia',
-      vi.fn().mockReturnValue({
-        matches: true,
-        media: '(prefers-reduced-motion: reduce)',
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        addListener: vi.fn(),
-        removeListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-      }),
-    );
+    window.matchMedia = vi.fn().mockReturnValue({
+      matches: true,
+      media: '(prefers-reduced-motion: reduce)',
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    });
     const onEnterPlayed = vi.fn();
     renderHome({ playEnter: true, onEnterPlayed });
     await vi.waitFor(() => {
       expect(onEnterPlayed).toHaveBeenCalledTimes(1);
     });
     expect(screen.getByTestId('home-stage').className).not.toContain('pk-home-stage--enter');
-    vi.unstubAllGlobals();
   });
 });

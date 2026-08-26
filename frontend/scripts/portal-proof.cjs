@@ -12,7 +12,7 @@ const PORT = 9337;
 const ROOT = path.resolve(__dirname, '../..');
 const OUT_LOGIN = path.join(ROOT, 'screenshot_latest.png');
 const OUT_HOME = path.join(ROOT, 'screenshot_home_proof.png');
-const userDataDir = path.join(process.env.TEMP || 'C:\\Temp', 'kdt_portal_proof');
+const userDataDir = path.join(process.env.TEMP || 'C:\\Temp', 'pk_portal_proof');
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -135,7 +135,7 @@ async function main() {
 
     // React-controlled inputs: seed session + hard navigate to home (same as auth OK).
     await evalJson(`(() => {
-      sessionStorage.setItem('kdt.auth.user', 'admin');
+      sessionStorage.setItem('pk.auth.user', 'admin');
       location.hash = '#/home';
       location.reload();
       return true;
@@ -144,11 +144,11 @@ async function main() {
 
     const homeInfo = await evalJson(`(() => {
       const panel = document.querySelector('[data-testid="home-panel"]');
-      const list = document.querySelector('.kdt-home-entry-list');
-      const entries = [...document.querySelectorAll('.kdt-home-entry')];
-      const icon = document.querySelector('.kdt-home-entry-icon');
-      const title = document.querySelector('.kdt-home-title');
-      const theme = document.querySelector('.kdt-theme-toggle, [data-testid="theme-toggle"]');
+      const list = document.querySelector('.pk-home-entry-list');
+      const entries = [...document.querySelectorAll('.pk-home-entry')];
+      const icon = document.querySelector('.pk-home-entry-icon');
+      const title = document.querySelector('.pk-home-title');
+      const theme = document.querySelector('.pk-theme-toggle, [data-testid="theme-toggle"]');
       if (!panel || !list || entries.length < 2) {
         return {
           href: location.href,

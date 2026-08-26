@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """MON-14: monitor_retention — purge по run_id + lazy TTL."""
 from __future__ import annotations
 

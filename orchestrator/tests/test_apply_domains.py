@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """G-34 ПрименитьДомены — парсер CSV → regex + MethodId."""
 from __future__ import annotations
 

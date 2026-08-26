@@ -92,7 +92,7 @@ Wire `"zap"` не тронут. Обновлены display-слои:
 | `reports/zap-results` | `reports/scanner-results` |
 | Sonar: `zap-kdt-backend` | `prettyk-backend` |
 | Sonar: `zap-kdt-frontend` | `prettyk-frontend` |
-| `KDTZaproxy.md` | `scanner-zaproxy.md` |
+| `KDTZaproxy.md` | `prettyk.md` |
 | `docker-compose.zap.yml` (ref) | `docker-compose.scanner.yml` (ref) |
 
 ---

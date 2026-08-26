@@ -32,6 +32,7 @@ import { BaselineDelta } from './BaselineDelta';
 import { AppsLedgerPanel } from './sections/AppsLedgerPanel';
 import { RetentionPanel } from './sections/RetentionPanel';
 import { DojoSyncManager } from './sections/DojoSyncManager';
+import DojoSyncDashboard from './sections/DojoSyncDashboard';
 import { AuthVaultPanel } from './sections/AuthVaultPanel';
 import { ThemeToggle } from '../shell/ThemeToggle';
 import { Wordmark } from '../shell/Wordmark';
@@ -155,7 +156,12 @@ export function AdminLayout({ onBackHome, onLogout }: AdminLayoutProps): React.J
       case 'retention':
         return <RetentionPanel />;
       case 'dojo-sync':
-        return <DojoSyncManager />;
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <DojoSyncDashboard />
+            <DojoSyncManager />
+          </div>
+        );
       case 'auth-vault':
         return <AuthVaultPanel />;
       case 'notify':

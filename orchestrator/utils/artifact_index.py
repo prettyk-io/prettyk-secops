@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 ART-1: Artifact index — check_id → runs → disk/Dojo/hooks paths.
 

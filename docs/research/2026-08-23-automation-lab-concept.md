@@ -94,7 +94,7 @@ services:
   live:
     image: prettyk-live:latest
   frontend:
-    image: prettyk-frontend:secops-lab
+    image: prettyk-frontend:prettyk-lab
   zap-demon:
     image: zap-demon:latest
     ports: ["8080:8080"]

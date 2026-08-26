@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
-Выражения значений для языка данных KDT.
+Выражения значений для языка данных PK.
 
 Канон ссылок: $name, $user.email, $names[0], $ENV:VAR
 Legacy: ${name}, ${user.email}, …
@@ -42,15 +42,15 @@ class ExprError(WiredError):
 class KindDict(dict):
     """dict с меткой kind: object | dict (Объект vs Словарь)."""
 
-    __slots__ = ("_kdt_kind",)
+    __slots__ = ("_pk_kind",)
 
     def __init__(self, data=None, *, kind: str = "object"):
         super().__init__(data or {})
-        self._kdt_kind = kind if kind in ("object", "dict") else "object"
+        self._pk_kind = kind if kind in ("object", "dict") else "object"
 
     @property
     def kind(self) -> str:
-        return self._kdt_kind
+        return self._pk_kind
 
 
 class LocatorDesc:

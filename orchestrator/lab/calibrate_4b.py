@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """EXP-02: Qwen3-4B calibration vs EXP-01 baseline findings.
 Usage: .\.venv\Scripts\python.exe orchestrator\lab\calibrate_4b.py
 """

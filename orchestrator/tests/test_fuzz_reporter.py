@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """CD-8: fuzz_reporter — аномалии → findings → admission → Allure3."""
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ def test_anomaly_to_finding_server_error():
     assert f.kind == "server_error"
     assert f.severity == "high"
     assert f.cwe == "CWE-20"
-    assert f.rule_id == "kdt_fuzz_server_error"
+    assert f.rule_id == "pk_fuzz_server_error"
     assert "fuzz" in f.tags
 
 
@@ -149,7 +149,7 @@ def test_merge_allure_categories_no_dupes():
 def test_fuzz_findings_report_shape():
     anomalies = [FuzzAnomaly(kind="server_error", url="u", status=500)]
     report = fuzz_findings_report(anomalies, run_id="r1")
-    assert report["kind"] == "kdt_fuzz_findings_pack"
+    assert report["kind"] == "pk_fuzz_findings_pack"
     assert report["total"] == 1
     assert "severity" in report
     assert "allure_categories" in report

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 from pathlib import Path
 
 from utils.runs_index import append_run_index, list_run_apps, list_run_index, upsert_run_index
@@ -6,7 +6,7 @@ from utils.runs_index import append_run_index, list_run_apps, list_run_index, up
 
 def test_append_and_list(tmp_path: Path, monkeypatch):
     path = tmp_path / "runs_index.ndjson"
-    monkeypatch.setenv("KDT_RUNS_INDEX_PATH", str(path))
+    monkeypatch.setenv("PK_RUNS_INDEX_PATH", str(path))
     append_run_index({"run_id": "r1", "status": "success", "ci_verdict": "pass"})
     append_run_index({"run_id": "r2", "status": "failed", "check_id": "c1"})
     rows = list_run_index(limit=10)
@@ -16,7 +16,7 @@ def test_append_and_list(tmp_path: Path, monkeypatch):
 
 def test_list_dedupes_run_id_keeps_newest(tmp_path: Path, monkeypatch):
     path = tmp_path / "runs_index.ndjson"
-    monkeypatch.setenv("KDT_RUNS_INDEX_PATH", str(path))
+    monkeypatch.setenv("PK_RUNS_INDEX_PATH", str(path))
     append_run_index({"run_id": "r1", "status": "running"})
     append_run_index({"run_id": "r1", "status": "success", "ci_verdict": "pass"})
     rows = list_run_index(limit=10)
@@ -27,7 +27,7 @@ def test_list_dedupes_run_id_keeps_newest(tmp_path: Path, monkeypatch):
 def test_upsert_preserves_space_fields_on_ended(tmp_path: Path, monkeypatch):
     """MH-4/MH-5: run_ended не затирает space-поля из start_run."""
     path = tmp_path / "runs_index.ndjson"
-    monkeypatch.setenv("KDT_RUNS_INDEX_PATH", str(path))
+    monkeypatch.setenv("PK_RUNS_INDEX_PATH", str(path))
     upsert_run_index(
         {
             "run_id": "r1",
@@ -64,7 +64,7 @@ def test_upsert_preserves_space_fields_on_ended(tmp_path: Path, monkeypatch):
 
 def test_upsert_updates_last_run_ts_not_first(tmp_path: Path, monkeypatch):
     path = tmp_path / "runs_index.ndjson"
-    monkeypatch.setenv("KDT_RUNS_INDEX_PATH", str(path))
+    monkeypatch.setenv("PK_RUNS_INDEX_PATH", str(path))
     upsert_run_index(
         {
             "run_id": "r1",
@@ -98,7 +98,7 @@ def test_upsert_updates_last_run_ts_not_first(tmp_path: Path, monkeypatch):
 def test_list_run_apps_groups_and_sorts(tmp_path: Path, monkeypatch):
     """MH-3: app → deploy → instance, сортировка по last_run_ts desc."""
     path = tmp_path / "runs_index.ndjson"
-    monkeypatch.setenv("KDT_RUNS_INDEX_PATH", str(path))
+    monkeypatch.setenv("PK_RUNS_INDEX_PATH", str(path))
     # app A (старее), app B (свежее)
     upsert_run_index(
         {
@@ -126,7 +126,7 @@ def test_list_run_apps_groups_and_sorts(tmp_path: Path, monkeypatch):
 
 def test_list_run_apps_merges_runs_same_app(tmp_path: Path, monkeypatch):
     path = tmp_path / "runs_index.ndjson"
-    monkeypatch.setenv("KDT_RUNS_INDEX_PATH", str(path))
+    monkeypatch.setenv("PK_RUNS_INDEX_PATH", str(path))
     # два прогона одного app_code → один app, два deploy
     upsert_run_index(
         {

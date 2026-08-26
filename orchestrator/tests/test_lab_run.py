@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Lab single-flight run API (RES-L)."""
 from __future__ import annotations
 
@@ -102,17 +102,17 @@ def test_start_run_rejects_bad_Wired(runs_tmp):
 
 
 def test_lab_env_traffic_feed_allowlist(monkeypatch):
-    monkeypatch.delenv("KDT_TRAFFIC_INSERTION_FEED", raising=False)
+    monkeypatch.delenv("PK_TRAFFIC_INSERTION_FEED", raising=False)
     env = lab_run._lab_env(
         session_name=None,
         env_overrides={
-            "KDT_TRAFFIC_INSERTION_FEED": "1",
+            "PK_TRAFFIC_INSERTION_FEED": "1",
             "PATH": "/evil",
-            "KDT_LIVE": "0",
+            "PK_LIVE": "0",
         },
     )
-    assert env["KDT_TRAFFIC_INSERTION_FEED"] == "1"
-    assert env["KDT_LIVE"] == "1"
+    assert env["PK_TRAFFIC_INSERTION_FEED"] == "1"
+    assert env["PK_LIVE"] == "1"
     assert env.get("PATH") != "/evil"
 
 

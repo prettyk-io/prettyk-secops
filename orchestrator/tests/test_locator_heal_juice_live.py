@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 HEAL-F Juice live: Grid + Juice login → broken id → heal by fingerprint.
 

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 Обработчик данных (DataProcessor).
 
@@ -356,10 +356,10 @@ class DataProcessor:
         ВыполнитьКоманду — внешний процесс (nuclei/trivy/…), как keyword-обёртка RF.
 
         Gate (честный, не silent):
-        - нужен KDT_EXECUTE_COMMAND=1;
-        - если задан KDT_COMMAND_ALLOWLIST (|,; или запятая) — первый токен
+        - нужен PK_EXECUTE_COMMAND=1;
+        - если задан PK_COMMAND_ALLOWLIST (|,; или запятая) — первый токен
           (basename) должен совпасть; пустой allowlist + enable = lab power;
-        - KDT_API_LAB_DRY=1 — stub без subprocess.
+        - PK_API_LAB_DRY=1 — stub без subprocess.
         """
         import os
         import shlex
@@ -372,8 +372,8 @@ class DataProcessor:
         if not raw:
             raise WiredError("ВыполнитьКоманду: пустая команда")
 
-        dry = _env_flag_on("KDT_API_LAB_DRY")
-        enabled = _env_flag_on("KDT_EXECUTE_COMMAND")
+        dry = _env_flag_on("PK_API_LAB_DRY")
+        enabled = _env_flag_on("PK_EXECUTE_COMMAND")
         allow_raw = (pk_env("COMMAND_ALLOWLIST") or "").strip()
         allow_tokens = _command_allow_tokens(allow_raw)
 
@@ -387,19 +387,19 @@ class DataProcessor:
         head = Path(tokens[0]).name.lower()
         if allow_tokens and head not in allow_tokens:
             raise WiredError(
-                f"ВыполнитьКоманду: {head!r} вне KDT_COMMAND_ALLOWLIST "
+                f"ВыполнитьКоманду: {head!r} вне PK_COMMAND_ALLOWLIST "
                 f"({', '.join(allow_tokens)})"
             )
         if not enabled and not dry:
             raise WiredError(
-                "ВыполнитьКоманду выключена: задайте KDT_EXECUTE_COMMAND=1 "
-                "(и при необходимости KDT_COMMAND_ALLOWLIST=nuclei|trivy|…)"
+                "ВыполнитьКоманду выключена: задайте PK_EXECUTE_COMMAND=1 "
+                "(и при необходимости PK_COMMAND_ALLOWLIST=nuclei|trivy|…)"
             )
 
         timeout = _command_timeout(timeout_sec)
         notes: List[str] = []
         if dry:
-            notes.append("KDT_API_LAB_DRY — subprocess не запускался")
+            notes.append("PK_API_LAB_DRY — subprocess не запускался")
             payload = {
                 "ok": True,
                 "dry": True,
@@ -415,7 +415,7 @@ class DataProcessor:
             return json.dumps(payload, ensure_ascii=False)
 
         if not allow_tokens:
-            notes.append("KDT_COMMAND_ALLOWLIST пуст — lab power, любой basename")
+            notes.append("PK_COMMAND_ALLOWLIST пуст — lab power, любой basename")
 
         try:
             completed = _run_external_command(

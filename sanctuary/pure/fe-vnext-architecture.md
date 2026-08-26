@@ -143,7 +143,7 @@ Monaco больше не в чужом DOM — свой контейнер, св
 
 ## 8. Satellite monitoring (pure канон)
 
-Самописный `secops-lab-satellite-service` — **неотъемлемая часть поставки pure**.
+Самописный `prettyk-lab-satellite-service` — **неотъемлемая часть поставки pure**.
 Оформление **уже OK**. To evolve (P3, nice to have):
 
 - Единые CSS-переменные с Admin/Editor.

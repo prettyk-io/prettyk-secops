@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 Экспорт MethodId (RU → component.action) + facades в JSON для Monaco.
 

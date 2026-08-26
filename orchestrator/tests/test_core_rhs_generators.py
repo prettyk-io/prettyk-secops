@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Вычисляемый RHS на core: генераторы данных и время."""
 from __future__ import annotations
 

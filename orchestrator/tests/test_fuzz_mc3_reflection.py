@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """MC-3: reflection anomaly without raw payload in evidence."""
 from __future__ import annotations
 
@@ -77,7 +77,7 @@ def test_anomaly_reasons_appends_reflection():
 def test_campaign_flags_reflection_and_redacts(tmp_path):
     zap = _EchoZap()
     runner = FuzzCampaignRunner(zap)
-    marker = "<b>kdt-reflect</b>"
+    marker = "<b>pk-reflect</b>"
     summary = runner.run(
         Campaign(
             message=FuzzMessage(

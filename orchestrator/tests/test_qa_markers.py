@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """QA-1: pytest.ini markers registered; heavy tests stay opt-in."""
 from __future__ import annotations
 

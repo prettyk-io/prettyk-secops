@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """PW-6: Unified probes layer for Playwright — read-only page state.
 
 Consumer-agnostic contract — discovery, regression, CDP-agent, fuzzing

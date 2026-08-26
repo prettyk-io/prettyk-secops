@@ -1,12 +1,12 @@
-"""Collect and freeze all baseline artifacts for EXP-01."""
+﻿"""Collect and freeze all baseline artifacts for EXP-01."""
 import json, os, sys, requests, shutil
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(BASE, '..', '..', '..', '..'))
 sys.path.insert(0, os.path.join(ROOT, 'orchestrator'))
 
-os.environ['KDT_DEFECTDOJO_URL'] = 'http://127.0.0.1:8081'
-os.environ['KDT_DEFECTDOJO_TOKEN'] = 'dc8ad25a2685b4e5b65603c67925914559b3d28b'
+os.environ['PK_DEFECTDOJO_URL'] = 'http://127.0.0.1:8081'
+os.environ['PK_DEFECTDOJO_TOKEN'] = 'dc8ad25a2685b4e5b65603c67925914559b3d28b'
 
 # 1. Dojo findings full export
 from utils.dojo_findings import fetch_findings_for_project

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """DF-13 zap_alert + DF-14 findings/digest export."""
 from __future__ import annotations
 
@@ -144,7 +144,7 @@ def test_campaign_wires_zap_alert_and_findings(tmp_path):
     digest = json.loads(Path(summary["digest_path"]).read_text(encoding="utf-8"))
     assert digest["zap_alerts_total"] >= 1
     findings = json.loads(Path(summary["findings_path"]).read_text(encoding="utf-8"))
-    assert findings["kind"] == "kdt_fuzz_findings_pack"
+    assert findings["kind"] == "pk_fuzz_findings_pack"
 
 
 def test_export_findings_without_allure_context(tmp_path):

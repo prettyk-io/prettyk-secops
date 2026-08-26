@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """G-09: inspector не в AC-surface keywords; validate MethodId/legacy wire ок."""
 from __future__ import annotations
 

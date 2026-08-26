@@ -1,4 +1,4 @@
-# lab — boundary / encoding (кураторский KDT; не SecLists)
+﻿# lab — boundary / encoding (кураторский PK; не SecLists)
 x
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 тест

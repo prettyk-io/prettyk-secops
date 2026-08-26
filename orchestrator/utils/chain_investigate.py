@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """РасследованиеЦепи helpers (8a/8b/8c). Not CANON hub."""
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ INV_QUICK_TIMEOUT_MIN = 1
 
 _AUTH_BEARER = "Bearer Token"
 _AUTH_COOKIE = "На основе Cookie"
-_REPLACER_PREFIX = "kdt-auth"
+_REPLACER_PREFIXES = ("pk-auth",)
 
 
 def seed_prettyk_investigate_chain(module_or_as: str) -> str:
@@ -54,7 +54,7 @@ def hosts_from_har_path(har_path: Path) -> List[str]:
 def ephemeral_context_name(module_id: str) -> str:
     mid = (module_id or "chain").strip() or "chain"
     safe = "".join(c if c.isalnum() or c in "-_" else "_" for c in mid)[:48]
-    return f"kdt-inv-{safe}"
+    return f"pk-inv-{safe}"
 
 
 def investigation_log_name(module_id: str) -> str:
@@ -174,8 +174,8 @@ def write_investigate_evidence(
     return dest
 
 
-def purge_kdt_auth_replacer(zap: Any) -> List[str]:
-    """Remove Replacer rules whose description starts with kdt-auth*."""
+def purge_stale_auth_replacer(zap: Any) -> List[str]:
+    """Remove Replacer rules whose description starts with pk-auth*."""
     notes: List[str] = []
     try:
         rules = zap.list_replacer_rules() or []
@@ -190,12 +190,12 @@ def purge_kdt_auth_replacer(zap: Any) -> List[str]:
         else:
             desc = str(rule)
             rule_id = rule
-        if not desc.startswith(_REPLACER_PREFIX):
+        if not any(desc.startswith(p) for p in _REPLACER_PREFIXES):
             continue
         try:
             zap.remove_replacer_rule(rule_id)
             removed += 1
         except Exception as exc:
             notes.append(f"purge_rule_fail {desc}: {exc}")
-    notes.append(f"purge_kdt_auth removed={removed}")
+    notes.append(f"purge_stale_auth removed={removed}")
     return notes

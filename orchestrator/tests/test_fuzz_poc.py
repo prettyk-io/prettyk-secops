@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """FZ-B1…B4: Campaign / Evidence / History helper / corpus / Live projection."""
 from __future__ import annotations
 
@@ -612,7 +612,7 @@ def test_build_audit_digest_redacts_payload_and_cookie():
         ],
     }
     digest = build_audit_digest(summary)
-    assert digest["kind"] == "kdt_fuzz_audit_digest"
+    assert digest["kind"] == "pk_fuzz_audit_digest"
     assert digest["run_id"] == "fuzz-digest-ut-1"
     assert digest["anomalies_total"] == 1
     assert len(digest["anomalies"]) == 1
@@ -663,7 +663,7 @@ def test_write_audit_digest_and_live_line(tmp_path):
     assert Path(digest_path).name == "fuzz-digest-live-1.digest.json"
     text = Path(digest_path).read_text(encoding="utf-8")
     assert payload not in text
-    assert '"kind": "kdt_fuzz_audit_digest"' in text or '"kind":"kdt_fuzz_audit_digest"' in text
+    assert '"kind": "pk_fuzz_audit_digest"' in text or '"kind":"pk_fuzz_audit_digest"' in text
     titles = live_projection_titles(summary)
     assert any(t.startswith("Audit digest:") for t in titles)
     assert "fuzz-digest-live-1.digest.json" in titles[1]

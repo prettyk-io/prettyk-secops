@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 from utils.allowed_urls import (
     ALLOWED_URL_DENY_MSG,
     parse_allowed_url_tokens,

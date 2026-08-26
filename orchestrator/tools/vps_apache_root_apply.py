@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Patch Apache vhost files: DocumentRoot → prettyk, legacy /editor → /.
 
 Run on the VPS:
@@ -43,7 +43,7 @@ def patch_vhost(path: Path, live: str = LIVE) -> None:
         text = text.replace(f"DocumentRoot {live}", f"DocumentRoot {live}" + block, 1)
     if "RedirectMatch 308 ^/editor" not in text:
         text += (
-            "\n# KDT root canon\n"
+            "# PK root canon\n"
             "RedirectMatch 308 ^/editor/?$ /\n"
             "RedirectMatch 308 ^/editor/(.*)$ /$1\n"
             "RedirectMatch 308 ^/prettyk/?$ /\n"

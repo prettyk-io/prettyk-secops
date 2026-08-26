@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 from pathlib import Path
 
 from utils.artifact_index import (
@@ -11,7 +11,7 @@ from utils.artifact_index import (
 
 def test_record_and_load_roundtrip(tmp_path, monkeypatch):
     idx = tmp_path / "artifact_index.json"
-    monkeypatch.setenv("KDT_ARTIFACT_INDEX_PATH", str(idx))
+    monkeypatch.setenv("PK_ARTIFACT_INDEX_PATH", str(idx))
     zap = tmp_path / "zap.xml"
     zap.write_text("<xml/>", encoding="utf-8")
     run_dir = tmp_path / "runs" / "r1"
@@ -55,5 +55,5 @@ def test_record_and_load_roundtrip(tmp_path, monkeypatch):
 
 
 def test_missing_check_id_noop(tmp_path, monkeypatch):
-    monkeypatch.setenv("KDT_ARTIFACT_INDEX_PATH", str(tmp_path / "i.json"))
+    monkeypatch.setenv("PK_ARTIFACT_INDEX_PATH", str(tmp_path / "i.json"))
     assert record_finalize_artifacts(check_id="", run_id="x") is None

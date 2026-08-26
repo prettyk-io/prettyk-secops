@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """PW-5: LocatorCandidateExtractor — role-first prioritization for Playwright locators.
 
 Priority ladder (T0 → T4):

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """G-01: scan_policy / domains — declarative, не автоскан при load."""
 from unittest.mock import MagicMock, patch
 
@@ -21,8 +21,8 @@ def test_scan_policy_only_maps_af_profile_declarative():
 
 def test_controller_load_with_domains_does_not_apply_or_scan(monkeypatch):
     """allowed_extra_domains при load не вызывает spider / apply_context_domains."""
-    monkeypatch.setenv("KDT_AUTH_BOOTSTRAP", "0")
-    monkeypatch.setenv("KDT_ZAP_AUTH_BOOTSTRAP", "0")
+    monkeypatch.setenv("PK_AUTH_BOOTSTRAP", "0")
+    monkeypatch.setenv("PK_ZAP_AUTH_BOOTSTRAP", "0")
 
     zap = MagicMock()
     zap.spider_scan = MagicMock()

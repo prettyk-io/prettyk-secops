@@ -1,11 +1,11 @@
-# Industrial ZAP (G-37): API key + узкий api.addrs.
+﻿# Industrial ZAP (G-37): API key + узкий api.addrs.
 # Lab default остаётся services/docker-compose.zap.yml (disablekey).
 #
 #   set ZAP_API_KEY=...          # обязательно
 #   set ZAP_API_ADDRS=127.0.0.1  # опционально; default loopback
 #   docker compose -f services/docker-compose.zap.industrial.yml up -d
 #
-# Оркестратор: KDT_ZAP_API_KEY или ZAP_API_KEY (передаётся в ZapAdapter).
+# Оркестратор: PK_ZAP_API_KEY или ZAP_API_KEY (передаётся в ZapAdapter).
 
 services:
   zap:
@@ -18,7 +18,7 @@ services:
     volumes:
       - ../zap/plugins:/zap/plugins:ro
     networks:
-      - kdt-net
+      - pk-net
     environment:
       ZAP_API_KEY: ${ZAP_API_KEY:?set ZAP_API_KEY for industrial profile}
     command:
@@ -63,6 +63,6 @@ services:
       start_period: 40s
 
 networks:
-  kdt-net:
+  pk-net:
     external: true
-    name: kdt-net
+    name: pk-net

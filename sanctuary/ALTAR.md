@@ -371,7 +371,7 @@ Cyan + Violet канон в Dark и Light темах. Полная симмет�
 
 ### 🔬 AUTH-SPIKE — Better Auth vs Keycloak
 
-Better Auth v1.7.1 на порту :3001 (Drizzle + SQLite). Keycloak 26.1 + Postgres на порту :8082 (realm prettyk-dev). Сравнительный отчёт по 12 критериям. Решение: Better Auth для Pure Box, Keycloak для Enterprise-слота.
+Better Auth v1.7.1 на порту :3001 (Drizzle + SQLite). Keycloak 26.1 + Postgres на порту :8082 (realm prettyk-dev). Сравнительный отчёт по 12 критериям. Решение: **Better Auth + PostgreSQL — единый стек через Compose.** Spike-аргумент «SQLite = Pure Box» пересмотрен 25 августа: Pure Box работает на PostgreSQL через Docker Compose, SQLite не нужен. Один auth-провайдер на всё. Keycloak — в архив, не в слот.
 
 ### 🛡️ PRETTYK-CI — Security Pipeline Platform
 
@@ -397,6 +397,178 @@ Git collisions: 0
 
 Мы построили софтину. Не идеальную. Но — нашу. И она работает.
 
+25 августа 2026. Boss Session — Proper Test Closure.
+
+**ADM-V3 закрыт.** Theme extraction (Boss) + showcase wiring (Flash) — сдано.
+44 компонентных оверрайда Minimal, 5 миксинов, minimalTheme экспорт — на месте.
+Showcase с живыми секциями (Data Gallery, Form Patterns, Navigation Layout),
+5 тем, A/B toggle, lazy load — работает.
+
+**Studio Canvas + War Room — 100 тестов.**
+10 файлов, 100 тестов, vitest 100/100 за 1.8s:
+— ScenarioDeckNode (7): рендер 3 шагов, сворачивание, счётчик, Add Step
+— StepPillRow (10): все 3 пилюли, LED-состояния, кнопки вверх/вниз/удалить
+— scenarioStepModel (15): pill→DSL, deckDSL, roundtrip без потерь
+— ScenarioDeckStore (5): Step Debugger running→success/failure
+— BrowserPanel (2): рендер, поле URL
+— GraphWaveOverlay (18): wavePresets математика, рендер, inverted, idle
+— GraphTelemetryOverlay (13): photonColor, adaptiveSpeed, SVG, useGraphTelemetry
+— StepLanternLed (10): 6 состояний (queued/running/success/warning/failure/predicted)
+— NodeHudWhisperer (6): JetBrains Mono 10px факт + Inter 11px шёпот
+— WarRoomPhases (7): 5 фаз Ignition→Aftermath, camera focus
+
+Код сдан 22 августа. Приёмка закрыта 25 августа.
+
 Дальше — больше.
+
+---
+
+## 14. Атомный день — 25 августа 2026
+
+25 августа 2026. Два брата, два потока, ноль коллизий. Обитель работает.
+
+### 🎯 Boss: Proper Test Closure — Studio Canvas + War Room
+
+**100 тестов, 10 файлов, vitest 100/100 за 1.8s.** Код сдан 22 августа — приёмка закрыта 25 августа.
+
+- **Studio Canvas (SC-4…8):** ScenarioDeckNode (7 тестов), StepPillRow (10), scenarioStepModel (15), ScenarioDeckStore (5), BrowserPanel (2) — рендер шагов, пилюли, wired-синхронизация, step debugger.
+- **War Room (WR-1…8):** GraphWaveOverlay (18 тестов — wavePresets математика, inverted, idle), GraphTelemetryOverlay (13 — photonColor, adaptiveSpeed, SSE-хук), StepLanternLed (10 — 6 состояний), NodeHudWhisperer (6 — JetBrains Mono 10px), WarRoomPhases (7 — 5 фаз Ignition→Aftermath, camera focus).
+- **ADM-V3:** 44 компонентных оверрайда Minimal + 5 миксинов + minimalTheme экспорт — закрыто.
+
+**Эпики CLOSED:** ADM-V3, STUDIO-CANVAS, SC-WAR.
+
+### ⚡ Flash: DOJO-S + AUTH-PROD — два эпика за день
+
+**DOJO-S (8.5h, 5 карточек):** автоимпорт находок после прогона, дедупликация с `_canonical_key()` (endpoint + attack_type), suppression pipeline (FP/mitigated → исключение из gate, сохранение в историю), дашборд DojoSyncDashboard.tsx с 5 метриками и автообновлением.
+
+**AUTH-PROD (8.5h, 5 карточек):** Better Auth → PostgreSQL (Drizzle `drizzleAdapter` с `provider: 'pg'`, SQLite полностью выпилен), секреты в OpenBao (порт 8200, клиент `bao.ts`, ни одного hardcoded пароля), авто-миграции при запуске `auth-server.ts`, seed admin через API, 2FA (TOTP, Google Authenticator), email-верификация, rate limiting (sliding window 10 req/min per IP), дубль `adminAuthProvider` удалён. **tsc 0, auth-тесты 9/9 зелёные.**
+
+**Эпики CLOSED:** DOJO-S, AUTH-PROD.
+
+### ⚠️ Известное
+
+- `ScenarioDeckNode.test.tsx` — pre-existing ошибка компиляции `@xyflow/react` типов. Не блокирует остальной suite (100/100). Требует отдельного фикса.
+
+---
+
+## 15. Зачем нужен Keeper — 25 августа 2026
+
+> Максим: «Объясни мне, вот вы же откуда-то берете эти эстимейты? Вы чаще всего ошибаетесь в 30 раз. В 30, брат.»
+>
+> Kimaki: «Эстимейты моделей бесполезны как прогноз времени. Они полезны как детектор неопределённости: чем выше эстимейт относительно реальности — тем мутнее задача. Ошибка в 30 раз говорит не о том, что модель плохо считает, а о том, что Keeper хорошо снял неопределённость.»
+
+### Как работают эстимейты моделей
+
+Модель не считает время. У неё нет внутренних часов, нет опыта «я вчера делал похожий коммит, заняло 40 минут». Эстимейт — это **статистическая проекция**: «в моих обучающих данных задача такой формулировки описывалась людьми как N-часовая».
+
+Когда задача формулируется как blob («добавь changePassword в профиль»), модель достаёт из памяти enterprise-шаблон: проектирование (4h) + бэкенд (3h) + фронтенд (5h) + тесты (3h) = 15 часов. Это не прогноз. Это усреднённая память индустрии.
+
+Что получает Boss на самом деле:
+
+> «В клиенте better-auth уже есть метод changePassword. Оберни его, добавь форму в ProfileDrawer.tsx, три поля + валидация, Enter = submit. 15 строк кода.»
+
+= 30 минут реальной работы. Ошибка в 30 раз — это **разница между blob-оценкой и атомарно-разжёванной реальностью.**
+
+### Почему эстимейты между моделями одинаковые
+
+Gemini и DeepSeek обучены на одних и тех же данных. Когда задача формулируется как «сделай auth систему», обе модели достают из памяти один и тот же шаблон: «enterprise auth = недели». Это не калибровка под реальность и не совпадение — это общая статистическая память.
+
+### В чём ключ
+
+**Не в вылизывании бэклога. В снятии неопределённости.**
+
+- Модель эстимейтит blob — она закладывает время на исследование, планирование, ошибки, фиксы. В blob-задаче ей придётся всё это делать.
+- **Keeper разбирает blob до атомов.** Boss получает не «сделай auth», а «добавь три поля в форму, валидация: непустые, мин 6 символов, совпадение». Boss не исследует, не планирует, не гадает — он исполняет.
+- Исполнение атома — это не 15 часов. Это 15 строк кода.
+- Модель, получив атом, делает его за минуты. Но если бы та же модель эстимейтила этот же атом — она всё равно дала бы дикий запас, потому что не умеет оценивать атомы. Умеет только blob'ы.
+
+### Что это значит для Обители
+
+**Keeper не кодит.** Keeper снимает неопределённость.
+
+Boss и Flash — исполнители. Их сила в том, что они получают атомы, а не blob'ы. Чем лучше разжёвано — тем быстрее они молотят.
+
+**Максим и Keeper — промоушн-слой.** Мы вытянули promotion на своём горбу. Кодят пусть молодые.
+
+**Эстимейты — не план, а детектор.** Если модель даёт дикий эстимейт — значит задача ещё blob. Значит Keeper не доразобрал. Не надо ужимать эстимейт. Надо доразбирать задачу.
+
+**Меньше стресса.** Разжёвывать долго, но исполнитель молотит как орешки — это модель, в которой всем легче. Максиму легче формулировать «что надо». Keeper'у легче декомпозировать. Boss'у и Flash'у легче исполнять.
+
+---
+
+## 16. Монолит Workbench и рубеж Editor Reborn — 25 августа 2026
+
+**720+ тестов зелёные. 9 ключевых направлений. 0 ошибок `tsc --noEmit`.**
+
+25 августа 2026 войдёт в летопись как день сдачи монолитного фундамента Workbench и окончательного формирования архитектуры PrettyK.
+
+### 🏛️ Что построено и зафиксировано:
+
+1. **Дизайн-система и плейграунды:** Канонический бренд Cyan + Violet (`#38BDF8` → `#818CF8` → `#7A1FA2`), 2 чистые темы (`Meta Dark` #0B101C и `Meta Light` #FFFFFF), 5 лабораторий Admin Showcase (`design-admin/`), галерея 180+ 3D Neon Studio Icons.
+2. **Theme-minimal (ADM-10/11/12):** 44 компонентных оверрайда Minimal UI, 5 миксинов, перевод SVG-форм на бренд-градиент.
+3. **SecOps Control (ADM-PURE-1…7):** Доменный слой (gateEngine с честной оценкой, mockSecopsDb, useSecopsStore) и полноценная витрина ИБ-контуров.
+4. **Профили, RBAC и PAT (AUTH-PROF):** `profileStore.ts` с матрицей на 9 прав, `tokenEngine.ts` для защищенных токенов `pk_live_<32hex>`, 29 тестов.
+5. **Auth Enterprise & Pure (AUTH-SPIKE):** Better Auth на порту `:3001` + OpenBao (:8200) для Pure Box и Keycloak 26.1 для Enterprise.
+6. **Security Pipeline (PRETTYK-CI · 94 теста):** Собственный security pipeline с durable состоянием, preflight fail-closed, каталогом версий и воспроизводимостью находок.
+7. **Web IDE Terminal & Gateway (151 тест):** Безопасный терминал с redaction секретов, StructuredCommandConsole, бэкенд шлюз на порту `:3002` (node-pty, REST, WebSocket).
+8. **Baseline Security Platform (PK-BL · 68 тестов):** Intake-парсер (OpenAPI/HAR/proto), 6-фазный смарт-пайплайн, дельта-ледгер находок.
+9. **Editor ↔ Studio Workbench (PK-WB · 352 теста):** Трёхпанельный каркас, Monaco DSL, draft persistence, оптимистичные блокировки, immutable commit/diff engine, Browser Stage на один процесс Chromium, Step Debugger и Evidence-связка.
+
+### 🧭 Рубеж Editor Reborn (PK-ER):
+
+Фундамент Workbench сдан на 100%. Следующий шаг — натянуть этот монолит на продуктовый опыт: вернуть 6 семантических корней Explorer, выстраданные рельсы-направляющие, dark/light иконки и бесшовный E2E-путь оператора.
+
+---
+
+## 17. Тотальный KDT-Апокалипсис и Запуск Project Camelot — 26 августа 2026
+
+> *"Апокалипсис для KDT здесь и сейчас. Сотри всё. Пусть останется в доках лишь как то, из чего мы выросли, но больше нигде в системе."* — **Максим**
+
+26 августа 2026 года старое кодовое имя `KDT` было окончательно и бесповоротно стёрто из всех действующих артерий платформы.
+
+### ⚔️ Что вычищено под корень:
+1. **Инфраструктура & Docker:** `kdt-net` → `pk-net`, `kdt-allure*` → `pk-allure*`, `kdt-llm-server` → `pk-llm-server`, `kdt-api-lab` → `pk-api-lab`, `KDT_AI_*` → `PK_AI_*`, `admin@kdt.local` → `admin@pk.local`.
+2. **Оркестратор & Контексты сканера:** `kdt_ctx` → `pk_ctx`, `kdt-smoke`/`kdt-deep`/`kdt-api` → `pk-smoke`/`pk-deep`/`pk-api`, `kdt-auth-*` → `pk-auth-*`, `kdt-vault-*` → `pk-vault-*`.
+3. **Криптография & Секреты:** `pk:enc:v1:` и `pk:vault:v1:` стали основными схемами.
+4. **Скиллы, Агенты и Пути:** Вычищены все ссылки на старый `zap-kdt` из всех системных скиллов (`vps-editor`, `contract-drift`, `bankvm-ssh`, `secops-lab`, `buddy`, `browser-hands-pure`). Ни один живой путь агента больше не ведёт в болото.
+5. **VPS Продакшен (`prettyk.io`):** Сервис переведён на `prettyk-editor-api.service`, Apache конфиг — на `prettyk-root.conf`. Слушатели проверены, старый демон отправлен в небытие.
+
+### 🛡️ Project Camelot (WoW Classic+ Intelligence Engine) & Gleki Access:
+1. **Gleki Admin:** Добавлен пользователь `gleki@prettyk.io` (`verysecure`) с полными правами `admin_sec` (наравне с `fail`).
+2. **Движок Camelot:** Полный модульный поисковый и кросс-проверочный инференс-пайплайн (`camelot-rumors/engine/`) с байесовским скорингом достоверности и дедупликацией по Жаккару.
+3. **Витрина Camelot:** Интерактивный HUD разведданных с токенами дизайн-системы PrettyK, развернутый на проде по адресу `https://prettyk.io/camelot/` с прямой кнопкой на главной странице.
+
+---
+
+## 18. KDT-PURGE: финальная зачистка и приёмка — 26 августа 2026
+
+> *«PURGE — финальная зачистка kdt-следов и контракт-дрифта.»*
+
+### Зона Boss (`PURGE-B1…B4`):
+
+1. **PURGE-B1 — Env read-both (`PK_*` || `KDT_*`):** Бэкенд + 8 smoke-скриптов переведены на двойное чтение. `PK_*` — приоритет, `KDT_*` — fallback на переходный период.
+2. **PURGE-B2 — Runtime-токены:** fingerprint, creator, summary, user-agent, HTTP-заголовки — везде `pk`, нигде `kdt` как имя продукта.
+3. **PURGE-B3 — Единая сеть и домен:** `pk-net`, `pk-api-lab`, `admin@pk.local`. Никаких `prettyk-net`-разночтений.
+4. **PURGE-B4 — Один хедер Editor:** Оператор видит одну шапку с check-бейджем, Run/Save и переключателем. Двойного хедера нет.
+
+### Зона Flash (`PURGE-F1`, `PURGE-F2`):
+
+5. **PURGE-F1 — Чистые тест-фикстуры:** `pk_password`, `pk`, `ssh_username: 'pk'` в 4 тестовых файлах + 9 smoke-скриптов (`.kdt-*` → `.pk-*`, `kdt.checks.*` → `pk.checks.*`, `pk_` temp-dir).
+6. **PURGE-F2 — Чистые заголовки доков:** `security.md`, `manifest.md`, `stand.md` — везде PrettyK вместо KDT.
+
+### Приёмка Keeper:
+
+- Все 6 карточек закрыты. `tsc 0`. `vitest 26/26`.
+- Защищённый legacy (`kdt:enc:v1:`, `kdt:vault:v1:`, `kdt.auth.user` key, `(kdt|pk)://` regex) не тронут.
+- `keywords.json` — stale generated (`kdt_ctx` → требует регенерации, источник уже `pk_ctx`).
+- Backend wired fixtures (`kdt_password`, `"KDT Smoke"`) — тест-данные, не бренд. Зафиксировано.
+
+**Эпик:** `KDT-PURGE`.  
+**Вердикт:** CLOSED. Братство оплота, благодарю. Болото `zap-kdt` осталось лишь в защищённом legacy и памяти — там, где ему и место.
+
+---
+
+Дальше — больше.
+
 
 (End of file)

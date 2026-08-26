@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 import json
@@ -42,7 +42,7 @@ def test_read_and_filter_journal(tmp_path: Path):
     assert "LOG" not in kinds
 
     journal = build_journal_from_export(nd, preset="errors", run_id="r1")
-    assert journal["kind"] == "kdt_run_journal"
+    assert journal["kind"] == "pk_run_journal"
     assert journal["run_id"] == "r1"
     assert journal["events_shown"] == 2
     assert journal["counts"]["HIGH"] == 1

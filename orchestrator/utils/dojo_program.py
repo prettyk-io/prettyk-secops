@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 ADM-DOJO-1: program-level DefectDojo severity aggregate by meta.project_id.
 
@@ -65,9 +65,9 @@ def lookup_product_by_project_id(
     if not defectdojo_configured():
         return {"ok": False, "status": "unconfigured", "error": "not_configured"}
 
-    url_base = (dojo_url or _env("KDT_DEFECTDOJO_URL")).rstrip("/")
-    api_token = token or _env("KDT_DEFECTDOJO_TOKEN")
-    timeout = int(_env("KDT_DEFECTDOJO_TIMEOUT_SEC", "60") or "60")
+    url_base = (dojo_url or _env("PK_DEFECTDOJO_URL")).rstrip("/")
+    api_token = token or _env("PK_DEFECTDOJO_TOKEN")
+    timeout = int(_env("PK_DEFECTDOJO_TIMEOUT_SEC", "60") or "60")
     headers = {"Authorization": f"Token {api_token}", "accept": "application/json"}
     endpoint = f"{url_base}/api/v2/products/"
 
@@ -193,7 +193,7 @@ def aggregate_dojo_for_project(
 
     findings = [f for f in (listed.get("findings") or []) if isinstance(f, dict)]
     stats = counts_from_findings(findings)
-    url_base = (dojo_url or _env("KDT_DEFECTDOJO_URL")).rstrip("/")
+    url_base = (dojo_url or _env("PK_DEFECTDOJO_URL")).rstrip("/")
     # Prefer product page; engagement_url filled when a finding exposes engagement
     engagement_url = f"{url_base}/product/{product_id}" if product_id is not None else None
     for f in findings:

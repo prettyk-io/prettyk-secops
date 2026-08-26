@@ -17,7 +17,7 @@ Cursor-браузер равноправен. Никаких жёстких за
 
 | Если задача… | …то делай так |
 |---|---|
-| URL на **хосте** / `localhost` / `127.0.0.1` (Editor `:5173`, Allure `:5050`, Sonar, Dojo, secops-lab, любой localhost-UI) | **Основной:** CDP Chrome `:9222` → skill **`browser-hands-pure`**. Простой просмотр/скриншот — Cursor-браузер ОК |
+| URL на **хосте** / `localhost` / `127.0.0.1` (Editor `:5173`, Allure `:5050`, Sonar, Dojo, prettyk-lab, любой localhost-UI) | **Основной:** CDP Chrome `:9222` → skill **`browser-hands-pure`**. Простой просмотр/скриншот — Cursor-браузер ОК |
 | URL на **VM** / bankvm (portal01, Grafana, gap-сервисы) | SSH + CDP Chrome на VM → skill **`browser-hands-remote`** |
 | «покликай», «глянь что на странице», «держи X и посмотри что полетит» | CDP или Cursor-браузер — по ситуации. Сложное (iframe, сессии, XHR) → CDP. Простое (открыть, скриншот) → любой |
 | «посмотри картинку», «прочитай PNG» | **`Read`** (инструмент чтения файлов). Не CDP, не Cursor-браузер. Картинка в файле — `Read`. Картинка на странице — CDP/Cursor |

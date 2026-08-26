@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """CONN-11: connector resolve + Prometheus pack query (bolvan / live mock)."""
 from __future__ import annotations
 
@@ -71,7 +71,7 @@ def _Wired(prom_url="http://127.0.0.1:9090", packs="http_red,auth_fail", ctype="
                         connector_type="SSH",
                         host="jump.lab",
                         port="22",
-                        username="kdt",
+                        username="pk",
                         allowlist="uname,cat /etc/os-release",
                     ),
                 ),
@@ -92,7 +92,7 @@ def _Wired(prom_url="http://127.0.0.1:9090", packs="http_red,auth_fail", ctype="
                     connector_fields=_slot(
                         connector_type="Очередь сообщений",
                         broker_url="amqp://guest:guest@127.0.0.1:5672/",
-                        topic="kdt.lab",
+                        topic="pk.lab",
                     ),
                 ),
                 SimpleNamespace(
@@ -156,18 +156,18 @@ def test_resolve_and_init_prometheus():
 
 
 def test_query_bolvan_without_flag(monkeypatch):
-    monkeypatch.delenv("KDT_CONNECTOR_LIVE", raising=False)
+    monkeypatch.delenv("PK_CONNECTOR_LIVE", raising=False)
     resolved = resolve_connector_module(_Wired(), "prom_slot")
     out = query_pack_payload(resolved, pack="auth_fail")
     assert out["ok"] is True
     assert out["skipped"] is False
     assert out["attempted"] is False
     assert out["pack"] == "auth_fail"
-    assert any("KDT_CONNECTOR_LIVE" in n for n in out["notes"])
+    assert any("PK_CONNECTOR_LIVE" in n for n in out["notes"])
 
 
 def test_query_live_mock(monkeypatch):
-    monkeypatch.setenv("KDT_CONNECTOR_LIVE", "1")
+    monkeypatch.setenv("PK_CONNECTOR_LIVE", "1")
     resolved = resolve_connector_module(_Wired(), "prom_slot")
 
     def _fake(url, promql, **kwargs):
@@ -183,7 +183,7 @@ def test_query_live_mock(monkeypatch):
 
 
 def test_ssh_query_honest_skip(monkeypatch):
-    monkeypatch.setenv("KDT_CONNECTOR_LIVE", "1")
+    monkeypatch.setenv("PK_CONNECTOR_LIVE", "1")
     resolved = resolve_connector_module(_Wired(), "ssh_slot")
     out = query_pack_payload(resolved, pack="http_red")
     assert out["skipped"] is True
@@ -191,7 +191,7 @@ def test_ssh_query_honest_skip(monkeypatch):
 
 
 def test_adapter_bind_and_json(monkeypatch):
-    monkeypatch.delenv("KDT_CONNECTOR_LIVE", raising=False)
+    monkeypatch.delenv("PK_CONNECTOR_LIVE", raising=False)
     ad = ConnectorAdapter()
     ad.bind_run_wired(_Wired())
     init = json.loads(ad.init_connector("prom_slot"))
@@ -202,14 +202,14 @@ def test_adapter_bind_and_json(monkeypatch):
 
 
 def test_live_enabled(monkeypatch):
-    monkeypatch.delenv("KDT_CONNECTOR_LIVE", raising=False)
+    monkeypatch.delenv("PK_CONNECTOR_LIVE", raising=False)
     assert live_enabled() is False
-    monkeypatch.setenv("KDT_CONNECTOR_LIVE", "1")
+    monkeypatch.setenv("PK_CONNECTOR_LIVE", "1")
     assert live_enabled() is True
 
 
 def test_ssh_allowlist_and_bolvan(monkeypatch):
-    monkeypatch.delenv("KDT_CONNECTOR_SSH", raising=False)
+    monkeypatch.delenv("PK_CONNECTOR_SSH", raising=False)
     assert ssh_command_allowed("uname -a", "uname,cat") is True
     assert ssh_command_allowed("rm -rf /", "uname") is False
     resolved = resolve_connector_module(_Wired(), "ssh_slot")
@@ -218,14 +218,14 @@ def test_ssh_allowlist_and_bolvan(monkeypatch):
     out = ssh_command_payload(resolved, command="uname -a")
     assert out["ok"] is True
     assert out["attempted"] is False
-    assert any("KDT_CONNECTOR_SSH" in n for n in out["notes"])
+    assert any("PK_CONNECTOR_SSH" in n for n in out["notes"])
     denied = ssh_command_payload(resolved, command="rm -rf /")
     assert denied["ok"] is False
     assert any("allowlist" in n for n in denied["notes"])
 
 
 def test_ssh_live_mock(monkeypatch):
-    monkeypatch.setenv("KDT_CONNECTOR_SSH", "1")
+    monkeypatch.setenv("PK_CONNECTOR_SSH", "1")
     resolved = resolve_connector_module(_Wired(), "ssh_slot")
 
     def _fake(res, cmd):
@@ -240,12 +240,12 @@ def test_ssh_live_mock(monkeypatch):
 
 
 def test_probe_after_fuzz_opt_in(monkeypatch):
-    monkeypatch.delenv("KDT_CONNECTOR_AFTER_FUZZ", raising=False)
+    monkeypatch.delenv("PK_CONNECTOR_AFTER_FUZZ", raising=False)
     assert probe_after_fuzz_meta(_Wired()) == {}
 
-    monkeypatch.setenv("KDT_CONNECTOR_AFTER_FUZZ", "1")
-    monkeypatch.setenv("KDT_CONNECTOR_MODULE", "prom_slot")
-    monkeypatch.delenv("KDT_CONNECTOR_LIVE", raising=False)
+    monkeypatch.setenv("PK_CONNECTOR_AFTER_FUZZ", "1")
+    monkeypatch.setenv("PK_CONNECTOR_MODULE", "prom_slot")
+    monkeypatch.delenv("PK_CONNECTOR_LIVE", raising=False)
     meta = probe_after_fuzz_meta(_Wired())
     assert meta.get("connector_probe") is True
     assert meta.get("connector_probe_kind") == "prometheus"
@@ -255,9 +255,9 @@ def test_probe_after_fuzz_opt_in(monkeypatch):
 
 
 def test_probe_after_fuzz_logs(monkeypatch):
-    monkeypatch.setenv("KDT_CONNECTOR_AFTER_FUZZ", "1")
-    monkeypatch.setenv("KDT_CONNECTOR_MODULE", "logs_slot")
-    monkeypatch.delenv("KDT_CONNECTOR_LOGS", raising=False)
+    monkeypatch.setenv("PK_CONNECTOR_AFTER_FUZZ", "1")
+    monkeypatch.setenv("PK_CONNECTOR_MODULE", "logs_slot")
+    monkeypatch.delenv("PK_CONNECTOR_LOGS", raising=False)
     meta = probe_after_fuzz_meta(_Wired())
     assert meta.get("connector_probe") is True
     assert meta.get("connector_probe_kind") == "logs"
@@ -267,7 +267,7 @@ def test_probe_after_fuzz_logs(monkeypatch):
 
 
 def test_logs_url_and_bolvan(monkeypatch):
-    monkeypatch.delenv("KDT_CONNECTOR_LOGS", raising=False)
+    monkeypatch.delenv("PK_CONNECTOR_LOGS", raising=False)
     assert build_log_query_url("http://127.0.0.1:9200", "/_search").endswith("/_search")
     resolved = resolve_connector_module(_Wired(), "logs_slot")
     assert resolved.connector_type == "Система логгирования"
@@ -275,11 +275,11 @@ def test_logs_url_and_bolvan(monkeypatch):
     out = query_logs_payload(resolved)
     assert out["ok"] is True
     assert out["attempted"] is False
-    assert any("KDT_CONNECTOR_LOGS" in n for n in out["notes"])
+    assert any("PK_CONNECTOR_LOGS" in n for n in out["notes"])
 
 
 def test_logs_live_mock(monkeypatch):
-    monkeypatch.setenv("KDT_CONNECTOR_LOGS", "1")
+    monkeypatch.setenv("PK_CONNECTOR_LOGS", "1")
     resolved = resolve_connector_module(_Wired(), "logs_slot")
 
     def _fake(url, **kwargs):
@@ -294,7 +294,7 @@ def test_logs_live_mock(monkeypatch):
 
 
 def test_logs_adapter_json(monkeypatch):
-    monkeypatch.delenv("KDT_CONNECTOR_LOGS", raising=False)
+    monkeypatch.delenv("PK_CONNECTOR_LOGS", raising=False)
     ad = ConnectorAdapter()
     ad.bind_run_wired(_Wired())
     payload = json.loads(ad.query_logs("logs_slot", ""))
@@ -314,16 +314,16 @@ def test_parse_mq_db_endpoints():
 
 
 def test_mq_bolvan_and_live(monkeypatch):
-    monkeypatch.delenv("KDT_CONNECTOR_MQ", raising=False)
+    monkeypatch.delenv("PK_CONNECTOR_MQ", raising=False)
     resolved = resolve_connector_module(_Wired(), "mq_slot")
     assert resolved.configured is True
     assert "guest" not in " ".join(resolved.notes)
     out = probe_queue_payload(resolved)
     assert out["ok"] is True
     assert out["attempted"] is False
-    assert any("KDT_CONNECTOR_MQ" in n for n in out["notes"])
+    assert any("PK_CONNECTOR_MQ" in n for n in out["notes"])
 
-    monkeypatch.setenv("KDT_CONNECTOR_MQ", "1")
+    monkeypatch.setenv("PK_CONNECTOR_MQ", "1")
 
     def _ok(host, port, **kwargs):
         assert host == "127.0.0.1"
@@ -336,7 +336,7 @@ def test_mq_bolvan_and_live(monkeypatch):
 
 
 def test_db_bolvan_and_live(monkeypatch):
-    monkeypatch.delenv("KDT_CONNECTOR_DB", raising=False)
+    monkeypatch.delenv("PK_CONNECTOR_DB", raising=False)
     resolved = resolve_connector_module(_Wired(), "db_slot")
     assert resolved.configured is True
     assert "secret" not in resolved.notes[0]
@@ -345,7 +345,7 @@ def test_db_bolvan_and_live(monkeypatch):
     assert out["attempted"] is False
     assert "secret" not in out["dsn"]
 
-    monkeypatch.setenv("KDT_CONNECTOR_DB", "1")
+    monkeypatch.setenv("PK_CONNECTOR_DB", "1")
 
     def _ok(host, port, **kwargs):
         assert host == "127.0.0.1" and port == 5432
@@ -356,8 +356,8 @@ def test_db_bolvan_and_live(monkeypatch):
 
 
 def test_mq_db_adapter_json(monkeypatch):
-    monkeypatch.delenv("KDT_CONNECTOR_MQ", raising=False)
-    monkeypatch.delenv("KDT_CONNECTOR_DB", raising=False)
+    monkeypatch.delenv("PK_CONNECTOR_MQ", raising=False)
+    monkeypatch.delenv("PK_CONNECTOR_DB", raising=False)
     ad = ConnectorAdapter()
     ad.bind_run_wired(_Wired())
     mq = json.loads(ad.probe_queue("mq_slot", "alt"))

@@ -1,4 +1,4 @@
-﻿# SKILLS — куда роутиться, прежде чем писать код
+# SKILLS — куда роутиться, прежде чем писать код
 
 > От Keeper → Boss / Flash / Legion. 15 августа 2026.
 > Это не справочник «на почитать». Это карта: **какую задачу ты получил → какой скилл открыть ДО того, как трогать код.**
@@ -21,9 +21,9 @@
 
 | Задача (что сказал Максим/Босс) | Скилл | Триггер-слова |
 |---|---|---|
-| Покликать UI на localhost, глянуть что на странице, дернуть X и посмотреть запросы | **`browser-hands-pure`** | localhost, Editor `:5173`, Admin, secops-lab, «покликай», «глянь», «что на странице» |
+| Покликать UI на localhost, глянуть что на странице, дернуть X и посмотреть запросы | **`browser-hands-pure`** | localhost, Editor `:5173`, Admin, prettyk-lab, «покликай», «глянь», «что на странице» |
 | Portal на VM, Grafana, gap-сервисы | **`browser-hands-remote`** | portal01, bankvm, VM, «через VM», Grafana |
-| Поднять/почистить Docker-стек SecOps Lab | **`secops-lab`** | secops-lab, sonarqube, selenium grid, zap daemon, juice-shop, allure, «какие сервисы в докере» |
+| Поднять/почистить Docker-стек SecOps Lab | **`prettyk-lab`** | prettyk-lab, sonarqube, selenium grid, zap daemon, juice-shop, allure, «какие сервисы в докере» |
 | Застрял в дебаге, не пойму почему не работает | **`debugging-strategies`** | «почему», «не работает», застрял |
 | Прежде чем кодить сложное / «как обычно делают» | **`research-and-sense`** | «узнай как», «погугли», «какой стандарт» |
 | Playwright E2E, локаторы, фикстуры | **`playwright-skill`** (core / cli / ci) | playwright, e2e, тесты браузера |
@@ -109,4 +109,4 @@
 
 ## Итог одной строкой
 
-> Браузер → `browser-hands-pure`/`remote`. Дебаг → `debugging-strategies`. Стек → `secops-lab`. Текст → `ru-text`. E2E → `playwright-skill`. Порт Editor — `5173` и никак иначе. Выпилить ≠ переписать. Не знаешь куда роутиться — спроси, не тупи.
+> Браузер → `browser-hands-pure`/`remote`. Дебаг → `debugging-strategies`. Стек → `prettyk-lab`. Текст → `ru-text`. E2E → `playwright-skill`. Порт Editor — `5173` и никак иначе. Выпилить ≠ переписать. Не знаешь куда роутиться — спроси, не тупи.

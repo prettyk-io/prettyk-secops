@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Playground lab API + unary bolvan (IMP OA-5 / GQL-4 / GRPC-5 surface)."""
 from __future__ import annotations
 
@@ -38,7 +38,7 @@ def test_lab_graphql_parse_endpoint():
 
 
 def test_lab_grpc_parse_and_unary_bolvan(monkeypatch):
-    monkeypatch.delenv("KDT_GRPC_UNARY", raising=False)
+    monkeypatch.delenv("PK_GRPC_UNARY", raising=False)
     h = _FakeHandler()
     h._post_lab_grpc_parse(
         {
@@ -59,7 +59,7 @@ def test_lab_grpc_parse_and_unary_bolvan(monkeypatch):
 
 
 def test_unary_methodid_and_adapter(monkeypatch):
-    monkeypatch.delenv("KDT_GRPC_UNARY", raising=False)
+    monkeypatch.delenv("PK_GRPC_UNARY", raising=False)
     from adapters.zap_adapter import ZapAdapter
     from core.method_id import lookup_method_id
 

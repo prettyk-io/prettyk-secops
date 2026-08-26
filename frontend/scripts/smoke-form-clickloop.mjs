@@ -1,11 +1,11 @@
-/**
+﻿/**
  * Дебаг Формы: клики + elementFromPoint + pageerror/console.
  * Печатает, что реально под курсором, если клик «не берётся».
  */
 import { chromium } from 'playwright';
 import fs from 'node:fs';
 
-const BASE = process.env.KDT_UI || 'http://localhost:5173';
+const BASE = process.env.PK_UI || process.env.PK_UI || 'http://localhost:5173';
 
 async function underPoint(page, x, y) {
   return page.evaluate(
@@ -74,8 +74,8 @@ async function main() {
   await page.waitForTimeout(500);
 
   // явно Форма
-  await page.locator('.kdt-view-segmented').getByText('Форма', { exact: true }).click();
-  await page.waitForSelector('.kdt-form-scroll', { timeout: 15_000 });
+  await page.locator('.pk-view-segmented').getByText('Форма', { exact: true }).click();
+  await page.waitForSelector('.pk-form-scroll', { timeout: 15_000 });
   await page.waitForTimeout(400);
 
   const probes = [];
@@ -84,7 +84,7 @@ async function main() {
   probes.push(
     await clickProbe(
       page,
-      page.locator('.kdt-view-segmented').getByText('Редактор', { exact: true }),
+      page.locator('.pk-view-segmented').getByText('Редактор', { exact: true }),
       'tab-Редактор',
     ),
   );
@@ -92,18 +92,18 @@ async function main() {
   probes.push(
     await clickProbe(
       page,
-      page.locator('.kdt-view-segmented').getByText('Форма', { exact: true }),
+      page.locator('.pk-view-segmented').getByText('Форма', { exact: true }),
       'tab-Форма',
     ),
   );
   await page.waitForTimeout(400);
 
   // nav rail
-  const navLink = page.locator('.kdt-section-nav .ant-anchor-link-title').first();
+  const navLink = page.locator('.pk-section-nav .ant-anchor-link-title').first();
   probes.push(await clickProbe(page, navLink, 'nav-first-section'));
 
   // scan_policy select (часто первый Select)
-  const firstSelect = page.locator('.kdt-form-scroll .ant-select').first();
+  const firstSelect = page.locator('.pk-form-scroll .ant-select').first();
   probes.push(await clickProbe(page, firstSelect, 'first-select'));
   await page.waitForTimeout(300);
   const dropdownOpen = await page.locator('.ant-select-dropdown:visible').count();
@@ -113,7 +113,7 @@ async function main() {
   }
 
   // любой input
-  const firstInput = page.locator('.kdt-form-scroll input:not([type="hidden"])').first();
+  const firstInput = page.locator('.pk-form-scroll input:not([type="hidden"])').first();
   probes.push(await clickProbe(page, firstInput, 'first-input'));
   if (probes.at(-1).ok) {
     await firstInput.fill('clickprobe');
@@ -127,10 +127,10 @@ async function main() {
   );
 
   // theme switch
-  probes.push(await clickProbe(page, page.locator('.kdt-theme-toggle .ant-switch'), 'theme-switch'));
+  probes.push(await clickProbe(page, page.locator('.pk-theme-toggle .ant-switch'), 'theme-switch'));
 
   // element covering center of form scroll?
-  const formBox = await page.locator('.kdt-form-scroll').boundingBox();
+  const formBox = await page.locator('.pk-form-scroll').boundingBox();
   let centerCover = null;
   if (formBox) {
     centerCover = await underPoint(

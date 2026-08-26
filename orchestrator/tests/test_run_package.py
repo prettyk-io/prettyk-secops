@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 import json
@@ -282,7 +282,7 @@ def test_build_run_package_includes_fuzz_json(tmp_path, monkeypatch):
 
 def test_build_run_package_blocks_plaintext_secrets(tmp_path, monkeypatch):
     _live, exports, runs = _patch_layout(tmp_path, monkeypatch)
-    monkeypatch.delenv("KDT_PACKAGE_ALLOW_SECRETS", raising=False)
+    monkeypatch.delenv("PK_PACKAGE_ALLOW_SECRETS", raising=False)
 
     diary_bus.clear()
     diary_bus.set_meta(session_name="secleak", generate_act=False, ci_verdict="pass")

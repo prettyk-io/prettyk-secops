@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Валидация манифеста без Controller / ZAP / Grid (G-06 --validate-only)."""
 from __future__ import annotations
 

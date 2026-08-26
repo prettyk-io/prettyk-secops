@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Волна 2: parse/execute Если/Цикл/ДляКаждого/Пока/try + Controller."""
 import sys
 from pathlib import Path

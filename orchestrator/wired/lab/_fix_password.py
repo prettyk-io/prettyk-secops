@@ -1,10 +1,10 @@
-from pathlib import Path
+﻿from pathlib import Path
 
 p = Path(__file__).with_name("manifest_juice_fuzz.json")
 text = p.read_text(encoding="utf-8")
 # JSON text contains escaped quotes: \"
-commented = '# Секрет $password_value = \\"kdt_password\\"'
-live = 'Секрет $password_value = \\"kdt_password\\"'
+commented = '# Секрет $password_value = \\"pk_password\\"'
+live = 'Секрет $password_value = \\"pk_password\\"'
 if commented not in text:
     if live in text:
         print("password already live")

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 HEAL-A carcass: fingerprint + score candidates (classical, no LLM / no Healenium).
 

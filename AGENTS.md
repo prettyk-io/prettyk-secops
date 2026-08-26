@@ -1,4 +1,4 @@
-﻿# Agents — железобетон (prettyk-dev)
+# Agents — железобетон (prettyk-dev)
 
 > **Canon repo:** https://github.com/prettyk-io/prettyk-dev  
 > **Org:** https://github.com/prettyk-io/  
@@ -29,7 +29,7 @@
 | [`stand-lab-ops.mdc`](.opencode/rules/stand-lab-ops.mdc) | Стартуй/чисти; allure3-secops; пульты |
 | [`cbr-cosmo-only.mdc`](.opencode/rules/cbr-cosmo-only.mdc) | `sanctuary/custom/cosmo/cbr-specific/` только локально, в git не коммитить |
 
-Skills (все — global `C:\Users\mails\.agents\skills\`): `secops-lab` (lab start/clean / allure3-secops / Docker stack) · `vps-editor` (VPS `/editor` check/deploy — без temp-скриптов) · `ru-text` · `browser-hands-pure` / `browser-hands-remote` (UI dig) · `bankvm-ssh` (gap2/VM). Продукт-специфика (hub 2FA, git-vise, Fuzzer FE↔BE, иконки) — в rules и `docs/agent-entrypoint.md`, **не** в отдельных skills.
+Skills (все — global `C:\Users\mails\.agents\skills\`): `prettyk-lab` (lab start/clean / allure3-secops / Docker stack) · `vps-editor` (VPS `/editor` check/deploy — без temp-скриптов) · `ru-text` · `browser-hands-pure` / `browser-hands-remote` (UI dig) · `bankvm-ssh` (gap2/VM). Продукт-специфика (hub 2FA, git-vise, Fuzzer FE↔BE, иконки) — в rules и `docs/agent-entrypoint.md`, **не** в отдельных skills.
 
 **Памятка роутинга по скиллам + порты-канон + ваши проёбы:** [`docs/SKILLS-ROUTING.md`](docs/SKILLS-ROUTING.md). Читать работягам перед кодом.
 
@@ -48,7 +48,7 @@ Explorer icons: rule [`.opencode/rules/explorer-theme-icons.mdc`](.opencode/rule
 
 ## Стенд: «стартуй всё» / «почисти и стартуй»
 
-Канон: global skill `secops-lab` · rule [`.opencode/rules/stand-lab-ops.mdc`](.opencode/rules/stand-lab-ops.mdc) · [`docs/stand.md`](docs/stand.md).
+Канон: global skill `prettyk-lab` · rule [`.opencode/rules/stand-lab-ops.mdc`](.opencode/rules/stand-lab-ops.mdc) · [`docs/stand.md`](docs/stand.md).
 
 - **Стартуй всё** → обязательный compose (Grid/allure3-secops/ZAP **demon**/Juice) + ensure UI + Live idle.
 - **Почисти и стартуй** → allure3-secops + Live (+ Dojo hint) → старт. Не prod.
@@ -119,6 +119,23 @@ CDP-логин: `type` не работает для Ant Design `<Input>` (React 
 | **Skip** | — | `DeepSeek V4 Flash` в разработке и агентах **не используется**. |
 
 Spendings не лимитируют выбор — приоритет отдаётся качеству и архитектурной чистоте решения.
+
+### Порядок моделей при планировании (Железобетон · 25 авг 2026)
+
+При планировании (по смыслу, не Plan-режим) порядок предпочтения моделей:
+
+1. **GPT Luna** — первый эшелон планирования.
+2. **Gemini Flash** — второй эшелон.
+3. **DeepSeek Pro** — третий эшелон; **он же нарезает бэклог** (финальная нарезка карточек).
+
+### Формат выдачи нарезки братьям (Железобетон · 25 авг 2026)
+
+Нарезали бэклог → выдача копипастами:
+
+- Нарезали на **двоих** (Boss + Flash) → **2 копипасты** (одна Boss'у, одна Flash'у).
+- Нарезали на **одного** → **1 копипаста**.
+
+Максим передаёт копипасты исполнителям **сам**. Keeper не пишет напрямую Boss'у или Flash'у.
 
 ## Перед сменой ветки (чеклист)
 

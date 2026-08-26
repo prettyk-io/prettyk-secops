@@ -1,4 +1,4 @@
-{
+﻿{
   "meta": {
     "project_id": "authoring-roundtrip-ok",
     "initiator_name": "rt@example.test",
@@ -45,7 +45,7 @@
         "steps": [
           {
             "description": "seed data",
-            "constructor": "Пусть $username = СлучайныйEmail\nПусть $password_value = \"kdt_password\"\nЛог \"прогон $username\"",
+            "constructor": "Пусть $username = СлучайныйEmail\nПусть $password_value = \"pk_password\"\nЛог \"прогон $username\"",
             "failsafe": false,
             "retry": 0,
             "retry_delay": 2,

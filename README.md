@@ -50,7 +50,7 @@ Set-Location ..
 ## Для интеграции и разработки
 
 - [структура манифеста](docs/manifest.md);
-- [технический паспорт](docs/scanner-zaproxy.md);
+- [технический паспорт](docs/prettyk.md);
 - [безопасная эксплуатация](docs/security.md);
 - [разработка и тесты](docs/development.md);
 - [`docs/manifest.json`](docs/manifest.json) — JSON Schema;

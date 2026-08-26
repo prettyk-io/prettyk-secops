@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Чтение spec/schema/proto для lab API-import (IMP)."""
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ def api_lab_dry() -> bool:
 
 
 def lab_search_roots() -> List[Path]:
-    """Корни для относительных путей (repo / CWD / KDT_LAB_ROOT)."""
+    """Корни для относительных путей (repo / CWD / PK_LAB_ROOT)."""
     roots: List[Path] = []
     env = (pk_env("LAB_ROOT") or "").strip()
     if env:
@@ -68,12 +68,12 @@ def fetch_http_text(url: str, *, timeout: float = 8.0) -> Tuple[Optional[str], L
         return None, ["не http(s) URL"]
     allow = (pk_env("LAB_HTTP_FETCH") or "1").strip().lower()
     if allow in ("0", "false", "no", "off"):
-        notes.append("KDT_LAB_HTTP_FETCH выключен — http fetch skipped")
+        notes.append("PK_LAB_HTTP_FETCH выключен — http fetch skipped")
         return None, notes
     try:
         req = urllib.request.Request(
             raw,
-            headers={"Accept": "application/json, text/plain, */*", "User-Agent": "kdt-lab/1.0"},
+            headers={"Accept": "application/json, text/plain, */*", "User-Agent": "pk-lab/1.0"},
         )
         with urllib.request.urlopen(req, timeout=timeout) as resp:  # noqa: S310 — lab opt-in
             data = resp.read()

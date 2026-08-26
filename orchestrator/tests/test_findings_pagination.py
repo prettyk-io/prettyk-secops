@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """QG-AF-10: list_findings_for_gate follows next across pages."""
 from __future__ import annotations
 
@@ -6,8 +6,8 @@ from adapters.defectdojo_client import list_findings_for_gate
 
 
 def test_list_findings_paginates_two_pages(monkeypatch):
-    monkeypatch.setenv("KDT_DEFECTDOJO_URL", "http://dojo.test")
-    monkeypatch.setenv("KDT_DEFECTDOJO_TOKEN", "tok")
+    monkeypatch.setenv("PK_DEFECTDOJO_URL", "http://dojo.test")
+    monkeypatch.setenv("PK_DEFECTDOJO_TOKEN", "tok")
 
     calls: list[dict] = []
 

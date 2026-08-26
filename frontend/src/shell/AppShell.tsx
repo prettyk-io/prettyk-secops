@@ -39,7 +39,8 @@ import { CommandPalette } from './CommandPalette';
 import { AdminPage } from './AdminPage';
 import { LabWorkspace } from '../lab/LabWorkspace';
 import { DesignPlayground } from '../design-playground/DesignPlayground';
-import { StudioV2 } from '../studio/StudioV2';
+import { EditorWorkbench } from '../workbench/EditorWorkbench';
+import { SanctuaryMap } from '../sanctuary/SanctuaryMap';
 import { ControlPanel } from '../control/ControlPanel';
 import { SecOpsControl } from '../admin/SecOpsControl';
 import { SecOpsControlPure } from '../admin/views/SecOpsControlPure';
@@ -128,6 +129,19 @@ export function AppShell(): React.JSX.Element {
         setRoute({ kind: 'home' });
         return;
       }
+      // PK-WB-A3: #/studio/:id → единый check workspace (EditorWorkbench внутри App.tsx)
+      if (next.kind === 'studio' && next.checkId) {
+        localStorage.setItem('pk-workbench-surface', 'editor');
+        const unified: HashRoute = { kind: 'check', checkId: next.checkId, view: 'studio' };
+        navigateHash(unified);
+        setRoute(unified);
+        return;
+      }
+      if (next.kind === 'studio') {
+        navigateHash({ kind: 'home' });
+        setRoute({ kind: 'home' });
+        return;
+      }
       const guarded = guardAdminRoute(next, session);
       if (guarded.kind !== next.kind) {
         navigateHash(guarded);
@@ -136,7 +150,7 @@ export function AppShell(): React.JSX.Element {
     };
 
     const onStorage = (e: StorageEvent) => {
-      if (e.key === 'pk.auth.user' || e.key === 'kdt.auth.user') {
+      if (e.key === 'pk.auth.user') {
         const session = readSession();
         setUser(session);
         if (session) {
@@ -162,10 +176,18 @@ export function AppShell(): React.JSX.Element {
       } else {
         const cur = parseHash(window.location.hash);
         const guarded = cur.kind === 'login' ? { kind: 'home' as const } : guardAdminRoute(cur, session);
-        if (formatHash(guarded) !== window.location.hash) {
-          navigateHash(guarded);
+        // PK-WB-A3: initial mount с #/studio/:id → единый check workspace
+        let resolved = guarded;
+        if (guarded.kind === 'studio' && guarded.checkId) {
+          localStorage.setItem('pk-workbench-surface', 'editor');
+          resolved = { kind: 'check' as const, checkId: guarded.checkId, view: 'studio' };
+        } else if (guarded.kind === 'studio') {
+          resolved = { kind: 'home' as const };
         }
-        setRoute(guarded);
+        if (formatHash(resolved) !== window.location.hash) {
+          navigateHash(resolved);
+        }
+        setRoute(resolved);
       }
     }
 
@@ -500,16 +522,13 @@ export function AppShell(): React.JSX.Element {
     );
   } else if (route.kind === 'dashboard') {
     main = <DashboardPage />;
-  } else if (route.kind === 'studio-v2') {
-    main = (
-      <div className="dark h-screen w-screen flex flex-col overflow-hidden" style={{ background: "#09090b" }}>
-        <div className="flex items-center justify-between px-3 h-11 shrink-0" style={{ background: "#0f172a", borderBottom: "1px solid #1e293b" }}>
-          <span className="text-sm font-semibold" style={{ color: "#e2e8f0", fontFamily: "Golos UI, sans-serif" }}>PrettyK Studio</span>
-          <span className="text-xs" style={{ color: "#64748b", fontFamily: "Golos UI, sans-serif" }}>dev preview</span>
-        </div>
-        <StudioV2 />
-      </div>
-    );
+  } else if (route.kind === 'studio') {
+    // PK-WB-A3: #/studio/:id перенаправлен в #/checks/:id/studio.
+    // Этот branch — safety net для #/studio без id (должен быть пойман выше).
+    main = <EditorWorkbench checkId={route.checkId} />;
+  } else if (route.kind === 'sanctuary-map') {
+    // SANCTUARY-MAP: полноэкранный тактический радар Обители.
+    main = <SanctuaryMap />;
   } else if (route.kind === 'lab') {
     main = (
       <LabWorkspace
@@ -529,7 +548,9 @@ export function AppShell(): React.JSX.Element {
     const item = getCheck(route.checkId);
     main = item ? (
       <App
-        key={workspaceKey}
+        // STU-RAILS B1/B2: key привязан и к instance id — при прямой hash-навигации
+        // между проверками App пересоздаётся, чужой контекст не утекает.
+        key={`${workspaceKey}:${item.check_id}`}
         checkId={item.check_id}
         initialManifest={item.wired}
         initialResources={item.resource_contents ?? {}}
@@ -555,25 +576,20 @@ export function AppShell(): React.JSX.Element {
         onLogout={handleLogout}
       />
     ) : (
-      <HomePage
-        onOpenHistory={() => go({ kind: 'history' })}
-        onOpenAdmin={() => go({ kind: 'admin' })}
-        onOpenLab={() => go({ kind: 'lab' })}
-        onOpenControl={() => go({ kind: 'control' })}
-        onOpenDashboard={() => go({ kind: 'dashboard' })}
-        onStartFresh={startFresh}
-        onStartSetup={startSetup}
-        onStartImported={startImported}
-        onStartFromDeploy={(deployId, title) =>
-          startFromDeploy(deployId, { title, returnTo: { kind: 'home' } })
-        }
-        onLogout={handleLogout}
-        playEnter={homeEnter}
-        onEnterPlayed={() => setHomeEnter(false)}
-        canAccessAdmin={canAccessAdmin(user)}
-        canimportWired={canimportWired(user)}
-        roleLabel={roleLabel}
-      />
+      // STU-RAILS B1: несуществующий id → честная ошибка, НЕ home и не чужой проект.
+      <div className="dark h-screen w-screen flex items-center justify-center bg-[#080c16] text-white font-sans">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-rose-400 mb-2">404</h1>
+          <p className="text-slate-300 mb-1">Проверка не найдена</p>
+          <p className="text-slate-500 text-sm font-mono mb-4">{route.checkId}</p>
+          <button
+            onClick={() => go({ kind: 'history' })}
+            className="px-4 py-1.5 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 text-sm"
+          >
+            К истории проверок
+          </button>
+        </div>
+      </div>
     );
   } else {
     main = (

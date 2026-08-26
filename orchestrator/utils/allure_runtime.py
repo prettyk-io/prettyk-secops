@@ -1,5 +1,5 @@
-"""
-Мост Allure для KDT-раннера без pytest.
+﻿"""
+Мост Allure для PK-раннера без pytest.
 
 Проблема: `allure.step` / `allure.attach` шлют события в pluggy-хуки
 (`plugin_manager.hook.start_step` / `attach_data`). Без listener'а, который

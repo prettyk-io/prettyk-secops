@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """LLM Server — Python wrapper over llama.cpp (subprocess llama-server).
 
 Endpoints on :8766:

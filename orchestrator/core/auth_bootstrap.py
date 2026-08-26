@@ -1,10 +1,10 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 Auth bootstrap из security_configuration.
 
-Http (по умолчанию, KDT_AUTH_BOOTSTRAP): Basic / Bearer / Cookie / API Key /
+Http (по умолчанию, PK_AUTH_BOOTSTRAP): Basic / Bearer / Cookie / API Key /
 Query Key → HttpAdapter.
-ZAP (явный шаг ПрименитьAuth или KDT_ZAP_AUTH_BOOTSTRAP=1): context / Replacer /
+ZAP (явный шаг ПрименитьAuth или PK_ZAP_AUTH_BOOTSTRAP=1): context / Replacer /
 Authentication Helper — см. apply_zap_auth.
 
 AUTH-12: success check (URL/string) после apply; compose list для multi-auth later.
@@ -229,8 +229,8 @@ def apply_auth_bootstrap(
         "notes": [],
     }
     if not _env_enabled():
-        result["notes"].append("KDT_AUTH_BOOTSTRAP=0 — bootstrap пропущен")
-        logger.info("Auth bootstrap disabled via KDT_AUTH_BOOTSTRAP")
+        result["notes"].append("PK_AUTH_BOOTSTRAP=0 — bootstrap пропущен")
+        logger.info("Auth bootstrap disabled via PK_AUTH_BOOTSTRAP")
         return result
 
     kind = (auth_type or "").strip() or _NONE
@@ -431,7 +431,7 @@ def _zap_bearer_kind(
     if not token:
         raise ValueError("Bearer Token: пустой Токен")
     zap_adapter.add_replacer_rule(
-        "kdt-auth-bearer", "REQ_HEADER", "Authorization", f"Bearer {token}", False
+        "pk-auth-bearer", "REQ_HEADER", "Authorization", f"Bearer {token}", False
     )
     _zap_mark(result, "ZAP Replacer: Authorization Bearer")
 
@@ -444,7 +444,7 @@ def _zap_api_cookie_kind(
     if not header or not token:
         raise ValueError("API Cookie: нужны Заголовок и Токен")
     zap_adapter.add_replacer_rule(
-        f"kdt-auth-header-{header}", "REQ_HEADER", header, token, False
+        f"pk-auth-header-{header}", "REQ_HEADER", header, token, False
     )
     _zap_mark(result, f"ZAP Replacer: header {header}")
 
@@ -472,7 +472,7 @@ def _zap_api_key_kind(
         return
     if place == "cookie":
         zap_adapter.add_replacer_rule(
-            f"kdt-auth-apikey-cookie-{name}",
+            f"pk-auth-apikey-cookie-{name}",
             "REQ_HEADER",
             "Cookie",
             f"{name}={token}",
@@ -481,7 +481,7 @@ def _zap_api_key_kind(
         _zap_mark(result, f"ZAP Replacer: Cookie {name}=…")
         return
     zap_adapter.add_replacer_rule(
-        f"kdt-auth-apikey-{name}", "REQ_HEADER", name, token, False
+        f"pk-auth-apikey-{name}", "REQ_HEADER", name, token, False
     )
     _zap_mark(result, f"ZAP Replacer: API Key header {name}")
 
@@ -506,7 +506,7 @@ def _zap_web_cookie_kind(
     if not cookie_raw:
         raise ValueError("На основе Cookie: пустое поле Cookie")
     zap_adapter.add_replacer_rule(
-        "kdt-auth-cookie", "REQ_HEADER", "Cookie", cookie_raw, False
+        "pk-auth-cookie", "REQ_HEADER", "Cookie", cookie_raw, False
     )
     _zap_mark(result, "ZAP Replacer: Cookie")
 
@@ -575,7 +575,7 @@ def _apply_zap_basic(
 
         token = base64.b64encode(f"{login}:{password}".encode("utf-8")).decode("ascii")
         zap.add_replacer_rule(
-            "kdt-auth-basic",
+            "pk-auth-basic",
             "REQ_HEADER",
             "Authorization",
             f"Basic {token}",
@@ -596,7 +596,7 @@ def _apply_zap_basic(
 
         token = base64.b64encode(f"{login}:{password}".encode("utf-8")).decode("ascii")
         zap.add_replacer_rule(
-            "kdt-auth-basic",
+            "pk-auth-basic",
             "REQ_HEADER",
             "Authorization",
             f"Basic {token}",

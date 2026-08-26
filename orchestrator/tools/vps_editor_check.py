@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Lightweight prod checks for VPS Editor (root host canon).
 
 Usage (from repo root):
@@ -39,7 +39,7 @@ CheckFn = Callable[[], tuple[bool, str]]
 
 
 def _http_head(url: str, timeout: float = 20.0) -> tuple[int, dict[str, str], int]:
-    req = urllib.request.Request(url, method="HEAD", headers={"User-Agent": "kdt-check/1.0"})
+    req = urllib.request.Request(url, method="HEAD", headers={"User-Agent": "prettyk-check/1.0"})
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         headers = {k.lower(): v for k, v in resp.headers.items()}
         length = int(headers.get("content-length") or "0")
@@ -47,7 +47,7 @@ def _http_head(url: str, timeout: float = 20.0) -> tuple[int, dict[str, str], in
 
 
 def _http_get(url: str, timeout: float = 20.0) -> tuple[int, str]:
-    req = urllib.request.Request(url, method="GET", headers={"User-Agent": "kdt-check/1.0"})
+    req = urllib.request.Request(url, method="GET", headers={"User-Agent": "prettyk-check/1.0"})
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         body = resp.read().decode("utf-8", "replace")
         return resp.status, body

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 Клиент DefectDojo: импорт ZAP XML. Вызов из utils.reporter.finalize_reports.
 
@@ -6,7 +6,7 @@
 Lab-дефолты — services/defectdojo/.env.example (в репо; UI: admin/admin).
 Переменные окружения перекрывают файл.
 
-Opt-in per-check engagement: KDT_DEFECTDOJO_ENGAGEMENT_MODE=check
+Opt-in per-check engagement: PK_DEFECTDOJO_ENGAGEMENT_MODE=check
 (see docs/check-evidence-refs.md).
 """
 from __future__ import annotations
@@ -26,9 +26,9 @@ PathLike = Union[str, Path]
 
 _LAB_ENV = REPO_ROOT / "services" / "defectdojo" / ".env.example"
 _LAB_KEYS = (
-    "KDT_DEFECTDOJO_URL",
-    "KDT_DEFECTDOJO_TOKEN",
-    "KDT_DEFECTDOJO_ENGAGEMENT",
+    "PK_DEFECTDOJO_URL",
+    "PK_DEFECTDOJO_TOKEN",
+    "PK_DEFECTDOJO_ENGAGEMENT",
 )
 _lab_loaded = False
 
@@ -59,19 +59,17 @@ def _load_lab_env() -> None:
 
 def _env(name: str, default: str = "") -> str:
     _load_lab_env()
-    pk_val = os.environ.get(f"PK_{name}", "")
-    if pk_val.strip():
-        return pk_val.strip()
-    return os.environ.get(name, default).strip()
+    base = name[3:] if name.startswith("PK_") else name
+    return os.environ.get(f"PK_{base}", default).strip()
 
 
 def defectdojo_configured() -> bool:
-    return bool(_env("KDT_DEFECTDOJO_URL") and _env("KDT_DEFECTDOJO_TOKEN"))
+    return bool(_env("PK_DEFECTDOJO_URL") and _env("PK_DEFECTDOJO_TOKEN"))
 
 
 def engagement_mode() -> str:
     """fixed | check — default fixed (lab ENGAGEMENT id)."""
-    raw = _env("KDT_DEFECTDOJO_ENGAGEMENT_MODE", "fixed").lower()
+    raw = _env("PK_DEFECTDOJO_ENGAGEMENT_MODE", "fixed").lower()
     return "check" if raw in {"check", "per_check", "per-check"} else "fixed"
 
 
@@ -209,8 +207,8 @@ def list_findings_for_gate(
       error: optional str
     """
     _load_lab_env()
-    url_base = (dojo_url or _env("KDT_DEFECTDOJO_URL")).rstrip("/")
-    api_token = token or _env("KDT_DEFECTDOJO_TOKEN")
+    url_base = (dojo_url or _env("PK_DEFECTDOJO_URL")).rstrip("/")
+    api_token = token or _env("PK_DEFECTDOJO_TOKEN")
     if not url_base or not api_token:
         return {"ok": False, "findings": [], "pages": 0, "error": "not_configured"}
 
@@ -237,7 +235,7 @@ def list_findings_for_gate(
         }
 
     endpoint = f"{url_base}/api/v2/findings/"
-    timeout = int(_env("KDT_DEFECTDOJO_TIMEOUT_SEC", "120") or "120")
+    timeout = int(_env("PK_DEFECTDOJO_TIMEOUT_SEC", "120") or "120")
     headers = {"Authorization": f"Token {api_token}", "accept": "application/json"}
     results: List[Dict[str, Any]] = []
     pages = 0
@@ -295,8 +293,8 @@ def list_findings_suppressed(
     These are EXCLUDED from the active gate but preserved in history.
     """
     _load_lab_env()
-    url_base = (dojo_url or _env("KDT_DEFECTDOJO_URL")).rstrip("/")
-    api_token = token or _env("KDT_DEFECTDOJO_TOKEN")
+    url_base = (dojo_url or _env("PK_DEFECTDOJO_URL")).rstrip("/")
+    api_token = token or _env("PK_DEFECTDOJO_TOKEN")
     if not url_base or not api_token:
         return {"ok": False, "findings": [], "suppressed_count": 0, "error": "not_configured"}
 
@@ -313,7 +311,7 @@ def list_findings_suppressed(
         return {"ok": False, "findings": [], "suppressed_count": 0, "error": "need_test_or_engagement"}
 
     endpoint = f"{url_base}/api/v2/findings/"
-    timeout = int(_env("KDT_DEFECTDOJO_TIMEOUT_SEC", "120") or "120")
+    timeout = int(_env("PK_DEFECTDOJO_TIMEOUT_SEC", "120") or "120")
     headers = {"Authorization": f"Token {api_token}", "accept": "application/json"}
     results: List[Dict[str, Any]] = []
     pages = 0
@@ -517,18 +515,18 @@ def trigger_defectdojo_import_detailed(
       error: optional str
     """
     _load_lab_env()
-    enabled = _env("KDT_DEFECTDOJO_ENABLED", "1").lower() not in {"0", "false", "no"}
+    enabled = _env("PK_DEFECTDOJO_ENABLED", "1").lower() not in {"0", "false", "no"}
     if not enabled:
-        logger.info("DefectDojo import skipped (KDT_DEFECTDOJO_ENABLED=0)")
+        logger.info("DefectDojo import skipped (PK_DEFECTDOJO_ENABLED=0)")
         return {"ok": True, "skipped": True}
 
-    url_base = (dojo_url or _env("KDT_DEFECTDOJO_URL")).rstrip("/")
-    api_token = token or _env("KDT_DEFECTDOJO_TOKEN")
+    url_base = (dojo_url or _env("PK_DEFECTDOJO_URL")).rstrip("/")
+    api_token = token or _env("PK_DEFECTDOJO_TOKEN")
 
     if not url_base or not api_token:
         logger.error(
-            "DefectDojo import blocked: KDT_DEFECTDOJO_URL / KDT_DEFECTDOJO_TOKEN not set. "
-            "Set KDT_DEFECTDOJO_ENABLED=0 to suppress."
+            "DefectDojo import blocked: PK_DEFECTDOJO_URL / PK_DEFECTDOJO_TOKEN not set. "
+            "Set PK_DEFECTDOJO_ENABLED=0 to suppress."
         )
         return {"ok": False, "skipped": False, "error": "dojo_not_configured"}
 
@@ -550,38 +548,38 @@ def trigger_defectdojo_import_detailed(
     if mode == "check":
         prod = (
             product_name
-            or _env("KDT_DOJO_PRODUCT_NAME")
-            or _env("KDT_META_PROJECT_ID")
-            or "kdt-app"
+            or _env("PK_DOJO_PRODUCT_NAME")
+            or _env("PK_META_PROJECT_ID")
+            or "prettyk-app"
         )
         eng_name = (
             check_id
-            or _env("KDT_CHECK_ID")
-            or _env("KDT_DOJO_ENGAGEMENT_NAME")
-            or f"kdt-check-{int(path.stat().st_mtime)}"
+            or _env("PK_CHECK_ID")
+            or _env("PK_DOJO_ENGAGEMENT_NAME")
+            or f"prettyk-check-{int(path.stat().st_mtime)}"
         )
         data["auto_create_context"] = "true"
         data["product_name"] = prod
         data["engagement_name"] = eng_name
         data["product_type_name"] = (
-            _env("KDT_DEFECTDOJO_PRODUCT_TYPE", "Research and Development")
+            _env("PK_DEFECTDOJO_PRODUCT_TYPE", "Research and Development")
         )
         # Prefer product id when operator pinned it
-        product_id = _env("KDT_DOJO_PRODUCT_ID")
+        product_id = _env("PK_DOJO_PRODUCT_ID")
         if product_id:
             data["product"] = product_id
     else:
-        engagement = engagement_id or _env("KDT_DEFECTDOJO_ENGAGEMENT")
+        engagement = engagement_id or _env("PK_DEFECTDOJO_ENGAGEMENT")
         if not engagement:
             logger.error(
-                "DefectDojo: нужен KDT_DEFECTDOJO_ENGAGEMENT (id). "
+                "DefectDojo: нужен PK_DEFECTDOJO_ENGAGEMENT (id). "
                 "Создай Product/Engagement в UI или см. services/defectdojo/README.md"
             )
             return {"ok": False, "skipped": False, "error": "engagement_missing"}
         data["engagement"] = str(engagement)
 
     endpoint = f"{url_base}/api/v2/import-scan/"
-    timeout = int(_env("KDT_DEFECTDOJO_TIMEOUT_SEC", "120") or "120")
+    timeout = int(_env("PK_DEFECTDOJO_TIMEOUT_SEC", "120") or "120")
     logger.info(
         "DefectDojo import %s mode=%s → %s",
         path.name,
@@ -647,8 +645,8 @@ def trigger_defectdojo_import(
     POST /api/v2/import-scan/ с ZAP XML.
 
     Источник: os.environ, иначе services/defectdojo/.env.example.
-      KDT_DEFECTDOJO_URL / TOKEN / ENGAGEMENT
-      KDT_DEFECTDOJO_ENABLED=0 — выкл (по умолчанию вкл)
+      PK_DEFECTDOJO_URL / TOKEN / ENGAGEMENT
+      PK_DEFECTDOJO_ENABLED=0 — выкл (по умолчанию вкл)
     """
     result = trigger_defectdojo_import_detailed(
         file_path,

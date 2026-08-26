@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """zap-final.html — один раз на прогон, не на каждый сценарий."""
 from __future__ import annotations
 
@@ -28,9 +28,9 @@ from models.wired import (
 
 
 def _stub_controller(monkeypatch, *, scenarios):
-    monkeypatch.setenv("KDT_AUTH_BOOTSTRAP", "0")
-    monkeypatch.setenv("KDT_QUALITY_GATE", "0")
-    monkeypatch.setenv("KDT_LIVE", "0")
+    monkeypatch.setenv("PK_AUTH_BOOTSTRAP", "0")
+    monkeypatch.setenv("PK_QUALITY_GATE", "0")
+    monkeypatch.setenv("PK_LIVE", "0")
 
     @contextmanager
     def _step(_title):

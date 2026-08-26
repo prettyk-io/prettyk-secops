@@ -1,12 +1,12 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """AUTH-VAULT-CHAIN-INJECTOR: pre-flight auth, зашифрованный vault и динамическая
 инъекция токенов.
 
 Слой сервиса поверх ``core.auth_vault`` / ``core.auth_module`` / ``core.auth_bootstrap``.
 Отвечает за enterprise-часть friend-request:
 
-  1. **EncryptedVault** — AES-256-GCM шифрование секретов at-rest (ключ ``KDT_VAULT_KEY``
-     или производный от ``KDT_WIRED_KEY``). Формат ``kdt:vault:v1:<b64 nonce>:<b64 ct>``.
+  1. **EncryptedVault** — AES-256-GCM шифрование секретов at-rest (ключ ``PK_VAULT_KEY``
+     или производный от ``PK_WIRED_KEY``). Формат ``pk:vault:v1:<b64 nonce>:<b64 ct>``.
   2. **mask_secret** — маскирование Bearer/JWT/password в логах и JSON-отчётах.
   3. **OAuth2 / OIDC** — Authorization Code + PKCE, Client Credentials, Password Grant.
   4. **extract_session_tokens** — JWT/Bearer/JSESSIONID из JSON/headers/cookies.
@@ -37,7 +37,7 @@ logger = logging.getLogger("orchestrator.auth_vault_service")
 
 # ───────────────────────── constants ─────────────────────────
 
-_VAULT_PREFIX = "kdt:vault:v1:"
+_VAULT_PREFIX = "pk:vault:v1:"
 _MASK = "***"
 _JWT_RE = re.compile(r"^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$")
 _BEARER_RE = re.compile(r"(?i)(bearer\s+)([A-Za-z0-9._~+/=-]+)")
@@ -52,8 +52,8 @@ _SECRET_KEY_HINTS = (
 
 
 def _vault_key() -> bytes:
-    """32-байтный AES-256 ключ: ``KDT_VAULT_KEY`` (hex/base64/raw) или SHA-256 от
-    ``KDT_WIRED_KEY``. Без ключа — детерминированный dev-ключ (не для prod)."""
+    """32-байтный AES-256 ключ: ``PK_VAULT_KEY`` (hex/base64/raw) или SHA-256 от
+    ``PK_WIRED_KEY``. Без ключа — детерминированный dev-ключ (не для prod)."""
     raw = pk_env("VAULT_KEY") or pk_env("WIRED_KEY") or ""
     if raw:
         try:
@@ -66,11 +66,11 @@ def _vault_key() -> bytes:
             return raw.encode("utf-8")
         return hashlib.sha256(raw.encode("utf-8")).digest()
     # Dev-only fallback: стабильный, но небезопасный ключ.
-    return hashlib.sha256(b"kdt-dev-vault-key-do-not-use-in-prod").digest()
+    return hashlib.sha256(b"pk-dev-vault-key-do-not-use-in-prod").digest()
 
 
 def encrypt_secret(plaintext: str) -> str:
-    """AES-256-GCM → ``kdt:vault:v1:<nonce_b64>:<ct_b64>``."""
+    """AES-256-GCM → ``pk:vault:v1:<nonce_b64>:<ct_b64>``."""
     from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
     key = _vault_key()
@@ -380,7 +380,7 @@ def apply_to_zap_replacer(
     tokens: Mapping[str, str],
     zap_adapter: Any,
     *,
-    context_name: str = "kdt_ctx",
+    context_name: str = "pk_ctx",
     header_name: str = "Authorization",
 ) -> Dict[str, str]:
     """Конфигурирует ZAP Replacer: ``Authorization: Bearer <token>`` + Cookie при наличии."""
@@ -392,7 +392,7 @@ def apply_to_zap_replacer(
     if token:
         try:
             zap_adapter.add_replacer_rule(
-                "kdt-vault-bearer", "REQ_HEADER", header_name, f"Bearer {token}", False
+                "pk-vault-bearer", "REQ_HEADER", header_name, f"Bearer {token}", False
             )
             applied["header"] = header_name
         except Exception as exc:  # noqa: BLE001
@@ -404,7 +404,7 @@ def apply_to_zap_replacer(
     if cookie_val:
         try:
             zap_adapter.add_replacer_rule(
-                "kdt-vault-cookie", "REQ_HEADER", "Cookie", cookie_val.strip(), False
+                "pk-vault-cookie", "REQ_HEADER", "Cookie", cookie_val.strip(), False
             )
             applied["cookie"] = "Cookie"
         except Exception as exc:  # noqa: BLE001

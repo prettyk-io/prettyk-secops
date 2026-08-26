@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 import json
@@ -35,9 +35,9 @@ def test_clean_text_no_hits():
 
 
 def test_package_block_env(monkeypatch):
-    monkeypatch.delenv("KDT_PACKAGE_ALLOW_SECRETS", raising=False)
+    monkeypatch.delenv("PK_PACKAGE_ALLOW_SECRETS", raising=False)
     assert package_secret_block_enabled() is True
-    monkeypatch.setenv("KDT_PACKAGE_ALLOW_SECRETS", "1")
+    monkeypatch.setenv("PK_PACKAGE_ALLOW_SECRETS", "1")
     assert package_secret_block_enabled() is False
 
 
@@ -65,8 +65,8 @@ def test_scan_run_wired_and_cuts(tmp_path):
         "line AKIAABCDEFGHIJKLMNOP rest\n", encoding="utf-8"
     )
     hits = scan_run_dir_for_secrets(run)
-    locs = {h["location"] for h in hits}
-    assert "run/Wired.json" in locs
+    locs = {h["location"].lower() for h in hits}
+    assert "run/wired.json" in locs
     assert "logs/cuts/cut-1.log" in locs
 
 

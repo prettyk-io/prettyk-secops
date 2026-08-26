@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """W3.7: Locator Health Monitor — отслеживание failsafe-ошибок по локаторам.
 
 Агрегирует ошибки из нескольких runs и выдаёт locator_health.json артефакт.

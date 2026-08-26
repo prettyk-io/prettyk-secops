@@ -1,9 +1,9 @@
 /**
  * Lab opt-in: дополнить цели ФаззингВолны параметрами из журнала трафика ZAP.
- * Зеркало env KDT_TRAFFIC_INSERTION_FEED (не поле манифеста).
+ * Зеркало env PK_TRAFFIC_INSERTION_FEED (не поле манифеста).
  */
 
-export const TRAFFIC_INSERTION_FEED_ENV = 'KDT_TRAFFIC_INSERTION_FEED';
+export const TRAFFIC_INSERTION_FEED_ENV = 'PK_TRAFFIC_INSERTION_FEED';
 export const TRAFFIC_INSERTION_FEED_STORAGE_KEY = 'pk.lab.trafficInsertionFeed';
 
 export function readTrafficInsertionFeedOptIn(

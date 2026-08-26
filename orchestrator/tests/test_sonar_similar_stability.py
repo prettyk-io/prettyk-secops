@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """HAR import: файл на месте → ZAP API; без preload JSON."""
 from __future__ import annotations
 

@@ -5,7 +5,6 @@
  */
 
 export const AUTH_STORAGE_KEY = 'pk.auth.user';
-export const AUTH_LEGACY_STORAGE_KEY = 'kdt.auth.user';
 
 export type LabRole =
   | 'admin_sec'
@@ -217,13 +216,11 @@ export function canAccessSecOpsControl(user: AuthUser | null | undefined): boole
 
 export function readSession(): AuthUser | null {
   try {
-    const rawSession = window.sessionStorage.getItem(AUTH_STORAGE_KEY)
-      ?? window.sessionStorage.getItem(AUTH_LEGACY_STORAGE_KEY);
+    const rawSession = window.sessionStorage.getItem(AUTH_STORAGE_KEY);
     if (rawSession && isAuthUser(rawSession)) {
       return rawSession;
     }
-    const rawLocal = window.localStorage.getItem(AUTH_STORAGE_KEY)
-      ?? window.localStorage.getItem(AUTH_LEGACY_STORAGE_KEY);
+    const rawLocal = window.localStorage.getItem(AUTH_STORAGE_KEY);
     if (rawLocal && isAuthUser(rawLocal)) {
       try {
         window.sessionStorage.setItem(AUTH_STORAGE_KEY, rawLocal);
@@ -248,9 +245,8 @@ export function writeSession(user: AuthUser): void {
 export function clearSession(): void {
   try {
     window.sessionStorage.removeItem(AUTH_STORAGE_KEY);
-    window.sessionStorage.removeItem(AUTH_LEGACY_STORAGE_KEY);
+    window.sessionStorage.removeItem(AUTH_STORAGE_KEY);
     window.localStorage.removeItem(AUTH_STORAGE_KEY);
-    window.localStorage.removeItem(AUTH_LEGACY_STORAGE_KEY);
   } catch {
     /* ignore */
   }

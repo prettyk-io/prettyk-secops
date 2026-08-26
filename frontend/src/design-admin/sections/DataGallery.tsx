@@ -285,7 +285,7 @@ export default function DataGallery() {
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)', lg: 'repeat(4, 1fr)' }, gap: 2 }}>
           {[
             { name: 'ZAP Demon', port: '8080', status: 'live' as const, uptime: '14d 7h', rps: 48, icon: <NetworkCheck />, color: '#38BDF8' },
-            { name: 'KDT Live', port: '8767', status: 'live' as const, uptime: '14d 7h', rps: 112, icon: <Timeline />, color: '#38BDF8' },
+            { name: 'PK Live', port: '8767', status: 'live' as const, uptime: '14d 7h', rps: 112, icon: <Timeline />, color: '#38BDF8' },
             { name: 'Allure3', port: '5050', status: 'live' as const, uptime: '14d 7h', rps: 6, icon: <Memory />, color: '#818CF8' },
             { name: 'Browser Core', port: '9222', status: 'live' as const, uptime: '14d 6h', rps: 24, icon: <Dns />, color: '#10B981' },
             { name: 'DefectDojo', port: '8081', status: 'idle' as const, uptime: '14d 7h', rps: 0, icon: <BugReport />, color: '#94A3B8' },

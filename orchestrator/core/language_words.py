@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
-Две корзины имён языка KDT (logic-construction).
+Две корзины имён языка PK (logic-construction).
 
 Язык (LanguageEngine) — не светить как MethodId адаптера.
 MethodId — каталог keywords.json / ActionFactory.

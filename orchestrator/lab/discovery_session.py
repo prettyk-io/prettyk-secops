@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Discovery Engine — Session dispatcher.
 
 In-memory store: start/stop/compile сессий. Никаких БД.

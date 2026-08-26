@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Wave S: test_suites.fuzzers[] SoT + soft-migrate legacy Фаззер."""
 from __future__ import annotations
 

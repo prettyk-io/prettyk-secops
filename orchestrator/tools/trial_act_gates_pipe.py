@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 Wave A live proof: stub C1–C4 + generate_act matrix N1–N8.
 Requires playground :8765, Live :8767. Writes evidence to --out dir.

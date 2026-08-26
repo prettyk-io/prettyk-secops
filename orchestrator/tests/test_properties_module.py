@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 import sys
@@ -19,11 +19,11 @@ from core.properties_module import (
 
 def test_parse_hash_is_secret_not_comment():
     pairs = parse_properties_module(
-        "username=admin\n#password_value=kdt_password\n"
+        "username=admin\n#password_value=pk_password\n"
     )
     assert pairs == [
         ("username", "admin", False),
-        ("password_value", "kdt_password", True),
+        ("password_value", "pk_password", True),
     ]
 
 

@@ -969,8 +969,9 @@ export const StudioBlocksTree = memo(function StudioBlocksTree({
             <span
               className="pk-studio-tree-folder pk-studio-tree-folder-hit"
               data-pk-tree-key={folderKey(section, folder.id)}
+              title={folder.title}
             >
-              {folder.title}
+              <span className="pk-studio-tree-label">{folder.title}</span>
             </span>
           </Dropdown>
         ),

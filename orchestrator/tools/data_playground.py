@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 Песочница языка данных + валидатор конструкторов + lab run (dev API).
 
@@ -244,7 +244,7 @@ class Handler(BaseHTTPRequestHandler):
     def _cors(self) -> None:
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-KDT-User")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-PK-User")
 
     def do_OPTIONS(self) -> None:
         self.send_response(204)
@@ -254,7 +254,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         path = urlparse(self.path).path
         if path in ("/", "/api/data/health", "/api/health"):
-            self._json(200, {"ok": True, "service": "kdt-editor-api"})
+            self._json(200, {"ok": True, "service": "prettyk-editor-api"})
             return
         if path == "/api/run/status":
             self._json(200, get_run_status())
@@ -685,7 +685,10 @@ class Handler(BaseHTTPRequestHandler):
         """Run a single scenario step for Step Debugger (▶).
 
         Accepts: {action, strategy, strategy_value, payload, deck_id?, step_id?}
-        Builds a DSL constructor line, validates it, and returns the result.
+          — decomposed form (StepPillRow/ScenarioDeckNode), builds the DSL line.
+        Or: {constructor, step_id?}
+          — raw PrettyK DSL line (gutter-run from Monaco CodePanel, B6).
+        Validates the resulting constructor and returns the result.
         Real Playwright execution happens via controller._run_step when wired
         to a live controller session.
         """
@@ -693,13 +696,16 @@ class Handler(BaseHTTPRequestHandler):
         strategy = str(body.get("strategy", "css")).strip()
         strategy_value = str(body.get("strategy_value", "")).strip()
         payload = str(body.get("payload", "")).strip()
+        raw_constructor = str(body.get("constructor", "")).strip()
 
-        if not action:
+        if not action and not raw_constructor:
             self._json(400, {"ok": False, "error": "action required"})
             return
 
-        # Build DSL constructor
-        if action == "Open":
+        # Build DSL constructor (decomposed form), or use the raw line as-is (B6).
+        if raw_constructor and not action:
+            constructor = raw_constructor
+        elif action == "Open":
             constructor = f"Open {payload or 'about:blank'}"
         elif action == "Wait":
             constructor = f"Wait {payload or '1000'}"
@@ -770,11 +776,23 @@ class Handler(BaseHTTPRequestHandler):
             return
         self._json(200, browser_eval(expression))
 
+    def _post_browser_observe_start(self, _body: dict) -> None:
+        from browser.browser_service import browser_observe_start
+        self._json(200, browser_observe_start())
+
+    def _post_browser_observe_stop(self, _body: dict) -> None:
+        from browser.browser_service import browser_observe_stop
+        self._json(200, browser_observe_stop())
+
+    def _post_browser_observe_event(self, _body: dict) -> None:
+        from browser.browser_service import browser_observe_event
+        self._json(200, browser_observe_event())
+
     def _post_monitor_token(self, body: dict) -> None:
         """MON-13: выдать короткоживущий bind-токен для Monitor ?run_id=.
 
         Body: {"run_id": "...", "owner_user_id"?: "..."}.
-        owner берётся из body или caller (X-KDT-User / cookie).
+        owner берётся из body или caller (X-PK-User / cookie).
         Токен подписывает только владелец прогона — чужой run_id → 403.
         """
         run_id = str(body.get("run_id") or "").strip()
@@ -842,6 +860,9 @@ class Handler(BaseHTTPRequestHandler):
             "/api/browser/screenshot": self._post_browser_screenshot,
             "/api/browser/highlight": self._post_browser_highlight,
             "/api/browser/eval": self._post_browser_eval,
+            "/api/browser/observe/start": self._post_browser_observe_start,
+            "/api/browser/observe/stop": self._post_browser_observe_stop,
+            "/api/browser/observe/event": self._post_browser_observe_event,
             "/api/monitor/token": self._post_monitor_token,
         }
         handler = routes.get(path)

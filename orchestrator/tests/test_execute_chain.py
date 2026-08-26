@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """ВыполнитьЦепь / СканированиеЦепи / РасследованиеЦепи (mock ZAP)."""
 from __future__ import annotations
 
@@ -294,7 +294,7 @@ def test_investigate_chain_module_phase_order(tmp_path, monkeypatch):
     assert calls[-1] == ("switch_context", "prev_ctx")
     notes = zap._last_chain_investigate["notes"]
     assert "auth_applied" in notes
-    assert any(n.startswith("purge_kdt_auth") for n in notes)
+    assert any(n.startswith("purge_stale_auth") for n in notes)
     assert any(n.startswith("evidence ") for n in notes)
     ev = tmp_path / "meta" / "chain_investigate_flow_me.json"
     assert ev.is_file()

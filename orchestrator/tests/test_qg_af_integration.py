@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """QG-AF mocked integration: nested Dojo import → ACTIVE counts → fail_gate."""
 from __future__ import annotations
 
@@ -51,10 +51,10 @@ def test_nested_import_payload_to_fail_gate(monkeypatch):
 def test_import_detailed_wires_nested_stats(monkeypatch, tmp_path):
     xml = tmp_path / "zap.xml"
     xml.write_text("<xml/>", encoding="utf-8")
-    monkeypatch.setenv("KDT_DEFECTDOJO_URL", "http://dojo.test")
-    monkeypatch.setenv("KDT_DEFECTDOJO_TOKEN", "tok")
-    monkeypatch.setenv("KDT_DEFECTDOJO_ENGAGEMENT", "12")
-    monkeypatch.setenv("KDT_DEFECTDOJO_ENGAGEMENT_MODE", "fixed")
+    monkeypatch.setenv("PK_DEFECTDOJO_URL", "http://dojo.test")
+    monkeypatch.setenv("PK_DEFECTDOJO_TOKEN", "tok")
+    monkeypatch.setenv("PK_DEFECTDOJO_ENGAGEMENT", "12")
+    monkeypatch.setenv("PK_DEFECTDOJO_ENGAGEMENT_MODE", "fixed")
 
     class FakeResp:
         status_code = 201

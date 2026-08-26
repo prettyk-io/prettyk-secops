@@ -71,7 +71,7 @@ describe('postRunStart', () => {
     const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)) as {
       env?: Record<string, string>;
     };
-    expect(body.env).toEqual({ KDT_TRAFFIC_INSERTION_FEED: '1' });
+    expect(body.env).toEqual({ PK_TRAFFIC_INSERTION_FEED: '1' });
   });
 
   it('maps 409 to alreadyRunning', async () => {

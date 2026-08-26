@@ -1,4 +1,4 @@
-{
+﻿{
   "meta": {
     "project_id": "juice-ud-b-auth",
     "initiator_name": "BOT-EXT UD-B2",
@@ -29,7 +29,7 @@
         "id": "juice_form",
         "label": "juice_form",
         "auth_fields": {
-          "constructor": "auth=form\nlogin_url=http://juice-shop:3000/#/login\nlogin=REPLACE_ME@kdt.lab\n#password=REPLACE_ME\nuser_locator=css #email\npass_locator=css #password\nsubmit_locator=css #loginButton\nsuccess_string=account\n"
+          "constructor": "auth=form\nlogin_url=http://juice-shop:3000/#/login\nlogin=REPLACE_ME@pk.lab\n#password=REPLACE_ME\nuser_locator=css #email\npass_locator=css #password\nsubmit_locator=css #loginButton\nsuccess_string=account\n"
         }
       }
     ],

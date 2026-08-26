@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Цикл A: ZapWorkStream unit (fake ZAP)."""
 from __future__ import annotations
 

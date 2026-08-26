@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """IMP-CHAIN: record → slots → materialize."""
 from __future__ import annotations
 

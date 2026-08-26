@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 G-38 / G-35 / G-45: манифест → ZAP Automation Framework YAML.
 
@@ -34,7 +34,7 @@ POLICY_TO_PROFILE = {
 # G-49: глубина active scan (strength/threshold + durations) по AF-профилю
 SCAN_DEPTH_PROFILES: Dict[str, Optional[Dict[str, Any]]] = {
     "smoke": {
-        "policy_name": "kdt-smoke",
+        "policy_name": "pk-smoke",
         "defaultStrength": "Low",
         "defaultThreshold": "Medium",
         "maxRuleDurationInMins": 1,
@@ -42,14 +42,14 @@ SCAN_DEPTH_PROFILES: Dict[str, Optional[Dict[str, Any]]] = {
     },
     "crawler": None,
     "active": {
-        "policy_name": "kdt-deep",
+        "policy_name": "pk-deep",
         "defaultStrength": "High",
         "defaultThreshold": "Low",
         "maxRuleDurationInMins": 2,
         "maxScanDurationInMins": 5,
     },
     "api": {
-        "policy_name": "kdt-api",
+        "policy_name": "pk-api",
         "defaultStrength": "Medium",
         "defaultThreshold": "Medium",
         "maxRuleDurationInMins": 1,
@@ -81,15 +81,15 @@ def normalize_report_template(template: Optional[str]) -> str:
     key = (template or "traditional-html").strip()
     return REPORT_TEMPLATE_ALIASES.get(key, key)
 
-DEFAULT_CONTEXT = "kdt_ctx"
+DEFAULT_CONTEXT = "pk_ctx"
 
 # Env vars для секретов в AF (не коммитить plaintext в этalon YAML).
-AUTH_ENV_USERNAME = "KDT_AUTH_USERNAME"
-AUTH_ENV_PASSWORD = "KDT_AUTH_PASSWORD"
-AUTH_ENV_BEARER = "KDT_AUTH_BEARER"
-AUTH_ENV_COOKIE = "KDT_AUTH_COOKIE"
-AUTH_ENV_HEADER = "KDT_AUTH_HEADER"
-AUTH_ENV_HEADER_VALUE = "KDT_AUTH_HEADER_VALUE"
+AUTH_ENV_USERNAME = "PK_AUTH_USERNAME"
+AUTH_ENV_PASSWORD = "PK_AUTH_PASSWORD"
+AUTH_ENV_BEARER = "PK_AUTH_BEARER"
+AUTH_ENV_COOKIE = "PK_AUTH_COOKIE"
+AUTH_ENV_HEADER = "PK_AUTH_HEADER"
+AUTH_ENV_HEADER_VALUE = "PK_AUTH_HEADER_VALUE"
 
 
 @dataclass
@@ -230,7 +230,7 @@ def _auth_hints_replacer(
     if kind == _BEARER:
         return _replacer_hint(
             hints,
-            description="kdt-auth-bearer",
+            description="pk-auth-bearer",
             match_string="Authorization",
             replacement=f"Bearer ${{{AUTH_ENV_BEARER}}}",
         )
@@ -238,14 +238,14 @@ def _auth_hints_replacer(
         header = _detail(details, "Заголовок", "header") or "X-API-Key"
         return _replacer_hint(
             hints,
-            description="kdt-auth-header",
+            description="pk-auth-header",
             match_string=header,
             replacement=f"${{{AUTH_ENV_HEADER_VALUE}}}",
         )
     if kind == _WEB_COOKIE:
         return _replacer_hint(
             hints,
-            description="kdt-auth-cookie",
+            description="pk-auth-cookie",
             match_string="Cookie",
             replacement=f"${{{AUTH_ENV_COOKIE}}}",
         )
@@ -360,7 +360,7 @@ def _basic_auth_context_lines(details: Mapping[str, Any], base_url: str) -> List
         "      sessionManagement:",
         "        method: cookie",
         "      users:",
-        "        - name: kdt_user",
+        "        - name: pk_user",
         "          credentials:",
         f"            username: ${{{AUTH_ENV_USERNAME}}}",
         f"            password: ${{{AUTH_ENV_PASSWORD}}}",
@@ -396,7 +396,7 @@ def _browser_auth_context_lines(details: Mapping[str, Any], base_url: str) -> Li
         lines.extend(
             [
                 "      users:",
-                "        - name: kdt_user",
+                "        - name: pk_user",
                 "          credentials:",
                 f"            username: ${{{AUTH_ENV_USERNAME}}}",
                 f"            password: ${{{AUTH_ENV_PASSWORD}}}",
@@ -425,7 +425,7 @@ def _form_auth_context_lines(details: Mapping[str, Any]) -> List[str]:
             "      sessionManagement:",
             "        method: cookie",
             "      users:",
-            "        - name: kdt_user",
+            "        - name: pk_user",
             "          credentials:",
             f"            username: ${{{AUTH_ENV_USERNAME}}}",
             f"            password: ${{{AUTH_ENV_PASSWORD}}}",
@@ -571,7 +571,7 @@ def _af_setup_jobs(
                     "    parameters:",
                     "      rules:",
                     "        - description: "
-                    + _yaml_str(rule.get("description", "kdt-auth")),
+                    + _yaml_str(rule.get("description", "pk-auth")),
                     "          enabled: true",
                     f"          matchType: {rule.get('matchType', 'REQ_HEADER')}",
                     f"          matchString: {_yaml_str(rule.get('matchString', ''))}",
@@ -619,7 +619,7 @@ def _af_report_jobs(
                 "      template: sarif-json",
                 "      reportDir: reports/scanner-results",
                 f"      reportFile: {_yaml_str(report_file + '-sarif')}",
-                f"      reportDescription: KDT AF {profile} SARIF",
+                f"      reportDescription: PK AF {profile} SARIF",
             ]
         )
     return lines
@@ -630,7 +630,7 @@ def build_af_plan(
     base_url: str,
     context_name: str = DEFAULT_CONTEXT,
     scan_policy: str = "custom_policy",
-    report_file: str = "kdt-af-plan",
+    report_file: str = "pk-af-plan",
     report_template: str = "traditional-html",
     include_sarif_report: bool = False,
     include_alert_filter_job: bool = False,
@@ -886,7 +886,7 @@ def plan_from_wired_dict(
     wired: Mapping[str, Any],
     *,
     context_name: str = DEFAULT_CONTEXT,
-    report_file: str = "kdt-af-plan",
+    report_file: str = "pk-af-plan",
 ) -> str:
     sec = wired.get("security_configuration") or {}
     if not isinstance(sec, Mapping):
@@ -909,7 +909,7 @@ def write_af_plan(
     base_url: str,
     context_name: str = DEFAULT_CONTEXT,
     scan_policy: str = "custom_policy",
-    report_file: str = "kdt-af-plan",
+    report_file: str = "pk-af-plan",
     wired: Optional[Mapping[str, Any]] = None,
 ) -> Path:
     path = Path(output_path)

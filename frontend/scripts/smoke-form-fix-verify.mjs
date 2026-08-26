@@ -1,9 +1,9 @@
-/**
+﻿/**
  * Форма: locked-текст вместо disabled; scan_policy/auth вырезаны из поверхности.
  */
 import { chromium } from 'playwright';
 
-const BASE = process.env.KDT_UI || 'http://localhost:5173';
+const BASE = process.env.PK_UI || process.env.PK_UI || 'http://localhost:5173';
 
 async function main() {
   const browser = await chromium.launch({ headless: true });
@@ -15,14 +15,14 @@ async function main() {
   await page.evaluate(() => localStorage.clear());
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.getByRole('button', { name: 'Сбросить форму' }).click({ timeout: 20_000 });
-  await page.locator('.kdt-view-segmented').getByText('Форма', { exact: true }).click();
+  await page.locator('.pk-view-segmented').getByText('Форма', { exact: true }).click();
   await page.waitForTimeout(700);
 
   const dump = await page.evaluate(() => {
-    const root = document.querySelector('.kdt-form-scroll');
+    const root = document.querySelector('.pk-form-scroll');
     const labels = [...root.querySelectorAll('label')].map((l) => l.textContent.trim());
     return {
-      locked: [...root.querySelectorAll('.kdt-field-locked')].map(
+      locked: [...root.querySelectorAll('.pk-field-locked')].map(
         (el) => el.id || el.textContent.slice(0, 40),
       ),
       disabledControls: root.querySelectorAll(

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Контроллер — диспетчер, управляющий жизненным циклом выполнения сценариев.
 Интегрирован с Allure для отчётности.
 """
@@ -114,7 +114,8 @@ class Controller:
 
     @staticmethod
     def _env_port(name: str, default: int) -> int:
-        raw = os.getenv(name)
+        base = name[3:] if name.startswith("PK_") else name
+        raw = os.getenv(f"PK_{base}")
         if raw is None or raw.strip() == "":
             return default
         try:
@@ -131,14 +132,14 @@ class Controller:
         default_zap_port = (
             DEFAULT_WEBSWING_API_PORT if mode == "webswing" else DEFAULT_ZAP_PORT
         )
-        zap_port = self._env_port("KDT_ZAP_PORT", default_zap_port)
+        zap_port = self._env_port("PK_ZAP_PORT", default_zap_port)
         default_browser_proxy = (
             DEFAULT_WEBSWING_PROXY_PORT
             if mode == "webswing"
             else DEFAULT_ZAP_BROWSER_PROXY_PORT
         )
         browser_proxy_port = self._env_port(
-            "KDT_ZAP_BROWSER_PROXY_PORT", default_browser_proxy
+            "PK_ZAP_BROWSER_PROXY_PORT", default_browser_proxy
         )
         self.zap_api_port = zap_port
         self.zap_proxy_port = browser_proxy_port
@@ -236,7 +237,7 @@ class Controller:
         port = self.wired.infrastructure.additional_local_server_port
         if port is not None:
             browser_proxy_port = self._env_port(
-                "KDT_ZAP_BROWSER_PROXY_PORT", DEFAULT_ZAP_BROWSER_PROXY_PORT
+                "PK_ZAP_BROWSER_PROXY_PORT", DEFAULT_ZAP_BROWSER_PROXY_PORT
             )
             if int(port) == browser_proxy_port:
                 logger.info(
@@ -271,11 +272,11 @@ class Controller:
         else:
             start = f'docker compose -f "{compose_ws}" up -d'
             stop_ws = f'docker compose -f "{compose_ws}" down'
-        os.environ.setdefault("KDT_ZAP_START_WEBSWING_CMD", start)
+        os.environ.setdefault("PK_ZAP_START_WEBSWING_CMD", start)
         # Пусто = не гасить daemon (concurrent). Exclusive: задать stop compose zap.
-        os.environ.setdefault("KDT_ZAP_STOP_DAEMON_CMD", "")
-        os.environ.setdefault("KDT_ZAP_STOP_WEBSWING_CMD", stop_ws)
-        os.environ.setdefault("KDT_WEBSWING_UI_URL", "http://127.0.0.1:8082/zap")
+        os.environ.setdefault("PK_ZAP_STOP_DAEMON_CMD", "")
+        os.environ.setdefault("PK_ZAP_STOP_WEBSWING_CMD", stop_ws)
+        os.environ.setdefault("PK_WEBSWING_UI_URL", "http://127.0.0.1:8082/zap")
 
     def _bootstrap_zap_mode(self) -> None:
         """
@@ -293,7 +294,7 @@ class Controller:
         start_cmd = (pk_env("ZAP_START_WEBSWING_CMD") or "").strip()
         if not start_cmd:
             logger.warning(
-                "zap_mode=webswing, но KDT_ZAP_START_WEBSWING_CMD не задан — "
+                "zap_mode=webswing, но PK_ZAP_START_WEBSWING_CMD не задан — "
                 "ожидаем уже запущенный ZAP на порту API"
             )
             return
@@ -373,7 +374,7 @@ class Controller:
         infra = self.wired.infrastructure
         work_min = infra.session_timeout_min()
         idle_min = infra.idle_timeout_min
-        # Lab: KDT_IDLE_TIMEOUT_SEC перекрывает минуты (без смены JSON/схемы).
+        # Lab: PK_IDLE_TIMEOUT_SEC перекрывает минуты (без смены JSON/схемы).
         idle_sec_override = (pk_env("IDLE_TIMEOUT_SEC") or "").strip()
         logger.info(
             "Infrastructure timeouts: work=%s min, idle=%s min%s",
@@ -591,7 +592,7 @@ class Controller:
         return False
 
     def _apply_auth_bootstrap(self) -> None:
-        """Http bootstrap сразу; ZAP — только KDT_ZAP_AUTH_BOOTSTRAP после context."""
+        """Http bootstrap сразу; ZAP — только PK_ZAP_AUTH_BOOTSTRAP после context."""
         from core.auth_bootstrap import apply_auth_bootstrap
 
         sec = self.wired.security_configuration
@@ -693,7 +694,7 @@ class Controller:
                 params["manifest_json"] = self.wired.model_dump_json()
 
     def _maybe_zap_auth_after_context(self, context_name: str) -> None:
-        """KDT_ZAP_AUTH_BOOTSTRAP=1 → ПрименитьAuth после НовыйКонтекст."""
+        """PK_ZAP_AUTH_BOOTSTRAP=1 → ПрименитьAuth после НовыйКонтекст."""
         from core.auth_bootstrap import zap_auth_env_enabled
 
         if not zap_auth_env_enabled():
@@ -726,12 +727,12 @@ class Controller:
                 auth_resolve_notes_json=params.get("auth_resolve_notes_json") or "",
             )
             logger.info(
-                "KDT_ZAP_AUTH_BOOTSTRAP after context %s: %s",
+                "PK_ZAP_AUTH_BOOTSTRAP after context %s: %s",
                 context_name,
                 result,
             )
         except Exception as exc:
-            logger.warning("KDT_ZAP_AUTH_BOOTSTRAP failed: %s", exc)
+            logger.warning("PK_ZAP_AUTH_BOOTSTRAP failed: %s", exc)
 
     def _declarative_auth_note(self, auth: str) -> str:
         applied = bool(
@@ -740,7 +741,7 @@ class Controller:
         if applied:
             return (
                 f"auth_type={auth!r} (Http bootstrap; ZAP — "
-                "ZAP ПрименитьAuth или KDT_ZAP_AUTH_BOOTSTRAP=1)"
+                "ZAP ПрименитьAuth или PK_ZAP_AUTH_BOOTSTRAP=1)"
             )
         return (
             f"auth_type={auth!r} (Http bootstrap не применён; "
@@ -781,8 +782,8 @@ class Controller:
             )
         if self.wired.infrastructure.zap_mode == "webswing":
             notes.append(
-                "zap_mode=webswing (bootstrap via KDT_ZAP_START_WEBSWING_CMD; "
-                "hold до idle/work; KDT_WEBSWING_HOLD=0 — без hold)"
+                "zap_mode=webswing (bootstrap via PK_ZAP_START_WEBSWING_CMD; "
+                "hold до idle/work; PK_WEBSWING_HOLD=0 — без hold)"
             )
         self.honest_contract_notes = notes
         if notes:
@@ -796,7 +797,7 @@ class Controller:
         return "closed"
 
     def _fail_quality_gate_on_alert_error(self, reason: str) -> None:
-        """Fail-closed (default) или fail-open по KDT_QUALITY_GATE_ON_ALERT_ERROR.
+        """Fail-closed (default) или fail-open по PK_QUALITY_GATE_ON_ALERT_ERROR.
 
         error в summary → main трактует как evidence/execution fail (exit 1), не fail_gate.
         quality_gate_failed всегда False: ось исполнения, не fail_gate.
@@ -856,11 +857,11 @@ class Controller:
         policy: Any = None,
     ) -> bool:
         """
-        Dual-axis ИБ-gate: severity counts vs KDT_GATE_MAX_CRITICAL/HIGH.
+        Dual-axis ИБ-gate: severity counts vs PK_GATE_MAX_CRITICAL/HIGH.
         counts=None → собрать с ZAP (fallback / unit-тесты).
-        Отключение: KDT_QUALITY_GATE=0.
+        Отключение: PK_QUALITY_GATE=0.
         Нет адаптера / ошибка чтения — fail-closed (summary.error), escape:
-        KDT_QUALITY_GATE_ON_ALERT_ERROR=open.
+        PK_QUALITY_GATE_ON_ALERT_ERROR=open.
         """
         from core.gate_policy import (
             AdmissionResult,
@@ -869,7 +870,7 @@ class Controller:
         )
 
         if not quality_gate_enabled():
-            logger.info("Quality gate disabled via KDT_QUALITY_GATE")
+            logger.info("Quality gate disabled via PK_QUALITY_GATE")
             result = AdmissionResult(
                 failed=False,
                 watch=False,
@@ -920,7 +921,7 @@ class Controller:
 
     def _session_name(self) -> str:
         """Человекочитаемое имя прогона для Selenoid UI и имён артефактов."""
-        parts = [self.wired.meta.project_id or "kdt"]
+        parts = [self.wired.meta.project_id or "pk"]
         scenarios = (self.wired.test_suites.scenarios if self.wired.test_suites else None) or []
         if len(scenarios) == 1:
             parts.append(scenarios[0].scenario_name)
@@ -1201,7 +1202,7 @@ class Controller:
 
     def shutdown(self):
         """
-        Шаг 5 жизненного цикла (docs/KDTZaproxy.md): остановка незакрытых сессий браузера.
+        Шаг 5 жизненного цикла (docs/prettyk.md): остановка незакрытых сессий браузера.
         Вызывается из finally точки входа, поэтому только логирует проблемы завершения
         и никогда не бросает исключение — иначе teardown подменит исходную ошибку прогона.
         Безопасен для симуляции (адаптер без драйвера) и для повторного вызова.
@@ -1233,7 +1234,7 @@ class Controller:
             from utils.live_server import notify_live_run_ended
 
             # Shell event: export diary snapshot; do not kill Live HTTP.
-            # run_id должен быть hex (KDT_RUN_ID) — тот же, что летит фронтенду,
+            # run_id должен быть hex (PK_RUN_ID) — тот же, что летит фронтенду,
             # кладётся в видео-артефакт и в ?run_id= Monitor. Human session_name
             # сюда не годится: иначе экспорт пишется под human-именем и Monitor
             # по hex run_id не находит журнал (пустой results).
@@ -1505,7 +1506,7 @@ class Controller:
         ensure_reports_dirs()
         reporter, listener, file_logger = bind_allure(str(resolve_allure_results_dir()))
         test_uuid = uuid4()
-        purpose = getattr(getattr(self.wired, "meta", None), "assessment_purpose", None) or "KDT"
+        purpose = getattr(getattr(self.wired, "meta", None), "assessment_purpose", None) or "PK"
         test_result = TestResult(
             uuid=test_uuid,
             name="ZAP final report",
@@ -2714,7 +2715,7 @@ class Controller:
         text = " | ".join(str(p).replace("\n", " ").strip() for p in parts if p not in (None, ""))
         if text:
             line = text[:400]
-            logger.info("[KDT-DIARY] %s: %s", kind, line)
+            logger.info("[PK-DIARY] %s: %s", kind, line)
             if live:
                 try:
                     from utils.diary_bus import publish

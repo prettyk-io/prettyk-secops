@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """ВключитьВКонтекст: пустой URL → base_url; http(s) → allowlist; иначе формат."""
 from __future__ import annotations
 

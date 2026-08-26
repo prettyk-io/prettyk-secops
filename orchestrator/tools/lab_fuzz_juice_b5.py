@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """FZ-B5 Juice lab harness: Campaign on search API via ZAP demon → evidence + Live.
 
 Внутренний wire/harness, не продуктовая поверхность PrettyK.

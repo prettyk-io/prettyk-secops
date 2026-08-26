@@ -1,4 +1,4 @@
-import json, os, shutil
+﻿import json, os, shutil
 
 with open('reports/live/checks_registry.json', 'r', encoding='utf-8') as f:
     d = json.load(f)

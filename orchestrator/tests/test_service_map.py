@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """CD-3: service_map — endpoint → страница → инпут."""
 from __future__ import annotations
 

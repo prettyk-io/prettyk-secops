@@ -60,7 +60,7 @@ describe('redactSecrets', () => {
   });
 
   it('redactSecretAssignmentLines маскирует RHS Секрет', () => {
-    const text = 'Секрет $password_value = "kdt_password"\nПусть $x = 1';
+    const text = 'Секрет $password_value = "pk_password"\nПусть $x = 1';
     expect(redactSecretAssignmentLines(text)).toBe(
       `Секрет $password_value = ${REDACT_PLACEHOLDER}\nПусть $x = 1`,
     );

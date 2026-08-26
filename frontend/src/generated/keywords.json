@@ -1,4 +1,4 @@
-{
+﻿{
   "$comment": "СГЕНЕРИРОВАННЫЙ ФАЙЛ. Не редактировать вручную. Источник: orchestrator/adapters + utils/reporter, генератор: orchestrator/tools/export_keywords.py. Обновить: npm run generate:keywords. legacy_components — wire вне AC (G-09); validate мержит с components.",
   "components": {
     "allure": {
@@ -817,7 +817,7 @@
         },
         "probe_db": {
           "defined_in": "orchestrator/adapters/connector_adapter.py",
-          "description": "ПроверитьБазуКоннектора — TCP к DSN host; live при KDT_CONNECTOR_DB=1.",
+          "description": "ПроверитьБазуКоннектора — TCP к DSN host; live при PK_CONNECTOR_DB=1.",
           "params": [
             {
               "kind": "positional",
@@ -829,7 +829,7 @@
         },
         "probe_queue": {
           "defined_in": "orchestrator/adapters/connector_adapter.py",
-          "description": "ПроверитьОчередьКоннектора — TCP к broker; live при KDT_CONNECTOR_MQ=1.",
+          "description": "ПроверитьОчередьКоннектора — TCP к broker; live при PK_CONNECTOR_MQ=1.",
           "params": [
             {
               "kind": "positional",
@@ -848,7 +848,7 @@
         },
         "query_logs": {
           "defined_in": "orchestrator/adapters/connector_adapter.py",
-          "description": "ЗапроситьЛогиКоннектора — thin HTTP GET; live при KDT_CONNECTOR_LOGS=1.",
+          "description": "ЗапроситьЛогиКоннектора — thin HTTP GET; live при PK_CONNECTOR_LOGS=1.",
           "params": [
             {
               "kind": "positional",
@@ -867,7 +867,7 @@
         },
         "query_metric_pack": {
           "defined_in": "orchestrator/adapters/connector_adapter.py",
-          "description": "ЗапроситьМетрикиКоннектора — PromQL pack (live при KDT_CONNECTOR_LIVE=1).",
+          "description": "ЗапроситьМетрикиКоннектора — PromQL pack (live при PK_CONNECTOR_LIVE=1).",
           "params": [
             {
               "kind": "positional",
@@ -886,7 +886,7 @@
         },
         "run_ssh_command": {
           "defined_in": "orchestrator/adapters/connector_adapter.py",
-          "description": "ВыполнитьКомандуSSH — allowlist; live при KDT_CONNECTOR_SSH=1.",
+          "description": "ВыполнитьКомандуSSH — allowlist; live при PK_CONNECTOR_SSH=1.",
           "params": [
             {
               "kind": "positional",
@@ -4857,7 +4857,7 @@
               "required": false
             },
             {
-              "default": "kdt_ctx",
+              "default": "pk_ctx",
               "kind": "positional",
               "name": "context_name",
               "required": false
@@ -5037,7 +5037,7 @@
         },
         "import_grpc_proto": {
           "defined_in": "orchestrator/adapters/zap_adapter.py",
-          "description": "Импорт gRPC: перечень сервисов в KDT; при отсутствии API дополнения ZAP —",
+          "description": "Импорт gRPC: перечень сервисов в PK; при отсутствии API дополнения ZAP —",
           "params": [
             {
               "kind": "positional",
@@ -5981,7 +5981,7 @@
         },
         "unary_grpc_call": {
           "defined_in": "orchestrator/adapters/zap_adapter.py",
-          "description": "Одиночный вызов gRPC (лаборатория). MethodId: ВызовgRPC. Без KDT_GRPC_UNARY — заглушка.",
+          "description": "Одиночный вызов gRPC (лаборатория). MethodId: ВызовgRPC. Без PK_GRPC_UNARY — заглушка.",
           "params": [
             {
               "kind": "positional",

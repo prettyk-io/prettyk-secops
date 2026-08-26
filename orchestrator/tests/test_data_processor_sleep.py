@@ -1,4 +1,4 @@
-"""Пауза: wire передаёт seconds строкой."""
+﻿"""Пауза: wire передаёт seconds строкой."""
 from adapters.data_processor import DataProcessor
 
 

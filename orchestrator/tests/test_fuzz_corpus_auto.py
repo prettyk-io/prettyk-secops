@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Wave B: corpus=auto → location matrix."""
 from __future__ import annotations
 

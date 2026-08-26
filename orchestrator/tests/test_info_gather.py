@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """СборИнформации MethodId wire (compat filename)."""
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """FE flatten embeds ` → save_as` in wire; BE must strip for validate/runtime."""
 from __future__ import annotations
 

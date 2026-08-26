@@ -54,10 +54,10 @@ function Assert-Py {
 function Invoke-Prep {
     Write-Step "prep: network + dirs + tip"
     Assert-Py
-    docker network inspect prettyk-net *> $null
+    docker network inspect pk-net *> $null
     if ($LASTEXITCODE -ne 0) {
-        docker network create prettyk-net
-        if ($LASTEXITCODE -ne 0) { throw "docker network create prettyk-net failed" }
+        docker network create pk-net
+        if ($LASTEXITCODE -ne 0) { throw "docker network create pk-net failed" }
     }
     New-Item -ItemType Directory -Force -Path `
         (Join-Path $Root "reports\allure-results"), `
@@ -136,16 +136,16 @@ function Invoke-Validate {
 }
 
 function Invoke-Run {
-    Write-Step "full run -> KDT_RUN_DIR (P-09 / teardown)"
+    Write-Step "full run -> PK_RUN_DIR (P-09 / teardown)"
     Assert-Py
     if (-not (Test-Path $Wired)) { throw "wired missing: $Wired" }
     New-Item -ItemType Directory -Force -Path $RunDir | Out-Null
-    $env:KDT_RUN_DIR = $RunDir
-    if (-not $env:KDT_WEBDRIVER_MODE) {
-        $env:KDT_WEBDRIVER_MODE = "remote"
+    $env:PK_RUN_DIR = $RunDir
+    if (-not $env:PK_WEBDRIVER_MODE) {
+        $env:PK_WEBDRIVER_MODE = "remote"
     }
-    Write-Host "KDT_RUN_DIR=$env:KDT_RUN_DIR"
-    Write-Host "KDT_WEBDRIVER_MODE=$env:KDT_WEBDRIVER_MODE"
+    Write-Host "PK_RUN_DIR=$env:PK_RUN_DIR"
+    Write-Host "PK_WEBDRIVER_MODE=$env:PK_WEBDRIVER_MODE"
     & $Py $Main --wired $Wired
     $code = $LASTEXITCODE
     Set-Content -Encoding utf8 (Join-Path $RunDir "process_exit.txt") "$code"
@@ -203,7 +203,7 @@ function Invoke-P10 {
     if (-not (Test-Path $IdleWired)) { throw "missing $IdleWired" }
     Write-Host "idle run (empty scenarios -> hold). Stop with Ctrl+C or manifest timeout."
     Write-Host "wired: $IdleWired"
-    $env:KDT_RUN_DIR = $RunDir
+    $env:PK_RUN_DIR = $RunDir
     & $Py $Main --wired $IdleWired
     Write-Host "P-10 process exit=$LASTEXITCODE (record hold in journal 05)"
 }

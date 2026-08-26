@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -43,7 +43,7 @@ class FakeZap:
 
 
 def test_basic_applies_http_only(monkeypatch):
-    monkeypatch.delenv("KDT_AUTH_BOOTSTRAP", raising=False)
+    monkeypatch.delenv("PK_AUTH_BOOTSTRAP", raising=False)
     http = FakeHttp()
     zap = FakeZap()
     out = apply_auth_bootstrap(
@@ -58,7 +58,7 @@ def test_basic_applies_http_only(monkeypatch):
 
 
 def test_bearer(monkeypatch):
-    monkeypatch.delenv("KDT_AUTH_BOOTSTRAP", raising=False)
+    monkeypatch.delenv("PK_AUTH_BOOTSTRAP", raising=False)
     http = FakeHttp()
     out = apply_auth_bootstrap(
         auth_type="Bearer Token",
@@ -71,7 +71,7 @@ def test_bearer(monkeypatch):
 
 
 def test_web_cookie_parses_pairs(monkeypatch):
-    monkeypatch.delenv("KDT_AUTH_BOOTSTRAP", raising=False)
+    monkeypatch.delenv("PK_AUTH_BOOTSTRAP", raising=False)
     http = FakeHttp()
     out = apply_auth_bootstrap(
         auth_type="На основе Cookie",
@@ -85,7 +85,7 @@ def test_web_cookie_parses_pairs(monkeypatch):
 
 
 def test_unsupported_sso_skipped(monkeypatch):
-    monkeypatch.delenv("KDT_AUTH_BOOTSTRAP", raising=False)
+    monkeypatch.delenv("PK_AUTH_BOOTSTRAP", raising=False)
     http = FakeHttp()
     out = apply_auth_bootstrap(
         auth_type="Последовательность действий / SSO",
@@ -97,7 +97,7 @@ def test_unsupported_sso_skipped(monkeypatch):
 
 
 def test_disabled_via_env(monkeypatch):
-    monkeypatch.setenv("KDT_AUTH_BOOTSTRAP", "0")
+    monkeypatch.setenv("PK_AUTH_BOOTSTRAP", "0")
     http = FakeHttp()
     out = apply_auth_bootstrap(
         auth_type="Bearer Token",
@@ -127,13 +127,13 @@ def test_quality_gate_flag(monkeypatch):
     ctrl.quality_gate_summary = None
     ctrl.admission_risk_hints = {}
     ctrl.admission_recommendations = []
-    monkeypatch.delenv("KDT_QUALITY_GATE", raising=False)
-    monkeypatch.delenv("KDT_QUALITY_GATE_ON_ALERT_ERROR", raising=False)
-    monkeypatch.delenv("KDT_GATE_MAX_HIGH", raising=False)
+    monkeypatch.delenv("PK_QUALITY_GATE", raising=False)
+    monkeypatch.delenv("PK_QUALITY_GATE_ON_ALERT_ERROR", raising=False)
+    monkeypatch.delenv("PK_GATE_MAX_HIGH", raising=False)
     assert ctrl.evaluate_quality_gate() is True
     assert ctrl.quality_gate_failed is True
 
-    monkeypatch.setenv("KDT_QUALITY_GATE", "0")
+    monkeypatch.setenv("PK_QUALITY_GATE", "0")
     assert ctrl.evaluate_quality_gate() is False
 
 
@@ -153,15 +153,15 @@ def test_quality_gate_alert_error_fail_closed(monkeypatch):
     ctrl.quality_gate_summary = None
     ctrl.admission_risk_hints = {}
     ctrl.admission_recommendations = []
-    monkeypatch.delenv("KDT_QUALITY_GATE", raising=False)
-    monkeypatch.delenv("KDT_QUALITY_GATE_ON_ALERT_ERROR", raising=False)
+    monkeypatch.delenv("PK_QUALITY_GATE", raising=False)
+    monkeypatch.delenv("PK_QUALITY_GATE_ON_ALERT_ERROR", raising=False)
     # Evidence error → не fail_gate; summary.error для exit 1 в main.
     assert ctrl.evaluate_quality_gate() is False
     assert ctrl.quality_gate_failed is False
     assert ctrl.quality_gate_summary["fail_mode"] == "closed"
     assert ctrl.quality_gate_summary.get("error")
 
-    monkeypatch.setenv("KDT_QUALITY_GATE_ON_ALERT_ERROR", "open")
+    monkeypatch.setenv("PK_QUALITY_GATE_ON_ALERT_ERROR", "open")
     assert ctrl.evaluate_quality_gate() is False
     assert ctrl.quality_gate_failed is False
     assert ctrl.quality_gate_summary["fail_mode"] == "open"
@@ -176,8 +176,8 @@ def test_quality_gate_missing_zap_fail_closed(monkeypatch):
     ctrl.quality_gate_summary = None
     ctrl.admission_risk_hints = {}
     ctrl.admission_recommendations = []
-    monkeypatch.delenv("KDT_QUALITY_GATE", raising=False)
-    monkeypatch.delenv("KDT_QUALITY_GATE_ON_ALERT_ERROR", raising=False)
+    monkeypatch.delenv("PK_QUALITY_GATE", raising=False)
+    monkeypatch.delenv("PK_QUALITY_GATE_ON_ALERT_ERROR", raising=False)
     assert ctrl.evaluate_quality_gate() is False
     assert ctrl.quality_gate_failed is False
     assert ctrl.quality_gate_summary.get("error")

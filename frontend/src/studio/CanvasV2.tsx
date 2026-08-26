@@ -1,8 +1,19 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { ReactFlow, Background, Controls, MiniMap, type Node, useNodesState } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { FileText, Share2 } from "lucide-react";
 import { ScenarioFlow } from "./ScenarioFlow";
+
+/**
+ * STU-V2 B2: CanvasV2 — узлы сущностей из РЕАЛЬНЫХ счётчиков (не литералы).
+ * mode: 'entity' | 'scenarios'. counts из collectStudioNodes.
+ */
+export interface CanvasV2Counts {
+  pages: number;
+  scenarios: number;
+  modules: number;
+  fuzzers: number;
+  resources: number;
+}
 
 function CornerNode({ data }: { data: { label: string; color: string; count: number } }) {
   const c = data.color;
@@ -12,17 +23,25 @@ function CornerNode({ data }: { data: { label: string; color: string; count: num
   </div>;
 }
 
-export function CanvasV2() {
-  const [mode, setMode] = useState<"entity" | "scenarios">("entity");
+export interface CanvasV2Props {
+  mode?: "entity" | "scenarios";
+  counts?: CanvasV2Counts;
+}
 
-  const nodes = useMemo(() => [
-    { id: "page-models", type: "default", position: { x: 0, y: 0 }, data: { label: "Модели страниц", color: "#38bdf8", count: 3 }, draggable: false },
-    { id: "data-models", type: "default", position: { x: 480, y: 0 }, data: { label: "Модули данных", color: "#22c55e", count: 4 }, draggable: false },
-    { id: "fuzzers", type: "default", position: { x: 0, y: 240 }, data: { label: "Фаззеры", color: "#f59e0b", count: 2 }, draggable: false },
-    { id: "connectors", type: "default", position: { x: 480, y: 240 }, data: { label: "Коннекторы", color: "#a855f7", count: 1 }, draggable: false },
-    { id: "scenarios", type: "default", position: { x: 160, y: 310 }, data: { label: "Сценарии", color: "#38bdf8", count: 2 }, draggable: false },
-    { id: "auth", type: "default", position: { x: 380, y: 310 }, data: { label: "Авторизация", color: "#a855f7", count: 1 }, draggable: false },
-  ] satisfies Node[], []);
+export function CanvasV2({ mode: externalMode, counts }: CanvasV2Props) {
+  const mode = externalMode ?? "entity";
+
+  const nodes = useMemo(() => {
+    const c = counts ?? { pages: 0, scenarios: 0, modules: 0, fuzzers: 0, resources: 0 };
+    return [
+      { id: "page-models", type: "default", position: { x: 0, y: 0 }, data: { label: "Модели страниц", color: "#38bdf8", count: c.pages }, draggable: false },
+      { id: "data-models", type: "default", position: { x: 480, y: 0 }, data: { label: "Модули данных", color: "#22c55e", count: c.modules }, draggable: false },
+      { id: "fuzzers", type: "default", position: { x: 0, y: 240 }, data: { label: "Фаззеры", color: "#f59e0b", count: c.fuzzers }, draggable: false },
+      { id: "connectors", type: "default", position: { x: 480, y: 240 }, data: { label: "Коннекторы и интеграции", color: "#a855f7", count: c.resources }, draggable: false },
+      { id: "scenarios", type: "default", position: { x: 160, y: 310 }, data: { label: "Сценарии", color: "#38bdf8", count: c.scenarios }, draggable: false },
+      { id: "auth", type: "default", position: { x: 380, y: 310 }, data: { label: "Профили авторизации", color: "#a855f7", count: 0 }, draggable: false },
+    ] satisfies Node[];
+  }, [counts]);
   const [enodes, setEnodes, onEnodesChange] = useNodesState(nodes);
 
   if (mode === "scenarios") {
@@ -30,18 +49,6 @@ export function CanvasV2() {
   }
 
   return <div className="flex-1 w-full h-full flex flex-col">
-    <div className="flex items-center gap-2 px-3 h-8 shrink-0" style={{ background: "#0f172a", borderBottom: "1px solid #1e293b" }}>
-      <button
-        className="flex items-center gap-1.5 px-2.5 h-6 rounded text-[11px] font-medium"
-        style={{ background: "rgba(56,189,248,0.1)", color: "#38bdf8", fontFamily: "Golos UI, sans-serif" }}
-        onClick={() => setMode("entity")}
-      ><Share2 className="size-3" />Сущности</button>
-      <button
-        className="flex items-center gap-1.5 px-2.5 h-6 rounded text-[11px] font-medium"
-        style={{ color: "#64748b", fontFamily: "Golos UI, sans-serif" }}
-        onClick={() => setMode("scenarios")}
-      ><FileText className="size-3" />Сценарии</button>
-    </div>
     <div className="flex-1 relative min-h-0">
       <ReactFlow nodes={enodes} edges={[]} onNodesChange={onEnodesChange} fitView nodesConnectable={false} nodesDraggable={false} proOptions={{ hideAttribution: true }} style={{ background: "#09090b" }} minZoom={0.3} maxZoom={1.5}>
         <Background color="#1e293b" gap={24} />

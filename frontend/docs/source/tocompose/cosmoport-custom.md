@@ -8,7 +8,7 @@
 
 ## Тезис
 
-Не второй продукт KDT.  
+Не второй продукт PK.  
 **Integration pack:** коробка SecOps Lab ↔ ЖЦ портала Cosmoport:
 
 ```text

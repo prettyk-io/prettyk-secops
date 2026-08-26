@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """CD-4: Эвристическое пробуждение запросов (zero-touch form awakening).
 
 Принимает ``ServiceMap`` и ``DiscoveryCorpus``, находит DOM-инпуты

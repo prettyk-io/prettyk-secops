@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 DISC-2: resolve UI control by visible label (SecOps discovery).
 

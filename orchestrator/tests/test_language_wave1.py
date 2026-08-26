@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Волна 1: pretty path/kind/Добавить, маркеры >?/>@, LanguageEngine."""
 import sys
 from pathlib import Path

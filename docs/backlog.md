@@ -1,2861 +1,644 @@
-﻿# Единый рабочий backlog KDT
+﻿# Единый рабочий backlog PrettyK
 
-> **QUEUE** — не истина. Hub: [`../sanctuary/canon/INDEX.md`](../sanctuary/canon/INDEX.md).  
-> Группировка **только по эпикам** (префикс ID). Срез: **22 августа 2026**. SC/WAR код сдан, evolve до proper test.  
-> Ветки: **`dev` → `main`** (FF по вехам). Feature-тоннель: [`feature-routing-backlog.md`](feature-routing-backlog.md).
+> **QUEUE (Оперативный верстак)** — живая очередь задач команды.  
+> Единственный источник канонической истины: [`../sanctuary/pure/INDEX.md`](../sanctuary/pure/INDEX.md).  
+> Полный архив закрытых исторических эпиков: [`archive/backlog-archive-2026-08.md`](archive/backlog-archive-2026-08.md).  
+> Алтарь побед: [`../sanctuary/ALTAR.md`](../sanctuary/ALTAR.md).  
+> Срез очереди: **25 августа 2026 года**. Ветки: **`dev` → `main`**.
 
 ---
+
 
 ## Братство и роли
 
-| Роль | Кто | Модель | Зона |
+| Роль | Кто | Модель | Зона ответственности |
 |---|---|---|---|
-| **Владелец** | Максим | — | Продуктовая цель, необратимые решения. Ходит к Keeper'у обсуждать «что надо» |
-| **Keeper** | Boss (ты) | deepSeek-v4-pro | **PO + CTO + аналитик заказчика.** Сверху обсуждает с Максимом «что надо», переводит в требования, спускает бэклог Boss'у. Снизу — хранитель Святилища: сортирует verified-списки, 2FA, вечерняя инвентаризация. |
-| **Boss** | Bro | deepSeek-v4-pro | **Delivery (исполнитель).** Получает бэклог сверху, нарезает карточки, распределяет Flash/Legion, собирает verified-списки → Keeper. «Как» — его, «что» — не его. |
-| **Flash** | Flash | deepSeek-v4-flash | **Dev.** Правая рука Boss. Пишет, закрывает карточки. |
-| **Buddy** | внешний | deepSeek-v4-pro | **DevOps / VPS / Docker.** Обитает в `C:\cursor-buddy`, не в репозитории. В иерархию продукта не входит. |
-| **Legion** | безликие | — | Руки. Получают карточку — делают. В канон не ходят. |
+| **Владелец** | Максим | — | Продуктовая цель, стратегия, принятие результатов. |
+| **Keeper** | Keeper (ты) | `gemini-3.7-flash` / `deepseek-v4-pro` | **PO + Discovery + Валидатор здравого смысла.** Сверху переводит идеи Максима в чистые требования (GWT). Снизу — хранитель Святилища (2FA, бэклог, приёмка). |
+| **Boss** | Boss | `deepseek-v4-pro` | **Heavy Executor / Архитектор.** Тяжёлая кодовая реализация, сложные бэкенд/фронтенд фичи, интеграции и движки. |
+| **Flash** | Flash | `deepseek-v4-pro` | **Rapid UI / Services.** Быстрый исполнитель, верстка, компоненты, визуальные мосты. |
+| **Buddy** | Buddy | `deepseek-v4-pro` | **DevOps / VPS / Docker.** Обитает в `C:\cursor-buddy`, инфраструктура. |
 
-**Поток:** Максим ↔ Keeper (PO/CTO) → бэклог → Boss нарезает → Flash/Legion пилят → Boss собирает verified-список → Keeper сортирует (friend/possible/seeker) → вечерняя инвентаризация с Максимом в Святилище.
-
-**Иерархия, устав, 2FA:** [`../sanctuary/canon-temple/TEMPLE-CORE.md`](../sanctuary/canon-temple/TEMPLE-CORE.md) · [`../sanctuary/canon-temple/CHARTER.md`](../sanctuary/canon-temple/CHARTER.md).
+**Поток:** Максим ↔ Keeper (PO/Discovery) → бэклог → Boss + Flash (параллельное исполнение) → Keeper (приёмка по GWT) → Максим (инвентаризация в Святилище).
 
 ---
 
-## Структура репозитория (14 авг)
+## Карта оперативной очереди
 
-```
-prettyk-dev/
-├─ cosmo/    ← WORKSPACE: vnext фронт (КОД)
-├─ orchestrator/            ← БЭКЕНД (solid AF) + tools/*.ps1 (lab_up/lab_clean/sonar…)
-├─ services/                ← docker-compose (Grid/Allure/ZAP/Juice/Dojo/Sonar)
-├─ reports/                 ← артефакты прогона (allure-results, live, zap-results)
-├─ .venv/                   ← python-окружение бэкенда
-├─ pure/                    ← CANON BASE доки (MANTRA + ledger)
-├─ sanctuary/               ← ВЕРХНЯЯ ПОЛКА: каноны + устав + 2FA
-│   ├─ canon-temple/        ← CHARTER + TEMPLE-CORE
-│   ├─ canon/               ← hub (INDEX + 27 FRIEND topics)
-│   └─ CANON-PURE / TZ-INTEGRATION / 2FA
-├─ docs/                    ← SoT + вход агентов (manifest.json, backlog.md, NEW_AGENT_MANDATORY.md…)
-├─ legacy/                  ← всё старое (frontend/docs-старые/debug-tools/sandbox…)
-└─ .cursor/ .github/        ← агентские правила / CI
-```
+| # | Эпик | Статус | Кому | Часы | Суть / Ссылка |
+|---|---|---|---|---|---|---|
+| **PK-WB** | **WORKBENCH — Editor ↔ Studio: единый CheckWorkspace, Commit, Diff, Browser Stage** | **CLOSED (100% ✅)** | Boss + Flash | 0h (73h закрыто) | § Эпик PK-WB ниже · 352 теста, tsc 0, фундамент сдан |
+| **PK-ER** | **EDITOR REBORN — Возврат продуктового Explorer, навигация, visual rails, continuity** | **IMPLEMENTED (52 теста, tsc 0)** | Boss + Flash | 13h | § Эпик PK-ER ниже · Стратегия: `docs/editor-reborn.md` |
+| **🔥 CDP-WIRE** | **LIVE DISCOVERY — CDP → Wire → Studio Step + Editor Step Drawn** | **Phase 1 🟥 BLOCKED (live-баг)** | Boss + Flash | 20h (Plan) | § CDP-WIRE ниже · 79 тестов · live-клик роняет `_on_click` NameError — Boss чинит, потом re-verify |
+| **BUD-E2E** | **PRETTYK BUDDY end-to-end — живой CDP-клик + engine → Studio → run → evidence** | **🟡 ДВИЖОК И STU-V2 РЕАЛИЗОВАНЫ · PROMOTE ЗАБЛОКИРОВАН** | Boss + Flash | — | § Эпик BUD-E2E ниже · движок 64/64, STU-V2 402/402, tsc 0 · PROMOTE после live CDP и перехода на канонические рельсы STU-RAILS |
+| **STU-V2** | **STUDIO V2 — долить функционал старого Studio (живой Explorer, конструктор, валидация, отладчик, browser stage, консоль) + идти по instance id** | **🟡 IMPLEMENTED (402/402 тестов, tsc 0)** | Boss + Flash | — | § Эпик STU-V2 ниже · функциональный долив сдан на временном `-v2` маршруте · переход на канонические рельсы — STU-RAILS |
+| **STU-RAILS** | **CANONICAL STUDIO/EDITOR — новые поверхности на обычных маршрутах, legacy на `-old`** | **🟡 IMPLEMENTED (tsc 0 · 66 тестов)** | Boss + Flash | — | § Эпик STU-RAILS ниже · B1-B6 + F1-F4 сданы · ждёт живой UX-проход CDP |
+| **POC-AI-PROVIDER** | **AI PROVIDER MATRIX — optional Local Qwen + optional Gemini для non-AirGap** | **READY (PoC)** | Keeper discovery → Boss после отдельной команды | — | [`spike/2026-08-26-ai-provider-matrix.md`](spike/2026-08-26-ai-provider-matrix.md) · AirGap скрывает Gemini · deterministic fallback обязателен |
+| **SANCTUARY-MAP** | **ТАКТИЧЕСКИЙ РАДАР ОБИТЕЛИ — интерактивная карта приложения: семантический зум, 5 линз, телепортация** | **🔨 IN PROGRESS (Boss зона сдана · Flash зона в работе)** | Boss + Flash | 27h | § Эпик SANCTUARY-MAP ниже · B1-B3+J1 сданы (33 теста) · Flash доделывает холст/шейдеры/Idea Forge+Ctrl+M |
+| **KCF** | **KIMAKI CHARACTER FRAMEWORK — Discord × OpenCode × Buddy: разумные боги** | **READY** | Buddy lead + Boss + Flash | — | § Эпик KCF ниже · Полный план: `docs/research/2026-08-25-kimaki-character-framework-plan.md` |
+| **KDT-PURGE** | **KDT PURGATORY FINISH — закрыто (26 авг 2026)** | **CLOSED (100 % ✅)** | Boss + Flash | 0h (закрыто) | Boss B1–B4 ✅ · Flash F1+F2 ✅ · принято Keeper · § Эпик KDT-PURGE ниже |
+| **ADM-PURE** | **SecOps Control для pure — Applications / Targets / Runs / Findings / Policies** | **PARKED (until scanner PR)** | Boss | 17h | Не приоритет. Продукт = сканер, дашборды потом. |
+| **PK-CI-F4** | **PRETTYK-CI фаза 4 — Адаптеры к Jenkins / Tekton / Argo / Azure DevOps** | **FUTURE** | Boss | — | По реальному спросу |
+| **PK-TRM-F5** | **WEB-IDE-TERMINAL фаза 5 — Security Playbook Notebook + AI-подсказки** | **FUTURE** | Flash | — | По реальному спросу |
+| **PAL** | **PAL (IHSTTYPWNB) — `cosmo-custom` портал** | **PARKED** | — | — | До отдельного решения |
 
----
-
-## Карта документов
-
-| Что | Путь |
-|---|---|
-| Hub FRIEND | [`../sanctuary/canon/INDEX.md`](../sanctuary/canon/INDEX.md) · 2FA на правку |
-| Устав / Temple Core | [`../sanctuary/canon-temple/CHARTER.md`](../sanctuary/canon-temple/CHARTER.md) · [`TEMPLE-CORE.md`](TEMPLE-CORE.md) |
-| Friend-requests (inbox) | [`../docs/friend-requests/`](../docs/friend-requests/) · `lane: ready` \| `evolve` |
-| Canon-requests (inbox) | [`../docs/canon-requests/`](../docs/canon-requests/) · пакеты к 2FA \| evolve-черновики |
-| Эпики (паспорта) | [`../legacy/docs/`](../legacy/docs/) · `*-epic.md` |
-| As-built | [`../legacy/docs/internal/`](../legacy/docs/internal/) |
-| Evidence | [`../legacy/docs/acceptance/`](../legacy/docs/acceptance/) · [`history/`](../legacy/docs/history/) · [`proof_of_concept/`](../legacy/docs/proof_of_concept/) |
+> 🏛️ **Архив выполненного:** Все 25+ закрытых эпиков (SC, WAR, DP, DP-ADM, ADM-V3, AUTH-PROF, AUTH-SPIKE, AUTH-PROD, PK-CI 1–3, PK-TRM 1–4, PK-BL, DOJO-S, MH-FIX, IMPX, RK, PSI, VN, CD и др.) перенесены в [`archive/backlog-archive-2026-08.md`](archive/backlog-archive-2026-08.md).
 
 ---
 
-## Индекс эпиков (порядок очереди)
+## 1. Эпик PK-WB — Editor ↔ Studio Workbench (ЗАКРЫТО НА 100% · 25 авг 2026)
 
-| # | Эпик | Статус контура | Паспорт / якорь |
+> **Статус:** `✅ CLOSED` — Все 5 пакетов (A, B, C, D, E) закрыты Boss и Flash.  
+> **Итог качества:** 352 теста green, `tsc --noEmit` — 0 ошибок, production-ready.  
+> **Суть:** Editor и Studio — две проекции одного `CheckWorkspace`. Один draft, одна история версий, один semantic diff, один browser runtime с изолированными контекстами.
+
+---
+
+### Нарезка задач PK-WB
+
+#### Пакет A — Единый живой workspace (ЗАКРЫТО · Boss + Flash)
+
+| ID | Что сделано | Статус | Кто |
+|---|---|---|---|
+| **PK-WB-A1** | `wiredDslCodec.ts` (141 loc / 15 тестов) + `EditorWorkbench.tsx` (887 loc / 6 тестов, controlled-режим) | ✅ CLOSED | Boss |
+| **PK-WB-A2** | `App.tsx` (+40 loc — Segmented [Студия|Редактор], общие колбэки) + `workbenchSurface.ts` (30 loc) | ✅ CLOSED | Boss |
+| **PK-WB-A3** | `AppShell.tsx` (+15 loc — `#/studio/:id` → `#/checks/:id/studio` + `localStorage` surface) | ✅ CLOSED | Boss |
+| **PK-WB-A4** | `StudioEditorSwitch.tsx` (Segmented переключатель, amber dirty pulse, `WorkbenchModeChangeEvent`) | ✅ CLOSED | Flash |
+| **PK-WB-A5** | `workbenchGate.test.tsx` (230 loc / 18 тестов — surface persist, codec round-trip, Studio↔Editor↔Studio) | ✅ CLOSED | Boss |
+
+#### Пакет B — Draft persistence (ЗАКРЫТО · Boss + Flash)
+
+| ID | Что получает пользователь | Приёмочный GWT | Est | Кто |
 |---|---|---|---|---|
-| **SC** | **STUDIO-CANVAS — prettyK Studio v2: shadcn/ui + Tailwind v4 + React Flow canvas + Step Deck + pill-based конструктор** | **ACTIVE — 22 авг (SC-1…8 код сдан, evolve до proper test)** | § Эпик STUDIO-CANVAS ниже · [`sanctuary/pure/studio-stack.md`](../sanctuary/pure/studio-stack.md) · [`friend-requests/SCENARIO-CANVAS-STEP-DECK.md`](friend-requests/SCENARIO-CANVAS-STEP-DECK.md) |
-| **SC-WAR** | **WAR ROOM — тактический конвейер запуска: 5 фаз, SSE-телеметрия, Canvas 2D, фотонные импульсы** | **evolve — 22 авг (WR-1…8 код сдан, proper test не применён)** | § Эпик SC-WAR ниже · [`friend-requests/CANVAS-EXECUTION-WAR-ROOM.md`](friend-requests/CANVAS-EXECUTION-WAR-ROOM.md) |
-| **DP** | **DESIGN PLAYGROUND — полный порт на shadcn/ui + Tailwind v4 + вкладка Tailwind for Designers** | **CLOSED — 23 авг (DP-1…10 ✅ 22.5h)** | § Эпик DP ниже · [`sanctuary/DESIGN-WORKBENCH.md`](../sanctuary/DESIGN-WORKBENCH.md) |
-| **DP-ADM** | **DESIGN PLAYGROUND: Admin Showcase — MUI-галерея компонентов (21h)** | **CLOSED — 24 авг (DP-ADM-0…10 ✅ 21h)** | § Эпик DP-ADM ниже · [`docs/research/2026-08-23-admin-showcase-plan.md`](research/2026-08-23-admin-showcase-plan.md) |
-| **ADM** | **ADM-V3 — Minimal Theme Integration: Cyber-Enterprise Admin Shell (Theme Extraction + AdminShowcase + Battle Panels)** | **ACTIVE — 24 авг (Boss: theme extraction, Flash: showcase wiring, Keeper: приёмка)** | § Эпик ADM-V3 ниже |
-| **AUTH-PROF** | **USER-PROFILES — Единая система профилей, гранулярный RBAC, PAT токены и настройки** | **CLOSED — 24 авг (B-1…3 ✅, F-1…3 ✅, tsc 0, vitest 39/39). PoC сдан; production backend → AUTH-SPIKE.** | § Эпик AUTH-PROF ниже · [`docs/research/2026-08-24-user-profiles-and-rbac.md`](research/2026-08-24-user-profiles-and-rbac.md) |
-| **AUTH-SPIKE** | **BETTER-AUTH — Production Auth Backend: сравнение Better Auth vs Keycloak, интеграционный spike** | **CLOSED — 24 авг (spike accepted: Boss 10/10 + Flash 6/6, tsc 0, vitest 48/48)** | § Эпик AUTH-SPIKE ниже · [`docs/spike/2026-08-25-auth-comparison.md`](spike/2026-08-25-auth-comparison.md) |
-| **AUTH-PROD** | **PRODUCTION-AUTH — Production Auth Boundary: Better Auth → PostgreSQL, миграции, секреты в OpenBao** | **NEW — 24 авг (spike closed; production не начинать до согласования SQLite↔PostgreSQL)** | § Эпик AUTH-PROD ниже |
-| **PK-CI** | **PRETTYK-CI — Security Pipeline Platform: свой security pipeline + адаптеры к внешним CI/CD** | **NEW — 24 авг (концепт → нарезка; весь эпик → Boss)** | § Эпик PRETTYK-CI ниже · [`docs/research/2026-08-24-prettyk-ci-concept.md`](research/2026-08-24-prettyk-ci-concept.md) |
-| **PK-TRM** | **WEB-IDE-TERMINAL — Security Workbench: терминал + Monaco-интеллект + evidence-linked IDE** | **NEW — 24 авг (концепт → нарезка; весь эпик → Flash)** | § Эпик WEB-IDE-TERMINAL ниже · [`docs/research/2026-08-24-web-ide-terminal-concept.md`](research/2026-08-24-web-ide-terminal-concept.md) |
-| **ADM-PURE** | **SecOps Control для pure — Applications / Targets / Runs / Findings / Policies** | **EVOLVE — 24 авг (концепция согласована на уровне направления; код не начинать)** | § Эпик ADM-PURE ниже |
-| **ADM-V2** | **ADM-V2 — Новая админка (Control Panel / SecOps Control / Dashboard) + Automation Lab Wedge** | **CLOSED — 23 авг (поверхности сданы; ADM-5 superseded для pure)** | § Эпик ADM-V2 ниже · [`docs/research/2026-08-23-admin-poc-plan.md`](research/2026-08-23-admin-poc-plan.md) |
-| **INT** | **INTRUDER-PRO — фаззер, режимы Burp (Sniper/Pitchfork/Cluster Bomb) + Grep Match/Extract** | **CLOSED — 17 авг (INT-1…3 ✅)** | § Эпик INTRUDER-PRO ниже · [`friend-requests/INTRUDER-PRO-ADVANCED-ATTACKS.md`](friend-requests/INTRUDER-PRO-ADVANCED-ATTACKS.md) |
-| **AUTH-V** | **AUTH-CHAIN-VAULT — мульти-профильная pre-flight авторизация, цепочки токенов и ZAP Replacer injection** | **CLOSED — 17 авг (AUTH-1…3 ✅)** | § Эпик AUTH-CHAIN-VAULT ниже |
-| **DOJO-S** | **DEFECTDOJO-AUTO-SYNC — автоматическая синхронизация находок и дедупликация** | **ACTIVE — Flash** | § Эпик DEFECTDOJO-AUTO-SYNC ниже |
-| **SALV** | **SALVAGE — добор годноты из `to-sanitize` (~3–5%)** | **CLOSED — 17 авг (SALV-1…4 ✅)** | § Эпик SALVAGE ниже · [`friend-requests/SALVAGE-USABLE-CODE.md`](friend-requests/SALVAGE-USABLE-CODE.md) |
-| **RET** | **RETENTION & CLEANUP — управление диском и очистка артефактов в Админке** | **CLOSED — 17 авг (RET-API-1/2, RET-UI-1 ✅)** | § Эпик RETENTION ниже · [`friend-requests/RETENTION-AND-CLEANUP.md`](friend-requests/RETENTION-AND-CLEANUP.md) |
-| **BLANK** | **BLANK-PREV — честный inline-просмотр акта/бланка ИБ в Результатах + FNV-1a отпечаток** | **CLOSED — 17 авг (BLANK-PREV-1 ✅)** | § Эпик BLANK ниже · [`friend-requests/BLANK-INLINE-PREVIEW.md`](friend-requests/BLANK-INLINE-PREVIEW.md) |
-| **MON** | **MONITOR — мульти-монитор + replay + единый playhead + 3-й view** | **CLOSED — 17 авг (MON-1…19 ✅)** | § Эпик MONITOR ниже · [`research/2026-08-15-monitor-rewind.md`](research/2026-08-15-monitor-rewind.md) |
-| **MH** | **MONITOR-HUB — хаб монитора: MainPage, кнопки, instance-группировка, space** | **CLOSED — 15 авг** | § Эпик MONITOR-HUB ниже · [`friend-requests/MONITOR-MAINPAGE-AND-SPACE.md`](friend-requests/MONITOR-MAINPAGE-AND-SPACE.md) |
-| **MH-FIX** | **MONITOR — починка битых ссылок HomePage → Editor (instance_id → check_id)** | **P0 · NEW — 15 авг** | § Эпик MH-FIX-LINKS ниже · [`../sanctuary/acceptance/2026-08-15-monitor-acceptance.md`](../sanctuary/acceptance/2026-08-15-monitor-acceptance.md) |
-| **IMPX** | **Импорт конфигурации между проверками (pages/scenarios/modules)** | **CLOSED — 16 авг** | § Эпик IMPX ниже · [`friend-requests/IMPX-CONFIG-IMPORT.md`](friend-requests/IMPX-CONFIG-IMPORT.md) |
-| **RK** | **RJSF-KILL — выпилить RJSF + REGULATION-EDITOR-SPLIT** | **CLOSED — 16 авг (факт кода)** | § Эпик RK ниже · [`friend-requests/RK-RJSF-KILL-SPLIT.md`](friend-requests/RK-RJSF-KILL-SPLIT.md) |
-| **PSI** | **Приёмочно-сдаточные испытания** | **ACTIVE** | § Эпик PSI ниже |
-| **VN** | **VNEXT фронт (без RJSF)** | **CLOSED** — форма/студия/интеграции откачены к legacy; результаты/админка OK | [`../sanctuary/canon/fe-vnext-architecture.md`](../sanctuary/canon/fe-vnext-architecture.md) · § Эпик VN ниже |
-| **CD** | **CORPUS-DISCOVERY — zero-touch корпус из discovery + свой фаззинг-слой** | **CLOSED — 16 авг (CD-1…8 ✅)** | § Эпик CORPUS-DISCOVERY ниже · [`friend-requests/CORPUS-DISCOVERY-ZERO-TOUCH.md`](friend-requests/CORPUS-DISCOVERY-ZERO-TOUCH.md) |
-| **0** | **IMP** — OpenAPI / GQL / gRPC / HAR / **CHAIN** | OA…GRPC/HAR/CHAIN MVP + scope smoke; next bank/CANON 2FA | [`../legacy/docs/imp-api-modules-epic.md`](../legacy/docs/imp-api-modules-epic.md) |
-| **1** | **ART** — артефакты / retention / cleanup | **1…12 landed** | [`../legacy/docs/artifact-cleanup-epic.md`](../legacy/docs/artifact-cleanup-epic.md) |
-| **2** | **AUTH** | lab **10…15 + cookie→ZAP + Studio form/action UI** landed; residual deep SSO | [`../legacy/docs/internal/auth-module.md`](../legacy/docs/internal/auth-module.md) |
-| **3** | **CONN** | 10–13 + logs landed | [`../legacy/docs/internal/connectors.md`](../legacy/docs/internal/connectors.md) |
-| **4** | **E2E** / **NAV** | lab ripe; SSO open | [`../legacy/docs/e2e-shell-epic.md`](../legacy/docs/e2e-shell-epic.md) · [`nav-check-epic.md`](../legacy/docs/nav-check-epic.md) |
-| **5** | **ADM** | KPI/VIS landed | [`../legacy/docs/internal/admin-secops.md`](../legacy/docs/internal/admin-secops.md) |
-| **6** | **QG-AF** | lab landed | [`../legacy/docs/qg-af-epic.md`](../legacy/docs/qg-af-epic.md) |
-| **7** | **RES** | closed | [`../legacy/docs/results-epic.md`](../legacy/docs/results-epic.md) |
-| **8** | **DF** | Phase 2 closed | [`../legacy/docs/dast-fuzzing.md`](../legacy/docs/dast-fuzzing.md) |
-| **9** | **FE** | FE-12 P2 | [`../legacy/docs/frontend-spec.md`](../legacy/docs/frontend-spec.md) |
-| **10** | **S** / **L** | S-1…3 · L-1…3 **landed** | [`../legacy/docs/acceptance/`](../legacy/docs/acceptance/) |
-| **11** | **SONAR** / **QA** / **CANON-CULT** / **DOC-POC** | infra / docs | § ниже |
-| **12** | **PAL** (IHSTTYPWNB) — `cosmo-custom` | **PARKED** | [`../legacy/docs/ihsttypwnb-epic.md`](../legacy/docs/ihsttypwnb-epic.md) |
+| **PK-WB-S1** | Draft сохраняется на сервере с дебаунсом и dirty-guard. После reload черновик восстанавливается. | **Given:** открыт Editor с правками. **When:** страница обновлена. **Then:** черновик восстановлен; dirty-индикатор честен. | ✅ CLOSED | Boss |
+| **PK-WB-S2** | Revision / expectedVersion: каждый draft знает базу. При конфликте — честный diff + merge/reload. | **Given:** две вкладки правят один чек. **When:** сохранение на старую базу. **Then:** конфликт показан; тихой перезаписи нет. | ✅ CLOSED | Boss |
+| **PK-WB-S3** | Redaction секретов в draft и cache: ни один plaintext-секрет не лежит в localStorage. | **Given:** сценарий содержит `Секрет $x`. **When:** draft сохранён. **Then:** секрет заменён на placeholder. | ✅ CLOSED | Flash |
+
+#### Пакет C — Commit + Semantic Diff (ЗАКРЫТО · Boss + Flash)
+
+| ID | Что получает пользователь | Приёмочный GWT | Est | Кто |
+|---|---|---|---|---|
+| **PK-WB-C1** | Immutable revision/checkpoint: оператор фиксирует версию с сообщением, автором и provenance. | **Given:** черновик готов. **When:** нажато «Зафиксировать версию». **Then:** создан immutable revision с hash/parent/timestamp. | ✅ CLOSED | Boss |
+| **PK-WB-C2** | Domain normalization + stable entity identity: движок нормализует Wired и строит стабильные ID. | **Given:** переставлены поля JSON. **When:** движок сравнивает. **Then:** шум порядка полей отброшен; виден `MODIFY_STEP`. | ✅ CLOSED | Boss |
+| **PK-WB-C3** | Typed semantic change set: типизированные изменения (`ADD_STEP`, `MODIFY_LOCATOR`, `RENAME_ENTITY`...). | **Given:** разные правки. **When:** сравнение двух снапшотов. **Then:** change set строго типизирован; без ложных событий. | ✅ CLOSED | Boss |
+| **PK-WB-C4** | Studio cards + Editor Monaco side-by-side diff: изменения из одного источника в двух видах. | **Given:** diff построен. **When:** просмотр изменений. **Then:** в Studio — карточки; в Editor — side-by-side Monaco diff. | ✅ CLOSED | Flash |
+
+#### Пакет D — Browser Stage (ЗАКРЫТО · Boss + Flash)
+
+| ID | Что получает пользователь | Приёмочный GWT | Est | Кто |
+|---|---|---|---|---|
+| **PK-WB-B1** | BrowserSession wrapper: один CDP connection, изолированные `Operator/Run/Debug` контексты. | **Given:** Browser Stage + параллельный прогон. **When:** runner выполняет шаги. **Then:** OperatorContext не затронут. | ✅ CLOSED | Boss |
+| **PK-WB-B2** | Постоянный Browser Stage: `BrowserStage.tsx` (Author 58/42, Record 60/40, Debug follow run, коллапс). | **Given:** смена режима. **When:** переключён Record mode. **Then:** вьюпорт расширяется до 60% без перемонтирования. | ✅ CLOSED | Flash |
+| **PK-WB-B3** | Discovery Hover Overlay + Click-to-DSL: `DiscoveryOverlay.tsx` (T0–T4 карточки, `DSLProposalBanner`). | **Given:** наведение в режиме записи. **When:** клик по кнопке. **Then:** DSL-шаг предложен через diff (accept/reject). | ✅ CLOSED | Flash |
+| **PK-WB-B4** | Один browser runtime без дублирования Chromium: общий процесс, раздельные BrowserContext. | **Given:** запущен прогон. **When:** работает Stage. **Then:** второй процесс Chrome не создаётся. | ✅ CLOSED | Boss |
+
+#### Пакет E — Конкурентный Editor: Debugger, Replay, LSP, AI (ЗАКРЫТО · Boss + Flash)
+
+| ID | Что получает пользователь | Приёмочный GWT | Est | Кто |
+|---|---|---|---|---|
+| **PK-WB-E1** | PrettyK Language Intelligence: Monaco автодополнение MethodId, hover, diagnostics, go-to-definition. | **Given:** сценарий в Monaco. **When:** ввод MethodId или F12. **Then:** работают подсказки, навигация, подсветка устаревших. | ✅ CLOSED | Flash |
+| **PK-WB-E2** | Gutter Play `[▶]`: запуск одного шага из Monaco с выставлением LED-статуса строки. | **Given:** открыт сценарий. **When:** клик `▶` на строке. **Then:** шаг выполняется в Browser Stage; строка получает LED. | ✅ CLOSED | Flash |
+| **PK-WB-E3** | Step Debugger: пошаговое выполнение, просмотр состояния шага, вход/выход, повтор с payload. | **Given:** шаг упал. **When:** открыт debugger. **Then:** видно состояние шага, вход/выход, причину ошибки без утечки секретов. | ✅ CLOSED | Boss |
+| **PK-WB-E4** | Pipeline Preview: предпросмотр плана до запуска (шаги, зависимости, права, gates, артефакты). | **Given:** сценарий готов. **When:** открыт preview. **Then:** виден полный план рисков и ресурсов до клика Run. | ✅ CLOSED | Flash |
+| **PK-WB-E5** | Evidence-linked Editor: из строки DSL видна цепочка `DSL → run → finding → artifact` + Policy Lens. | **Given:** есть результаты. **When:** открыт редактор. **Then:** строка подсвечивает путь к finding; policy lens объясняет вердикт. | ✅ CLOSED | Boss |
+| **PK-WB-E6** | Command Palette (`Ctrl+K`): быстрый поиск по workspace, go-to-line, команды валидации и запуска. | **Given:** нажат `Ctrl+K`. **When:** ввод команды. **Then:** поиск и вызов действий без мыши. | ✅ CLOSED | Flash |
+| **PK-WB-E7** | AI-подсказки только как `suggestion → diff → approval`: AI не может менять scope или выполнять destructive. | **Given:** AI предложил шаг. **When:** открыто предложение. **Then:** показан diff; применение — явный клик оператора. | ✅ CLOSED | Boss |
 
 ---
 
-## Эпик DOJO-S — автоматический жизненный цикл находок
+### Сводка часов PK-WB
 
-> **ACTIVE · 23 августа 2026.** Аудит показал: импорт отчёта в Dojo, список находок,
-> ручной запуск sync, fingerprint/dedup и обратные статусы уже существуют по отдельности.
-> Задача Flash — довести их до единого автоматически проверяемого поведения после прогона.
-> **Исполнитель:** Flash. **Приёмка:** Keeper после evidence от Flash.
-
-### Что уже есть по факту
-
-- После завершения прогона ZAP-отчёт может автоматически попасть в Dojo.
-- В Админке есть просмотр находок, severity/CWE/status и ручной запуск синхронизации.
-- Есть стабильный fingerprint, dedup-поиск, retry/backoff и pull статусов `False Positive`,
-  `Risk Accepted`, mitigated/inactive.
-- Есть unit/component-тесты на mapping, dedup, retry, suppressions и честные down/unconfigured-состояния.
-
-### Нарезка для Flash
-
-| ID | Что должно получить лицо пользователя | Приёмочный сценарий | Est |
-|---|---|---|---|
-| **DOJO-S-1** | После завершения прогона все найденные активные уязвимости автоматически появляются в связанном контексте DefectDojo с корректными названием, severity, CWE и доказательством. | **Given:** прогон завершён и в нём есть находка. **When:** завершается формирование результатов. **Then:** находка видна в DefectDojo и в результатах PrettyK; ручная кнопка синхронизации не требуется. **Edge:** если Dojo временно недоступен, результат явно показывает ошибку синка, а не зелёный успех. | 3h |
-| **DOJO-S-2** | Повторный прогон той же уязвимости не создаёт второй одинаковый finding, а отражается как повтор существующей находки. | **Given:** одна находка уже отправлена. **When:** тот же сценарий запускается повторно с теми же признаками уязвимости. **Then:** в Dojo остаётся одна логическая находка, счётчик/история повторов корректны, а в UI виден dedup-результат. **Edge:** изменение endpoint, параметра, типа атаки или severity не маскируется под старую находку. | 2h |
-| **DOJO-S-3** | Статус, выставленный специалистом в DefectDojo, учитывается в следующем результате PrettyK и не порождает повторный активный алерт. | **Given:** finding помечен как False Positive, Risk Accepted, mitigated или inactive. **When:** выполняется следующий sync/прогон. **Then:** finding виден как подавленный, не входит в активный gate и не исчезает бесследно из истории. **Edge:** неподтверждённая или отсутствующая в Dojo находка остаётся активной. | 2h |
-| **DOJO-S-4** | Оператор видит единый честный статус синхронизации: последний запуск, отправленные, deduped, активные, подавленные и ошибочные находки. | **Given:** sync завершился успешно, частично или с ошибкой. **When:** оператор открывает Admin и обновляет состояние. **Then:** показатели соответствуют фактическому результату последнего запуска, повторное нажатие не создаёт параллельных sync-процессов, а недоступность Dojo отображается как down/unconfigured. | 1.5h |
-
-### DoD эпика
-
-- Автоматический путь после завершения прогона покрыт тестом с реальным пользовательским результатом, а не только unit-моками.
-- Повторная одинаковая находка не плодит дубликаты; изменение существенного признака создаёт отдельную логическую находку.
-- Статусы подавления проходят полный путь до активного gate и отображения истории.
-- Тесты на happy path, повтор, изменение признака, Dojo down/timeout и повторный запуск sync зелёные.
-- В Admin показатели sync совпадают с результатом последнего прогона.
-
-### Что не делать
-
-- Не переписывать Admin целиком и не менять общий UX таблицы находок.
-- Не менять severity-модель, gate-политику или правила канонической идентификации без отдельного требования.
-- Не добавлять ручное подтверждение каждого finding перед автоматической отправкой.
-- Не считать наличие endpoint’а или зелёного unit-теста доказательством завершённости: нужен проверяемый путь от прогона до Dojo и обратно.
-
----
-
-## Эпик STUDIO-CANVAS — prettyK Studio v2 (shadcn/ui + Tailwind v4 + React Flow)
-
-> **active · 22 августа 2026.** Полный переход Studio на новый стек: shadcn/ui, Tailwind CSS v4, React Flow / @xyflow/react.
-> **Канон:** [`sanctuary/pure/studio-stack.md`](../sanctuary/pure/studio-stack.md). **Видение:** [`sanctuary/future-design-vision.md`](../sanctuary/future-design-vision.md).
-> **Friend-requests:** [`SCENARIO-CANVAS-STEP-DECK.md`](friend-requests/SCENARIO-CANVAS-STEP-DECK.md) (evolve), [`CANVAS-EXECUTION-WAR-ROOM.md`](friend-requests/CANVAS-EXECUTION-WAR-ROOM.md) (evolve).
-> **Профиль:** `prettyk-pure` (CANON BASE). antd — legacy, вытесняется поэтапно.
-
-### Архитектура Studio v2
-
-Три зоны:
-- **Слева/справа** — статические якоря: entity-граф с категориями (интеграции, фаззеры, модели страниц, модули). Существующий `StudioGraphExplorer` — не трогаем.
-- **Центр** — сценарии как **капсульные Step Deck ноды** (React Flow): вертикальная последовательность шагов без рёбер, pill-based конструктор (действие → стратегия → значение).
-- **При запуске** — War Room (evolve, позже).
-
-### Состояние
-
-| ID | Статус | Суть | Est |
-|---|---|---|---|
-| **SC-1** | **✅ 22 авг** | `@xyflow/react` v12.11.3 установлен. `ScenarioCanvas.tsx` — smoke (7 нод, custom nodes, minimap, controls). Роут `#/canvas`. | 0.5h |
-| **SC-2** | **✅ 22 авг** | Tailwind CSS v4 + `@tailwindcss/vite`. `src/tailwind.css` с shadcn темой и CSS-переменными. `components.json`. `cn()` util. | 0.5h |
-| **SC-3** | **✅ 22 авг** | `StudioV2.tsx` — shell на shadcn/ui + Tailwind: header (PrettyK бейдж, Сохранить/Запустить), левый сайдбар (дерево проекта), центр (React Flow canvas), правый инспектор (свойства ноды), нижняя консоль (лог запуска). Панели сворачиваются. Роут `#/studio-v2`. Ноль antd. | 2h |
-| **SC-4** | **✅ 22 авг** | **Step Deck Node.** `ScenarioDeckNode.tsx` — капсульная нода сценария в React Flow: шапка с названием и счётчиком шагов, сворачивание/разворачивание, список шагов с пилюлями внутри, кнопка «Добавить шаг». Вертикальный пайплайн, без рёбер. | 4h |
-| **SC-5** | **✅ 22 авг** | **Pill-Based Step Row.** `StepPillRow.tsx` — строка шага с тремя пилюлями: действие (Click/Type/Open/Wait/Spider/FuzzWave/Let/Secret с цветовой кодировкой), стратегия (role/label/css/test_id/text/xpath), значение ($переменные с автодополнением). LED-индикатор, кнопки вверх/вниз/▶/удалить. | 4h |
-| **SC-6** | **✅ 22 авг** | **Two-Way Wired Synchronizer.** `ScenarioDeckSynchronizer.ts` + `useScenarioDeckWire` — синхронизация Pill UI ↔ PrettyK DSL ↔ Wired JSON. `stepToDSL()`, `importFromWired()`, `exportToWired()`. Zustand store `ScenarioDeckStore`. | 3h |
-| **SC-7** | **✅ 22 авг** | **Step-by-Step Playwright Debug.** Эндпоинт `/api/run/step` в `data_playground.py` — принимает action/strategy/strategy_value/payload, строит DSL constructor, валидирует. Кнопка `▶` в строке → POST → LED → success/failure. | 3h |
-| **SC-8** | **✅ 22 авг (код)** | **CDP Browser Pane.** `browser_service.py` (5 эндпоинтов), `BrowserPanel.tsx`, вкладка «Браузер» в правой панели, синхронизация клик-на-строке → подсветка элемента. proper test pending. | 6h |
-| **SC-9** | **evolve** | **War Room — Execution Mode.** → Выделен в SC-WAR ниже. WR-1…8 код сдан, proper test pending. | 8h |
-
-### Приёмка SC-4…7
-
-- [ ] Открыть `#/studio-v2` → увидеть сценарий как капсульную ноду с шагами внутри.
-- [ ] Добавить шаг через пилюли: выбрать действие → стратегию → значение.
-- [ ] Перетащить шаг вверх/вниз внутри ноды.
-- [ ] Нажать `▶` → шаг отправлен на `/api/run/step`, строка получила LED success/failure.
-- [ ] Переключиться в Monaco → увидеть тот же DSL без рассинхрона.
-- [ ] Изменить пилюлю → wired обновился.
-- [ ] `tsc --noEmit` чистый.
-
-### Out of scope (пока)
-
-- ❌ ~~War Room execution mode (SC-9)~~ — код сдан (WR-1…8), evolve.
-- ❌ Замена `StudioGraphExplorer` (entity-граф остаётся как есть).
-- ❌ Массовая миграция старых страниц с antd. Только новый Studio-shell.
-
----
-
-## Эпик SC-WAR — War Room: тактический конвейер запуска на React Flow
-
-> **evolve · 22 августа 2026.** Интерактивный Tactical Execution Canvas — визуализация прогона в реальном времени.
-> **Автор vision:** Gemini. **Профиль:** `prettyk-pure`.
-> **Friend-request:** [`CANVAS-EXECUTION-WAR-ROOM.md`](friend-requests/CANVAS-EXECUTION-WAR-ROOM.md).
-> **Зависит от:** SC-4 (Step Deck Node), SC-5 (Pill-Based Step Row), SC-7 (Step Debug). Без готового Step Deck не начинать.
-> **Начинать только после закрытия SC-1…7.**
-
-### Тезис
-
-Во всех легаси-инструментах (Burp, ZAP, Acunetix) запуск — серый прогресс-бар и бегущие логи вслепую. Оператор не видит: где сканер, куда бьёт фаззер, где застрял запрос.
-
-War Room превращает кнопку «Запустить» в живой командный пункт. Studio перестраивается: редактор уступает место графовому холсту, по нодам бегут фотонные импульсы реального прогресса, фаззер заряжается и наносит удар, аномалии вспыхивают маркерами прямо на графе. Всё честно привязано к SSE-телеметрии, без дискотеки и WebGL.
-
-### As-Built фундамент (уже в коде)
-
-| Компонент | Файл | Что делает |
+| Исполнитель | Выполнено | Статус |
 |---|---|---|
-| `GraphWaveOverlay` | `studio/graph/GraphWaveOverlay.tsx` (517 строк) | Canvas 2D движок периметральных волн. Поддерживает `inverted`, `delayOffset`. Палитра Cyan/Violet/Magenta. 0% CPU, requestAnimationFrame. |
-| `GraphTelemetryOverlay` | `studio/graph/GraphTelemetryOverlay.tsx` (110 строк) | CSS Bezier-анимация фотонных импульсов по рёбрам. Адаптивная скорость: `<200ms` latency → `0.6s`, `<1500ms` → `1.8s`, иначе `3.5s`. |
-| `useGraphTelemetry` | `studio/graph/useGraphTelemetry.ts` (59 строк) | SSE-хук к `:8767/api/diary?channel=telemetry`. Буфер до 200 событий, фильтр по времени (`maxAgeMs`). |
-| `NodeHudWhisperer` | `studio/graph/NodeHudWhisperer.tsx` (84 строки) | 240×48px микро-чип над нодой. Две строки: факт телеметрии (JetBrains Mono 10px) + AI-whisper. |
-| `StepLanternLed` | `studio/graph/StepLanternLed.tsx` (70 строк) | 6 состояний: `queued` (серый), `running` (циан-пульс 1s), `success` (изумрудный flash), `warning` (янтарное дыхание 2s), `failure` (красный строб 3×), `predicted` (фиолет pre-light). |
-
-Все компоненты уже работают на entity-графе (`StudioGraphExplorer`). War Room берёт их и применяет к Step Deck сценария — с привязкой к реальным `step_id` из прогона, а не к категориям entity-графа.
-
-### Пять фаз запуска
-
-```text
-Клик «Запустить» в StudioV2
-            │
-            ▼
-┌─ ФАЗА 1: IGNITION ────────────────────────────────────────────┐
-│ Layout Shift: сайдбары сворачиваются, холст — 100% ширины      │
-│ Canvas-периметр → cyan wave (GraphWaveOverlay)                 │
-│ Камера → setCenter на первую ноду (step-1), duration: 600ms    │
-│ Все LED → queued (серый)                                       │
-└────────────────────────────────────────────────────────────────┘
-            │
-            ▼
-┌─ ФАЗА 2: ACTION CONVEYOR ─────────────────────────────────────┐
-│ SSE-события step_start/step_end → LED переключение             │
-│   queued → running (циан-пульс) → success (изумруд)            │
-│   При ошибке: running → failure (красный строб)                │
-│ Камера follow за активным step_id (setCenter, 400ms)           │
-│ NodeHudWhisperer над активной нодой: факт + статус             │
-└────────────────────────────────────────────────────────────────┘
-            │
-            ▼
-┌─ ФАЗА 3: HEAVY STRIKE (фаззер / active scan) ─────────────────┐
-│ Событие fuzz.start / active_scan.start                         │
-│ Камера → zoomTo(0.6), вся топология в кадре                    │
-│ Периметр → charge glow (GraphWaveOverlay, inverted, 300ms)     │
-│ Canvas 2D: веер лучей от ноды фаззера к цели                   │
-│   Цвет: Amber (#F59E0B) для фаззинга, Violet (#A855F7) для     │
-│   active scan. Плотность = текущий RPS                         │
-└────────────────────────────────────────────────────────────────┘
-            │
-            ▼
-┌─ ФАЗА 4: ANOMALY FLARE ───────────────────────────────────────┐
-│ SSE: finding.new → anomaly shockwave                          │
-│   Canvas 2D: радиальная вспышка (Amber #F59E0B для warning,    │
-│   Magenta #D946EF для critical) вокруг ноды                    │
-│ Маркер уязвимости: бейдж с CWE/severity на ноде               │
-│ NodeHudWhisperer: контекст находки (finding title, CWE, risk)  │
-│   Кнопка → открыть в Results                                   │
-└────────────────────────────────────────────────────────────────┘
-            │
-            ▼
-┌─ ФАЗА 5: SYNTHESIS ───────────────────────────────────────────┐
-│ SSE: run.complete → все потоки стягиваются                     │
-│ Итоговые ноды: Allure / Dojo — статус допуска                  │
-│ Граф стабилизируется, zoom возвращается к fitView              │
-│ Бейдж: PASSED (Emerald) / FAILED (Red) / WARNING (Amber)      │
-│ Кнопка «Результаты» → переход в Results / Акт                 │
-└────────────────────────────────────────────────────────────────┘
-```
-
-### План реализации
-
-Все компоненты, кроме `FuzzerStrikeOverlay`, уже существуют и работают. Основная работа — адаптация их с entity-графа на Step Deck сценария.
-
-| ID | Статус | Суть | Файлы | Est |
-|---|---|---|---|---|---|
-| **WR-1** | **✅ 22 авг (код)** | **Telemetry Bridge.** `useWarRoomTelemetry.ts` — SSE → Zustand: 6 типов. proper test pending. | `useWarRoomTelemetry.ts` | 3h |
-| **WR-2** | **✅ 22 авг (код)** | **War Room Layout Switcher.** CSS-класс `pk-war-room`, War Room bar. proper test pending. | `ScenarioFlow.tsx` | 2h |
-| **WR-3** | **✅ 22 авг (код)** | **Camera Director.** `useReactFlow().fitView()` через `consumeCameraFocus()`. proper test pending. | `ScenarioFlow.tsx` | 2h |
-| **WR-4** | **✅ 22 авг (код)** | **Step LED Pipeline.** `LedIndicator` — 6 состояний. proper test pending. | `StepPillRow.tsx` | 2h |
-| **WR-5** | **✅ 22 авг (код)** | **Node HUD Whisperer.** Чип под хедером ноды. proper test pending. | `ScenarioDeckNode.tsx` | 1.5h |
-| **WR-6** | **✅ 22 авг (код)** | **Fuzzer Strike Overlay.** CHARGE → STRIKE, 30 лучей. proper test pending. | `FuzzerStrikeOverlay.tsx` | 4h |
-| **WR-7** | **✅ 22 авг (код)** | **Anomaly Shockwave.** Кольцо + вспышка. proper test pending. | `FuzzerStrikeOverlay.tsx` | 2h |
-| **WR-8** | **✅ 22 авг (код)** | **Synthesis Gate.** PASSED/FAILED bar. proper test pending. | `ScenarioFlow.tsx` | 1.5h |
-
-### Честность (Zero Fake FX — принцип)
-
-| Принцип | Правило | Нарушение |
-|---|---|---|
-| Все эффекты — от SSE | Цвет, скорость, плотность лучей = реальные данные из `diary_bus` | Захардкоженные таймеры, зацикленные гифки |
-| 0% CPU / 60 FPS | Только 2D Canvas + SVG + CSS `transform`. `requestAnimationFrame`, early exit когда нет событий | Three.js, Pixi, WebGL-шейдеры |
-| Эстетика Dark Glass | `#0B0F17` фон, 2px лазеры, палитра Cyan/Violet/Amber/Emerald/Magenta | Мультяшные градиенты, круглые пузыри |
-| Тактильный ритм | Нагнетание (300ms charge) → burst (200ms). Контраст между ожиданием и ударом | Монотонное мигание |
-| Управление у оператора | UI всегда кликабелен, анимации не блокируют. Кнопка «Стоп» в любой фазе | Блокировка интерфейса на время анимации |
-
-### Зависимости и порядок
-
-```
-SC-4 (Step Deck) ──┐
-SC-5 (Pill Row) ───┼──→ WR-1 (Telemetry Bridge)
-SC-7 (Step Debug) ─┘        │
-                             ├──→ WR-2 (Layout Switcher)  ──┐
-                             ├──→ WR-3 (Camera Director)    ├──→ WR-6 (Fuzzer Strike)
-                             ├──→ WR-4 (Step LED Pipeline)  │    WR-7 (Anomaly Shockwave)
-                             └──→ WR-5 (Node HUD)           │         │
-                                                            └──── WR-8 (Synthesis Gate)
-```
-
-### Приёмка (на evolve — после поднятия из evolve в active)
-
-- [ ] Нажать «Запустить» в `#/studio-v2` → сайдбары свернулись, header показывает WAR ROOM.
-- [ ] Камера сфокусировалась на первом шаге.
-- [ ] LED'ы переключаются по мере прохождения шагов: queued → running → success.
-- [ ] При входе в фаззер — zoom-out, зарядка, веер лучей.
-- [ ] При находке — вспышка, маркер на ноде, HUD Whisperer с контекстом.
-- [ ] При завершении — fitView, бейдж PASSED/FAILED, кнопка «Результаты».
-- [ ] Кнопка «Стоп» работает в любой момент, анимации гаснут.
-- [ ] `tsc --noEmit` чистый, 60 FPS на протяжении всего прогона.
-
-### Out of scope (жёстко)
-
-- ❌ WebGL / Three.js / Pixi. Только 2D Canvas + SVG + CSS.
-- ❌ Звуковые эффекты. Без явного тогла пользователем — никогда.
-- ❌ War Room без реального прогона. Нет прогона — нет War Room. Никаких «демо-режимов» с фейковыми событиями.
-- ❌ Замена существующего `StudioGraphExplorer`. Entity-граф живёт своей жизнью.
+| **Boss** | 11 карточек (A1, A2, A3, A5, S1, S2, C1, C2, C3, B1, B4, E3, E5, E7) | **47h ✅ CLOSED** |
+| **Flash** | 7 карточек (A4, S3, C4, B2, B3, E1, E2, E4, E6) | **26h ✅ CLOSED** |
+| **ИТОГО** | **Все 5 пакетов закрыты · 352 теста green** | **73h ПОЛНОСТЬЮ СДАНО** |
 
 ---
 
-## Эпик DP — порт Design Playground на shadcn/ui + Tailwind v4 (10 задач, 22.5h)
+## 2. Эпик PK-ER — Editor Reborn: возврат продуктового Explorer и натяжка Workbench (IMPLEMENTED · 25 авг 2026)
 
-> **new · 23 августа 2026.** Полный порт дизайнерского полигона (`#/design-playground`) на shadcn/ui + Tailwind CSS v4 + добавление обучающей вкладки Tailwind for Designers & Workshop.
-> **Сервис-помощник:** не продуктовый FRIEND, а утилита для дизайнера (Вера) и инженеров.
-> **Автор оригинала:** Boss. **Профиль:** `prettyk-pure`.
-> **Документ:** [`sanctuary/DESIGN-WORKBENCH.md`](../sanctuary/DESIGN-WORKBENCH.md).
+> **Статус:** `🟡 IMPLEMENTED` — Все 6 карточек (ER-0..ER-5) реализованы Boss и Flash. 52 теста green, tsc 0.  
+> **Итог реализации:** 0 регрессий, 0 фантомных вкладок, 0 тихой перезаписи. Visual parity (guide rails, ellipsis, dark/light) подтверждена на живом чек-ауте.
 
-### Исходное состояние
+---
 
-14 файлов (4278 строк) на унаследованном стеке + inline-стилях. 8 вкладок-лабораторий:
-- Input Particles (12 анатомических паттернов инпутов)
-- Buttons & Switches (8 стилей кнопок)
-- SecOps Combat Forms (живые формы + marketplace)
-- Component Matrix (матрица с density/stress-контролами)
-- Typography (песочница шрифтов + 4 канон-локкапа с оптическими оффсетами)
-- Brandbook & Gradients (5 градиентов, 6 threat-токенов, 6 палитр, WCAG)
-- Spacing & Depth (шкала отступов, радиусы, тени, z-index)
-- Tailwind for Designers & Workshop (шпаргалка токенов, библия Refactoring UI, живая песочница)
+### Нарезка задач PK-ER
 
-8 глобальных пресетов стиля, 5 фонов канваса, копирование сниппетов, ссылки на маркетплейсы.
+| ID | Что получает пользователь | Приёмочный сценарий GWT (ЧИСТО) | Est | Кто |
+|---|---|---|---|---|
+| **ER-0** | **Baseline & Parity Contract:** Утверждённый эталонный чек-лист parity (корни, действия, состояния, dark/light, rails, keyboard). | **Given:** старый и новый Editor. **When:** проход матрицы parity. **Then:** зафиксированы эталонные корни, действия и скриншоты; исключены догадки «сделай похоже». | 0.5h | Keeper + Boss + Flash |
+| **ER-1** | **Единый семантический Explorer:** Шесть продуктовых корней (`Модели страниц`, `Сценарии`, `Фаззеры`, `Модули данных`, `Коннекторы и Интеграции`, `Профили авторизации`), папки, leaves, честный empty/error state. | **Given:** открыт новый Editor. **When:** загружен workspace с сущностями. **Then:** видны все 6 корней и папки; клик по сущности открывает правильный документ; Editor и Studio синхронны. | 3h | Boss |
+| **ER-2** | **Операции над деревом сущностей:** Создание, переименование, удаление с подтверждением, перемещение, сохранение раскрытия/выбора после reload. | **Given:** выбрана папка или leaf. **When:** вызваны create/rename/delete/drag-drop. **Then:** дерево, активный документ и draft согласованы; отмена безопасна; тихой перезаписи нет. | 3h | Boss |
+| **ER-3** | **Визуальная и интеракционная Parity:** Guide rails, отступы, chevrons, высота строк, dark/light ассеты, long-text truncation, dirty/error бейджи на узлах. | **Given:** открыт Explorer в разных темах и ширине. **When:** раскрываются вложенные уровни. **Then:** линии и иконки совпадают с эталоном; нет обрывов rails; текст не ломает дерево. | 3h | Flash 🟡 IMPLEMENTED |
+| **ER-4** | **Explorer ↔ Editor ↔ Run Continuity:** Сквозной путь от выбора сущности в Explorer до DSL, Monaco diff, Gutter Play, Browser Stage, Step Debugger и Evidence. | **Given:** выбран сценарий с правками. **When:** запущен шаг или открыт diff/evidence. **Then:** все панели относятся к одной сущности; переключение Studio ↔ Editor не теряет контекст. | 2h | Boss + Flash |
+| **ER-5** | **Надёжность, безопасность и accessibility:** Loading/conflict/offline состояния, отсутствие plaintext-секретов в дереве и diff, навигация с клавиатуры (F2/Delete/Enter/Esc). | **Given:** конфликт сохранения или сетевой сбой. **When:** оператор работает в дереве. **Then:** состояние честно показано; фокус клавиатуры доступен; секреты защищены. | 1.5h | Boss |
 
-### Задачи порта (10 задач · 22.5h)
+---
 
-| ID | Статус | Суть | Est |
+### Сводка часов PK-ER
+
+| Исполнитель | Карточки | Часы | Статус |
 |---|---|---|---|
-| **DP-1** | **✅ 23 авг** | **Инфраструктура.** Перевести навигацию по вкладкам на shadcn Tabs. Заменить структурные компоненты (Card, Typography, Divider, Tooltip) на shadcn-эквиваленты. Убрать все унаследованные импорты. | 2.5h |
-| **DP-2** | **✅ 23 авг** | **Пресеты и фон.** Перенести 8 `GlobalDesignPreset` на Tailwind-конфиг + CSS-переменные. Фон канваса — через Tailwind-классы. Сохранить мост к `theme/tokens`. | 2.0h |
-| **DP-3** | **✅ 23 авг** | **Input Particles.** 12 вариантов инпутов: перевести на shadcn Input, inline-стили на Tailwind utility classes. Сохранить копирование сниппетов и ссылки на Origin UI/21st.dev. | 3.0h |
-| **DP-4** | **✅ 23 авг** | **Buttons & Switches.** 8 стилей кнопок: shadcn Button с cva-вариантами. Segmented → ToggleGroup. Switch → shadcn Switch. | 2.0h |
-| **DP-5** | **✅ 23 авг** | **SecOps Combat Forms.** Перевести формы скоупа и фаззинга на shadcn-компоненты (Input, Select, Slider, Radio, Checkbox, Progress). Сохранить симуляцию launch pipeline. | 2.5h |
-| **DP-6** | **✅ 23 авг** | **Component Matrix.** Матрица компонентов на shadcn. Density-тогглы через Tailwind-варианты (`compact`/`comfortable`/`spacious`). State-тогглы через data-атрибуты или псевдоклассы. | 3.5h |
-| **DP-7** | **✅ 23 авг** | **Typography.** Песочница шрифтов (`GT Eesti Pro`, `Golos`, `JetBrains Mono`) — перевести Select/Slider на shadcn. Локкапы PrettyK — вычистить унаследованные обёртки. | 2.0h |
-| **DP-8** | **✅ 23 авг** | **Brandbook & Gradients.** Перевести Tag, Card на shadcn Badge/Card. WCAG-калькулятор — оставить логику, заменить UI на Tailwind. | 1.5h |
-| **DP-9** | **✅ 23 авг** | **Spacing & Depth.** Перевести Card/Typography на shadcn. Статическая вкладка — минимальные изменения. | 1.0h |
-| **DP-10** | **✅ 23 авг** | **Tailwind for Designers & Workshop.** Полноценный гид для Веры (почему Tailwind важен дизайнеру, шпаргалка 5 столпов, ссылки на *Refactoring UI* и скринкасты Steve Schoger) + живой Monaco-редактор с превью. Ноль внешних зависимостей. | 2.5h |
+| **Boss** | ER-1 (3h), ER-2 (3h), ER-4 (1h), ER-5 (1.5h) | **8.5h** | 🟡 IMPLEMENTED |
+| **Flash** | ER-3 (3h), ER-4 (1h), ER-0 (0.5h совместный) | **4.5h** | 🟡 IMPLEMENTED |
+| **ИТОГО** | **6 атомарных задач · 2 исполнителя** | **13h** | **🟡 IMPLEMENTED** |
 
-### Приёмка
+---
 
-- [x] Открыть `#/design-playground` → все 8 вкладок работают (7 оригинальных + Tailwind for Designers & Workshop).
-- [x] 8 пресетов переключаются, компоненты реагируют.
-- [x] 5 фонов канваса переключаются (включая Dot Grid и Soft Studio Grey).
-- [x] Копирование сниппетов работает.
-- [x] WCAG-калькулятор показывает контраст.
-- [x] Симуляция launch pipeline работает.
-- [x] Вкладка Tailwind for Designers: инфо-блок с библией и туториалами + интерактивная песочница.
-- [x] Ноль унаследованных импортов в `design-playground/`.
-- [x] `tsc --noEmit` чистый.
-- [x] После порта: старый `styles.css` не содержит design-playground-специфичных стилей.
+## PoC → Plan: CDP-WIRE — Live CDP → Wire → Studio + Editor Step Drawn
+
+> **Фундамент:** [`spike/2026-08-25-cdp-wire-studio-editor-step.md`](spike/2026-08-25-cdp-wire-studio-editor-step.md) (335 строк, полный PoC-пакет).  
+> **Гипотеза:** одно реальное действие оператора в живом CDP-браузере можно захватить один раз, превратить в reviewable wire/action step и показать как один и тот же шаг в Studio и Editor без desync.  
+> **Правило:** PoC-код не production. После `PROMOTE` — отдельный Plan с production DoD. `KILL` = снести реализацию, сохранить гипотезу.
+
+---
+
+### Phase 1: POC-CDP-WIRE (PoC · IMPLEMENTED · 25 авг 2026 · 🟥 BLOCKED на live-верификации)
+
+> **Тип:** `PoC`, не production-фича.  
+> **Первый action:** click; type добавляется только после green click-flow.  
+> **Статус:** реализован Boss + Flash. 79/79 unit-тестов, tsc 0. Найдены и закрыты 2 бага redaction-контракта (plaintext больше не утекает).  
+> **Live-верификация (browser-hands-pure, 26 авг):** живой CDP Chrome `:9222` + Juice Shop `:3000` + физический клик — **цепочка НЕ работает.** Найден блокирующий бэкенд-баг.  
+> **Баг:** в `browser_service.py` функция `_on_click` определена внутри `browser_observe_start` (строка 276), а вызывается из `browser_observe_event` (строка 399) — вне скоупа → `NameError` → глотается `except Exception: pass` → каждый реальный клик молча теряется, `event: null`.  
+> **Вердикт:** `PROMOTE` **заблокирован** до фикса Boss + повторной live-проверки. Unit-тесты этот путь не покрывают (mock observation). Gate #1 («CDP event живой, не mock») фактически не выполнен.
+
+| ID | Что доказываем | Приёмочный сценарий GWT | Кому |
+|---|---|---|---|
+| **POC-CDP-1** | Живой attach к операторскому CDP и реальное событие browser action. | **Given:** разрешённый тестовый экран открыт в Chrome CDP. **When:** оператор включает discovery и инспектирует кнопку. **Then:** получены реальный event + DOM/AX evidence; mock event не принимается. | Boss |
+| **POC-CDP-2** | Locator proposal с tier/confidence и честной неоднозначностью. | **Given:** элемент имеет role-first candidate. **When:** candidate неоднозначен. **Then:** proposal помечен review-needed и не применяется автоматически; CDP-down даёт error state. | Boss |
+| **POC-CDP-3** | Один canonical action/wire step после явного Accept. | **Given:** proposal показан. **When:** оператор принимает. **Then:** wire валиден; создан ровно один step; существующий draft не перезаписан целиком. | Boss |
+| **POC-CDP-4** | Studio Step и Editor Step Drawn — две проекции одного шага. | **Given:** canonical step принят. **When:** открыты Studio и Editor. **Then:** видны один StepPill и одна DSL-строка с общей step identity и provenance marker. | Flash + Boss |
+| **POC-CDP-5** | Reject, replay, manual trust и redaction. | **Given:** proposal отклонён, event повторён, locator был ручным или value чувствителен. **When:** pipeline повторяется. **Then:** draft не меняется после Reject; duplicate не появляется; manual locator не затирается; plaintext не виден. | Boss + Flash |
+
+#### PoC DoD
+
+- CDP event живой, не mock.
+- Click проходит полный путь `CDP → discovery → wire → Studio → Editor`.
+- Accept/Reject детерминированы.
+- Ambiguous locator блокирует auto-apply.
+- Studio и Editor не имеют независимых копий шага.
+- Wire валиден и сохраняет ручные правки при merge.
+- CDP failure честно виден.
+- Negative/security/redaction tests green.
+
+---
+
+### Phase 2: CDP-WIRE Plan (Production · QUEUED · after PROMOTE)
+
+> **Тип:** `Plan` — production-реализация, запускается только после `PROMOTE` Phase 1.  
+> **Действия:** click (первый), type (второй).  
+> **Разделение:** Boss = CDP-мост, discovery IR, wire-компилятор, canonical step identity, безопасность. Flash = Browser Stage UI, proposal/diff, Studio StepPill, Editor drawn provenance.
+
+| ID | Что получает пользователь | Приёмочный GWT (ЧИСТО) | Est | Кто |
+|---|---|---|---|---|
+| **CDP-1** | **Живой захват действия из браузера.** Оператор переключает Browser Stage в режим Record, кликает по элементу на живом тестовом экране — система получает реальное CDP-событие, а не mock. | **Given:** открыт разрешённый тестовый экран в Chrome CDP, Browser Stage в режиме Author. **When:** оператор включает Record и кликает по кнопке. **Then:** получено реальное browser-событие с DOM/AX-снимком элемента; mock-заглушка не принимается. | 3h | Boss |
+| **CDP-2** | **Умный подбор локатора.** После клика система предлагает role-first локатор с уровнем уверенности (T0–T4). Неоднозначный элемент блокирует автоприменение. | **Given:** получено CDP-событие от элемента. **When:** система строит candidate-локаторы. **Then:** показан лучший candidate с tier и confidence; при неоднозначности шаг не применяется автоматически. | 3h | Boss |
+| **CDP-3** | **Честный proposal с Accept/Reject.** Оператор видит предложение нового шага, может принять (Enter) или отклонить. Отклонение не меняет workspace. | **Given:** proposal показан в Browser Stage. **When:** оператор нажимает Accept. **Then:** создан ровно один canonical action step; wire валиден; draft не перезаписан целиком. **When:** оператор нажимает Reject. **Then:** ни Studio, ни Editor, ни draft не меняются; proposal закрыт. | 3h | Flash + Boss |
+| **CDP-4** | **Единый шаг в двух проекциях.** Принятый шаг одновременно появляется в Studio как StepPill (с цветом действия) и в Editor как DSL-строка с маркером происхождения. Не две копии — один шаг. | **Given:** canonical step принят (CDP-3). **When:** открыты Studio и Editor. **Then:** в Studio — StepPill с цветом действия; в Editor — DSL-строка с подсветкой «✨ Discovered»; общая step identity. | 3h | Flash |
+| **CDP-5** | **Защита от дублей, затирания ручного и утечки секретов.** Повторное событие не создаёт дубликат; ручной локатор не затирается; значения (пароли, токены) заменены на placeholder. | **Given:** шаг уже существует. **When:** discovery повторно видит тот же элемент. **Then:** дубликат не создаётся без нового Accept; ручная правка локатора сохранена. **Given:** оператор вводит значение в поле. **When:** proposal сформирован. **Then:** plaintext не попадает в wire, Diff, логи и UI. | 2h | Boss |
+| **CDP-6** | **Честная ошибка при обрыве CDP.** Если браузер закрыт или CDP-соединение потеряно — disconnect-состояние, никаких фейковых шагов. | **Given:** CDP-эндпоинт недоступен или страница закрыта. **When:** оператор включает Record. **Then:** UI показывает честный error/disconnected state; mock-событие не генерируется; шаг не добавляется. | 1h | Flash + Boss |
+| **CDP-7** | **Визуальный оверлей без поломки вёрстки.** При наведении — подсветка элемента через CDP Overlay или React-слой, не инжектит чужие div'ы в DOM страницы. | **Given:** Browser Stage в режиме Record, курсор над элементом. **When:** система определяет bounding rect. **Then:** подсветка отрисована поверх вьюпорта; DOM страницы не изменён; клики проходят к целевому элементу. | 2h | Flash |
+| **CDP-8** | **Сквозной click: браузер → DSL.** Полный цикл для типа `click`. Один integration-тест доказывает всю цепочку. | **Given:** живой браузер с кнопкой. **When:** оператор кликает → принимает proposal. **Then:** в Studio одна пилюля, в Editor одна DSL-строка, wire валиден, ручные шаги не задеты, секретов нет, дублей нет. | 2h | Boss + Flash |
+| **CDP-9** | **Расширение на Type-action.** После успешного click-flow — второй тип действия: ввод в текстовое поле. | **Given:** textbox с однозначным role/accessible name. **When:** оператор вводит тестовое значение. **Then:** proposal показывает Type-step с redacted значением; после Accept — Studio и Editor добавляют один Type-step без plaintext-секретов. | 2h | Boss + Flash |
+
+#### Сводка часов Phase 2
+
+| Исполнитель | Карточки | Часы |
+|---|---|---|
+| **Boss** | CDP-1, CDP-2, CDP-3, CDP-5, CDP-6, CDP-8, CDP-9 | **12h** |
+| **Flash** | CDP-3, CDP-4, CDP-6, CDP-7, CDP-8, CDP-9 | **8h** |
+| **ИТОГО** | **9 атомарных задач** | **20h** |
+
+#### Out of scope (явно НЕ делаем)
+
+- Полноценный crawler и обход всего сайта
+- Автоматическое принятие шагов без оператора
+- Все action types (только click + type)
+- Multi-user collaboration
+- Production persistence и retention policy
+- ZAP, Dojo, Allure, findings и evidence pack integration
+- Mobile/browser matrix
+- Автономный AI-оператор
+
+---
+
+## 3. Эпик BUD-E2E — PrettyK Buddy end-to-end (ДВИЖОК И STU-V2 РЕАЛИЗОВАНЫ · PROMOTE ЗАБЛОКИРОВАН · 27 авг 2026)
+
+> **Тип:** PoC-стыковка в живую Studio. Движок Buddy и функциональный долив STU-V2
+> реализованы: движок 64/64, STU-V2 402/402, tsc 0. Поверхность больше не считается
+> макетом. Однако новый функционал пока живёт на временном `-v2` маршруте и ещё не
+> прошёл живой CDP run глазами оператора.
+> **Вердикт Keeper:** PROMOTE CO-PILOT META не выдаю до двух отдельных фактов:
+> живой run и переход на канонические рельсы STU-RAILS. Нельзя путать готовый движок
+> и долитый UI с принятым продуктовым маршрутом.
+
+### Нарезка Boss
+
+| ID | Что получает оператор | Приёмочный сценарий GWT (ЧИСТО) |
+|---|---|---|
+| **BUD-E2E-B1** | **Единый контроллер Buddy.** Оператор пишет описание приложения/сценария обычным языком — система проходит один цикл: извлечённый skeleton → уточняющие вопросы → reviewable proposal, не создавая ничего в workspace до подтверждения. | **Given:** открыт чат Buddy в Studio на разрешённом тестовом приложении. **When:** оператор описывает приложение и сценарий одним или несколькими сообщениями. **Then:** виден skeleton (страницы, шаги, ожидания) с явной пометкой предположений; вопросы задаются только по реальным пробелам/противоречиям; proposal показан как diff; workspace не изменён до Accept. |
+| **BUD-E2E-B2** | **Живой bounded run.** После подтверждения оператора запускается реальный прогон в живом браузере (не mock), с видимым текущим шагом, лимитом итераций/времени и рабочей кнопкой Stop. | **Given:** proposal принят, тестовое приложение доступно в браузере. **When:** оператор запускает bounded run. **Then:** шаги реально выполняются в браузере; виден текущий шаг; Stop останавливает прогон; при недоступном приложении — честный disconnected state, не pass. |
+| **BUD-E2E-B3** | **Evidence pass/fail по фактам.** По завершении система сопоставляет результат с исходным намерением и сообщает pass только когда каждое заявленное ожидание доказано реальным evidence; провал — с честной причиной. | **Given:** run завершился (успех, провал или остановка). **When:** оператор читает итог. **Then:** pass только при доказанных assertion-ах с ссылкой на evidence; fail показывает что доказано/не доказано; plaintext-секрет нигде не виден; видна цепочка intent → run → evidence. |
+
+### Нарезка Flash
+
+| ID | Что получает оператор | Приёмочный сценарий GWT (ЧИСТО) |
+|---|---|---|
+| **BUD-E2E-F1** | **Copilot Dock в Studio.** Справа в Studio живёт штурманский док Buddy: схлопывается в тонкий рельс с LED-индикатором фазы, разворачивается в панель с виджетами; ничего не перекрывает рабочую область. | **Given:** открыт Studio с проектом. **When:** оператор открывает/сворачивает док Buddy. **Then:** рельс показывает фазу (готов/думает/ждёт/запуск/завершено/ошибка) цветом и пульсом; развёрнутый док показывает виджеты; вёрстка рабочей области не ломается. |
+| **BUD-E2E-F2** | **Виджеты на реальных данных.** SkeletonCard, чипсы уточнений, сплит-дифф, радар шагов и матрица evidence показывают данные живого цикла Buddy (через адаптеры), а не заглушки; хоткеи работают. | **Given:** идёт цикл Buddy (skeleton/вопросы/proposal/run/evidence). **When:** оператор работает с доком. **Then:** каждый виджет отражает актуальные данные; Accept=Enter, Reject=Esc, чипсы=1..9, Take Control=Space; состояние честно обновляется. |
+| **BUD-E2E-F3** | **Launchpad на пустом проекте.** В пустой Studio вместо мёртвого фона — командная консоль Buddy, где оператор описывает приложение, и из описания материализуется первый граф страниц/сценариев. | **Given:** открыт Studio без загруженной конфигурации. **When:** оператор вводит 1–2 предложения о приложении. **Then:** виден предложенный skeleton/граф; пустое состояние не сломано; существующий проект не затирается без подтверждения. |
+
+### Приёмка BUD-E2E (Keeper)
+
+- Живой клик CDP даёт реальное событие (не mock) — Gate #1 CDP-WIRE закрывается тем же проходом.
+- Цикл `intent → skeleton → clarification → proposal → run → evidence` проходит на одном тестовом приложении целиком.
+- Accept/Reject детерминированы; до Accept workspace не меняется.
+- Stop останавливает run; disconnected/timeout не маскируются под успех.
+- Pass только по доказанному evidence; plaintext-секреты отсутствуют.
+- `DeterministicBuddyModel` — default; реальная модель подключается swap-контрактом позже, не блокирует стыковку.
+
+---
+
+### Отчёт Boss (26 авг · вечер) — все карточки сданы
+
+> Принято к сведению, PROMOTE пока не выдаю — остался один живой gate.
+
+- Единая точка сборки дока связывает движок, подписку на состояние, адаптеры Flash,
+  lifecycle (intent → skeleton → clarify → proposal → approve → run → evidence) и хоткеи.
+- Док встроен в Studio на правом краю рабочей области.
+- Верификация: `tsc --noEmit` 0 ошибок; `vitest` **64/64** — движок `src/buddy/` 35/35
+  (buddyEngine 17, cdpStepRunner 9, **buddyE2E 9**), Flash-контур 29 (контроллер дока 8,
+  buddyHotkeys 3, SkeletonCard 5, CopilotDock 3, buddyWidgets 10).
+- Полный контур CO-PILOT META готов к приёмке: Launchpad → addMessage → extractSkeleton
+  (assumption, не выдумка) → clarify (пробелы→вопросы, противоречия→блок) → buildProposal
+  (один page object + один scenario) → LiveDiffBanner (Apply=Enter / Reject=Esc, до approval
+  workspace не меняется) → approve → run → BoundedRunner (лимиты + Stop) → makeCdpStepRunner
+  (живой CDP) → evaluateAssertions → EvidenceMatrix (pass только при доказанных assertions).
+
+**Осталось для PROMOTE — два честных открытия, не одно:**
+1. **Живой CDP run** за пультом (клик Juice Shop :3000 через Chrome CDP :9222 →
+   не-mock событие → proposal → Accept → run → evidence).
+2. **Новые поверхности должны стать каноническими** — обычные `studio`/`editor`,
+   один instance id, legacy только под `studio-old`/`editor-old`, без публичного
+   `-v2`, без потери draft и контекста. Нарезка переезда — STU-RAILS ниже.
+
+**Дополнение Boss (26 авг · ночь) — сквозной E2E на живом движке.** Построен
+`buddyE2E.test.ts` (9 тестов), доказывающий все три карточки B1/B2/B3 на реальном движке
+(мокается только CDP-слой BrowserSession): B1 — полный цикл intent→skeleton→clarify→
+proposal→approve, дубль пути = противоречие блокирует генерацию, до Accept workspace не
+тронут; B2 — makeCdpStepRunner через BoundedRunner (Open/Click/Type-redacted/Wait/Assert
+идут в BrowserSession), disconnected → честный fail, timeout (maxTimeMs=5) →
+bounded_failure|done|stopped не вечный цикл, Stop работает; B3 — pass только при доказанных
+assertions, trace intent_received→…→evidence_evaluated прослеживается, Type-шаг redacted
+(plaintext не попадает в DSL), intent без ожидания = incomplete блокирует (не «зелёный» pass).
+Два подтверждённых поведения движка (не баги): дубль пути = честное противоречие; intent без
+ожидания = incomplete, не pass.
+
+**Интеграция дока — на маршруте `#/studio-v2` (StudioV2.tsx → BuddyDockController).**
+Старый `#/studio` (StudioWorkspace) — отдельный маршрут, вне скоупа Buddy, не тронут.
+Завтрашняя живая приёмка идёт на `#/studio-v2`.
+
+---
+
+### Замечания первого UX-прохода (Максим · 26 авг · на завтра)
+
+> Зафиксированы для завтрашней приёмки после первого прохода по UX и удаления жирноты.
+> Не чинить сегодня — это блок final shaping.
+
+- **Editor в целом рабочий** — «более менее нормально выглядит, рабочий вроде уже вариант».
+- **Двойной хедер** — зафиксирован, пока «хуй с ним», окультурить завтра.
+- **Explorer** вкорячен без изменений — принят как есть.
+- **Браузер CDP в редакторе сделан через жопу:** форма не растянута, непонятно как запускается встроенный браузер — завтра после первого UX-прохода.
+- **План завтра:** окультурить UI → первый проход по UX → удаление жирноты → final shaping.
+
+---
+
+## 3½. Перепокрытие UI-тестами → вынесено в отдельный бэклог
+
+> По просьбе Максима — отдельный бэклог: [`atest-backlog.md`](atest-backlog.md).
+> Ответственный Buddy (prettyk-atest) как босс. Там: что уже покрыто (64 теста),
+> 6 кандидатов на добивку, формат ведения и контекст BUD-E2E.
+
+---
+
+## 3¾. Эпик STU-V2 — Studio v2: долить функционал старого Studio (IMPLEMENTED · временный маршрут · 27 авг 2026)
+
+> **Статус:** `🟡 IMPLEMENTED` — все 10 карточек (Boss B1–B7 + Flash F1–F3) закрыты.
+> `tsc --noEmit` 0, `vitest src/studio/` 402/402 passed, `BrowserPanel.test.tsx` 3/3 passed.
+> **Результат:** `StudioV2` больше не макет — функциональный долив старого Studio сдан.
+> Сейчас он живёт на временном маршруте `#/studio-v2/:checkId`; следующий отдельный Plan
+> (STU-RAILS) переводит его на обычный канонический `studio` и разводит legacy на `-old`.
+> Функционально есть роутинг по instance id, живой `StudioExplorer` (6 корней),
+> `useStudioTreeActions`,
+> Monaco `prettyk` с автодополнением и gutter-run [▶], честная валидация, пошаговый debug strip,
+> реальный `run_summary`, растянутый браузер с кнопкой старта и live-превью, единый одиночный хедер.
+> **Граница приёмки:** на живом стенде Chrome CDP `:9222` ещё не гонялся — ждёт совместный
+> живой проход (CDP-WIRE + BUD-E2E + STU-V2).
+
+### Что получает оператор (нарезка Boss)
+
+| ID | Что получает оператор | Приёмочный сценарий GWT (ЧИСТО) |
+|---|---|---|
+| **STU-V2-B1** | **Studio v2 открывается по конкретной проверке.** Оператор попадает в рабочую область, привязанную к выбранной проверке (instance id), а не в безличную заглушку. | **Given:** есть созданная проверка. **When:** оператор открывает её Studio. **Then:** рабочая область относится ровно к этой проверке; переключение на другую проверку открывает её собственные данные; без выбранной проверки — честное пустое состояние, не чужой контент. |
+| **STU-V2-B2** | **Живой Explorer вместо статичного дерева.** Оператор видит реальные сущности проверки (шесть корней: модели страниц, сценарии, фаззеры, модули данных, коннекторы, профили авторизации), а не захардкоженные заглушки со счётчиками. | **Given:** проверка загружена. **When:** оператор раскрывает дерево. **Then:** видны реальные сущности и их количество; клик по сущности открывает документ; пустая область честно помечена как пустая. |
+| **STU-V2-B3** | **Операции над сущностями из дерева.** Создание, переименование, удаление с подтверждением, перемещение и drag-drop работают в новом Studio, состояние дерева сохраняется после перезагрузки. | **Given:** выбрана папка или элемент. **When:** оператор вызывает create/rename/delete/drag-drop. **Then:** дерево, активный документ и черновик согласованы; отмена безопасна; тихой перезаписи нет. |
+| **STU-V2-B4** | **Полноценный конструктор в панели кода.** Редактор сценария с автодополнением, навигацией к определению, диагностикой, запуском шага из поля (gutter) и LED-статусами строк — а не голый текстовый редактор. | **Given:** открыт сценарий. **When:** оператор правит код, наводит на идентификаторы, нажимает запуск шага. **Then:** работают подсказки и навигация; строка получает статус после запуска; ошибки видны в коде. |
+| **STU-V2-B5** | **Честная валидация и диагностика.** Ошибки проверки видны как маркеры в коде, объединённые из локальной и серверной проверки, без ложных пингвинов. | **Given:** сценарий с ошибкой. **When:** оператор правит и ждёт проверку. **Then:** маркеры показывают реальную причину; пустая/незавершённая проверка не маскируется под успех. |
+| **STU-V2-B6** | **Пошаговый отладчик и цепочка доказательств.** Оператор пошагово выполняет сценарий, видит вход/выход каждого шага и путь от DSL-строки к находке и артефакту. | **Given:** шаг упал. **When:** открыт отладчик. **Then:** видно состояние шага, вход/выход и причина ошибки; строка подсвечивает связанную находку и артефакт; секреты не видны. |
+| **STU-V2-B7** | **Реальная консоль вместо захардкоженного лога.** Консоль показывает живую телеметрию прогона (шаги, события, статусы) из реального run-потока. | **Given:** запущен прогон. **When:** оператор смотрит консоль. **Then:** строки отражают реальные события прогона, а не фиксированный текст; пустой прогон — честная пустота. |
+
+### Что получает оператор (нарезка Flash)
+
+| ID | Что получает оператор | Приёмочный сценарий GWT (ЧИСТО) |
+|---|---|---|
+| **STU-V2-F1** | **Браузер в Studio запускается понятно и растягивается.** Оператор видит встроенный браузер с нормальной рабочей областью, а не огрызок формы. | **Given:** открыта Studio с проверкой. **When:** оператор открывает панель браузера. **Then:** браузер растягивается на панель; понятно, как его запустить и где живёт; вёрстка рабочей области не ломается. |
+| **STU-V2-F2** | **Browser Stage: запись и live-превью.** Оператор в режиме записи кликает по живому тестовому экрану, видит предложение шага и live-превью действий. | **Given:** тестовый экран открыт в браузере. **When:** оператор включает запись и кликает. **Then:** предложение шага показано; превью отражает реальное действие; клик не ломает DOM страницы. |
+| **STU-V2-F3** | **Честный одиночный хедер.** В Studio один хедер, а не двойной. | **Given:** открыта Studio. **When:** оператор смотрит на верхнюю область. **Then:** виден один хедер; лишний дубль убран; навигация и режимы на месте. |
+
+### Приёмка STU-V2 (Keeper)
+
+- `#/studio-v2` маршрутизируется по instance id (B1) — ключевое, зафиксировано Максимом.
+- Живой Explorer + операции (B2, B3) работают на реальной проверке.
+- Конструктор с подсказками/диагностикой/запуском шага (B4, B5) реальный, не наивный парсинг.
+- Отладчик + цепочка доказательств (B6) прослеживается до находки/артефакта.
+- Консоль — реальная телеметрия (B7), не захардкоженный текст.
+- Браузер растянут и запускается понятно (F1), Record/live-превью работают (F2).
+- Один хедер (F3).
+- Жирноту не тащим: двойной хедер (убрать, не дублировать), старый Launchpad, дубли фундамента.
+- Ни один перенесённый слой не регрессит существующий движок Buddy (64/64) и фундамент.
+
+---
+
+## 3⅞. Эпик STU-RAILS — Canonical Studio/Editor и legacy `-old` (IMPLEMENTED · 27 авг 2026)
+
+> **Тип:** `Plan` — финальный переезд новых поверхностей на понятные канонические
+> рельсы. Это не новый v2-движок: функциональный долив уже находится в STU-V2.
+> **Цель:** один `CheckInstance`/instance id, две ясные проекции одного объекта и
+> один временный legacy-слой для референса.
+>
+> **Каноническая матрица маршрутов:**
+>
+> - `#/checks/<id>/studio` — новая основная Studio;
+> - `#/checks/<id>/editor` — новый инженерный Editor того же instance;
+> - `#/checks/<id>/studio-old` — старая Studio только для reference;
+> - `#/checks/<id>/editor-old` — старый Editor только для reference;
+> - публичный `-v2` маршрут после переезда не используется.
+>
+> Старое не удаляем в этом эпике. Оно остаётся доступным под `-old` до отдельной
+> команды владельца. Две разные поверхности под одним `studio` не оставляем.
+
+### Epic Brief
+
+**Проблема:** оператор не должен знать, что продуктовая поверхность временно
+называется v2. Сейчас новый экран живёт на `#/studio-v2/<id>`, старый экран занимает
+старые имена, а кнопка Editor может потерять instance id и отправить оператора домой.
+
+**Результат глазами оператора:** он открывает конкретную проверку, работает в новой
+Studio, переходит в новый Editor той же проверки, не теряет draft и контекст, а к
+старой поверхности обращается только явно через `-old`.
+
+### Нарезка Boss
+
+| ID | Что получает оператор | Приёмочный сценарий GWT (ЧИСТО) |
+|---|---|---|
+| **STU-RAILS-B1** | **Новая Studio открывается по instance id.** Обычный маршрут `#/checks/<id>/studio` всегда показывает новую Studio именно выбранной проверки. | **Given:** существуют две проверки. **When:** оператор открывает Studio первой, затем второй. **Then:** каждая область показывает только свои данные, draft и ресурсы; отсутствующий или неизвестный id даёт честное состояние ошибки/пустоты, а не home и не данные другой проверки. |
+| **STU-RAILS-B2** | **Studio и Editor — две проекции одного instance.** Переход между ними не является фейковой кнопкой и не теряет контекст. | **Given:** оператор находится в `#/checks/<id>/studio` и имеет открытый документ/правку. **When:** он переходит в `#/checks/<id>/editor` и возвращается обратно. **Then:** сохраняются тот же instance, выбранная сущность, draft и resource context; другой id открывает другой контекст. |
+| **STU-RAILS-B3** | **Legacy доступен только явно под `-old`.** Старые поверхности сохраняются как reference, но больше не конкурируют с новыми именами. | **Given:** оператору нужно сравнить старый экран. **When:** он открывает `#/checks/<id>/studio-old` или `#/checks/<id>/editor-old`. **Then:** открывается соответствующая legacy-поверхность; обычные `studio`/`editor` всегда ведут на новые; публичный `-v2` больше не нужен. |
+| **STU-RAILS-B4** | **Новый Editor — настоящая инженерная проекция.** Он отличается от Studio назначением, а не сломанным переключателем или переходом на home. | **Given:** открыт `#/checks/<id>/editor`. **When:** оператор работает с кодом и документами. **Then:** доступны документы/вкладки, автодополнение, навигация, диагностика, запуск шага и LED-статусы; всё относится к тому же instance. |
+| **STU-RAILS-B5** | **Общий контекст переживает переезд.** Переключение маршрута не создаёт второй независимый проект и не смешивает проверки. | **Given:** оператор изменил draft в одной проекции. **When:** он переключается Studio ↔ Editor или обновляет страницу. **Then:** draft и ресурсный контекст восстанавливаются для того же instance; соседняя проверка не получает чужие изменения. |
+| **STU-RAILS-B6** | **Переезд не ломает живой runtime.** Новые канонические маршруты продолжают работать с Browser Stage, run, Buddy и evidence. | **Given:** оператор запускает поддержанный сценарий из новой Studio или Editor. **When:** выполняется run. **Then:** BrowserSession/CDP, bounded run, телеметрия и evidence относятся к выбранному instance; ложного успеха и потери контекста нет. |
+
+### Нарезка Flash
+
+| ID | Что получает оператор | Приёмочный сценарий GWT (ЧИСТО) |
+|---|---|---|
+| **STU-RAILS-F1** | **Одна ясная навигация и один хедер.** Оператор понимает, где Studio, где Editor и какая поверхность активна. | **Given:** открыт новый `studio` или `editor`. **When:** оператор смотрит на верхнюю область и переключается между проекциями. **Then:** виден один хедер, активная поверхность обозначена честно, переход сохраняет id; двойного хедера и временного `-v2` в пользовательской навигации нет. |
+| **STU-RAILS-F2** | **Explorer и Canvas не дублируют друг друга.** Explorer — навигация по сущностям, Canvas — рабочий граф/сценарий. | **Given:** у проверки есть сущности разных типов. **When:** оператор открывает Studio и раскрывает Explorer. **Then:** один живой Explorer показывает шесть корней и реальные сущности; Canvas показывает рабочую связь/граф, а не вторую крупную копию тех же корней со статичными счётчиками. |
+| **STU-RAILS-F3** | **Browser Stage занимает рабочее место и запускается понятно.** | **Given:** открыт новый Studio с проверкой. **When:** оператор открывает Browser Stage. **Then:** форма растягивается по доступной области, кнопка запуска и текущее состояние очевидны, Record/Discovery и live-превью не ломают рабочую поверхность и не портят DOM тестового приложения. |
+| **STU-RAILS-F4** | **Legacy визуально отделён от нового.** Reference-режим не выглядит основным продуктом. | **Given:** оператор открыл `studio-old` или `editor-old`. **When:** он сравнивает его с новой поверхностью. **Then:** понятно, что это legacy/reference; новый путь остаётся обычным `studio`/`editor`; старый Launchpad и прочая жирнота не возвращаются в новую поверхность. |
+
+### Приёмка STU-RAILS (Keeper)
+
+- Новые поверхности открываются только на обычных `studio`/`editor` маршрутах с
+  конкретным instance id.
+- `Studio → Editor → Studio` сохраняет id, данные, draft, выбранный документ и
+  resource context.
+- Неизвестный/отсутствующий id не отправляет оператора в home и не показывает
+  чужую проверку.
+- Старые поверхности доступны только под `studio-old`/`editor-old` и не являются
+  default.
+- Публичного `-v2` маршрута после переезда нет.
+- Explorer живой и единственный; Canvas не дублирует навигационное дерево.
+- Новый Editor реально отличается от Studio как проекция того же instance.
+- Browser Stage растянут, запуск понятен, Record/live-превью работают.
+- Один хедер; двойной хедер, старый Launchpad и дубли фундамента не переносятся.
+- Buddy, BrowserSession/CDP, run, telemetry, evidence и shared foundation не
+  регрессируют; текущие тесты остаются зелёными.
 
 ### Out of scope
 
-- ❌ Переписывать систему пресетов. Только замена транспорта: inline-стили → Tailwind-классы + CSS-переменные.
-- ❌ Менять дизайн-решения. Порт — это перевод, не редизайн.
-- ❌ Удалять старый design-playground до полной приёмки нового.
+- Удаление legacy-кода или reference-маршрутов — отдельная команда владельца.
+- Новый функциональный долив из STU-V2, который уже считается сданным.
+- Переписывание shared foundation, ScenarioDeckStore, DSL-контрактов и BrowserSession.
+- Полный редизайн Sanctuary Application Map.
+- AI provider selection, Qwen/Gemini и автономный AI-оператор.
+- Автоматическая канонизация без живого UX-прохода и приёмки Keeper.
 
 ---
 
-## Эпик SALVAGE — добор годноты ботов из `to-sanitize/` (~3–5%)
+## 4. Эпик SANCTUARY-MAP — Тактический радар Обители (IN PROGRESS · 27 авг 2026)
 
-> **evolve · 15 августа 2026.** Аудит `to-sanitize/` выявил ~3–5% пригодного кода, который боты (Bro/Flash) сгенерили в первом VN, но потом всё снесли. Не остальные 95% дичи — именно эти 4 вещи имеют смысл добрать, когда основной контур устаканится.
-> **Принцип:** дособираем после закрытия MONITOR + IMPX + RK. Сейчас — evolve, не active. Завтра обсудим, какие брать в ready.
-> **Сорс:** [`../to-sanitize/`](../to-sanitize/) — snapshot первого VN (31 591 файл), [`../docs/investigation-vnext-fuckup.md`](../docs/investigation-vnext-fuckup.md) § «Прямое пригодное».
+> **Тип:** `Plan` — интерактивная карта приложения (read-model, не runtime SoT).
+> **Источник:** Discovery запечатан в [`docs/research/2026-08-27-sanctuary-application-map-discovery.md`](research/2026-08-27-sanctuary-application-map-discovery.md).
+> **Порядок:** это следующий скоуп ПОСЛЕ завершения STU-RAILS — карта строится на
+> канонических маршрутах (`#/checks/<id>/studio`, `#/checks/<id>/editor`,
+> `studio-old`/`editor-old`), а не на временном `-v2`.
+> **Философия:** «тактический радар, а не мёртвая диаграмма» — семантический зум
+> L0 (Обитель) → L1 (PrettyK) → L2 (поверхность), правило 7±2 объектов в фокусе,
+> 5 линз, телепортация на реальный экран, генератор идей.
+> **Граница:** карта — инструмент навигации и рассуждений, читается из единого
+> описания. Она НЕ заменяет runtime source-of-truth и не является редактором кода.
 
-### Пригодные куски
+### Нарезка Boss (движок, раскладка, телеметрия) — 11h
 
-| ID | Зона | Что | Сорс в `to-sanitize/` | Смысл |
-|---|---|---|---|---|
-| **SALV-1** | Form config | ✅ `manifest/fields.ts` + `manifest/path.ts` + `ManifestForm.tsx` (251 строка, data-driven). Тест: `fields.test.tsx` (17/17). | `to-sanitize/manifest/fields.ts` · `to-sanitize/manifest/path.ts` | **Рефактор ManifestForm** — вынести логику полей в конфиг, форма станет тоньше и читаемее. |
-| **SALV-2** | Validation | ✅ `manifest/validateManifestFields.ts` + `App.tsx` fieldErrors. Тест: `validateManifestFields.test.ts` (14/14). | `to-sanitize/manifest/validateManifestFields.ts` · `to-sanitize/manifest/validateManifestFields.test.ts` | **Валидация перед submit** — санитизация полей, проверка лимитов, обязательность. |
-| **SALV-3** | Roles | ✅ `roles/RoleContext.tsx` + `roles/RoleGuard.tsx` — декларативный caps-контекст + HOC для скрытия полей/кнопок по роли. Тест: `src/roles/RoleContext.test.tsx` (3/3). | `to-sanitize/src-hybrid/roles/RoleContext.tsx` · `to-sanitize/src-hybrid/roles/RoleGuard.tsx` | **Декларативное RBAC на фронте** — caps на поля/кнопки вместо хардкода `readOnly`. |
-| **SALV-4** | Cosmo ladder | ✅ `integrations/cosmoportLadderMock.ts` — каскад App→Build→Deploy для cosmo-custom (поиск, резолв deployUrl). Тест: `src/integrations/cosmoportLadderMock.test.ts` (4/4). | `to-sanitize/src-hybrid/form/cosmoportLadderMock.ts` · `to-sanitize/src-hybrid/form/CosmoportLadderFields.tsx` | **Integration-скелет** — лесенка сущностей Cosmo, не в коробку. |
-
-### DoD (на evolve, не сейчас)
-
-- SALV-1: `ManifestForm.tsx` < 400 строк, поля читаются из fields-config, `tsc --noEmit` зелёный, форма визуально не меняется.
-- SALV-2: `validateManifestFields()` зовётся перед `onChange`, ошибки показываются в форме, `vitest run src/manifest/validateManifestFields.test.ts` зелёный.
-- SALV-3: `RoleContext` заменяет `readOnly` в ManifestForm, роли через caps, `tsc --noEmit` зелёный.
-- SALV-4: `cosmoportLadderMock.ts` в `cosmo/docs/source/tocompose/` как reference, не в коробку. Лесенка встанет при интеграции PAL.
-
-### Стены
-
-- **Не до RK:** SALV не должен мешать текущим MONITOR + IMPX + RK. Начинаем только после закрытия этих трёх эпиков.
-- **SALV-4 — integration, не коробка:** ни одна строка лесенки не идёт в `pure/` или `cosmo/src/` без cosmo-контура.
-- **Не тащить остальное:** 95% `to-sanitize/` — мусор (новые формы, снесённые студии, healthcheck-интеграции). Не поддаваться соблазну «а давайте ещё вот это».
-
----
-
-## Эпик MONITOR — мульти-монитор + replay + единый playhead + 3-й view
-
-> **NEW · 15 августа 2026.** Максим запросил: унифицировать хедер, кнопка «Перейти к результатам» с UX-проработкой, множественный монитор, повторяемость, отмотка, 3-й view (split 50/50), **единый playhead на все view** (ползунок ↔ таймер, скраббинг логов и видео вперёд и назад).
-> **СКОУП (15 авг, изоляция):** Monitor изолирован. Пилю только внутренности Monitor — `orchestrator/static/live/index.html` + `orchestrator/utils/live_server.py`. **Кнопки снаружи (MON-2, MON-10) — PARKED** до отдельного подхода; прокинутся из Editor позже. Прошивка Editor ↔ Monitor не трогается в этом эпике.
-> Friend-requests: [`friend-requests/MONITOR-HEADER.md`](friend-requests/MONITOR-HEADER.md) · [`friend-requests/MONITOR-INSTANCE-LINK.md`](friend-requests/MONITOR-INSTANCE-LINK.md) · [`friend-requests/MONITOR-INSTANCE-BINDING.md`](friend-requests/MONITOR-INSTANCE-BINDING.md) · [`friend-requests/MONITOR-AUTH-BINDING.md`](friend-requests/MONITOR-AUTH-BINDING.md) · [`friend-requests/MONITOR-RETENTION.md`](friend-requests/MONITOR-RETENTION.md) · [`friend-requests/MONITOR-MULTI-REPLAY.md`](friend-requests/MONITOR-MULTI-REPLAY.md) · [`friend-requests/MONITOR-SPLIT-VIEW.md`](friend-requests/MONITOR-SPLIT-VIEW.md) · [`friend-requests/MONITOR-PLAYHEAD.md`](friend-requests/MONITOR-PLAYHEAD.md).
-> Research по отмотке + UX best practice таймлайна: [`research/2026-08-15-monitor-rewind.md`](research/2026-08-15-monitor-rewind.md) §1–4.
-
-### Нарезка (активная, изолированный Monitor)
-
-| ID | Зона | DoD | Кто | Зависит |
-|---|---|---|---|---|
-| **MON-1** | Monitor header | ✅ **`orchestrator/static/live/index.html`**: wordmark (SVG bracket 20×20, «SecOps Lab», measure-bar). | Flash | — |
-| **MON-11** | Единый playhead (ядро) | ✅ **`orchestrator/static/live/index.html`**: общий playhead во всю ширину, двусторонняя связь с логом/видео/таймером. | Flash | MON-1 |
-| **MON-9** | 3-й view — split 50/50 | ✅ **`orchestrator/static/live/index.html`**: `data-live-view="split"`, видео слева + лог/каретка справа. | Flash | MON-1, MON-11 |
-| **MON-3** | Мульти-монитор (архитектура) | ✅ **`orchestrator/utils/live_server.py`**: роутинг `?run_id=` на порту 8767 (`/api/meta`, `/api/diary`, `/api/journal`, `/api/recording`). Тест: `test_diary_live.py` (36/36). | Bro | MON-1 |
-| **MON-4** | Replay лога (post-hoc) | ✅ **`orchestrator/utils/run_journal.py`** + **`orchestrator/utils/live_server.py`**: `/api/journal?run_id=…` + восстановление каретки. | Flash | MON-3 |
-| **MON-6** | Скраббер лога по времени | ✅ **`orchestrator/static/live/index.html`**: `filterByTime` через playhead. | Flash | MON-4, MON-11 |
-| **MON-5** | Replay видео (Selenium Grid chrome-video → MP4) | ✅ **`orchestrator/utils/run_recording.py`**: `find_video_for_run(run_id)` + `serve_video_range_body` с HTTP 206 (Range). Тест: `test_run_recording.py` (8/8). | Bro | MON-3 |
-| **MON-7** | Seek видео | ✅ **`orchestrator/static/live/index.html`**: `<video>` MP4 с `currentTime = playhead.currentTime`, скраббинг и Play/Pause. | Flash | MON-5, MON-11 |
-| **MON-8** | E2E smoke | ✅ **`orchestrator/tests/test_diary_live.py`**: 36 тестов на роутинг, journal, replay и range streaming. | Bro | MON-11 |
-
-### ACTIVE — инстанс-биндинг + ACL + retention (новые, 15 авг)
-
-| ID | Зона | DoD | Кто | Зависит |
-|---|---|---|---|---|
-| **MON-2** | Кнопка «Мониторинг» в Editor + индикатор | **`EditorViewSegmented.tsx` + `App.tsx`**: segmented-переключатель «Мониторинг» между Редактор/Результаты. `handleOpenMonitor()` → `window.open(LIVE_HOME?run_id=…)`. Серый/зелёный/пульсирующий индикатор (`MonitorState`). **Сделано Bro 15 авг.** | Bro | — |
-| **MON-10** | UX Monitor→Results (кнопка в Monitor) | **`index.html`**: отдельная кнопка «Перейти к результатам проверки →» в хедере Monitor. Ведёт на `#/check/<check_id>`. Пульсация при live (уже есть `status-pulse`). См. [`friend-requests/MONITOR-INSTANCE-LINK.md`](friend-requests/MONITOR-INSTANCE-LINK.md). | Flash | MON-2 |
-| **MON-12** | Instance-id в хедере Monitor | **`index.html`**: `run_id` / `check_id` из query + meta всегда в хедере (live и replay), компактный `#<id[:8]>` + tooltip. Голый `:8767` без run_id — не показывать чужой meta; либо список своих, либо подсказка. См. [`friend-requests/MONITOR-INSTANCE-BINDING.md`](friend-requests/MONITOR-INSTANCE-BINDING.md). | Flash | MON-10 |
-| **MON-13** | ACL Monitor: свой/чужой + bind-токен | **`live_server.py` + `live_pers_acl.py`**: split `may_view_owner` на `admin_appsec`/`admin_abnormal` (admin видят любой, оператор только свой). Bind-токен в URL (`?run_id=…&token=…`) для «свой без логина». См. [`friend-requests/MONITOR-AUTH-BINDING.md`](friend-requests/MONITOR-AUTH-BINDING.md). | Bro | MON-12 | ✅ |
-| **MON-14** | Retention: purge on demand + 7-дневный таймер | **`live_server.py` + админка**: on demand purge по `run_id` (NDJSON+видео+sidecar, **не** meta-ledger). Таймер 7 дней — удаление артефактов, meta-ledger бессрочно. История чартов — из meta-ledger, не страдает. См. [`friend-requests/MONITOR-RETENTION.md`](friend-requests/MONITOR-RETENTION.md). | Bro | MON-13 | ✅ |
-
-### ACTIVE — полиш логов и каретки (15 авг, правки по скрину 8)
-
-| ID | Зона | DoD | Кто | Зависит |
-|---|---|---|---|---|
-| **MON-15** | Фаззинг в каретку + PrettyK-формат | **`index.html`**: `updateExecutionRail` принимает kind `ФАЗЗИНГ`/`FUZZ` наравне с `STEP`/`NEXT`. **`controller.py`**: `_diary_leaf_preamble` шлёт `pretty` поле — PrettyK-строка в каретку (`Нажать css "…"`), лог остаётся `WebDriver: Нажать элемент | wire`. **`diary_bus.py`**: `publish` + `pretty`. **`run_journal.py`**: `_as_event` сохраняет `pretty`. Тесты: `test_publish_step_with_pretty`. ✅ **Bro 15 авг.** | Bro | — |
-| **MON-16** | DisplayKind: WebDriver / ЛогАтаки бейджи | **`index.html`**: `displayKindBadge(ev)` — для STEP с категорией `WebDriver:` пишет бейдж `WebDriver` вместо `STEP`; LOG с `ЛогАтаки` → бейдж `ЛогАтаки` (цвет ZAP/оранжевый). `displayRowKind(ev)` — CSS-класс строки: `ЛогАтаки` → `.row.ZAP`. Фаззинг → `.row.ФАЗЗИНГ`. Обратная совместимость: старые события без префикса остаются `STEP`. ✅ **Bro 15 авг.** | Bro | MON-15 |
-| **MON-17** | Убрать filter-presets ВСЕ/СИГНАЛ/ОШИБКИ | **`index.html`**: удалён `<div class="filter-presets">` из всех трёх панелей (focus/diary/zap). Оставлены только kind-chips (ВСЕ/ZAP/STEP/LOG/ERROR) + search. `createLogPane` больше не читает `presetChipsEl`. ✅ **Bro 15 авг.** | Bro | — |
-| **MON-18** | Скраббинг каретки без replayMode gate | **`index.html`**: `rebuildExecutionRailAtTime()` вызывается **всегда** (live и replay), не только в `replayMode`. Убрано 5 мест `if (replayMode) rebuild…`. Каретка перестраивается при перемотке вперёд и назад, не «запоминает последнее состояние». ✅ **Bro 15 авг.** | Bro | — |
-| **MON-19** | Зеркало: бэк отдаёт pretty в STEP | **`controller.py`**: `_step_pretty_for_live()` — приоритет description → `wire_to_pretty_line`. **`diary_bus.py`**: `publish(pretty=…)`. **`webdriver_adapter.py`**: `session_diary(pretty=…)`. **`run_journal.py`**: `_as_event` сохраняет `pretty`. ✅ **Bro 15 авг.** | Bro | — |
-
-### Приоритет очереди (изолированный Monitor)
-
-1. **MON-1** (ready) — хедер wordmark, CSS/HTML-полиш. Flash.
-2. **MON-11** (evolve) — единый playhead (полоска во всю ширину + таймер + `currentTime`). Ядро. Flash.
-3. **MON-9** (evolve) — 3-й view split 50/50 поверх playhead. Flash.
-4. **MON-3** (evolve) — `run_id`-роутинг в `live_server.py`. Bro.
-5. **MON-4 + MON-6** (evolve) — лог-архив и скраббер по времени. Flash.
-6. **MON-5 + MON-7** (evolve) — запись Grid MP4 + video seek. Bro + Flash.
-7. **MON-8** (evolve) — E2E smoke внутри Monitor. Bro.
-8. **MON-2** (active) — кнопка «Мониторинг» + индикатор в Editor. Bro. ✅ сделано 15 авг.
-9. **MON-10** (evolve) — кнопка «Перейти к результатам» в Monitor. Flash.
-10. **MON-12** (evolve) — instance-id в хедере + запрет чужого meta. Flash.
-11. **MON-13** (evolve) — ACL + bind-токен. Bro.
-12. **MON-14** (evolve) — retention: purge on demand + 7 дней. Bro.
-13. **MON-15…MON-19** — полиш логов и каретки. Bro. ✅ done 15 авг.
-
----
-
-## Эпик MONITOR-HUB — хаб монитора: HomePage, кнопки, instance-группировка, space, дропдаун
-
-> **NEW · 15 августа 2026.** Максим: хедерные кнопки Allure/WireK убрать, «Результаты →» (стрелка справа) → на instance проверки. **HomePage монитора** по `http://127.0.0.1:8767/` — динамическая таблица apps с коллапсами. Кнопка «Результаты» ведёт на табу «Результаты» именно того инстанса проверки. Space в мониторе создаётся в момент `start_run`, URL биндится к instance. Новый Run того же instance → новый monitor instance (новое видео/логи). Дропдаун «Все запуски» в хедере — переключение между run_id одного instance. Доступ к чужим запускам — регулировать позднее.
-> **HomePage (уточнено 15 авг):** единственная страница (AppInstancesPage — отложено). Таблица apps:
->   - **Динамическая** — рефрешится при новом `run_id` для любого `instance_id`/app (SSE или polling `runs_index.ndjson`).
->   - **Коллапсы:** app-code → внутри N коллапсов deployments (deploy_URLs) → внутри deployment-коллапса лейбл `instance_id` со ссылкой на вкладку **«Регламент»** релевантного instanceId.
->   - **Сортировка:** по дате последнего запуска (свежие выше); вторично — по дате первого запуска (`first_run_ts` = первый запуск пайпа для этого app-code, НЕ создание app-code как сущности).
->   - **Pagination:** 10 строк (app-коллапсов) на страницу.
->   - **Ссылка на app в портале АС Космопорт** — в коллапсе app-code; **заглушка** (без ссылки) до появления hook-интеграции.
-> **СКОУП:** интеграция Editor ↔ Monitor, HomePage, instance-биндинг. **Следующий после полиша MON-15…MON-19.** Возможна делегация на Flash.
-> Friend-request: [`friend-requests/MONITOR-MAINPAGE-AND-SPACE.md`](friend-requests/MONITOR-MAINPAGE-AND-SPACE.md).
-
-### Нарезка
-
-| ID | Зона | DoD | Кто | Зависит |
-|---|---|---|---|---|
-| **MH-1** | Убрать кнопки Allure и WireK из хедера | **`index.html`**: удалить кнопки «Allure» и «WireK» из хедера Monitor. Оставить только «Мониторинг» и «Результаты». | Flash | — |
-| **MH-2** | Кнопка «Результаты →» (стрелка справа) | **`index.html`**: кнопка «Результаты» — стрелка справа (`→` / svg), ведёт на `/#/check/<check_id>?tab=results` того инстанса, где создан данный монитор. `check_id` из `meta.check_id`. | Flash | MON-10 |
-| **MH-3** | HomePage монитора: `GET /` → динамическая таблица apps | **`live_server.py` + `index.html`**: по голому `http://127.0.0.1:8767/` (без `run_id`) — HomePage. Таблица из `runs_index.ndjson`, коллапсы: **app-code** (ссылка на портал — заглушка) → **deployments** (N штук по deploy_URL) → **instance_id** (лейбл + ссылка на вкладку «Регламент» релевантного instanceId). **Динамический refresh** (polling 5s). **Pagination 10 строк** (app-коллапсов). **Сортировка:** по `last_run_ts` (свежие выше), вторично по `first_run_ts`. Фильтр/поиск по app-code. | Bro | MH-2 | ✅ |
-| **MH-4** | Space: создание Monitor-пространства при start_run | **`lab_run.py`**: в `start_run()` создавать запись в `runs_index.ndjson` с полями `{ instance_id, run_id, app_code, deploy_url, check_id, created_at, owner, first_run_ts }`. `first_run_ts` ставится только если app-code ещё не было (первый запуск пайпа = инициализация app-code). | Bro | MH-3 | ✅ |
-| **MH-5** | Новый Run → новый monitor instance | **`live_server.py` + `runs_index.py`**: каждый `start_run` создаёт новую запись (новый `run_id` + своё видео/логи), обновляет `last_run_ts` для app-code. Старые run_id не перезаписываются (upsert не затирает space-поля). | Bro | MH-4 | ✅ |
-| **MH-6** | Дропдаун «Все запуски» в хедере live monitor | **`index.html`**: `<select>` / кастомный дропдаун в хедере — список run_id того же `instance_id`. Переключение → `window.location` с новым `run_id`. **Разблокирован: `instance_id` теперь пишется в `runs_index.ndjson` (MH-4/MH-5).** | Flash | MH-3, MH-5 | ✅ |
-| **MH-7** | Доступ к чужим запускам (черновик политики) | **ACL-проект**: `filter_runs_for_caller()` в `live_pers_acl.py` — admin_appsec/admin_abnormal видят всё, оператор только свои, без caller — всё (HomePage без логина). Вешается на `/api/runs/apps` + `/api/runs/index` через `X-KDT-User`/Cookie. См. FR §10. | Bro | — | ✅ |
-| **MH-8** | E2E smoke: HomePage + дропдаун | **Playwright**: открыть HomePage → таблица apps с коллапсами → раскрыть app → deployment → клик instance_id → монитор/вкладка открылась. Дропдаун в хедере переключает run_id. | Bro | MH-6 | ✅ |
-
-### Приоритет очереди (Bro + Flash)
-
-1. **MH-1** (ready) — убрать Allure/WireK из хедера. **Flash.** Независимо. ✅
-2. **MH-2** (ready) — кнопка «Результаты →» со стрелкой справа. **Flash.** (`check_id` из `meta.check_id` уже есть.) ✅
-3. **MH-3** (evolve) — HomePage `/` → динамическая таблица apps (коллапсы, pagination, сортировка). **Bro.** ✅ (`/api/runs/apps` + HomePage SPA-режим)
-4. **MH-4** (evolve) — Space: запись в `runs_index` при `start_run` (`instance_id`, `app_code`, `deploy_url`, `first_run_ts`). **Bro.** ✅
-5. **MH-5** (evolve) — новый Run → новый monitor instance + `last_run_ts`. **Bro.** ✅ (`upsert_run_index` в `runs_index.py`)
-6. **MH-6** (done) — дропдаун «Все запуски» в хедере live monitor. **Flash.** ✅ `instance_id` уже в `runs_index.ndjson`; фильтр по нему (fallback на check_id) работает.
-7. **MH-7** (evolve, не блокер) — ACL-черновик доступа к чужим запускам. **Bro.** ✅
-8. **MH-8** (done) — E2E smoke HomePage + дропдаун. **Bro.** ✅ `e2e/monitor-hub-smoke.spec.ts` — 4 теста зелёные (HomePage рендер, коллапсы app→deploy→instance, pagination, без JS-ошибок).
-
-### DoD эпика
-- Хедер без Allure/WireK, кнопка «Результаты →» ведёт на instance проверки.
-- `:8767/` — HomePage: динамическая таблица apps с коллапсами (app → deployments → instance_id со ссылкой на «Регламент»), pagination 10, сортировка по дате последнего/первого запуска.
-- app-code ссылка на портал — заглушка (без URL до hook-интеграции).
-- Новый run → новый monitor instance с отдельным URL, обновление `last_run_ts`.
-- Дропдаун «Все запуски» в хедере монитора.
-- Политика доступа — черновик, не блокирует.
-- AppInstancesPage — **отложено** (подумаем позже).
-
----
-
-## Эпик MH-FIX-LINKS — навигация HomePage Monitor → стрим (не форма)
-
-> **NEW · 15 августа 2026.** Приёмка Keeper + Максим. Приоритет **P0**.
-> Требование сформулировано на стороне заказчика. «Как» — зона Boss'а.
-
-### Что сказал Максим (verbatim, источник истины)
-
-> «на homepage monitor как бы по уму разуму должны быть ссылки на **сам стрим**, а не битые ссылки на форму instance там uuid»
-
-### Наблюдаемое поведение (факт, проверено)
-
-- В списке запусков (HomePage Monitor) у каждой проверки есть лейбл-ссылка.
-- Сейчас клик по этой ссылке открывает **форму редактора** этой проверки.
-
-### Желаемое поведение (результат)
-
-Клик по проверке в списке запусков должен открывать **живой стрим этой проверки** (то, что видно при запуске: экран/видео/логи прогона), а не форму редактора.
-
-### Нарезка (Boss — исполнитель)
-
-| ID | Что должно получиться | Приёмочный сценарий |
+| ID | Что получает оператор | Приёмочный сценарий GWT (ЧИСТО) |
 |---|---|---|
-| **MH-FIX-1** | Клик по проверке в списке запусков открывает её живой стрим | **Given:** открыт список запусков, есть хотя бы одна завершённая проверка. **When:** раскрываю проверку и кликаю по её идентификатору. **Then:** открывается живой стрим этой проверки (экран/видео/логи), а не форма редактора. |
+| **SANCT-MAP-B1** | **Карта из единого описания.** Узлы, уровни, связи, статусы и маршруты приходят из одного источника, а не захардкожены в канвасе; битые ссылки честно видны. | **Given:** карта открыта. **When:** загружено описание системы. **Then:** узлы и связи отображаются по описанию; ссылка на несуществующий экран или документ помечена как битая, а не молча нарисована; видимые узлы фильтруются по выбранной линзе. |
+| **SANCT-MAP-B2** | **Семантический зум и честная раскладка.** Прокрутка/клик меняют уровень абстракции (Обитель → PrettyK → поверхность), а не просто масштаб пикселей; кластеры сворачиваются, связи не пересекаются. | **Given:** оператор на верхнем уровне. **When:** он уходит вглубь к конкретной поверхности. **Then:** плавный переход L0→L1→L2; дочерние узлы раскрываются при фокусе и сворачиваются в кластеры при отдалении; связи не спутываются; фокус на выбранном узле читается. |
+| **SANCT-MAP-B3** | **Живая телеметрия и статус узлов.** Узлы с живыми стендовыми портами показывают реальный статус и обновляются без перезагрузки карты. | **Given:** стенд поднят, часть портов жива. **When:** открыта линза рантайма. **Then:** живой узел показан зелёным, упавший — красным; статус обновляется в живую; узел без привязки к порту честно показан как не-рантаймный. |
 
-### Критерии готовности (DoD — проверяемые факты)
+### Нарезка Flash (холст, визуал, HUD) — 13h
 
-- Клик по проверке в списке ведёт на её стрим, а не на форму редактора.
-- Для завершённой проверки открывается её запись (видео/логи), для активной — live-стрим.
-- Проверено руками: после клика виден стрим проверки, а не белая/пустая форма.
+| ID | Что получает оператор | Приёмочный сценарий GWT (ЧИСТО) |
+|---|---|---|
+| **SANCT-MAP-F1** | **Тактический холст и навигация.** Плавный pan/zoom, кнопки масштаба и сброса, хлебные крошки иерархии — оператор не теряет ориентацию. | **Given:** карта открыта. **When:** оператор перемещается и зумит (колесо, тачпад, кнопки). **Then:** плавное приближение/отдаление; сброс возвращает к корню; видна цепочка уровней, где оператор находится. |
+| **SANCT-MAP-F2** | **Визуал узлов и анимированные связи.** Статус узла читается цветом за секунду; активные потоки анимированы; нерелевантное приглушается. | **Given:** оператор выбирает узел. **When:** он наводит или выбирает его. **Then:** нерелевантные узлы и связи приглушаются до фона; активные связи подсвечены/анимированы; статус узла различим с одного взгляда (готов / в работе / legacy / обрыв). |
+| **SANCT-MAP-F3** | **Панель идеи и оверлей Ctrl+M.** Из любого экрана карта всплывает мгновенно; по клику на узел — метаданные и быстрая формулировка идеи с заготовкой задачи. | **Given:** оператор в любой точке системы. **When:** нажат Ctrl+M или клик по узлу. **Then:** карта всплывает поверх экрана быстрее 150мс; панель узла показывает статус/связи/документы; записанная мысль даёт чистую заготовку задачи (GWT), не просто текст. |
 
-### Что НЕ делать (out of scope)
+### Совместный пакет (Boss + Flash) — 3h
 
-- Не трогать кнопку «Результаты →» в шапке стрима — она по замыслу ведёт в результаты проверки, это другая история.
-- Не добавлять ссылку на портал Космопорт — это заглушка, интеграция отложена.
-- Не менять общий вид списка запусков, порядок, пагинацию — только поведение ссылки.
+| ID | Что получает оператор | Приёмочный сценарий GWT (ЧИСТО) |
+|---|---|---|
+| **SANCT-MAP-J1** | **Телепортация и стабильность.** Клик по узлу с экраном переводит на реальный канонический экран; карта держит плавность при большом числе связей. | **Given:** узел привязан к реальному экрану с проверкой. **When:** оператор жмёт «перейти». **Then:** роутер открывает канонический экран по instance id (не `-v2`); при 100+ связях зум и перемещение остаются плавными без утечек. |
 
----
+### Приёмка SANCTUARY-MAP (Keeper)
 
-## Эпик IMPX — импорт конфигурации между проверками
+- От Обители до Studio/Editor добираешься не более чем за 3 клика/зума.
+- Статусы честные: ни один незавершённый узел не помечен как готовый/канон.
+- Честный семантический переход L0 → L1 → L2.
+- Телепортация ведёт на канонический маршрут, а не на временный `-v2`.
+- Идея из панели генерирует ЧИСТО-заготовку (GWT), а не сырой текст.
+- `Ctrl+M` открывает радар <150мс поверх любого экрана.
+- При 100+ связях — плавный зум/панорама без просадок.
+- Карта не подменяет runtime SoT и не редактирует код.
 
-> **NEW · 15 августа 2026.** Максим: «объекты в редакторе надо уметь импортить — конфигурацию тестов (страницы/сценарии/модули/фаззеры/ресурсы)». Сейчас есть импорт целого JSON-манифеста (HomePage болванка) и replay check из History, но **нет переноса отдельных блоков из чужой/другой проверки внутрь открытой**.
-> **Преднастройки instance (deploy-driven blank) уже реализованы** — `buildManifestFromDeploy` + `ensureDeploy` в админке + select app/deploy на HomePage (`ADM-BLANK-1`, `ADM-DEPLOY-ENSURE`). Не дублировать.
-> Стены: не тащить `BankDeploy`/`appCode`/банковские роли в коробку (INTEGRATION). Импорт = перенос конфигурации, не авторинг экземпляра.
+### Out of scope
 
-### Нарезка (Boss + Flash, 60/40)
-
-> **Правило 60/40 (Максим, 16 авг):** Flash — 60% объёма (визуал, диалоги, тесты), Boss — 40% + ревью и приёмка. Нарезка ниже уже по этому правилу.
-
-| ID | Зона | DoD | Кто | Зависит |
-|---|---|---|---|---|
-| **IMPX-1** | Чтение чужих checks | ✅ `src/checks/checksStore.ts`: `listChecks()` отдаёт все, фильтр владельца снят. История: все проверки видны, replay/открытие работает. | Boss (факт ✅) | — |
-| **IMPX-2** | Модель переноса | ✅ `src/studio/studioTransfer.ts` (новый): `extractEditorBlocks` / `mergeEditorBlocks` / `selectBlocks` / `countBlocks`. Тест: `studioTransfer.test.ts` 6/6. | Boss | IMPX-1 |
-| **IMPX-3** | Source picker | ✅ `src/studio/StudioImportDialog.tsx` (новый): модалка «Импорт из проверки» — список checks минус текущая, чекбоксы типов, плюрализация блоков, Empty. | Flash | IMPX-2 |
-| **IMPX-4** | Кнопка в студии | ✅ `src/studio/StudioWorkspace.tsx`: кнопка «Импорт» в тулбаре (ImportOutlined), класс `.kdt-studio-import-btn` в `styles.css`. Стейт `showImportDialog` в StudioWorkspaceInner. | Flash | IMPX-3 |
-| **IMPX-5** | Интеграция (внутри Studio, не App) | ✅ `handleImportBlocks` в StudioWorkspaceInner: `mergeEditorBlocks` → `onFormDataChange` + `onResourceContentsChange`. Dirty-guard через дебаунс. `App.tsx` не тронут. | Flash | IMPX-4 |
-| **IMPX-6** | Sanity-тесты | ✅ `StudioImportDialog.test.tsx` 4/4 + `studioTransfer.test.ts` 6/6. `tsc --noEmit` зелёный. | Flash | IMPX-5 |
-
-### DoD эпика
-- В студии открытой проверки можно импортировать страницы/сценарии/модули/фаззеры/ресурсы из другой проверки (своей или чужой — все видны).
-- Индексы не ломаются, папки сохраняются, дубли не плодятся.
-- `tsc --noEmit` зелёный + sanity-тесты зелёные.
+- Замена живого runtime source-of-truth (карта = read-model).
+- Редактор кода внутри карты.
+- Автонаполнение содержимого карты без участия Keeper/владельца.
+- Полный redesign Studio/Editor (это STU-RAILS).
+- Автономный AI-оператор; AI provider.
 
 ---
 
-## Эпик RK — RJSF-KILL: выпилить RJSF + REGULATION-EDITOR-SPLIT
+## 4½. Эпик KDT-PURGE — KDT Purgatory Finish (CLOSED · 26 авг 2026)
 
-> **NEW · 15 августа 2026.** Выпиливание JSON Schema / RJSF из формы — операция REMOVE, не REPLACE.
-> Результаты (ResultsWorkspace) и Админка (ProLayout + Overview + charts) — не трогаем.
-> Legacy `form/` + `schema/` = 72 файла — визуальный ориентир «как было».
-> Canon-request: [`../docs/canon-requests/REGULATION-EDITOR-SPLIT.md`](../docs/canon-requests/REGULATION-EDITOR-SPLIT.md).
-> Investigation: [`../docs/investigation-vnext-fuckup.md`](../docs/investigation-vnext-fuckup.md).
-> Pydantic — в ядре, не удаляем. Manifest.json — заменяем на плоский typed JSON.
+> **Тип:** `Plan` — финальная зачистка `kdt`-следов и контракт-дрифта `pk`/`prettyk`.
+> **Решение Keeper (принято, без переспросов):** `kdt` как имя продукта/бренд —
+> выпилить. Короткий технический токен везде = `pk` (сеть `pk-net`, `pk-api-lab`,
+> `pk-llm-server`, `PK_*` env, `pk.*` localStorage, `pk://` URI, `admin@pk.local`
+> lab-домен). `prettyk`/`prettyk.io` — только бренд, прод-домен, публичные
+> пакеты/Sonar project keys. Брендинг-часть уже закрыта в `docs/prettyk.md`.
+> **Граница:** `KDT_*` env-переменные — **внешний контракт**, чистить миграцией
+> (читать оба префикса на переходный период), а не слепым replace.
+> **Защищённый legacy:** префиксы `kdt:enc:v1:`, `kdt:vault:v1:`, `kdt.auth.user`
+> (storage key), regex `(kdt|pk)://` — НЕ трогать (обратная совместимость).
 
-### Урок предыдущего VN (не допустить повторения)
+### Нарезка Boss
 
-| Что тогда | Что сейчас |
+| ID | Что получает оператор | Приёмочный сценарий GWT (ЧИСТО) |
+|---|---|---|
+| **PURGE-B1** | **Env-переменные под одним префиксом.** Оператор задаёт переменные запуска с префиксом `PK_`; старые `KDT_` продолжают читаться, но система в первую очередь берёт новые. | **Given:** оператор задал `PK_AI_ASSISTANT_ENABLED=1` и не задал `KDT_AI_ASSISTANT_ENABLED`. **When:** стартует прогон. **Then:** AI включается. **Given:** заданы ОБА, новый и старый. **Then:** новый имеет приоритет. **Given:** задан только старый без нового. **Then:** старый работает на переходный период, не ломая существующие CI-скрипты. |
+| **PURGE-B2** | **Продуктовая идентичность в рантайме.** Оператор не видит `kdt` в сводках прогона, именах создателей, фингерпринтах находок, user-agent'ах и логах — везде `pk`. | **Given:** завершён прогон. **When:** оператор читает `run_summary`, цепочку `intent → run → evidence`, логи и находки. **Then:** fingerprint, creator, summary kind, user-agent и HTTP-заголовки не содержат `kdt` как имя продукта. |
+| **PURGE-B3** | **Единая Docker-сеть и единый внутренний домен.** Все сервисы коробки живут в одной сети `pk-net` с одним внутренним admin-доменом. | **Given:** стенд поднят. **When:** контейнеры и скрипты обращаются друг к другу. **Then:** сеть везде называется одинаково и сервисы видят друг друга; `admin@pk.local` — единый внутренний пользователь; битых путей и разночтений с `prettyk-net`/`prettyk-api-lab` нет. |
+| **PURGE-B4** | **Один хедер Editor.** Оператор в Editor видит одну рабочую шапку, а не две одна над другой. | **Given:** открыт Editor проверки. **When:** оператор смотрит на верхнюю область. **Then:** видна одна шапка с активным check-бейджем, Run/Save и переключателем Studio/Editor; двойного хедера нет. |
+
+### Нарезка Flash
+
+| ID | Что получает оператор | Приёмочный сценарий GWT (ЧИСТО) |
+|---|---|---|
+| **PURGE-F1** | **Чистые тестовые данные и фронтенд-артефакты.** Тестовые значения, фикстуры и демо-данные не содержат `kdt` как имя продукта. | **Given:** прогоняются тесты. **When:** фикстуры инициализируют стендовые данные. **Then:** тестовые значения, имена пользователей, пароли, email'ы и коннектор-параметры используют `pk`, а не `kdt`. |
+| **PURGE-F2** | **Чистые заголовки документации.** Оператор читает документацию и видит «PrettyK», а не «KDT» в названиях и заголовках. | **Given:** открыт `security.md`, `manifest.md` или `stand.md`. **When:** оператор видит заголовок. **Then:** заголовки и вводные фразы говорят «PrettyK», а не «KDT»; технические env-имена остаются как есть. |
+
+### Приёмка KDT-PURGE (Keeper)
+
+- `PK_*` env-переменные — основной префикс; `KDT_*` читаются на переходный период, не ломая CI.
+- Рантайм-вывод, фингерпринты, имена создателей, сводки, user-agent'ы, HTTP-заголовки — без `kdt`.
+- Docker-сеть — единая `pk-net`; `admin@pk.local` — единый внутренний.
+- Editor — один хедер.
+- Тестовые фикстуры и документация — без `kdt` как имени продукта.
+- Legacy префиксы (`kdt:enc:v1:`, `kdt:vault:v1:`, `kdt.auth.user` key, `(kdt|pk)://` regex) НЕ тронуты.
+- Ни один компонент не регрессирует (tsc 0, точечные тесты зелёные).
+
+### Out of scope
+
+- Удаление legacy-префиксов (обратная совместимость).
+- Переименование внешнего CDP-профиля `kdt-cdp-chrome` (вне репо).
+- Полный product rename в кодовых комментариях.
+- Автономный AI; AI provider; редизайн.
+
+---
+
+## 5. Эпик KCF — Kimaki Character Framework (READY · 25 авг 2026)
+
+> **Статус:** `READY` — полный Plan подготовлен; реализацию и эксплуатационный
+> контур ведёт Buddy. Архитектурный и продуктовый результат принимают Keeper и
+> Максим.
+> **План:** [`research/2026-08-25-kimaki-character-framework-plan.md`](research/2026-08-25-kimaki-character-framework-plan.md).
+> **Граница:** «разумные боги» = широкая capability-модель без угодничества,
+> но с неотключаемыми identity/policy/audit/recovery-инвариантами.
+> **Важно:** KCF не является permissionless LLM и не превращает Discord nickname,
+> сообщение или роль в членство PrettyK.
+
+### Epic Brief
+
+**Цель:** дать владельцу и нескольким явно назначенным операторам мощный Discord
+контур, где Kimaki умеет отвечать, помнить подтверждённые предпочтения и
+управлять разрешёнными ресурсами, а Buddy обеспечивает живучесть, секреты,
+наблюдаемость и восстановление.
+
+**Роли:** Buddy — delivery/operations lead; Boss — доменный runtime и интеграции;
+Flash — Discord UX и admin surfaces; Keeper — требования и приёмка; Максим —
+owner и финальное решение.
+
+**Out-of-scope:** self-bot; произвольный REST/shell из LLM; скрытая запись всей
+истории; автоматическое PrettyK enrollment; production install/deploy без
+явного приказа Максима; Sanctuary/canon без 2FA.
+
+### Нарезка задач KCF
+
+| ID | Что получает пользователь | Приёмочный сценарий GWT (ЧИСТО) | Кому |
+|---|---|---|---|
+| **KCF-0** | Ясный режим полномочий: owner, operators, agents, guests; мощное прямое поведение без sycophancy и без саморасширения прав. | **Given:** агент получает запрос на действие. **When:** действие требует capability. **Then:** решение опирается на actor/scope/policy; агент говорит прямо и выполняет разрешённое, а не льстит и не выдумывает доступ. | Buddy lead + Boss |
+| **KCF-1** | Бот подключается к разрешённому guild и устойчиво принимает interactions/events. | **Given:** бот перезапущен или Gateway разорвал соединение. **When:** сервис возвращается. **Then:** heartbeat/reconnect/resume работают; команды не дублируются; состояние здоровья видно оператору. | Buddy + Boss |
+| **KCF-2** | Пользователь всегда узнаётся правильно, даже после смены nickname/username. | **Given:** пользователь меняет отображаемое имя. **When:** он вызывает команду снова. **Then:** открывается прежняя identity; новый дубль не создан; guild scope не перепутан. | Boss |
+| **KCF-3** | Нейтральный guest и управляемый character profile с opt-in, show, edit, export, disable и forget. | **Given:** новый пользователь пишет боту. **When:** нет явного согласия. **Then:** он остаётся guest; после opt-in можно сохранить только подтверждённое предпочтение; show/export/forget показывают честный результат. | Boss + Flash |
+| **KCF-4** | Наблюдения не становятся фактами без подтверждения; profile не становится членством проекта. | **Given:** модель предполагает интерес, роль или шутку. **When:** пользователь не подтвердил это. **Then:** запись остаётся session-only или отбрасывается; Discord membership и PrettyK membership не меняются. | Boss |
+| **KCF-5** | Durable memory и контекст Kimaki выдаются строго в текущем scope. | **Given:** у пользователя есть данные из другого guild/project. **When:** Kimaki отвечает здесь. **Then:** чужой scope не попадает в контекст; после forget факт исчезает из retrieval/cache/новой сессии. | Boss |
+| **KCF-6** | Kimaki получает profile context через OpenCode без загрязнения глобального prompt. | **Given:** запрос приходит из Discord. **When:** создаётся/продолжается агентная сессия. **Then:** identity, guild, consent и approved context связаны с этой сессией; untrusted message не меняет policy или capability. | Boss |
+| **KCF-7** | Discord admin plane с понятными read-only, reversible и destructive действиями. | **Given:** агент предлагает изменение. **When:** операция выполняется. **Then:** typed allowlist, Discord permissions, role hierarchy, scope и approval level проверены; произвольный REST запрещён. | Boss |
+| **KCF-8** | Опасные действия требуют видимого preview/confirmation, а владелец может остановить запись. | **Given:** предлагается удалить, забанить, массово изменить или сменить policy. **When:** нет нужного approval. **Then:** действие не выполняется; при подтверждении есть before/after/result; kill switch блокирует agent writes. | Boss + Flash |
+| **KCF-9** | Полный audit и восстановление: кто, что, где, почему и чем закончилось. | **Given:** изменён профиль, роль, канал или policy. **When:** оператор открывает audit/recovery. **Then:** виден correlation trail; доступен export/revoke/rollback; восстановление проверено на non-production guild. | Buddy + Flash |
+| **KCF-10** | Сервис живёт как управляемый production-like контур: secrets, migrations, health, alerts, backups, rate-limit handling. | **Given:** сервис стартует, падает или получает 401/403/429. **When:** Buddy запускает/обновляет/останавливает его. **Then:** секреты не попадают в repo/logs/prompts; состояние диагностируется; retry уважает Discord headers; restore runbook исполним. | Buddy |
+| **KCF-11** | Private pilot и adversarial acceptance перед расширением полномочий. | **Given:** один тестовый guild и owner/operators. **When:** выполнены IDOR, cross-guild, prompt injection, memory poisoning, replay, secret leakage и rate-limit tests. **Then:** все критические gates green; только после этого разрешается следующий wave/multi-guild. | Boss + Buddy + Keeper |
+
+### KCF acceptance gates
+
+| Gate | Факт |
 |---|---|
-| «Vyпилить RJSF» → нарезал «заменить форму с нуля» | Явно: **REMOVE, не REPLACE**. Форма, студия, интеграции — остаются визуально идентичными legacy |
-| Нарезал VN-FORM-1…5 = новый ManifestForm | Нарезаем RK-REMOVE-* = удаление RJSF-зависимостей, замена render-слоя без изменения UI |
-| Нарезал VN-ST-1…10 = новая Studio | Нарезаем RK-STUDIO-* = точечная замена RJSF-конструкторов на прямой маппер внутри существующей Studio |
-| Интеграции → healthcheck display only | Интеграции — полные панели как в legacy (Dojo настройки + Allure + коннекторы) |
+| **KCF-A** | ID stable; nickname changes do not duplicate identity. |
+| **KCF-B** | Guest/profile/membership/permission/memory scopes are isolated. |
+| **KCF-C** | No durable memory without consent; forget is effective everywhere. |
+| **KCF-D** | Agent actions are typed, allowlisted, authorized and audited. |
+| **KCF-E** | Gateway reconnect/resume and Discord rate-limit handling are proven. |
+| **KCF-F** | Kill switch, backup and restore are demonstrated. |
+| **KCF-G** | Private pilot passes adversarial tests; Keeper accepts GWT; Максим sees it. |
 
-### Нарезка на двоих
+---
 
-| ID | Зона | DoD | Кто | Зависит |
-|---|---|---|---|---|
-| **RK-REMOVE-1** | Удаление | **schema/ (25 файлов)**: удалить `src/schema/` целиком — все файлы. Удалить npm-зависимости: `@rjsf/core`, `@rjsf/antd`, `@rjsf/validator-ajv8`, `ajv`, `json-schema-merge-allof` — из `package.json`. `npm install`. `tsc --noEmit` — зелёный. | Bro | — |
-| **RK-REMOVE-2** | Удаление | **form/ (47 файлов)**: удалить `src/form/` целиком. Временно: form-зависимый код (`LegacyManifestForm`, импорты в `App.tsx`, `StudioWorkspace.tsx`) — закомментировать с `// RK-TODO`. `tsc --noEmit` — зелёный. | Bro | RK-REMOVE-1 |
-| **RK-MANIFEST-1** | Типы | **`src/manifest/types.ts`**: плоский typed JSON-контракт из `docs/canon-requests/REGULATION-EDITOR-SPLIT.md` § «Целевой формат». `Regulation`, `EditorPayload`, `AuthModule`, `ConnectorModule`, `ChainModule`, `FuzzerModule`, `DataModule`. `tsc --noEmit` — зелёный. | Flash | — |
-| **RK-MANIFEST-2** | Парсер | **`src/manifest/parse.ts`**: `parseManifest(json: unknown): ManifestResult`. Читает `docs/manifest.json` (2729 строк JSON Schema), извлекает поля в плоский typed JSON. Legacy → новый контракт. `vitest run src/manifest/parse.test.ts` — зелёный. | Flash | RK-MANIFEST-1 |
-| **RK-FORM-1** | Рендер | **`src/manifest/ManifestForm.tsx`**: прямой маппер из плоского typed JSON. Визуально = legacy форма без RJSF. Секции: Регламент (meta, assessment_purpose, base_url, zap_mode, gate) + Редактор (PrettyK через `EditorWidget`, модули через `ModuleList`). `vitest run src/manifest/ManifestForm.test.tsx` — зелёный. | Flash | RK-MANIFEST-2 |
-| **RK-FORM-2** | Виджеты | **`src/manifest/fields.ts`**: `RegulationField` / `EditorField` — прямые замены RJSF-виджетов. `KdtSelectWidget`, `KdtNumberInput`, `KdtTextareaWidget` — но без RJSF, как обычные Ant Design контролы. `vitest run src/manifest/fields.test.tsx` — зелёный. | Flash | RK-FORM-1 |
-| **RK-FORM-3** | Импорт/экспорт | **`src/manifest/io.ts`**: `download`, `loadFromFile`, `resetToDefault`. Замена `exportManifest.ts`. `vitest run src/manifest/io.test.ts` — зелёный. | Flash | RK-FORM-1 |
-| **RK-STUDIO-1** | Конструкторы | **`src/studio/StudioWorkspace.tsx`**: замена RJSF-конструкторов модулей на прямой маппер. Auth-форма, Chain-форма, Fuzzer-форма — как в legacy, но без RJSF. Канвасы с кодом, кнопки. `vitest run src/studio/StudioWorkspace.test.tsx` — зелёный. | Bro | RK-MANIFEST-1 |
-| **RK-STUDIO-2** | Action Hub | **`src/studio/ActionHub.tsx`**: единственный create (как в legacy). Кнопки «Добавить auth», «Добавить цепочку», «Добавить фаззер» — без RJSF. `vitest run src/studio/ActionHub.test.tsx` — зелёный. | Bro | RK-STUDIO-1 |
-| **RK-INTEG-1** | Интеграции | **`src/admin/sections/IntegrationsPanel.tsx`**: проверить, что рендерится legacy-версия (Dojo настройки + Allure + коннекторы), не health-only. Если нет — восстановить из `legacy/frontend/src/admin/sections/IntegrationsPanel.tsx`. `tsc --noEmit` — зелёный. | Bro | RK-REMOVE-1 |
-| **RK-INTEG-2** | Dojo брендинг | **Verify**: Dojo-панель показывает findings, severity, dedup/FP marking. Если нет — восстановить Dojo-фичи из legacy. `tsc --noEmit` — зелёный. | Bro | RK-INTEG-1 |
-| **RK-WIRE-1** | Vite proxy | **`vite.config.ts`**: убедиться, что `/api` проксирует на `http://127.0.0.1:8765` (playground), `/live` на `http://127.0.0.1:8767`. `tsc --noEmit` — зелёный. | Flash | — |
-| **RK-SMOKE-1** | E2E | **`e2e/rk-smoke.spec.ts`**: login → home → form (глазами: поля все на месте, submit шлёт JSON) → studio (конструкторы кликабельны, канвасы есть) → admin/integrations (Dojo/Allure панели полные) → results → history. 12+ тестов. `npx playwright test e2e/rk-smoke.spec.ts` — зелёный. | Bro | RK-FORM-1, RK-STUDIO-1, RK-INTEG-1 |
-| **RK-CLEAN-1** | Чистка | **`rg` мёртвых RJSF импортов**: после удаления schema/ и form/ — убедиться, что `rg "@rjsf|ajv|json-schema" src/` пуст. Остатки `// RK-TODO` — разобрать. `tsc --noEmit` — зелёный. | Flash | RK-REMOVE-2 |
-| **RK-SPLIT-1** | Manifest split | **`docs/regulation.schema.json` + `docs/editor-payload.json`**: замена `docs/manifest.json` (JSON Schema) на два плоских typed JSON. Сгенерировать из парсера (`RK-MANIFEST-2`). Старый `manifest.json` → `legacy/docs/manifest.legacy.json` (reference). | Flash | RK-MANIFEST-2 |
+## 6. Эпик ADM-PURE — SecOps Control для pure (PARKED · 25 авг 2026)
 
-### Стены
+> **Статус:** `⏸️ PARKED` — Продукт = сканер. Дашборды и админка — потом, когда будет PR.  
+> **Профиль:** `secops-lab-pure`. **Граница:** pure-ядро ИБ-операций (Applications, Targets, Runs, Findings, Policies).  
+> **Исполнитель:** Boss (17h). **Приёмка:** Keeper.
 
-- **Не трогаем ResultsWorkspace / ResultsTabs / ResultsJournal** — работает, зона результатов закрыта.
-- **Не трогаем AdminLayout / ProLayout / Overview / hooks / RunsPage / G2-чарты** — работает, зона админки закрыта.
-- **Не трогаем Monaco / editor / keywords / generated** — Editor работает.
-- **Не трогаем shell / auth / roles / theme** — работает.
-- **Legacy `form/` и `schema/` — удаляем без восстановления.** Reference остаётся в `legacy/frontend/src/form/` и `legacy/frontend/src/schema/`.
-- **Legacy `docs/manifest.json` — сохраняем как reference** (`legacy/docs/manifest.legacy.json`), не удаляем.
-- **Pydantic `orchestrator/models/manifest.py` — не трогаем.** Оркестратор получает на вход то же, что и раньше (через парсер).
-- **Зона интеграций — полные панели**, не healthcheck-only.
-
-### Инструкция для Bro и Flash
-
-Каждый, прежде чем писать код, обязан ответить в `.cursor/investigation-log/` на три вопроса:
-
-1. **Что делаю:** ID задачи из беклога + один абзац своими словами.
-2. **Почему именно так:** ссылка на пункт «Урок предыдущего VN» выше — какое конкретно решение из VN я повторяю / избегаю.
-3. **Что НЕ делаю:** три вещи, которые я мог бы сделать, но не делаю, потому что это выходит за DoD задачи.
-
-Формат: `{timestamp}-{agent}-{taskID}.md`.
-
-**Причина:** в прошлом VN Bro/Flash построили новую форму и студию с нуля, потому что «так было нарезано». Больше никаких «так было нарезано» без вопроса «а зачем мы переписываем работающий код?».
-
-> **Модель контуров:** `pure` (коробка) · `integration` (cosmo-custom). Правило: **универсальное → оба контура; pure-only → коробка; portal-only → integration, никогда в pure.** PSI = приёмка + **интеграция коробки** (кастомизация под портал): что юзабельно и там и там — в оба; pure-only — фильтруем в коробку.
-
-| Поток | Кто | Скоуп | Порядок |
+| ID | Что получает пользователь | Приёмочный сценарий GWT | Est |
 |---|---|---|---|
-| **Приёмка PSI** | Boss (Bro) | PSI-1…10 + VIS-ACC глазами; verified → Keeper | 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 |
-| **Полировка коробки (pure)** | Flash | BRAND-2 wordmark + VIS-D1…D6 | параллельно PSI |
-| **Интеграция (cosmo)** | Boss/Flash по PSI-кастомизации | ADM-APPCODE (portal-only), лесенка, роли, blank/deploy | после PSI-кастомизации |
-
-**Стены:** `ADM-APPCODE` / `project_id` / банковские роли — **integration, не коробку**. `THEME-LIGHT` — park до кивка владельца. Legacy `frontend/` `orchestrator/` — reference.
-
----
-
-## Эпик PSI — Приёмочно-сдаточные испытания
-
-> **NEW · 14 августа 2026.** Живой каркас — Boss и Keeper наполняют совместно.
-> Boss даёт verified-факты (что реально работает), Keeper сверяет со Святилищем.
-
-### Каркас (будет наполняться)
-
-| ID | Зона | Что проверяем | Статус | Кто | Verified Keeper |
-|---|---|---|---|---|---|
-| **PSI-1** | Стенд | `lab_up.ps1` — Grid + allure-light-secops + ZAP demon + Juice. Все контейнеры healthy, порты слушают. | ⬜ | Boss | ⬜ |
-| **PSI-2** | Редактор | Vite dev (`cosmo`) — login, Home, Admin, History, Studio create, Results. E2E smoke 17/17 зелёный. | ⬜ | Boss | ⬜ |
-| **PSI-3** | Оркестратор | `orchestrator/main.py --manifest … --validate-only` — без ошибок на тестовом манифесте. | ⬜ | Boss | ⬜ |
-| **PSI-4** | Прогон | Полный цикл: manifest → Controller.run() → ZAP alerts → allure отчёт → run_summary.json. | ⬜ | Boss | ⬜ |
-| **PSI-5** | Dojo | DefectDojo import ZAP XML → findings в UI → dedup → FP marking. | ⬜ | Boss | ⬜ |
-| **PSI-6** | Gate | Quality gate: `High` порог → exit code 0/2. Admission filter: min_confidence + waivers. | ⬜ | Boss | ⬜ |
-| **PSI-7** | Live | KDT Live idle → прогон → ленты сценария/сканера → журнал. | ⬜ | Boss | ⬜ |
-| **PSI-8** | Бандл | `vite build` prod (зелёный, < 2 MB gzip), `package_vps.py` (по команде). | ⬜ | Boss | ⬜ |
-| **PSI-9** | Sonar | BE (`prettyk-dev-backend`) — проход по CRITICAL. FE vnext (`prettyk-dev-frontend-vnext`) — проход. | ⬜ | Boss | ⬜ |
-| **PSI-10** | Доки | `NEW_AGENT_MANDATORY.md` актуален. MANTRA актуальна. Backlog отражает реальность. | ⬜ | Boss | ⬜ |
-
-**Формат отчёта Boss → Keeper:** `ID: done | evidence: <путь к скриншоту/логу/exit code> | notes: <что замечено>`.
-Keeper верифицирует, ставит ✅ в колонке Verified Keeper, идёт к Максиму на инвентаризацию.
+| **ADM-PURE-1** | Обзор состояния ИБ-контуров | **Given:** есть приложения, прогоны и находки. **When:** открыт `#/admin`. **Then:** видны активные запуски, Critical/High находки и gate-вердикты. Empty-states честные. | 3h |
+| **ADM-PURE-2** | Реестр приложений и целей | **Given:** создаётся цель. **When:** введён адрес. **Then:** цель получает стабильную карточку, число находок и кнопку «Новая проверка». Некорректный URL блокируется. | 3h |
+| **ADM-PURE-3** | Переход от цели к проверкам | **Given:** у цели есть прогоны. **When:** клик по цели. **Then:** видны связанные проверки со статусами, gate-вердиктами и переходом в результаты. | 2h |
+| **ADM-PURE-4** | Управление gate-политиками | **Given:** права администратора. **When:** создание/правка policy. **Then:** условия видны в списке; выключенная policy не влияет на gate и не меняет историю. | 3h |
+| **ADM-PURE-5** | Честный gate по результату запуска | **Given:** прогон завершён. **When:** оценка находок. **Then:** вердикт `passed/warning/failed` с объяснением; сбой проверки не превращается в `passed`. | 2h |
+| **ADM-PURE-6** | Единый реестр находок | **Given:** находки из разных прогонов. **When:** открыт Findings. **Then:** агрегированный список с severity, целью, CWE, статусом и фильтрами без дубликатов. | 3h |
+| **ADM-PURE-7** | История запусков | **Given:** цель проверялась N раз. **When:** открыт Runs. **Then:** хронология запусков со статусами (running/failed/cancelled/completed) и ссылками. | 1h |
 
 ---
 
-## Эпик STAND-RELOCATE — бэкенд и стенд в корень (14 авг вечер)
+## 7. Горизонт FUTURE (по реальному спросу)
 
-> **Решение владельца (14 авг 19:11):** бэкенд — в корень, рядом с `cosmo/`.
-> `legacy/` должен был остаться старьём, а `orchestrator/` + `services/` переехать с новым каноном.
-> Пересборка репо сломала операционные скрипты — они висят на старом layout. Босс поднял стенд вручную.
-
-### Факты (сверено 14 авг 19:03)
-
-| Скрипт | Где лежит | `$RepoRoot` сейчас | Что сломано |
+| ID | Эпик | Содержание | Кто |
 |---|---|---|---|
-| `lab_up.ps1` | `legacy/orchestrator/tools/` | `legacy/orchestrator` (резолв `..\..`) | `.venv`, `services\`, `orchestrator\tools\run_live_idle.py` — мимо |
-| `lab_clean.ps1` | `legacy/orchestrator/tools/` | `legacy/orchestrator` | `reports\`, `services\` — мимо |
-| `lab_ensure_ui.ps1` | `.cursor/scripts/` | корень (ок) | `frontend/` + `:5173` + маркеры `@rjsf`/`PrettyKEditorMark` — мёртвые; vnext на `cosmo/` `:5173` |
-
-### Нарезка
-
-| ID | Зона | DoD | Кто | Зависит |
-|---|---|---|---|---|
-| **STAND-REL-1** | Переезд | `orchestrator/` и `services/` из `legacy/` → корень (рядом с `cosmo/`). `legacy/` остаётся без них. `reports/` создаётся в корне при первом прогоне (или переносится, если уже есть данные) | Boss | — |
-| **STAND-REL-2** | Самочин | `lab_up.ps1` + `lab_clean.ps1` работают из нового `orchestrator/tools/` без правок (пути `..\..` → корень). Smoke: `.\orchestrator\tools\lab_up.ps1` поднимает Grid+Allure+ZAP+Juice healthy | Boss | REL-1 |
-| **STAND-REL-3** | Правка | `lab_ensure_ui.ps1`: vnext на `cosmo/` `:5173`, readiness-маркеры без RJSF (`ManifestForm`/`StudioScreen`/`ResultsWorkspace` из `App.tsx`), playground из `orchestrator/tools/data_playground.py`. Smoke: `lab_ensure_ui.ps1` поднимает и проверяет Editor+playground | Boss | REL-1 |
-| **STAND-REL-4** | Docs | `stand-lab-ops.mdc`, `docs/stand.md`, `pure/MANTRA.md` § Структура РУТа — обновить пути на корневые `orchestrator/` + `services/` + `:5173`. Без дублирующих строк в legacy-доках | Boss | REL-2, REL-3 |
-
-**Стены:**
-- `legacy/frontend/` остаётся reference — не трогать, не поднимать.
-- Редактируем **только** `lab_ensure_ui.ps1` (и его пути). `lab_up/lab_clean` правятся переездом, не ручным патчем.
-- Запрещено тащить RJSF/`@rjsf`/`PrettyKEditorMark` маркеры обратно в readiness.
-- `lab_clean.ps1 -Target juice` / `allure,live` — поведение не меняется, только пути.
+| **PK-CI-F4** | PRETTYK-CI фаза 4 | Адаптеры к Jenkins / Tekton / Argo / Azure DevOps + AI-подсказки (карточки PK-CI-13, 14). | Boss |
+| **PK-TRM-F5** | WEB-IDE-TERMINAL фаза 5 | Security Playbook Notebook: исполняемые ячейки (намерение, DSL, действие, output, evidence) (карточки PK-TRM-12, 13). | Flash |
 
 ---
 
-## Эпик VN — vnext фронт (без RJSF)
-
-> **ACTIVE · УТВЕРЖДЕНО вне очереди 13 авг 2026.** Манифест — забили, правим свободно под vnext.  
-> Архитектура: [`../sanctuary/canon/fe-vnext-architecture.md`](../sanctuary/canon/fe-vnext-architecture.md) (14 решений).  
-> **Root кода = `cosmo/`** (монолит: коробка + слоты под интеграцию).
-
-### Нарезка
-
-| Роль | Зона | Кто |
-|---|---|---|
-| **Boss** | PM/delivery: backlog, композиция, verified-списки → Keeper | Bro |
-| **Flash** | Dev: добивка полировки + баги + тесты | Flash |
-| **Keeper** | Святилище: приём verified, сортировка friend/possible/seeker, инвентаризация с Максимом | Boss (ты) |
-
-**Сквозное (первый воркер находит):** `theme/` (перенос как есть) + boot vite/vitest.  
-**`shell/` (Login/Home/History):** после Editor+формы, одним проходом.
-
-### VN — порядок стройки (P0)
-
-**Фундамент:** `VN-ROOT-1` (Bro) → `VN-ROOT-2` (Flash) → дальше **параллельно**: Bro = Editor, Flash = Форма.
-
-> **Статус 13 авг вечер (Boss):** ROOT-1/2, ED-1…4, FORM-1…5, SHELL-1…5, ST-1…10, WS-1…10, INT-1…6, CTO-1/2/3/5 — **все сданы**. FK-FILTER — закрыт. Playwright e2e полный цикл зелёный. Остаток: Admin, Results, gap analysis.
-
-| ID | Бот | DoD (сдано, когда) | Зависит |
-|---|---|---|---|
-| **VN-ROOT-1** | Bro | `cosmo/` поднят: vite + vitest + antd5 + Monaco в deps, `src/` каркас (`App.tsx`, `main.tsx`, `index.html`), один smoke vitest зелёный, `npm run dev` стартует | — |
-| **VN-ROOT-2** | Flash | `theme/` перенесён как есть из legacy (`tokens.ts`, `catalog.ts`, `ThemeProvider.tsx`), тёмный default, подключается в `App.tsx` | ROOT-1 |
-| **VN-ED-1** | Bro | `editor/` создан: `ConstructorWidget.tsx` — самостоятельный компонент, **один** инстанс Monaco (не пересоздаётся), 32 строки дефолта (канон `constructor-30-lines`) | ROOT-1 |
-| **VN-ED-2** | Bro | `keywords/` + `generated/` перенесены как есть, доступны Editor | ROOT-1 |
-| **VN-ED-3** | Bro | Keyword-раскраска: `prettykSemanticTokens.ts` расширен, monarch-regex (`prettykLanguage.ts`) **не** источник подсветки кейвордов | ED-1, ED-2 | ✅ |
-| **VN-ED-4** | Bro | `api/editorValidate.ts` → `api/` — мост к playground `:8765` (`validateConstructorBackend()`). Пингвин (`orchestrator/core/constructor_validate.py`) **не трогаем**, только вызываем | ED-1 | ✅ |
-| **VN-FORM-1** | Flash | `manifest/ManifestForm.tsx` — прямой маппер manifest → UI (решение #2), без RJSF | ROOT-1 |
-| **VN-FORM-2** | Flash | `validation/validateManifestFields.ts` — карманный валидатор (~30 строк, решение #5) + smoke vitest | FORM-1 |
-| **VN-FORM-3** | Flash | Секции/табы (решение #9), data-модули карточками (решение #10), шаги списком + drag (решение #11) | FORM-1 |
-| **VN-FORM-4** | Flash | `roles/RoleContext.tsx` + `RoleGuard.tsx` (решение #8) — роли из контекста, **без** мутации JSON Schema | FORM-1 |
-| **VN-FORM-5** | Flash | Импорт/экспорт (решение #12) + сохранение `state → JSON.stringify` (решение #7) | FORM-1, FORM-2 |
-
-**Later (после Editor+Формы, одним проходом):** ~~`VN-SHELL-1` (Login/Home/History + `auth.ts`)~~ → **см. секцию VN-SHELL (Flash, active)** · `VN-ADMIN-1` (Admin ProLayout, общее) · `VN-INTEG-1` (слоты интеграции — на cosmo).
-
-### VN-SHELL — Login/Home/History (Flash, 13 авг)
-
-> **DONE (13 авг, Boss проверил).** Shell закрыт целиком: `auth.ts` generic (`operator`/`operator`, без банковских ролей), `LoginPage` (glass, r=6px), `HomePage`/`HistoryPage` (заглушки-карточки), роутинг в `App.tsx` через локальный state. Typecheck 0 ошибок, prod build зелёный, `shell/auth.test.ts` + стык 12/12.
-> **Жёсткий сплит (канон `split-canon.md`):** коробка несёт `auth.ts` как **generic-механизм** (один оператор, без банковских ролей), банковские роли (`admin_ib`, `nshr`, `expert_ib`, `@spaceport.cbr.ru`) — **INTEGRATION, не в коробку**.
-
-| ID | DoD (сдано, когда) | Зависит |
-|---|---|---|
-| **VN-SHELL-1** | `shell/auth.ts` — generic: `AuthUser = 'operator'`, `RoleCaps` берётся из `roles/RoleContext` (механизм), `login()/logout()/readSession()/writeSession()` на sessionStorage. **Без** `admin_ib/nshr/expert_ib`, **без** `@spaceport.cbr.ru`, **без** `verysecure`-списка | — |
-| **VN-SHELL-2** | `shell/LoginPage.tsx` — стеклянная панель (канон эстетики), один input логин + пароль, `onSuccess` → в App. Без SSO-кнопки банка | SHELL-1 |
-| **VN-SHELL-3** | `shell/HomePage.tsx` — заглушка: карточки «Создать проверку» / «История» (роутинг через локальный state App, не react-router) | SHELL-1 |
-| **VN-SHELL-4** | `shell/HistoryPage.tsx` — заглушка списка прогонов (пустой state, «нет прогонов» placeholder) | SHELL-1 |
-| **VN-SHELL-5** | `App.tsx` — если `!readSession()` → `LoginPage`, иначе Shell (Home/History/Form). Всё через локальный state, **без** react-router | SHELL-2…4 |
-
-**Стены SHELL:**
-- Не тащить `applyRoleFormCaps.ts`, `CosmoportLadderFields*`, `@spaceport.cbr.ru` — это INTEGRATION.
-- `verysecure`-пароли и банковские учётки — НЕ в коробку. Generic `operator`/`operator` или одно поле.
-- Не добавлять react-router (канон VN: монолит, локальный state).
-- `SecOpsMark`, glass/видео-фон — если есть в vnext `theme/`, использовать; иначе CSS-классы `kdt-shell-*` из `styles.css` legacy НЕ тащить вслепую (проверить наличие).
-
-### VN-INT — композиция / интеграция (Boss)
-
-**Стыки Editor↔Форма.** Никто из воркеров не связывает компоненты — каждый пилит изолированно.
-Boss проверяет контракты, доводит сборку и соединяет Editor с формой.
-
-| ID | DoD (сдано, когда) | Зависит |
-|---|---|---|
-| **VN-INT-1** | `npm install` чистый, `npm run typecheck` зелёный (0 ошибок) | ROOT-1, ROOT-2, ED-1/2/4, FORM-1…5 |
-| **VN-INT-2** | `ManifestSteps` встраивает Monaco через `ConstructorWidget` (шаг сценария = редактор, не TextArea). Контракт: `ScenarioStep.constructor` ↔ `value`/`onChange` пропсы | ED-1, FORM-3 |
-| **VN-INT-3** | `App.tsx` подключает `KeywordsContext.Provider` (catalog + variables + allowedExtraDomains + baseUrl), `setupMonaco()` вызван до рендера | ED-1, ED-2 |
-| **VN-INT-4** | Интеграционный smoke-тест: открыть форму → ввести конструктор → сохранить → экспорт → импорт → конструктор тот же | INT-1, INT-2, INT-3 |
-| **VN-INT-5** | Пингвин-bridge контракт: /api/validate/constructor на playground `:8765` отрабатывает, FE обрабатывает batch-diagnostics от бэкенда | ED-4, INT-2 |
-
-**Сделано Boss (13 авг, не пересекалось с воркерами):**
-- **VN-INT-1 done:** `npm install` чистый, `npm run typecheck` **0 ошибок**, prod build зелёный (`✓ built in 2m 15s`).
-- `src/utils/sortStrings.ts` + `src/utils/jsonTypes.ts` — общий клей (`compareLocaleStrings`, `JsonValue`, `isPlainObject`). Закрыл зависимость Editor+Form от `../schema/types` и `../utils/sortStrings` (которых в vnext не было).
-- `npm install @monaco-editor/react` — install-дыра закрыта (package.json есть → node_modules нет).
-- `src/keywords/keywordsFromManifest.ts` + `.test.ts` — чистый стык `ManifestData → KeywordsContext`-входы (variables/pageIds/allowedExtraDomains/baseUrl). 5/5 зелёный.
-- **VN-INT-2 done:** `ManifestSteps.tsx` — `TextArea` заменён на `ConstructorWidget` (Monaco). Каждый шаг сценария — редактор с автокомплитом/диагностикой/подписью.
-- **VN-INT-3 done:** `App.tsx` — lifted state, `setupMonaco()` + `KeywordsContext.Provider` с живыми variables из формы. `ManifestForm` адаптирован под controlled-режим (опциональные пропсы).
-- **VN-INT-6 (мост контекстов):** `App.tsx` — `useEffect` → `setConstructorContext({catalog, variables, pageIds, formData: state})`. Закрыл дыру: навигация `page.Op`, автокомплит переменных, глобальные `Пусть/Секрет` в `prettykNavigation/scriptLanguage/prettykSignatureHelp` теперь видят форму (раньше `getConstructorContext()` всегда `undefined` в production).
-
-### VN-FIX — правки по typecheck (13 авг)
-
-> **DONE.** Flash ~~VN-FIX-4…7~~ (fields.ts, ManifestForm, ManifestSteps, theme) + Bro **VN-FIX-2/2b/3** — все закрыты. `npm run typecheck` = **0 ошибок** (Boss проверил), `studioModels` остался только в комментариях (живых импортов нет), `prettykSemanticTokens.ts` гарды на месте.
-
-| ID | Бот | Суть | Статус |
-|---|---|---|---|
-| **VN-FIX-2** | Bro | `prettykNavigation.ts` — импорт `../studio/studioModels` (`ensureStudioModel`) выпилен, локальный хелпер | ✅ |
-| **VN-FIX-2b** | Bro | `scriptLanguage.providers.test.ts` — `tabIdFromSuiteModelUri` выпилен, локальный аналог | ✅ |
-| **VN-FIX-3** | Bro | `prettykSemanticTokens.ts` — гарды `line`/`word` possibly undefined | ✅ |
-
-### VN-STUDIO — порт studio/ (Bro, 13 авг) ✅
-
-> **Скоуп:** 161 файл legacy `frontend/src/studio/`. Editor уже в vnext — теперь перенести сам «цех»: дерево сценариев, табы, формы модулей, фаззеры.
-> **Порядок:** по слоям — снизу вверх (типы → стор → дерево → табы → формы → воркспейс).
-> **Стены:** RJSF не тащить. `studioModels` в vnext уже нет (VN-FIX-2). Не тащить `CosmoportLadderFields`, `appCode`, `blankDeploy*`, `BankDeploy` — это INTEGRATION.
-
-| ID | DoD | Зависит |
-|---|---|---|
-| **VN-ST-1** | `src/studio/studioModels.ts` — типы `StudioTab`, `StudioTabKind`, `StudioNode`, `StudioTabId`. Только модели, без legacy-хвостов (`language: 'prettyk' | 'wirek'`, ок). НЕ `kdt-constructor`/`resource-form`/`fuzzer-form` строки (это legacy) | ED-1 |
-| **VN-ST-2** | `src/studio/studioStore.ts` — стейт-машина студии: атомарный `StudioState` (tabs[], activeTabId, treeNodes, expandedIds, naming, dirty). Иммутабельные редьюсеры (`openTab`, `closeTab`, `setActiveTab`, `addNode`, `renameNode`, `deleteNode`, `moveNode`). БЕЗ persist/localStorage (VN-ST-3 отдельно) | ST-1 |
-| **VN-ST-3** | `src/storage/draft.ts` — сохранение студийного состояния в localStorage (`kdt.studio.draft`), дебаунс 500ms, восстановление при mount. Honesty: если JSON битый — молча сбрасываем, не крашим | ST-2 |
-| **VN-ST-4** | `src/studio/studioTreeLeafClass.ts` — иконки листьев дерева: сценарий (scenario-icon), страница, data-модуль (по moduleType), фаззер (fuzzer-icon), ресурс. Темы dark/light — через CSS-переменные `--kdt-*` из ThemeProvider. БЕЗ `icons8-*.png` (новые иконки — ASCII/SVG inline) | ST-1, ROOT-2 |
-| **VN-ST-5** | `src/studio/StudioBlocksTree.tsx` — компонент дерева: Ant Tree, drag-and-drop, inline-rename (через `studioTreeNaming`), контекстное меню (Add Page / Scenario / Module / Folder / Delete). Папки раскрываются/сворачиваются. Клик по листу → openTab | ST-2, ST-4 |
-| **VN-ST-6** | `src/studio/studioTreeNaming.ts` — машина inline-переименования: F2 / двойной клик / контекстное меню → поле ввода, Enter/Escape, валидация имени (латиница/цифры/подчёркивание, с буквы). Паттерны имён как в legacy: `scenarioName`, `login_page`, `module_id` | ST-5 |
-| **VN-ST-7** | `src/studio/StudioWorkspace.tsx` — корневой компонент студии: слева `StudioBlocksTree`, справа табы Monaco (для сценариев/страниц) или карточки форм (для модулей/фаззеров). Заголовок таба = имя ноды. Крестик закрыть. Ctrl+S → markClean. БЕЗ `IRange`/`IPosition` из Monaco editor namespace (vnext Monaco не экспортирует) | ST-5, ED-1 |
-| **VN-ST-8** | `src/studio/moduleForms/` — карточки для `data`, `connector`, `fuzz`, `grpc`, `graphql`, `openapi`, `chain`, `auth` модулей. Каждая — форма на Ant Design (поля как в legacy, без RJSF/ajv). При сохранении → `openTab` с телом модуля в `StudioTab.savedText`. Тело модуля = PrettyK-текст как в legacy `studioTabFromNode` | ST-2 |
-| **VN-ST-9** | `src/studio/fuzzer/` — `FuzzerForm`, `fuzzerTargetBodyExpand`, `fuzzerDeferredInputs`. Фаззер = форма + кнопка «Сохранить как модуль». Поля: intent, target, body, headers, deferred-инпуты. БЕЗ `fuzz_pack.json` (генерируется Python, лежит в `generated/`) | ST-8 |
-| **VN-ST-10** | SMOKE: typecheck 0 ошибок по `src/studio/`, `src/storage/`. Vitest: `studioStore.test.ts` (create tab → close → reopen с тем же текстом), `studioTreeLeafClass.test.ts` (все moduleType дают непустой className) | ST-1…9 |
-
-### VN-WORKSPACE — checks + app + results + hash-роутинг (Flash, 13 авг) ✅
-
-> **Скоуп:** 102 файла legacy: `checks/` (16) + `app/` (24) + `results/` (62). Это жизненный цикл проверки: создать → наполнить (форма/студия) → запустить → увидеть результат.
-> **Ключевая идея:** `checkId` = UUID, `HashRoute = { kind; checkId?; view? }` — хэш-роутинг без react-router.
-> **Стены:** не тащить `appCode`/`BankDeploy`/`blankDeploy*` (INTEGRATION). `verysecure`/банковские роли — не в коробку. `react-router` — не добавлять.
-
-| ID | DoD | Зависит |
-|---|---|---|
-| **VN-WS-1** | `src/checks/types.ts` — `CheckView = 'form' \| 'studio' \| 'results'`. `CheckRecord = { checkId, createdAt, updatedAt, label?, manifest, studioState?, gate?, closedAt? }`. `HashRoute = { kind: 'home' \| 'history' \| 'admin' \| 'check'; checkId?: string; view?: CheckView }`. `parseHashRoute(): HashRoute`, `buildHashRoute(route): string` | — |
-| **VN-WS-2** | `src/checks/checksStore.ts` — `Map<checkId, CheckRecord>` в памяти, `createCheck()`, `getCheck(id)`, `updateCheck(id, patch)`, `listChecks()`. БЕЗ remote/live-sync (VN-WS-5 отдельно). БЕЗ `appCode`/`project_id` (INTEGRATION). Vitest: create → update manifest → get → manifest совпадает | WS-1 |
-| **VN-WS-3** | `src/checks/closeGuard.ts` — при `window.beforeunload`: если текущий check грязный (manifest !== savedManifest или studioState !== savedStudioState), показать диалог «Есть несохранённые изменения». Проверка через `checkIsDirty(checkId): boolean` | WS-2 |
-| **VN-WS-4** | `src/checks/hashRoute.ts` — синхронизация `window.location.hash` ↔ React state. Монтирование: читаем hash → находим check → рендерим. Клик по history/check → `buildHashRoute` → `window.location.hash = ...` → hashchange → обновляем роутер. `hashRoute.test.ts`: parse → build → parse roundtrip | WS-1 |
-| **VN-WS-5** | `src/app/appSecurityContext.ts` — `security_configuration`, `allowed_extra_domains`, `base_url_override`, `zap_mode`, `debug_mode` — read-only объект для гейтов и валидации. Провайдер через React Context. Заполняется из `ManifestData.infrastructure` при старте проверки | FORM-1 |
-| **VN-WS-6** | `src/app/appValidationFlow.ts` — flow: при открытии check.view='form' → ManifestForm controlled (state из check.manifest, onChange → updateCheck). Кнопка «Валидировать» → `validateConstructorBackend()` батчем по всем конструкторам. Кнопка «В студию» → `setView('studio')`. Зелёный индикатор = все конструкторы валидны (клиент + бэкенд) | WS-2, ED-4, FORM-1 |
-| **VN-WS-7** | `src/app/appGotoPage.ts` — CodeLens «Страница <pageId>» в Monaco → `gotoPage(pageId)`: скролл к шагу с `page.<pageId>.Open*`, подсветка строки (decoration). Без `ensureStudioModel` (VN-FIX-2 уже выпилен) | ED-1 |
-| **VN-WS-8** | `src/results/` — порт 5 файлов ядра: `types.ts` (LiveMetaSnapshot, ResultsHooksSnapshot), `derivePipelineVerdict.ts` (ZAP counts + Dojo stats → pass/watch/fail), `executiveConclusion.ts` (CI verdict → executive_class + recommendations + top_findings), `buildRunRecordFromLive.ts` (trend points, dojo stats), `ResultsSummaryPanel.tsx` (карточка сводки: severity bars, тренд, вердикт, кластеры топ-находок). Всё остальное (62 файла) — портировать КАК ЕСТЬ, без правок, только адаптировать импорты под vnext | WS-2 |
-| **VN-WS-9** | `src/app/App.tsx` refactor: заменить `useState<Screen>` на `HashRoute`. Логика: login → home → check? → form\|studio\|results. `window.addEventListener('hashchange', ...)`. При закрытии чека → home. При выборе из history → `buildHashRoute({kind:'check', checkId, view:'results'})` → читаем runRecord → рендерим ResultsSummaryPanel | WS-4, WS-6, WS-8 |
-| **VN-WS-10** | SMOKE: typecheck 0 ошибок по `src/checks/`, `src/app/`, `src/results/`. Vitest: `checksStore.test.ts` (create → update → get), `hashRoute.test.ts` (roundtrip), `closeGuard.test.ts` (грязный → диалог, чистый → нет). Prod build зелёный | WS-1…9 |
-
-### VN-CTO — композиция, ресерч, финальный cutover (Boss, 0.5)
-
-> **0.5 ставки:** не кодю сам — проверяю стыки, ресёрчу что всплывёт, довожу до cutover.
-
-| ID | DoD |
-|---|---|
-| **VN-CTO-1** | Typecheck + build по всему vnext зелёный после ST-1…10 + WS-1…10 | ✅ |
-| **VN-CTO-2** | `vite.config.ts` proxy `/api` → `:8765` | ✅ |
-| **VN-CTO-3** | `@ant-design/plots` + `src/admin/evidence/EvidenceCharts.tsx` в vnext | ✅ |
-| **VN-CTO-4** | Gap analysis: чего не хватает для cutover → `docs/canon/fe-vnext-architecture.md` §10 | ✅ **DONE** |
-| **VN-CTO-5** | Порт 5173, полный цикл: login → form → validate → studio. Playwright e2e зелёный (4.0s) | ✅ DONE |
-| **VN-CTO-6** | `docs/backlog.md` cleanup: FK-FILTER + VN-STUDIO + VN-WORKSPACE done; дубли убраны; нарезка VN-ADM + VN-RES добавлена | ✅ **DONE** |
-
-### FK-FILTER — централизованная фильтрация шума DAST ✅ CLOSED 13 авг
-
-> **DONE.** Реестр FP (`fp_registry.json`), min_confidence, registry rules + waivers, `classify_finding()`, alert_filter wiring, gate_policy waivers, `close_old_findings`. Все тесты зелёные. Босс сделал всё сам (без Bro/Flash).
-
-### VN-ADMIN — Admin ProLayout на vnext (Bro, 1.0)
-
-> **Скоуп:** порт Admin shell + Overview + Integrations + DeployRegistry + G2-чарты. Без банковских ролей/appCode (INTEGRATION). Только коробочный read-only admin.
-> **Стены:** не тащить `BankDeploy`, `CosmoportLadderFields`, `appCode`/`project_id` фильтр, `applyRoleFormCaps`.
-
-| ID | DoD | Зависит |
-|---|---|---|
-| **VN-ADM-1** | `src/admin/AdminLayout.tsx` — ProLayout shell (лого, меню: Обзор/Интеграции/Прогоны/Реестр), хедер с «Выйти». Только коробочный shell | ✅ |
-| **VN-ADM-2** | `src/admin/OverviewPage.tsx` — порт KPI-карточек из legacy: прогоны, уязвимости по severity, статус стенда. Хуки `useLiveStatus()`, `useDojoStats()` — honesty: API down → «Нет данных» | ✅ |
-| **VN-ADM-3** | `src/admin/IntegrationsPage.tsx` — статус ZAP/Dojo/Allure (зелёный/красный индикатор), health-check через `/api/live/...`. Read-only | ✅ |
-| **VN-ADM-4** | `src/admin/EvidenceCharts.tsx` — G2-чарты: donut по severity, stacked bar по типам, trend line Allure (уже портировано, дособрать в AdminLayout) | ✅ |
-| **VN-ADM-5** | `src/admin/DeployRegistry.tsx` — таблица деплойментов (read-only), `ensureDeploy` hook | ✅ |
-|| **VN-ADM-6** | SMOKE: typecheck 0 ошибок по `src/admin/`. `AdminLayout.test.tsx` (4 passed). Prod build зелёный | ✅ |
-| **VN-ADM** | VN-ADM 1–6 — **done**. Bro: AdminLayout + OverviewPage + IntegrationsPage + DeployRegistry + RunsPage + adminApi + hooks + EvidenceCharts + EvidencePanel + DojoFindingsTable + PoliciesPanel. Typecheck 0, build 14.7s, vitest 4/4 | ✅ |
-
-### VN-RES — results полный + History живые данные (Flash, 1.0)
-
-> **Скоуп:** порт оставшихся 62 results-файлов (Flash в WS-8 портировал только ядро из 5), хуки к Live API, History с реальными чеками, экспорт.
-> **Стены:** не тащить `../form/`, `../schema/`, `../admin/`, `../shell/` — заменить на vnext-аналоги. Без RJSF.
-
-| ID | DoD | Зависит |
-|---|---|---|
-| **VN-RES-1** | Порт оставшихся results: `ResultsWorkspace` (табы: Сводка/Журнал/Бланки), `ResultsJournalPanel`, `blanks/`, `launchUi/`. Адаптировать импорты под vnext | ✅ |
-| **VN-RES-2** | `src/results/resultsHooks.ts` — хуки `useLiveMeta(checkId)`, `useResultsHooks(checkId)`. Запросы к `:8767`. Honesty: 404 → «Нет данных» | ✅ |
-| **VN-RES-3** | `src/shell/HistoryPage.tsx` — заменить заглушку на реальный список `listChecks()`. Карточка: label, дата, статус, severity. Клик → `buildHashRoute` | ✅ |
-| **VN-RES-4** | `src/results/exportResults.ts` — экспорт JSON + placeholder PDF. Кнопка в ResultsSummaryPanel | ✅ |
-| **VN-RES-5** | SMOKE: typecheck 0 ошибок по `src/results/`, `src/shell/`. Vitest: `resultsHooks.test.ts`, `HistoryPage.test.tsx`. Prod build зелёный | ✅ |
-
-### VN-FILL — добивка до production cutover (Boss+Bro+Flash, 2.5)
-
-> **Факт:** ~30% legacy портировано. Хэппи-путь работает. Добиваем P0 архитектурные блокеры + P1 функциональные дыры. Цель: 3 вечера → cutover.
-
-#### VN-FILL-BOSS (0.5) — архитектура + стыки
-
-| ID | DoD | Зависит |
-|---|---|---|
-| **VN-FB-1** | `src/shell/AppShell.tsx` — обёртка над App: dirty guard (`closeGuard` + `window.onbeforeunload`), `AppErrorBoundary` (crash → «Что-то сломалось»), hashchange listener. Без CommandPalette / ShellAmbientVideo (P2) | ✅ |
-| **VN-FB-2** | `src/results/PipelineLaunchButton.tsx` — кнопка «Запустить» в ResultsWorkspace. POST `:8767/api/run/start` с `{checkId, manifest}`. Индикатор: idle → running → done/fail. Honesty: API down → «API недоступен» | ✅ |
-| **VN-FB-3** | `src/app/appManifestDownload.ts` — скачать manifest как JSON (кнопка в форме). Расширить `exportResults.ts` — blank JSON + манифест в табе Бланки. Кнопка «Скачать манифест» в хедере чека | ✅ |
-| **VN-FB-4** | SMOKE: typecheck 0 по всему vnext. e2e: AppShell guard + pipeline launch + download. `docs/canon/fe-vnext-cutover.md` | ✅ |
-
-#### VN-FILL-BRO (1.0) — Admin досыщение
-
-| ID | DoD | Зависит |
-|---|---|---|
-| **VN-FBR-1** | `src/admin/EvidencePanel.tsx` — карточки доказательств (pack ID, severity, тип находки, скрин). Запрос к `:8767/api/evidence/list`. Honesty: down → «Нет данных» | ADM-1 |
-| **VN-FBR-2** | `src/admin/DojoFindingsTable.tsx` — таблица находок Dojo (severity, title, cwe, status, age). Пагинация. Запрос к `:8767/api/dojo/findings`. Honesty: down → «Нет данных» | ADM-1 |
-| **VN-FBR-3** | `src/admin/PoliciesPanel.tsx` — gate-политики read-only карточками: waiver, min_severity, min_confidence, rules. Без редактирования (read-only). Запрос к `:8767/api/gate/policy` | ADM-1 |
-| **VN-FBR-4** | SMOKE: typecheck 0 по `src/admin/`. Vitest: `EvidencePanel.test.tsx`, `DojoFindingsTable.test.tsx`, `PoliciesPanel.test.tsx`. Prod build зелёный | FBR-1…3 ✅ |
-| **VN-FBR** | VN-FBR 1–4 — **done**. Bro: EvidencePanel + DojoFindingsTable + PoliciesPanel + AdminLayout.test.tsx. Зеленые | ✅ |
-
-#### VN-FILL-FLASH (1.0) — Studio + Results досыщение
-
-| ID | DoD | Зависит |
-|---|---|---|
-| **VN-FF-1** | `src/studio/moduleForms/FuzzerFormCard.tsx` — прямой маппер фаззера (как ModuleFormCard, без RJSF): intent, target, payload, encode. На основе legacy `FuzzerForm.tsx` но упрощённо. Врезать в `StudioWorkspace` moduleType switch | ST-8 |
-| **VN-FF-2** | `src/studio/moduleForms/ChainFormCard.tsx` — прямой маппер цепи: шаги (step → module), order. Упрощённый порт legacy `ChainModuleForm.tsx` | FF-1 |
-| **VN-FF-3** | `src/checks/replayCheck.ts` — клонировать check: новый `checkId`, копия `manifest` + `studioState`. Кнопка «Повторить» в HistoryPage на карточке чека | FF-1 |
-| **VN-FF-4** | `src/results/resultsActionsBar.tsx` — панель действий: Экспорт JSON, Экспорт PDF (placeholder), Скачать манифест, Повторить. В ResultsWorkspace | RES-1 |
-| **VN-FF-5** | SMOKE: typecheck 0 по `src/studio/`, `src/results/`, `src/checks/`. Vitest: `FuzzerFormCard.test.tsx`, `ChainFormCard.test.tsx`, `replayCheck.test.ts`. Prod build зелёный | FF-1…4 ✅ |
-| **VN-FF** | VN-FF 1–5 — **done**. Flash: FuzzerFormCard + ChainFormCard + replayCheck + ResultsActionsBar. Typecheck 0, vitest 9/9, build ✓ | ✅ |
-
-### Стены VN-FILL
-
-- Не тащить RJSF / ajv / `schema/` / `form/` — заменены на `manifest/` прямой маппер.
-- Не тащить `CosmoportLadderFields` / `applyRoleFormCaps` / банковские роли — INTEGRATION, не коробка.
-- Не добавлять CommandPalette / ThemeToggle / ShellAmbientVideo — P2, после cutover.
-- Не добавлять Blank HTML акт с лого — сейчас карточка-сводка, отдельная мини-эпика позже.
-
-### VN-CUT — финальный cutover до ручного smoke (Boss+Bro+Flash, 3.0)
-
-> **Цель:** довести vnext до состояния, когда Максим руками проходит полный цикл и не находит стыков. Сверено по коду 14 авг.
-> **Факт:** хэппи-путь зелёный (E2E 17/17), но есть 3 P0-стыка и P1/P2-дожимы.
-
-#### VN-CUT-BOSS (0.5) — стыки + ресерч
-
-| ID | DoD | Зависит |
-|---|---|---|
-| **VN-CUT-B1** | `PipelineLaunchButton` → POST `/api/run/start` через Vite proxy (`:8765`), НЕ хардкод `:8767`. Тело как legacy `postRunStart.ts`: `{manifest, session_name?, resource_contents?, chain_bindings?, owner_user_id?}`. Ответ: `{ok, run_id, pid}` / 409 `alreadyRunning` / `unreachable`. Vitest: url содержит `/api/run/start`, 409 → alreadyRunning | — |
-| **VN-CUT-B2** | Фаззер: `setModuleAt` в `StudioScreen` должен писать в `test_suites.fuzzers` по индексу фаззера (сейчас пишет в `test_data_constructor`). Добавить `setFuzzerAt()`. Vitest: обновление фаззера меняет `test_suites.fuzzers[i]`, не трогает модули | B1 |
-| **VN-CUT-B3** | `StudioScreen` сохраняет `studioState` в `CheckRecord.studioState` при каждом изменении (через `onManifestChange`-аналог или `updateCheck`). При reopen чека `view='studio'` восстанавливает табы/dirty/expandedIds из `check.studioState` (иначе `initialStudioState`). Vitest: reopen возвращает 2 открытых таба | — |
-| **VN-CUT-B4** | `src/api/apiBase.ts` — единый `API_BASE` + `LIVE_BASE` (env-override через `import.meta.env.VITE_API_BASE`). Перевести `adminApi.ts`, `resultsHooks.ts`, `runJournal.ts`, `ResultsSummaryPanel.tsx`, `PipelineLaunchButton.tsx`, `editorValidate.ts` на него. SMOKE: typecheck 0 | B1 |
-
-#### VN-CUT-BRO (1.0) — студия + бланки
-
-| ID | DoD | Зависит |
-|---|---|---|
-| **VN-CUT-R1** | `StudioScreen`/`StudioWorkspace` — восстановление draft: при mount чека `view='studio'` читать `loadStudioDraft()` и, если `formData` совпадает с manifest, поднять табы + dirty. Иначе чисто. (Связка с B3 — студийный state в CheckRecord) | B3 |
-| **VN-CUT-R2** | `ThemeToggle` в `HomePage` header: переключатель dark/light + палитры (через `useThemeMode`). Без CommandPalette. Хранить `kdt.theme`/`kdt.palette` (уже есть в ThemeProvider). Vitest: toggle меняет `dataset.kdtMode` | — |
-| **VN-CUT-R3** | `BlankPanel` → полный HTML-акт (аналог legacy blank-engine): шапка (label, checkId, дата, вердикт), таблица severity, список топ-находок, вердикт CI, подпись. Экспорт HTML (download) + печать. БЕЗ лого/brand PNG (P2 отдельно). Vitest: `blankHtml` содержит verdict + severity | — |
-| **VN-CUT-R4** | SMOKE: typecheck 0 по `src/studio/`, `src/shell/`, `src/results/`. Vitest: `StudioScreen` restore test, `ThemeToggle` test, `BlankPanel` test. Prod build зелёный | R1…R3 |
-
-#### VN-CUT-FLASH (1.0) — results + admin дожим
-
-| ID | DoD | Зависит |
-|---|---|---|
-| **VN-CUT-F1** | `ResultsWorkspace` — polling статуса прогона: после «Запустить» (`:8765`/`/api/run/start`) опрашивать `useLiveMeta` по `run_id`, показывать живой статус (idle→running→done/fail), обновлять `ResultsSummaryPanel`. Honesty: down → статус «Нет данных» | B1 |
-| **VN-CUT-F2** | `HistoryPage` — бейдж статуса прогона (running/completed/failed) из `useLiveMeta` по `checkId`. Клик карточки → results с живыми данными. Vitest: status-тег по meta | — |
-| **VN-CUT-F3** | `AdminLayout` — подключить `ThemeToggle` (из R2) в header, выровнять header Home/Admin единообразно. `DojoFindingsTable` — фильтр по severity + пагинация уже есть, добавить empty-state «Нет находок» | R2 |
-| **VN-CUT-F4** | SMOKE: typecheck 0 по `src/results/`, `src/admin/`, `src/shell/`. Vitest: `ResultsWorkspace` status test, `HistoryPage` badge test. E2E `vnext-smoke.spec.ts` остаётся зелёным (17/17) | F1…F3 |
-
-### Стены VN-CUT
-
-- `:8765` (playground run/eval) ≠ `:8767` (Live). Запуск прогона — **только** `:8765` через `/api` proxy. Live-метрики — `:8767`.
-- `test_suites.fuzzers` (фаззеры) ≠ `test_suites.test_data_constructor` (модули). Не путать при записи.
-- Без RJSF / ajv / react-router / CommandPalette / ShellAmbientVideo.
-- Банковские роли / appCode / BankDeploy — INTEGRATION, не сюда.
-- Legacy `frontend/`, `orchestrator/`, `services/` — **reference, не трогать**.
-
-### VN-CUT2 — дожим до ручного smoke (Boss+Bro+Flash, 2.5)
-
-> **Факт 14 авг:** всё ядро закрыто (B1–B4, F1–F4, R1/R3, Admin 8 секций, G2-чарты). Остались три дыры, которые всплывут глазами при ручном проходе: **brand пустой** (`public/` нет favicon), **Admin без «Оповещения»**, **PDF — заглушка**. Тесты не пилим (по приказу); гейт — `tsc --noEmit` + `build`.
-
-#### VN-CUT2-BRO (1.0) — Brand / favicon / wordmark (P0 глаза)
-
-| ID | DoD | Зависит |
-|---|---|---|
-| **VN-CUT2-RB1** | `public/` — скопировать `secops-lab-icon.svg`, `secops-lab-icon.png`, `secops-lab-icon-32.png` из `frontend/public/` как есть (**без пережатия**, канон `explorer-theme-icons`: dark≠light не шарить) | ✅ |
-| **VN-CUT2-RB2** | `index.html` — `<link rel="icon" type="image/svg+xml" href="secops-lab-icon.svg?v=20260814a">` + `<link rel="apple-touch-icon" href="secops-lab-icon.png?v=...">` + `<title>SecOps Lab</title>` | ✅ |
-| **VN-CUT2-RB3** | Wordmark «SecOps Lab» единый в Login (уже есть) + Home header + Admin header. Проверить, что на всех трёх экранах слово-бренд читается и не плывёт | ✅ |
-| **VN-CUT2-RB4** | SMOKE: `tsc --noEmit` 0 + `npm run build` зелёный; favicon виден на вкладке | ✅ |
-
-**Стена:** не тащить PNG-лес `frontend/public/PrettyK/` и `icons/` — только 3 favicon-файла. Не пережимать, не инвертировать.
-
-#### VN-CUT2-FLASH (1.0) — Admin «Оповещения» (generic CRUD)
-
-| ID | DoD | Зависит |
-|---|---|---|
-| **VN-CUT2-FF1** | `src/admin/notifyRules.ts` — generic: `NotifyRule { id, kind, title, channels: ('gui'\|'email')[], window_days: 7\|30, enabled, created_at }`. `NotifyRuleKind = run_result\|gate_change\|waiver_expiry\|new_evidence\|dojo_drift` (generic смысл). localStorage `kdt.admin.notify_rules.v1`. CRUD: `listNotifyRules/upsertNotifyRule/setNotifyRuleEnabled/deleteNotifyRule` | ✅ |
-| **VN-CUT2-FF2** | `src/admin/NotifyPanel.tsx` — секция: список правил (тип/заголовок/окно/каналы/вкл), кнопка «Добавить» → форма, toggle enabled, delete. Empty-state «Нет правил». Honesty: всё localStorage, без live-сигналов | ✅ |
-| **VN-CUT2-FF3** | `AdminLayout.tsx` — `AdminSection` + `'notify'`, MENU item «Оповещения» (BellOutlined), render `NotifyPanel` | ✅ |
-| **VN-CUT2-FF4** | SMOKE: `tsc --noEmit` 0 по `src/admin/` + `npm run build` зелёный | ✅ |
-
-**Стена:** **не тащить** live-сигналы из `BankDeploy`/`CheckInstance`/`AdminWaiver`/`app_code`/`project_id` — это INTEGRATION (в vnext этих типов нет). Чистый CRUD коробки. Не копипастить `CollectNotifySignalInput` legacy.
-
-#### VN-CUT2-BOSS (0.5) — PDF честный + финальный приём
-
-| ID | DoD |
-|---|---|
-| **VN-CUT2-BB1** | PDF честно: `exportResults.ts` + `BlankPanel` — вместо заглушки «скоро» отдать **print-to-PDF** (`window.print()` на чистом HTML-акте → браузерный «Сохранить как PDF»). Это честный PDF без тяжёлой либы | ✅ |
-| **VN-CUT2-BB2** | Финальный приём: `tsc --noEmit` 0 + `npm run build` по всему vnext после RB+FF. Ручной smoke-чеклист (login → home → admin 9 секций → history → new check → studio → results → экспорт → logout) | ✅ приём (0 ошибок, build 7.53s); ручной smoke — BB3 |
-| **VN-CUT2-BB3** | Резерв: что всплывёт по ручному smoke — фиксировать в backlog follow-on (не чинить втихую) |
-
-### VN-POL — полировка + security до ручного smoke ✅ CLOSED 17 авг
-
-> [`friend-requests/VN-POL-STUDIO-LADDER.md`](friend-requests/VN-POL-STUDIO-LADDER.md)
-
-> **Факт 14 авг (сверено по коду):** всё ядро закрыто. Остались две честные дыры до канона:
-> **(1) секреты утекают plaintext** — `redactSecrets` в vnext нет; `downloadManifest` + `exportResults` + `storage/draft` пишут пароли/токены как есть (P0 security).
-> **(2) WireK preview** — `studioWorkspaceWirePreview` не портирован; в Studio нет переключателя PrettyK↔WireK.
-> Порядок: **Flash F1 первым** (базовый `redactSecrets`) → Bro R1/R2 + Flash F2/F3 параллельно.
-> Тесты НЕ пилим массово (по приказу); гейт — `tsc --noEmit` + точечный vitest на новые модули.
-
-#### VN-POL-FLASH (1.0) — Redaction + blank letterhead
-
-| ID | DoD | Зависит |
-|---|---|---|
-| **VN-POL-F1** | `src/form/redactSecrets.ts` + `src/form/redactSecretAssign.ts` — порт legacy **как есть** (без RJSF-хвостов): `isSecretFieldKey`, `redactManifestSecrets`, `redactSecretsForDraft`, `redactSecretAssignmentLines`, `tryRedactSecretAssignmentAt`, `redactManifestForPreview`, константы `REDACT_PLACEHOLDER`/`DRAFT_SECRET_PLACEHOLDER`. Vitest: `redactSecrets.test.ts` (password/token/api_key → `***`, draft → `''`, `Секрет $x = …` → маска RHS) | — |
-| **VN-POL-F2** | Подключить redact: `manifestIO.downloadManifest` → `redactManifestSecrets(state)` перед скачиванием; `exportResults.buildResultsDump` → `redactManifestSecrets(manifest)`; `storage/draft.saveStudioDraft` → `redactSecretsForDraft(formData)` (восстановление — placeholder, не plaintext). Vitest: download/export/draft не содержат plaintext | F1 |
-| **VN-POL-F3** | `src/results/blankLetterhead.ts` (`defaultBlankOrg`) + `manifestContentHash` (FNV-1a из legacy `blankPayload.ts`). Врезать `manifestContentHash` в подвал `BlankPanel.blankHtml` (`.foot` строка `отпечаток: <hash>`). Vitest: hash стабилен для одинакового payload | F1 |
-| **VN-POL-F4** | SMOKE: `tsc --noEmit` 0 по `src/form/`, `src/manifest/`, `src/results/`, `src/storage/` + `npm run build` зелёный | F1…F3 |
-
-#### VN-POL-BRO (1.0) — WireK preview в Studio
-
-| ID | DoD | Зависит |
-|---|---|---|
-| **VN-POL-R1** | `src/studio/studioWorkspaceWirePreview.ts` — `buildWirePreviewText()` порт legacy: ресурс→`''`, фаззер→`JSON.stringify(fuzzer)`, коннектор→`JSON.stringify(connector)`, иначе `prettyToWire(text)` → `redactSecretAssignmentLines`. Использует существующий `../keywords/prettyToWire` + `../form/redactSecrets` (Flash F1) | F1 |
-| **VN-POL-R2** | `StudioWorkspace.tsx` — переключатель «PrettyK ↔ WireK» у Monaco-табов (сценарий/страница); WireK preview — read-only `<pre>` под редактором. Честно: preview не пишется в `formData` (только отображение). Вкладки ресурсов/фаззеров — без переключателя | R1 |
-| **VN-POL-R3** | SMOKE: `tsc --noEmit` 0 по `src/studio/`, `src/keywords/` + vitest `studioWorkspaceWirePreview.test.ts` (ресурс/фаззер/коннектор/сценарий→wirek, секреты маскированы) | R1, R2 |
-
-**Стены VN-POL:** не тащить RJSF/`schema`/`formData`. `redactSecrets` — чистая логика, без `exportManifestPayload` legacy (flatten не нужен). WireK preview — display-only, не мутирует state. Legacy `frontend/` — reference.
-
-### VN-ALLURE3 — переключение на Allure3 + per-run отчёты ✅ CLOSED 16 авг
-
-> **Цель (Максим, 16 авг):** переключить всё на Allure3, «окультуривать» его; в instance проверки импортить данные из него, ссылка ведёт на **конкретный запуск**, не на `latest`.
-
-| ID | DoD | Статус |
-|---|---|---|
-| **AL3-1** | `resolve_allure_service_base()` дефолт engine `3` → `:5051` (не `:5050`); `build_environment_lines` engine дефолт `3` | ✅ |
-| **AL3-2** | `allure_project_mode()` дефолт `check` (per-run/per-check, не flat `default`) | ✅ |
-| **AL3-3** | `resolve_allure_project_id()` приоритет `KDT_RUN_ID` (hex) → `KDT_CHECK_ID` → `default`. Per-run даёт уникальный отчёт и ссылку на конкретный запуск | ✅ |
-| **AL3-4** | Allure3 `main.py`: динамическая раздача `/projects/{pid}/reports/latest/{rest:path}` (per-project статика, path-escape защита) | ✅ |
-| **AL3-5** | Фронт fallback `LAB_RESULT_LINKS.allure` + `LAB_HOOK_URLS.allure` + `adminApi`/`defaults` → `:5051` | ✅ |
-| **AL3-6** | Тесты (python + vitest): `5050` → `5051`; новый кейс `test_check_mode_prefers_run_id` | ✅ |
-| **AL3-7** | SMOKE: `pytest test_allure_report_meta.py test_allure_project.py` + 5 файлов vitest + пересборка `allure3-secops` + `/health` ok + per-project роут отдаёт HTML | ✅ |
-
-**Стены VN-ALLURE3:** `allure-light-secops` (`:5051`, legacy) оставлен живым как запасной контур (не выпиливаем в этом эпике). Канон теперь `allure3-secops` (`:5050`). `docs/manifest.json` не трогаем. `KDT_ALLURE_ENGINE=2` / `KDT_ALLURE_URL` остаются как явный override — дефолт теперь `3`.
-
-### AL3-BRAND — окультуривание Allure3 под PrettyK SecOps Lab (Boss, раздаёт сам) ✅ CLOSED 16 авг
-
-> **Цель (Максим, 16 авг):** Allure3 уже переключён и отдаёт per-run отчёты. Теперь «окультурить» — превратить ванильный отчёт в фирменный под бренд коробки. Владелец: **Boss** — думает башкой, сам нарезает DoD и сам делегирует (Flash/Legion). Трек верхнеуровневый: результат глазами заказчика, не рецепт.
-
-**Результат, который принимает Максим (поведение):**
-
-| ID | Что видит заказчик | Не делаем | Статус |
-|---|---|---|---|
-| AL3-B1 | Отчёт открывается и выглядит как PrettyK SecOps Lab, а не как дефолтный Allure. Фирменная шапка, единый wordmark, общий с Editor/Admin стиль. | Не плодим второй бренд, не берём дефолтный скин Allure | ✅ (Flash) |
-| AL3-B2 | Обзор (Overview) — внятный дашборд: пропущено/упало/сломано, gate, категории, окружение, время. Читается за 5 секунд, не простыня. | Не делаем простыню из всех сырых полей | ✅ (Flash B2a + Bro B2b) |
-| AL3-B3 | Тёмная тема — базовая атмосфера. Скругления по UI-канону (5–6px, не раздувать). Тело — читабельный шрифт коробки. | Не раздуваем «мягкость»/radius, не тащим чужие палитры | ✅ (Flash) |
-| AL3-B4 | Категории SecOps + русские переменные отчёта — на месте и консистентны. Снаружи (внешний трекер/метрики) ничего не утекает. | Не отдаём аналитику/телеметрию наружу | ✅ (Flash) |
-| AL3-B5 | Полный вид отчёта (SPA) остаётся доступен отдельно от обзора — глубокие данные не теряются. Плавающая кнопка «К обзору SecOps Lab» в SPA. | Не выкидываем детальный просмотр ради «красиво» | ✅ (Bro) |
-
-**Out-of-scope (жёстко):** запасной контур `allure-light-secops` не трогаем. Механику per-run/per-check (уже закрыта в VN-ALLURE3) не переоткрываем. Протокол/порты/роуты не меняем — только внешний вид и подача данных, которые уже генерируются.
-
-**DoD эпика:** Максим открывает Allure3-отчёт и видит фирменный, читаемый, тёмный отчёт под бренд коробки — обзор за 5 секунд, детали доступны, ничего наружу не утекает. Boss сам декомпозирует на карточки и сам назначает исполнителей. Closed 16 авг.
-
----
-
-### AL3-INSTANCE — per-instance + per-app отчёты Allure3 (история вместо per-run) ✅ CLOSED 16 авг
-
-> **Цель (Максим, 16 авг):** сейчас Allure3 пишет отдельный отчёт на каждый запуск (per-run) — прошлые запуски проверки не видны в одном месте, история теряется. Нужно: **один отчёт на проверку (instance)** с историей и перезапусками, и **дашборд по приложению (app)**, объединяющий его deployments/instances. Общий мета-дашборд по всему стенду — **не нужен**. Владелец: **Boss** — нарезает дальше сам.
-
-**Результат, который принимает Максим (поведение):**
-
-| ID | Что видит заказчик | Не делаем |
-|---|---|---|
-| AL3-I1 | Открыл результаты проверки → вижу **историю этой проверки** (все запуски, «Перезапуски»/«История»), а не свежий запуск без прошлого | Не теряем прошлые запуски при новом run |
-| AL3-I2 | Открыл приложение → вижу **агрегат по всем его проверкам/deployments** (app-дашборд) | Не делаем отдельный мета-дашборд по всему стенду |
-| AL3-I3 | Группа «Сценарии X» в отчёте **кликабельна** → ведёт на таблицу/список, где она открыта (`full.html`) | Не оставляем группу некликабельным заголовком |
-
-**Out-of-scope (жёстко):** общий мета-дашборд (придумаем в админке портала позже). Брендинг/тёмная тема — отдельный эпик `AL3-BRAND`. Запасной контур `allure-light-secops` не трогаем.
-
-**DoD эпика:** Максим открывает результаты проверки — видит историю запусков этой проверки; открывает app — видит агрегат по приложению; группа в отчёте кликабельна и ведёт на список. Boss декомпозирует и назначает исполнителей сам.
-
-**Решения по точкам неопределённости (Boss, 16 авг):**
-
-1. **История vs свежесть.** Открывается живой отчёт (последний запуск), под ним — колонка «История запусков» (список прошлых, кликабельны). Не список всех запусков вместо свежих результатов.
-2. **Ключ инстанса.** `check_id` (= `instance_id` в `runs_index`). `resolve_allure_project_id()` теперь: `KDT_CHECK_ID` > `KDT_RUN_ID`. Новый run пишет results в `project_id = check_id`, Allure3 нативно подхватывает history по `historyId`.
-3. **Границы app-агрегата.** `app_code` + `deploy_url` — не смешивать. `list_run_apps()` уже группирует именно так. Prod/stage с одним `app_code` но разными `deploy_url` — раздельные.
-4. **Переход VN-ALLURE3 → AL3-INSTANCE.** Перестановка приоритета в `resolve_allure_project_id()` (не новый режим). Старые per-run проекты не чистим, не ретроктивно не сливаем.
-5. **Кликабельность группы.** Группа кликабельна только при X > 1 сценария. Одиночный = заголовок без ссылки.
-6. **Источник app-дашборда.** `runs_index` → `list_run_apps()` (тот же ledger, что HomePage монитора). App-дашборд — агрегат Allure-отчётов; монитор — стримы/состояния. Не дублируем, не расходимся.
-
-**Нарезка (Bro 40% / Flash 60%):**
-
-| ID | Зона | DoD | Кто |
-|---|---|---|---|
-| **AL3-I1a** | Приоритет project_id | **`orchestrator/utils/allure_project.py`**: `resolve_allure_project_id()` — `KDT_CHECK_ID` > `KDT_RUN_ID`. Новый дефолт: проект = `check_id`, не `run_id`. `KDT_ALLURE_PROJECT_ID` override остаётся первым. | Bro |
-| **AL3-I1b** | Allure history (backend) | **`orchestrator/utils/allure_report_meta.py`**: `build_executor_payload()` — `buildName = check_id` (стабильный). `env["KDT_CHECK_ID"]` уже пишется. Несколько запусков → несколько `executor.json` в разных прогонах одного проекта — Allure3 читает `historyId`/`historyDataPoints` автоматом из `generators.js`. Генерация отчёта зовёт `generate_report(project_id=check_id)` (уже: `trigger_allure_report()` → `?project_id=…`). | Bro |
-| **AL3-I1c** | Instance-обзор (front) | **`services/allure3-secops/…/generators.js` + `secops-overview.js`**: в `index.html` — под заголовком секция «История запусков» (хронологический список прошлых прогонов, url → `full.html`). Лейбл: дата + статус + количество сценариев. Без дублирования SPA. | Flash |
-| **AL3-I2a** | App-дашборд endpoint | **`services/allure3-secops/app/main.py`**: новый роут `/app/{app_code}/` → статический HTML-дашборд из `app_dashboard.py`. Данные — через shared volume с `runs_index` (тот же ledger, что HomePage монитора). | Bro |
-| **AL3-I2b** | App-дашборд HTML/CSS | **`services/allure3-secops/…/secops-overview-app.js` + `.css`**: карточки deploy → instances (pass/fail/broken/skip), ссылки на `/projects/{check_id}/reports/latest/`. Стиль: SecOps Lab, 5–6px, тёмная тема. | Flash |
-| **AL3-I2c** | App-daшборд wiring | **`services/allure3-secops/app/app_dashboard.py` + `services/docker-compose.yml`**: автономная группировка `list_run_apps()` из `runs_index` (без зависимостей от orchestrator). Volume `../reports/live:/app/runs-index:ro`. Роут `/apps` — все приложения. | Bro |
-| **AL3-I3** | Кликабельная группа | **`services/allure3-secops/…/secops-overview.js`**: в `renderCategories()` — группы из `suites.json` / `tree.json`. `<a href="full.html#suites/…">` если count > 1, иначе `<span>`. Дефолтный Allure3 уже группирует тесты по `suite`/`parentSuite` — только добавить ссылочность. | Flash |
-
-**DoD карточек:** AL3-I1a → `pytest test_allure_project.py -k "instance_prefers_check_id"` зелёный. AL3-I1c → в `index.html` видна панель «История». AL3-I2 → `/app/juice-shop/` открывается дашборд. AL3-I3 → группа из 3 сценариев — ссылка на `full.html`. Docker compose rebuild + `/health` ok.
-
-**Статус (16 авг):** ✅ CLOSED — все карточки сданы (Bro I1a/I1b/I2a/I2c + Flash I1c/I2b/I3). Health ok, /apps отдаёт дашборд.
-
-**Файлы:** `allure_project.py` · `app_dashboard.py` (new) · `main.py` · `generators.js` · `secops-overview.js` · `secops-overview.css` · `secops-overview-app.js` (new) · `docker-compose.yml` · `test_allure_project.py`
-
-**Стены:** VN-ALLURE3 не переоткрываем (per-run продолжает работать, `KDT_RUN_ID` — fallback если нет `check_id`). `allure-light-secops` / `:5051` не трогаем. Брендинг / тёмная тема — AL3-BRAND, здесь не миксовать. Старые per-run проекты в `/app/default-reports/` не чистим.
-
----
-
-### FLASH-Q — направления для раздачи (Boss решает, что реально взять)
-
-> **Цель (Максим, 16 авг):** Flash не должен сидеть без дела. Это не готовый эпик, а верхнеуровневые направления из живой очереди — Boss сам решает, что из этого реально нужно сейчас и кому отдать. Ничего не нарезаю вслепую, чтобы не продублировать уже розданное.
-
-| Направление | Суть (что должен получить заказчик) | Приоритет |
-|---|---|---|
-| Monitor rewind | В ленте прогона можно отмотать назад/вперёд по таймлайну, синхронно лог и видео. Единый ползунок на все виды. | evolve, брать когда Boss скажет |
-| Monitor split | Просмотр двух блоков рядом (например лог+видео) с общим временем — удобно сравнивать. | evolve |
-| Report/retention UI | Управление временем жизни артефактов из админки: что хранить вечно, что чистится, ручная чистка. | evolve |
-| Results blanks | Inline-превью бланка прямо в результатах, без скачивания наружу. | evolve |
-
-**Правило для Boss:** сам проверяет, что Flash свободен, сам выбирает из очереди, сам ставит DoD по GWT и сам принимает. Keeper/Mаксим принимают итоговое поведение — не «карточки закрыты».
-
-### Стены VN (жёстко)
-
-- Legacy `frontend/`, `orchestrator/`, `services/` — **reference, не трогать**.
-- `docs/manifest.json` — **забили, правим свободно** (порядок патча: `development.md`); удалённые поля обратно не тащим.
-- `docs/canon/**` — без 2FA не писать.
-- RJSF / ajv / `schema/` (22 файла) / `formData` — **не мигрирует**.
-- Не экстрактить `@kdt/core|ui|editor` пакеты. Сначала монолит.
-- Не менять Monaco на CodeMirror. Не добавлять react-router.
-
-### Открытые 2FA (Boss, до кода канона)
-
-| ID | Статус | Суть |
-|---|---|---|
-| **VN-2FA-1** | **closed** | root = `cosmo/` → `fe-vnext-architecture.md` §2 |
-| **VN-2FA-2** | **closed** | манифест = runtime-контракт, патчится по приказу → §5 + `manifest-sot.md` + `schema-sot.mdc` |
-
----
-
-## Эпик CORPUS-DISCOVERY — zero-touch корпус из discovery + свой фаззинг-слой (Burp-killer)
-
-> **NEW · 16 августа 2026.** Максим: «нарезка корпусов из discovery». Коробка одной кнопкой: URL → grab network → spider cluster search → extract → process corpus → form list → activeScan → passiveScan → repeat? → report. **0 actions юзером** (не ввёл ни одного локатора), но куча потенциальных уязвимостей.
-> **Идея:** после discovery (spider/passive) весь сырой трафик прогнать через процессинг DOM + Network-начинки → из «фарша» выделить локаторы/параметры → эвристически «пробудить» запросы (click → слушать afterclick network) → накидать в context корпус (200 или эвристические) → activeScan уже профаззит это дерьмо.
-> **Стены:** ZAP = discovery + passive + опциональный activeScan. Свой фаззинг (payloads/мутации) — не зависит от ZAP. Не пишем свой spider/activeScan с нуля (ZAP закрывает бесплатно). Не тащим RJSF/JSON Schema.
-
-### Нарезка (фазы — сверху вниз по потоку данных)
-
-| ID | Зона | DoD | Кто | Зависит |
-|---|---|---|---|---|
-| **CD-1** | DOM + Network граб | ✅ **`corpus/discovery_capture.py`** — `DiscoveryCorpus` (pages + network), `capture_current()` (DOM + ZAP History), NDJSON serialize. Тест: `tests/test_discovery_capture.py` 12/12. | Boss | — |
-| **CD-2** | Парсер корпуса: extract параметры/инпуты | ✅ **`corpus/corpus_parser.py`** — `extract_form_fields()` (bs4 → FormField), `entry_to_template()` (NetworkEntry → RequestTemplate), `parse_corpus()`. Тест: `tests/test_corpus_parser.py` 10/10. | Boss | CD-1 |
-| **CD-3** | Маппинг сервисов (endpoint → страница → инпут) | ✅ **`corpus/service_map.py`** — `ServiceMap` (endpoints + edges + bindings), `build_service_map()` (form_action, param name, origin fallback). Тест: `tests/test_service_map.py` 7/7. | Bro | CD-2 |
-| **CD-4** | Эвристическое пробуждение (click → afterclick network) | ✅ **`corpus/awaken.py`** — `awaken_candidates()` (orphan detection, type heuristics, same-origin fallback). Тест: `tests/test_awaken.py` 6/6. | Flash | CD-3 |
-| **CD-5** | Контекст ZAP: накидать корпус | ✅ **`corpus/zap_context.py`** — `build_zap_raw_request()` (HTTP/1.1 wire), `inject_corpus_into_zap()` (context include + Sites Tree requests). Тест: `tests/test_zap_context.py` 3/3. | Bro | CD-4 |
-| **CD-6** | activeScan → passiveScan конвейер | ✅ **`corpus/pipeline.py`** — `run_discovery_pipeline()` (capture → parse → map → inject → active_scan), ActionFactory registration. Тест: `tests/test_pipeline.py` 1/1. | Bro | CD-5 |
-| **CD-7** | Свой фаззинг-слой (payloads/мутации) | ✅ **`corpus/fuzzer.py`** — `CorpusFuzzer` (50+ payloads, multi-position §payload§, sniper mode, clean Python). Тест: `tests/test_fuzzer.py` 12/12. | Flash | CD-6 |
-| **CD-8** | Интеграция: replay → gate → report | ✅ **`corpus/fuzz_reporter.py` + `admission_filter.py`** — `FuzzAnomaly` → Findings, `admit_fuzz_findings()`, Allure3 categories & summary. Тест: `tests/test_fuzz_reporter.py` 17/17. | Flash | CD-7 |
-| **CD-9** | Ручной фаззинг в Editor (Burp-killer) | ✅ **CLOSED — 17 авг (CD-9a + CD-9b).** `studioFuzzEngine.ts` + `StudioFuzzPanel.tsx`. Эволюционировал в INTRUDER-PRO (pitchfork/cluster-bomb). [`friend-requests/INTRUDER-PRO-ADVANCED-ATTACKS.md`](friend-requests/INTRUDER-PRO-ADVANCED-ATTACKS.md). | Bro | CD-7 |
-
-### Приоритет / фазы
-
-1. **CD-1…CD-3** (discovery → extract → map) — фундамент. Boss + Bro.
-2. **CD-4…CD-6** (awaken → context → конвейер) — суть zero-touch. Boss + Bro.
-3. **CD-7…CD-8** (свой фаззинг + report) — отвязать от ZAP. Bro + Flash.
-4. **CD-9** (ручной фаззинг в Editor) — Burp-killer, отдельно, эволюция.
-
-### DoD эпика (верхнеуровнево)
-
-- Одна кнопка → полный цикл: URL → grab → spider → extract → corpus → context → activeScan → passiveScan → report.
-- 0 ручных локаторов юзером.
-- Свой фаззинг не зависит от ZAP (только context анализирует passiveScan).
-- Webswing ZAP → legacy (не нужен для ручного тыка, когда CD-9 закрыт).
-
-### Горизонт (research, не сейчас)
-
-- **Intruder pitchfork/cluster-bomb** — продвинутая мультипозиционность поверх CD-7. ✅ **CLOSED — 17 авг (INTRUDER-PRO)**. TS движок (`buildAttackRequests`, `computeTotalRequests`, `ATTACK_MODES`, `PAYLOAD_PRESETS`) — Flash; Python `CorpusFuzzer` (pitchfork/cluster_bomb/battering_ram) — Bro (18 тестов PY, 19 тестов TS). См. строку в § C ниже.
-
----
-
-## Сырое / evolve (шапка QUEUE — не CANON)
-
-> Hub не трогаем без 2FA (rule [`docs-canon.mdc`](../../.opencode/rules/docs-canon.mdc)).  
-> Сортировка **по приоритету приёма**: A ready → B landed hub (архив) → C evolve → D evidence/park.  
-> Тезисы/as-built сейф: [`history/2026-08-12-prep-dig-vault.md`](history/2026-08-12-prep-dig-vault.md).  
-> PM park: [`history/2026-08-12-parked-pm-core-dev-light.md`](history/2026-08-12-parked-pm-core-dev-light.md) · Core Dev лайт — не перехватывать.
-
-### A · Friend ready → обитель (вечерний 2FA)
-
-| ID / тема | Одна строка | Inbox |
-|---|---|---|
-| **secops-lab-harness** | **важный FRIEND (не hub):** экшены Editor/Instance/Admin + local CDP; pure=канон без ИИ | [`friend-requests/…secops-lab-harness`](friend-requests/2026-08-12-secops-lab-harness.md) · [`profiles/secops-lab-harness`](profiles/secops-lab-harness.md) |
-| **CORPUS-DISCOVERY** | **Zero-touch корпус + собственный фаззинг** (CD-1…8 As-Built, 56 тестов) | [`friend-requests/CORPUS-DISCOVERY-ZERO-TOUCH.md`](friend-requests/CORPUS-DISCOVERY-ZERO-TOUCH.md) |
-| **Admin≠History** | программа vs личный реестр | [`friend-requests/…admin-ledger`](friend-requests/2026-08-12-admin-ledger-vs-history.md) · acc 42/45 |
-| **Dojo обитатель Admin** | API charts + honesty · полировка admin-integrations | [`friend-requests/…admin-dojo`](friend-requests/2026-08-12-admin-dojo-inhabitant.md) · [thesis](history/2026-08-12-admin-dojo-2fa-thesis.md) |
-| **Dojo full** | findings списком + verified/false_p + drift · **Boss** (не Bro P0) | [`friend-requests/…admin-dojo-full`](friend-requests/2026-08-12-admin-dojo-full.md) |
-| **Коробка ‖ portal pack** | ready | `secops-lab-pure`=коробка · `cosmo-custom`=встройка в Cosmo (ЦБ) | [`profiles/`](profiles/README.md) · [FR](friend-requests/2026-08-12-product-forks-dual-rail.md) · [CR](canon-requests/2026-08-12-product-forks-dual-rail.md) |
-| **replay≠new check** | History ▶ + vs prev | [`friend-requests/…replay`](friend-requests/2026-08-12-replay-vs-new-check.md) · acc 48 |
-| **СборИнформации** | BrowseThenSpider / ZapWorkStream | [`friend-requests/…gather`](friend-requests/2026-08-12-gather-info-zapstream.md) · acc 56 |
-| **Monitor header** | wordmark `margin-left: 6px` + bracket 20×20 в `static/live/index.html` | [`friend-requests/MONITOR-HEADER.md`](friend-requests/MONITOR-HEADER.md) |
-| **Лист тезисов 2FA** | скоп A · hub не писать до go | [`history/2026-08-12-prep-2fa-thesis-list.md`](history/2026-08-12-prep-2fa-thesis-list.md) |
-
-Observed-feed major уже в hub `dast-wave` — в лист только при copy-дыре.
-
-### B · Уже в canon hub (не очередь)
-
-| ID / тема | FRIEND / якорь |
-|---|---|
-| Цепь · API-модули · AUTH · CONN thin · hold/secrets | [`canon/INDEX`](canon/INDEX.md) |
-| dast-wave корпус + observed | [`canon/dast-wave`](canon/dast-wave.md) · acc 39/43 |
-| discovery-heal HEAL + DISC-LABEL | [`canon/discovery-heal`](canon/discovery-heal.md) · acc 47/52/54/55 |
-| CANON-CULT-1…5 | closed 11 авг · § ниже |
-
-### C · Evolve / later (не жать сегодня)
-
-| ID / тема | Одна строка | Inbox |
-|---|---|---|
-| **SALV-1 fields+path** | **evolve** · декларативный конфиг полей формы вместо 650 строк хардкода ManifestForm.tsx | [`to-sanitize/manifest/fields.ts`](../to-sanitize/manifest/fields.ts) · [`to-sanitize/manifest/path.ts`](../to-sanitize/manifest/path.ts) · § Эпик SALVAGE |
-| **SALV-2 validation** | **evolve** · ручная валидация по typed-контракту (сейчас форма валидацию не делает) | [`to-sanitize/manifest/validateManifestFields.ts`](../to-sanitize/manifest/validateManifestFields.ts) · § Эпик SALVAGE |
-| **SALV-3 RoleContext+Guard** | **evolve** · декларативный caps-контекст + HOC для ролей (вместо хардкода readOnly) | [`to-sanitize/src-hybrid/roles/RoleContext.tsx`](../to-sanitize/src-hybrid/roles/RoleContext.tsx) · [`to-sanitize/src-hybrid/roles/RoleGuard.tsx`](../to-sanitize/src-hybrid/roles/RoleGuard.tsx) · § Эпик SALVAGE |
-| **SALV-4 cosmoportLadder** | **evolve** · каскад App→Build→Deploy для cosmo-custom (интеграция, не коробка) | [`to-sanitize/src-hybrid/form/cosmoportLadderMock.ts`](../to-sanitize/src-hybrid/form/cosmoportLadderMock.ts) · § Эпик SALVAGE |
-| **HAR≠Цепь / replace-map** | секции FRIEND Цепь | [`friend-requests/…har-vs-chain`](friend-requests/2026-08-11-har-vs-chain.md) · [replace-map](friend-requests/2026-08-11-chain-replace-map.md) |
-| **observed≠guess deepen** | guess/Цепь later; observed в hub | [`friend-requests/…observed-vs-guess`](friend-requests/2026-08-12-observed-vs-guess-holes.md) |
-| **Param Miner guess** | стена runtime | [`friend-requests/…param-miner`](friend-requests/2026-08-12-param-miner-guess.md) |
-| **Intruder pitchfork/cluster-bomb** | **CLOSED — 17 авг (INTRUDER-PRO)** · продвинутые мульти-позиционные атаки: TS `buildAttackRequests` (Flash) + Python `CorpusFuzzer` pitchfork/cluster_bomb/battering_ram (Bro). 18 PY + 19 TS тестов зелёные. Глубокий пентест-слой поверх CORPUS-DISCOVERY | § Эпик CORPUS-DISCOVERY ниже |
-| **Live caller lab** | X-KDT-User → session | [`friend-requests/…live-caller`](friend-requests/2026-08-12-live-caller-lab.md) |
-| **Monitor multi+replay** | эволюция: мульти-порт/run_id, архив лога, запись видео, скраббер | [`friend-requests/MONITOR-MULTI-REPLAY.md`](friend-requests/MONITOR-MULTI-REPLAY.md) |
-| **Monitor split 50/50** | 3-й view: два блока (playhead общий — MONITOR-PLAYHEAD) | [`friend-requests/MONITOR-SPLIT-VIEW.md`](friend-requests/MONITOR-SPLIT-VIEW.md) |
-| **Monitor playhead** | единый playhead на все view: ползунок ↔ таймер, скраббинг лога+видео вперёд/назад | [`friend-requests/MONITOR-PLAYHEAD.md`](friend-requests/MONITOR-PLAYHEAD.md) · [research §1–4](research/2026-08-15-monitor-rewind.md) |
-| **Monitor → Results UX** | evolve: кнопка отдельно, не таб; пульсация при live; макет → утверждение | [`friend-requests/MONITOR-INSTANCE-LINK.md`](friend-requests/MONITOR-INSTANCE-LINK.md) |
-| **Monitor instance-binding** | evolve: свой экран на run_id; instance-id в хедере; запрет чужого meta | [`friend-requests/MONITOR-INSTANCE-BINDING.md`](friend-requests/MONITOR-INSTANCE-BINDING.md) |
-| **Monitor auth-binding** | evolve: bind-токен «свой без логина»; admin/abnormal — любой; оператор — свой | [`friend-requests/MONITOR-AUTH-BINDING.md`](friend-requests/MONITOR-AUTH-BINDING.md) |
-| **Monitor retention** | evolve: purge on demand + таймер 7 дней; meta-ledger бессрочно | [`friend-requests/MONITOR-RETENTION.md`](friend-requests/MONITOR-RETENTION.md) |
-| **cosmo-custom ladder** | evolve · лесенка портала Cosmo → коробка; mock landed | [`profiles/cosmo-custom`](profiles/cosmo-custom.md) · [FR](friend-requests/2026-08-12-cosmoport-app-deploy-ladder.md) |
-| **Admin blank + deploy init** | evolve · **будет КАНОН** · expert болванка ≠ JSON; import только admin_ib; deploy ensure по appcode | [FR](friend-requests/2026-08-12-admin-blank-deploy-init.md) · [Bro cut](history/2026-08-12-bro-admin-wave-cut.md) |
-| **PAL** (`cosmo-custom` приятель) | **PARKED** · не FRIEND hub; portal dig ≠ harness | [FR](friend-requests/2026-08-12-pal-cosmo-custom.md) · § PAL ниже |
-| **FE roles Cosmo lab** | **landed (code)** | nshr / admin_ib / expert_ib · mute Admin+emergency+pre_release+act | [cut](history/2026-08-12-roles-cosmoport-2bot-cut.md) · [profile](profiles/cosmo-custom.md) |
-| **Bank hub → их Selenoid** | evolve | не тащить свой Chrome; env URL switch + later caps `selenoid\|grid` · bringup §5.1 |
-| **ADM-VIS bank wow** | **landed (code)** | VIS-1…5 code · hand/tour eyes · [cut](history/2026-08-12-adm-dojo-vis-2bot-cut.md) · [research](research/2026-08-12-admin-bank-visual-research.md) |
-| **ADM-VIS assortment** | ref | витрины V1–V6 · [assortment](research/2026-08-12-admin-visual-assortment.md) |
-| **SecOps Lab brand/icon** | **plan** | F1+wordmark+VIS приёмка · [delivery](research/2026-08-12-secops-lab-brand-delivery-plan.md) · § ADM-BRAND |
-
-### Admin hangings — **BRO целиком** (blank · deploy · VIS хвост)
-
-> Канон-очередь Bro: [`history/2026-08-12-bro-admin-wave-cut.md`](history/2026-08-12-bro-admin-wave-cut.md).  
-> Evolve→КАНОН: [`friend-requests/2026-08-12-admin-blank-deploy-init.md`](friend-requests/2026-08-12-admin-blank-deploy-init.md) (`lane: evolve`).  
-> DOJO hand **PASS** (acc 58). PAL/portal — **не** Bro. Старый VIS бриф: [`trudyaga-admin-vis-dig`](history/2026-08-12-trudyaga-admin-vis-dig.md).
-
-#### § ADM-BRO — P0 (смысл: цепь + болванка + стена JSON)
-
-| ID | Статус | Суть | Бот |
-|---|---|---|---|
-| **ADM-IMPORT-WALL** | **landed** | `canImportManifest`: Home JSON только admin_ib/nshr; expert — нет | Bro |
-| **ADM-APPCODE-1** | **landed** | код приложения = `project_id` (Admin фильтр/Dojo/Реестр/карточка) | Bro |
-| **ADM-DEPLOY-ENSURE** | **landed** | `ensureDeploy` + UI «Создать / ensure» в Реестре | Bro |
-| **ADM-BLANK-1** | **landed** | expert: app→deploy→болванка check без JSON | Bro |
-| **ADM-BLANK-2** | **landed** | admin: «Подложить болванку (JSON)» + audit message (новая проверка) | Bro |
-| **Seats** | **REJECT** Boss CORE rewrite | очередь = Bro cut | [seat-split REJECT](history/2026-08-12-admin-seat-split.md) |
-
-#### Хвосты VIS / brand (P1 — seats)
-
-| ID | Статус | Суть | Бот |
-|---|---|---|---|
-| **ADM-VIS-ANALYSIS** | **code+shot · await owner** | Overview Pro Analysis · [ref](research/assets/admin-assortment/pro-analysis-ref/) | Bro → Maxim |
-| **ADM-VIS-1…5** | **landed (code)** | assortment wave | Bro |
-| **ADM-RU-INTL** | **landed** | `kdtRuIntl` | Bro |
-| **VIS-ACC** | **open · P1** | галочки V1…V6 assortment | Bro + Maxim |
-| **VIS-D*** | **code done · await eyes** | дельты trudyaga residual: RU-хвост D4/D6 + D8 owner (код) | Bro |
-| **ADM-BRAND** | **P0 глаза** | F1 `?v=20260812f1` + mark · [delivery](research/2026-08-12-secops-lab-brand-delivery-plan.md) | Bro → Maxim |
-| **ADM-NOTIFY** | **landed (code)** | оповещения Admin: `notifyRules` + `NotifyPanel` (секция Оповещения) | Bro |
-
-#### Landed / later
-
-| ID | Статус | Суть | Бот |
-|---|---|---|---|
-| **ADM-DOJO-*** | **landed / PASS** | program API + honesty · [acc 58](acceptance/58-trials-admin-dojo-program-2026-08-12.md) | — |
-| **ADM-DOJO FR** | у входа | [`friend-requests/…admin-dojo`](friend-requests/2026-08-12-admin-dojo-inhabitant.md) | Boss later 2FA |
-| **ADM-APPCODE** | **→ ADM-APPCODE-1 landed** | был PAL open | Bro |
-| **Стены** | — | iframe · SSO Admin · Job API · Cosmo live API · SoT без приказа | — |
-
-| ID / тема | Одна строка | Inbox |
-|---|---|---|
-| **PERS rest** | SSO / signed Allure | [CR](canon-requests/2026-08-12-pers-rest.md) · acc 44 |
-| **Traffic rest** | path/cookie/guess | [CR](canon-requests/2026-08-12-traffic-insertion-rest.md) |
-| **Горизонт эпиков** | ZAP-slave · scope · carcass… | [`research/…horizon`](research/2026-08-12-theoretical-epics-horizon.md) |
-| **FE-12 / CONN deeper / AUTH residual** | later | frontend-spec · § CONN · auth-slots |
-| **KDT voice** | внутренний лист, не hub | [`internal/kdt-voice.md`](internal/kdt-voice.md) |
-
-### D · Evidence / park (не истина)
-
-| ID / тема | Одна строка | Путь |
-|---|---|---|
-| **Dig vault** | тезисы + as-built prep без потери | [`history/2026-08-12-prep-dig-vault.md`](history/2026-08-12-prep-dig-vault.md) |
-| **Prep 3×2 closeout** | Boss‖Bro landed | [`history/2026-08-12-prep-3x2-closeout.md`](history/2026-08-12-prep-3x2-closeout.md) |
-| **UD-D hand script** | руки после prep | [acc 57](acceptance/57-ud-d-hand-e2e-script-2026-08-12.md) |
-| **Нарезка Core Dev** | T1/T2 landed · T3 → ADM-DOJO | § Нарезка ниже |
-| **Night / Sonar / ADM-POC** | evidence landed | history night-closeout · sonar-closeout · acc 42–48 |
-| **Park PM** | Boss стоп · вечер 2FA | [`history/2026-08-12-parked-pm-core-dev-light.md`](history/2026-08-12-parked-pm-core-dev-light.md) |
-| **Park night (старше)** | космос off | [`history/2026-08-12-parked-for-tomorrow.md`](history/2026-08-12-parked-for-tomorrow.md) |
-
-### Нарезка — Трудяга (Core Dev) + соло
-
-> **Не CANON.** Системное имя роли: **Core Dev**. Кличка в чате: **Трудяга** (бывш. «Полка»).  
-> Откуда задачи: хвосты landed Pareto + friend/evolve (не новый космос). Казино не билдим.  
-> Стены пачки: Guess runtime · SoT без приказа · hub без вечернего 2FA · multi-VPS.
-
-#### Трудяга — закрыто 12 авг (P1–P3)
-
-| # | Фича | Статус |
-|---|---|---|
-| **T0.1** | Fuzzer: параметры из журнала трафика | landed |
-| **T0.2** | Admin «Прогоны» ≠ History | landed |
-| **T0.3** | LABEL/HEAL Results strips | landed |
-
-#### Трудяга — prep 3×2 (12 авг PM)
-
-| # | Фича | Статус |
-|---|---|---|
-| **T1** | Космопорт ladder stub (wire + mock) | **landed** · Регламент каскад |
-| **T2** | Studio LABEL/HEAL accept honesty + RU hints | **landed** · banner vitest |
-| **T3** | Admin Dojo charts по `project_id` | **unpark → ADM-DOJO-1/2** (волна Dojo) |
-
-#### Соло — закрыто 12 авг + prep
-
-| # | Цикл | Статус |
-|---|---|---|
-| **S1** | DISC juice-field | landed [acc 55](acceptance/55-trials-disc-juice-field-2026-08-12.md) |
-| **S2** | СборИнформации Pareto A | landed [acc 56](acceptance/56-trials-info-gather-a-2026-08-12.md) |
-| **S3** | Gather harden (unit) | **landed** · empty/pscan/diary edges |
-| **S4** | Cosmo mock API (BE thin) | **skipped** — FE fixture хватило T1 |
-| **S5** | Пакет 2FA (docs only) | **landed** лист · hub не писали · [thesis](history/2026-08-12-prep-2fa-thesis-list.md) |
-
-**Сейчас:** DOJO hand PASS · VIS code · FE roles lab landed · Cosmo as-is = пайп→SARIF ([research](research/2026-08-12-cosmo-pipe-vs-box.md)). Перед commit/push — точечный smoke; БД стенда tomorrow.  
-Boss: acc 58 / Product Dojo. Bro: VIS code. FR/hub — не mid-волны.
-
-### Бедолаги / к зачислению (обряд инициализации)
-
-> Major закрыт → хвост только косметика → `ready` → 2FA → hub на **полноценную основу**.  
-> Уже в hub: **Цепь**, **API-модули**, **AUTH основа**, **CONN thin**, **hold/secrets honesty**. Ниже — CULT / bank later / evolve.
-
-| Бедолага | Major as-built | Хвост (косметика / harden) | Зачисление |
-|---|---|---|---|
-| **AUTH module/slots** | 10…15 + cookie→ZAP + Studio form/action (30–37) | deep SSO / script slots | **landed hub** 11 авг |
-| **Connectors** | CONN-10…13 + logs + after-fuzz | protocol MQ/SQL later; cheatsheet flags | **landed hub** thin |
-| **ART / hold / secrets** | ART-1…12 + SURVEY-3 + secret_scan | History hold UX polish; ART epic note | **landed hub** honesty |
-| **Live / Session** | L-1…3 · S-1…3 | — | **landed** runtime-shell touch 11 авг; detail → monitoring |
-| **DAST wave** | DF-10…14 + dict A+B + observed feed A | rest path/guess/UI; CULT по боли | **landed hub** 12 авг (§ корпус + observed); [acc 39](acceptance/39-trials-fuzz-dictionaries-ab-2026-08-11.md) · [acc 43](acceptance/43-trials-traffic-insertion-a-2026-08-12.md) |
-| **RES / QG-AF / ADM** | lab closed | — | CULT admin/admission по боли |
-| **IMP bank productize** | lab 17/20/21/22/24 | demo polish | hub Цепь/API уже; bank promise joint |
-
-### Очередь внешнего бота (BOT-EXT) — 3 цикла · **landed 11 авг**
-
-> Циклы 1–3 закрыты. **Новая пачка UD-B** (user-driven E2E) — см. ниже + [`acceptance/38-…`](acceptance/38-trials-ud-e2e-dual-batch-2026-08-11.md). Стоп-лист тот же.
-
-### BOT-EXT UD-B — user-driven E2E · **landed CYCLE-H1 12 авг**
-
-> Evidence: [`acceptance/38-…`](acceptance/38-trials-ud-e2e-dual-batch-2026-08-11.md) § UD-B evidence. Не hub. Не SoT.
-
-| ID | Est | Суть | DoD |
-|---|---|---|---|
-| **UD-B1** | M | Juice short Open→`ФаззингВолна` | **landed** exit 0 · `run_1786482736` |
-| **UD-B2** | M | Auth form browser Juice → cookies Http+ZAP | **landed** `run_1786482827` |
-| **UD-B3** | S | legal_hold → purge 409 · badge · release | **landed** |
-| **UD-B4** | M | after-fuzz `connector_probe*` в digest | **landed** (+ digest persist fix) |
-| **UD-B5** | S | Live СИГНАЛ/ОШИБКИ + Bearer redact | **landed** pytest 3 |
-| **UD-B6** | S | package AKIA → `plaintext_secrets` | **landed** |
-
-Стоп-лист: hub · discovery-heal · SoT enum · полный pytest · stash · push без команды.
-
-### Босс UD-C — CYCLE-H1 UI poke soil · **landed**
-
-| ID | Суть | DoD |
-|---|---|---|
-| **UD-C1…C6** | Editor жив · fuzz_pack generate · matrix honesty · [`operator-ui-poke-cheatsheet.md`](operator-ui-poke-cheatsheet.md) · точечный vitest · стык acc 38 | **done** (2026-08-12) |
-
-**Цикл 1 — AUTH harden — landed (BOT-EXT)**
-
-| ID | Est | Суть | DoD |
-|---|---|---|---|
-| **BOT-A1** | M | `expand_compose_profile`: `visited` / depth cap | **done** (код + `test_compose_cycle_ab_no_recurse`) |
-| **BOT-A2** | M | `ПрименитьAuth`: CSV / compose → resolve | **done** (`test_enrich_primenit_auth_compose_not_none`) |
-| **BOT-A3** | S | Пустой `modules=` → notes, не legacy | **done** (`test_compose_empty_modules_no_silent_legacy`) |
-| **BOT-A4** | M | Studio form UI C: тип+значение локатора (без SoT rewrite) | **done** (`authFormFields` + `AuthFormModuleForm`) |
-| **BOT-A5** | S | Acceptance 30 wording + matrix sync под 14/15/37 | **done** |
-
-**Цикл 2 — CONN / ART / package — landed (BOT-EXT)**
-
-| ID | Est | Суть | DoD |
-|---|---|---|---|
-| **BOT-C1** | S | connectors.md + cheatsheet flags LIVE/SSH/LOGS/MQ/DB | **done** |
-| **BOT-C2** | M | after-fuzz note в operator-cheatsheet | **done** |
-| **BOT-C3** | S | History hold badge / purge guard | **done** (+ vitest held no-purge) |
-| **BOT-C4** | M | secret_scan run/manifest + cuts | **done** |
-| **BOT-C5** | S | `held_skipped` в ART epic / stand | **done** |
-
-**Цикл 3 — bank demo / onboard / FE P2 — landed (BOT-EXT)**
-
-| ID | Est | Суть | DoD |
-|---|---|---|---|
-| **BOT-D1** | M | bank api-lab runbook | **done** [`operator-bank-api-lab-runbook.md`](operator-bank-api-lab-runbook.md) |
-| **BOT-D2** | M | ONBOARD-1D lite | **done** [`onboard-1d-lite.md`](onboard-1d-lite.md) |
-| **BOT-D3** | L | FE-12 slice1 semantic tokens Секрет/MethodId | **done** `prettykSemanticTokens.ts` |
-| **BOT-D4** | S | export keywords/method_ids | **done** (regenerated) |
-| **BOT-D5** | M | friend-requests auth as-built 14/15/37 | **done** |
-
-**Стоп-лист боту:** hub `docs/canon/**` · discovery-heal дно · SoT enum без приказа · полный pytest suite · stash чужого WIP · push без команды · «industrial AS завтра».
-
-**Follow-on (после 3 циклов, по «продолжай» 11 авг)**
-
-| ID | Суть | Статус |
-|---|---|---|
-| **BOT-X1** | FE-12 slice2: `Пусть` + locator semantic | **done** |
-| **BOT-X2** | Studio `auth=action` MFA UI (тип+значение) | **done** |
-| **BOT-X3** | backlog index sync (UI C / residual) | **done** |
-
----
-
-## Эпик IMP — API modules & самоавторизация (очередь лупа)
-
-Паспорт: [`imp-api-modules-epic.md`](imp-api-modules-epic.md).  
-**Правило:** один TAG / ночь. SoT `manifest.json` и CANON discovery — только по приказу / 2FA.
-
-### IMP-OA — OpenAPI / Swagger (`TAG=OPENAPI`)
-
-Окультурить **импорт схемы** → operation list → lab wire (targets / seed / opt-in ZAP). Галочка анкеты ≠ автоскан.
-
-| ID | Est | Статус | Суть | DoD |
-|---|---|---|---|---|
-| **IMP-OA-0** | S | **done** | Паспорт + эта секция | epic + backlog |
-| **IMP-OA-1** | S | **done** | Inventory as-built: где `openapi_*` в FE/BE/ZAP сегодня | epic § Inventory |
-| **IMP-OA-2** | S | **done** | Контракт импорта: URL/file → normalized ops (без SoT break) | `utils/openapi_ops.py` + fixtures |
-| **IMP-OA-3** | M | **done** | Parser OpenAPI 3 (lab) | `test_openapi_ops.py` |
-| **IMP-OA-4** | M | **done** | Parser Swagger 2 compat или явный reject+note | swagger2 fixture + reject |
-| **IMP-OA-5** | S | **done** | Studio UX: модуль OpenAPI (не tab-lab) | Hub `create-openapi` + `OpenApiModuleForm` |
-| **IMP-OA-6** | M | **done** | Wire → fuzz `targets[]` candidates (opt-in) | `ops_to_fuzz_targets` |
-| **IMP-OA-7** | M | **done** | Wire → ZAP OpenAPI import path (opt-in env) | `KDT_OPENAPI_ZAP_IMPORT` |
-| **IMP-OA-8** | S | **done** | Seed PrettyK comments / stub steps (lab) | `seed_prettyk_comments` |
-| **IMP-OA-9** | M | **done** | Acceptance lab | `docs/acceptance/13-trials-imp-openapi-2026-08-11.md` |
-
-Порядок: 0→1→2→3→4→5→6→7→8→9.
-
-### IMP-AD — самоавторизация Auth↔Discovery (`TAG=AUTHDISC`)
-
-Auth module = боевой путь. `АвтоАвторизоваться` = discovery (DISC-1, **дно** в CANON). PoC lab ок; снятие «дна» — 2FA.
-
-| ID | Est | Статус | Суть | DoD |
-|---|---|---|---|---|
-| **IMP-AD-0** | S | **done** | Паспорт AD в epic | ссылка + границы |
-| **IMP-AD-1** | S | **done** | Карта: Auth IR apply vs MethodId discovery (код якоря) | `docs/internal/imp-auth-discovery-map.md` |
-| **IMP-AD-2** | S | **done** | Матрица оператору: когда Auth / когда discovery / когда suite | QUEUE doc + `OPERATOR_MATRIX` |
-| **IMP-AD-3** | M | **done** | Lab PoC Juice: Auth IR login → session | `test_auth_discovery_bridge` mock |
-| **IMP-AD-4** | M | **done** | Lab PoC: `АвтоАвторизоваться` на Juice login form | MethodId stub → honest `applied:false`; live Juice DOM — later |
-| **IMP-AD-5** | S | **done** | Связка: discovery fail → notes, не `applied: true` | bridge unit |
-| **IMP-AD-6** | S | **done** | Live clue / diary на fail discovery | `live_discovery_fail_clue` |
-| **IMP-AD-7** | S | **done** | Acceptance + решение: трогать ли CANON discovery | `acceptance/14-…` QUEUE only |
-
-Порядок: 0→1→2→3→4→5→6→7. Не тащить DISC-2/HEAL заодно.
-
-### IMP-GQL — GraphQL модуль (`TAG=GQL`)
-
-Сначала **слот authoring** (паттерн CONN). Runtime — этап N.
-
-| ID | Est | Статус | Суть | DoD |
-|---|---|---|---|---|
-| **IMP-GQL-0** | S | **done** | Паспорт GQL | epic §3 |
-| **IMP-GQL-1** | S | **done** | Модель полей слота (endpoint, headers, SDL/URL) | `lab_graphql_shape` |
-| **IMP-GQL-2** | M | **done** | Hub `create-graphql` + honest UI «нет executor» | `isLab` panel + badge lab |
-| **IMP-GQL-3** | M | **done** | Import introspection / SDL → operations list | `test_graphql_ops.py` |
-| **IMP-GQL-4** | S | **done** | Показ ops в Studio read-only | `ApiLabImportPanel` + `/api/lab/graphql/parse` |
-| **IMP-GQL-5** | M | **done** | PoC один query leaf (HTTP/graphql) | `build_query_leaf_poc` body |
-| **IMP-GQL-6** | S | **done** | Acceptance + банк «с вас schema/auth» | `acceptance/15-…` |
-
-Порядок: 0→1→2→3→4→5→6.
-
-### IMP-GRPC — gRPC модуль (`TAG=GRPC`)
-
-Слот + proto/reflect inventory. Streaming — не MVP.
-
-| ID | Est | Статус | Суть | DoD |
-|---|---|---|---|---|
-| **IMP-GRPC-0** | S | **done** | Паспорт gRPC | epic §4 |
-| **IMP-GRPC-1** | S | **done** | Модель полей (host, proto path, metadata) | `lab_grpc_shape` |
-| **IMP-GRPC-2** | M | **done** | Hub `create-grpc` + proto pack form | `GrpcModuleForm` + `/api/lab/grpc/pack` |
-| **IMP-GRPC-3** | M | **done** | Proto parse → service/method list | `test_grpc_ops.py` |
-| **IMP-GRPC-4** | M | **done** | Server reflection path (lab opt-in) или skip+note | `try_server_reflection` |
-| **IMP-GRPC-5** | L | **done** | PoC unary call harness | без флага bolvan; `KDT_GRPC_UNARY=1` → lab Ping (acceptance 24) |
-| **IMP-GRPC-6** | S | **done** | Acceptance + TLS/metadata later | `acceptance/16-…` |
-
-Порядок: 0→1→2→3→4→5→6.
-
-### Статус волны (2026-08-11) — closeout
-
-**CLOSED (порядок TAG):** OA → AUTHDISC → GQL → GRPC → bank productize → HAR (вкл. **HAR-4** live opt-in) → CHAIN → PRE → MAP/MAP-MOD → scope smoke.  
-Open-карточек IMP-* нет.  
-**Productize bank (QUEUE):** SoT modules + forms + `kdt-api-lab` + acceptance 17/20/21 — к CANON 2FA по кивку (hub не трогать без приказа).  
-**Репорт документалисту:** [`history/2026-08-11-imp-documentalist-handoff.md`](history/2026-08-11-imp-documentalist-handoff.md) · canon-request черновик [`canon-requests/2026-08-11-imp-chain-api-polish.md`](canon-requests/2026-08-11-imp-chain-api-polish.md).  
-**Scope:** [`acceptance/22-trials-imp-scope-smoke-2026-08-11.md`](acceptance/22-trials-imp-scope-smoke-2026-08-11.md).  
-Дальше по кивку: bank / CANON 2FA — не новый IMP TAG.
-
-### IMP-HAR — HAR через Resources → ZAP sequence (`TAG=HAR`)
-
-> SoT `imports.kind=har_file`; Studio Resources attach `.har`; lab-run `resource_contents`; ZAP volume + path rewrite.  
-> Паспорт: [`imp-api-modules-epic.md`](imp-api-modules-epic.md) § HAR.  
-> **Запуск:** Editor bind/seed; прогон = обычный check/Live.
-
-| ID | Est | Статус | Суть | DoD |
-|---|---|---|---|---|
-| **IMP-HAR-0** | S | **landed** | Паспорт + inventory | epic § HAR |
-| **IMP-HAR-1** | S | **landed** | SoT `har_file` + controller path scalar + ZAP rewrite | unit `test_har_import_path` |
-| **IMP-HAR-2** | M | **landed** | Resources attach `.har` + kind UI (не Hub lab panel) | `studioResources` / attach |
-| **IMP-HAR-3** | M | **landed** | Seed PrettyK `ИмпортHAR` ± `СканПоследовательности` | `seedHarImport` + ResourceForm |
-| **IMP-HAR-4** | M | **landed** | Lab live: fixture HAR → import → sequence active (opt-in) | `KDT_HAR_SEQUENCE_LIVE` + `test_har_sequence_live` |
-| **IMP-HAR-5** | S | **landed** | Честность + stand/cheatsheet volume note | stand + cheatsheet |
-
-Порядок: 0→5 landed (вкл. live-4 opt-in).
-
-### IMP-CHAIN — запись цепей → templated HAR → бомба (`TAG=CHAIN`)
-
-> Индустрия: ZAP Sequence (record / Import HAR → sequence-activeScan); Burp Stepper/macros (`$VAR` extract→inject); GitLab API Fuzzing from HAR; replay с CSRF/token correlation.  
-> У нас: **IMP-HAR** = чужой `.har` в Resources. **CHAIN** = сами строгаем поток, помечаем что менять, на прогоне подставляем свежие токены и бьём.  
-> Паспорт: [`imp-api-modules-epic.md`](imp-api-modules-epic.md) § CHAIN.  
-> Не путать с **AUTH-10a** (`auth=chain` логин) — там вход; здесь **бизнес-поток** (перевод, checkout, смена пароля).
-
-| ID | Est | Статус | Суть | DoD |
-|---|---|---|---|---|
-| **IMP-CHAIN-0** | S | **landed** | Паспорт + границы vs HAR / AUTH-10a / DF | epic § CHAIN |
-| **IMP-CHAIN-1** | M | **landed** | SoT `module_type=Цепь` + `chain_fields` + Pydantic | manifest + generate:schema |
-| **IMP-CHAIN-2** | M | **landed** | Record/trim: paste HAR → steps (skip assets/OPTIONS) | `chain_from_har` lab API |
-| **IMP-CHAIN-3** | M | **landed** | Templatize UI: слоты + bind/play values | `ChainModuleForm` |
-| **IMP-CHAIN-4** | M | **landed** | Materialize → Resources `har_file` + lab-run bindings | Play button + `chain_bindings` |
-| **IMP-CHAIN-5** | L | **landed** | Bomb A: seed facade | opt-in checkbox |
-| **IMP-CHAIN-5a** | M | **landed** | MethodId: `ВыполнитьЦепь` play / `СканированиеЦепи` удар; API без `режим=` | `test_execute_chain` |
-| **IMP-CHAIN-6** | L | **landed** | Bomb B: Play → targets в Fuzzer `chain_*` | `chainFuzzAttach` |
-| **IMP-CHAIN-7** | S | **landed** | Honesty copy; template `{{slot}}`; no silent scan | form Alert + notes |
-| **IMP-CHAIN-8a** | L | **landed** | `РасследованиеЦепи` scaffold | `test_execute_chain` |
-| **IMP-CHAIN-8b** | L | **landed** | Auth из HAR → `apply_zap_auth` (Bearer/Cookie) | extract_auth_from_har |
-| **IMP-CHAIN-8c** | L | **landed** | Evidence `meta/chain_investigate_*.json` + purge `kdt-auth*` | write_investigate_evidence |
-| **IMP-CHAIN-8+** | L | **landed** | `ФаззингЦепи`: prepare(pre) → sync attack → wave | `test_fuzz_chain` |
-| **IMP-CHAIN-PRE-0** | S | **landed** | Пауза фазза; смысл фугаса | [`history/2026-08-11-fugas-preconditions.md`](history/2026-08-11-fugas-preconditions.md) |
-| **IMP-CHAIN-PRE-1** | M | **landed** | step `role` pre\|attack; setup/attack HAR; fuzz=attack | Studio Select + materialize |
-| **IMP-CHAIN-PRE-2** | M | **landed** | extract→inject (jsonpath/regex/header) | `extract:step:N:…` |
-| **IMP-CHAIN-PRE-3** | M | **landed** | dry-run pre + MethodId `ПодготовитьЦепь` | lab `/dry-run-pre` |
-| **IMP-CHAIN-MAP-0** | S | **landed** | Контракт: карта=slots; values=data-модуль | [`history/2026-08-11-chain-replace-map.md`](history/2026-08-11-chain-replace-map.md) |
-| **IMP-CHAIN-MAP-1** | M | **landed** | UX «Карта подмен» + paste JSON → bindings | Studio ChainModuleForm |
-| **IMP-CHAIN-MAP-2** | M | **landed** | slot `match` / `apply` step\|all | `chain_ops` template/materialize |
-| **IMP-CHAIN-MAP-3** | M | **landed** | CSV lab (legacy) — не развиваем | deprecated vs MAP-MOD |
-| **IMP-CHAIN-MAP-MOD** | M | **landed** | `value_pack_module` → properties data-модуль | materialize / Studio |
-
-MAP + HAR-4 landed. Scope: [`acceptance/22-…`](acceptance/22-trials-imp-scope-smoke-2026-08-11.md). Ход: [`history/2026-08-11-chain-sprint.md`](history/2026-08-11-chain-sprint.md). Не `docs/canon/**` без 2FA.
-
-### Шаблон команды (копипаст) — архив
-
-```text
-IMP night loop TAG=OPENAPI: один цикл.
-Следующий open IMP-OA-* из docs/backlog.md (порядок секции).
-DoD → точечные тесты → backlog → commit+push origin/dev → стоп.
-Самостоп: IMP-OA-0…9 closed ИЛИ нужен юзер / SoT / CANON 2FA.
-Не трогай docs/canon/** без 2FA. Не stash. Не другой TAG.
-Паспорт: docs/imp-api-modules-epic.md.
-```
-
-Замени `OPENAPI`/`IMP-OA` на `AUTHDISC`/`IMP-AD`, `GQL`/`IMP-GQL`, `GRPC`/`IMP-GRPC`.
-
----
-
-## Эпик ART — артефакты, retention, cleanup job
-
-Паспорт: [`artifact-cleanup-epic.md`](artifact-cleanup-epic.md).  
-**Решение (11 авг):** delete карточки ≠ hard-cascade; retention = отдельная job; `lab_clean` остаётся ops.  
-**1…12 landed** — cleanup + хвост orphan/badge/audit ([`acceptance/23-…`](acceptance/23-trials-art-tail-2026-08-11.md)).
-
-### Волна A — честность (сначала)
-
-| ID | Est | Статус | Суть | DoD |
-|---|---|---|---|---|
-| **ART-0** | S | **done** | Паспорт эпика + эта секция | [`artifact-cleanup-epic.md`](artifact-cleanup-epic.md) + индекс |
-| **ART-1** | M | **landed** | **Artifact index**: `check_id` → `run_id` → disk paths + dojo `test_id`/`engagement_id` + hooks URLs | `utils/artifact_index.py` + finalize wire + pytest |
-| **ART-2** | S | **landed** | `deleteCheck` = **unlink only**; UI History: явный текст «отчёты на диске/Dojo не удаляются» | History modal copy; purge только галка (ART-3) |
-
-### Волна B — opt-in purge + политика retention
-
-| ID | Est | Статус | Суть | DoD |
-|---|---|---|---|---|
-| **ART-3** | M | **landed** | Opt-in **Purge artifacts** при удалении карточки (модалка: unlink / unlink+purge) | Live `POST /api/artifacts/purge`; History checkbox |
-| **ART-4** | S | **landed** | `artifact_retention_days` → отдельный **RetentionPolicy** store (Admin → файл/Live), **не** в GatePolicy counts | `retention_policy.py` + FE serialize + Live API |
-
-### Волна C — cleanup job
-
-| ID | Est | Статус | Суть | DoD |
-|---|---|---|---|---|
-| **ART-5** | M | **landed** | Job skeleton: `tools/artifact_cleanup_job.py` — **dry-run** по retention + index | CLI + `list_retention_candidates` |
-| **ART-6** | M | **landed** | Execute **disk**: paths из index | `purge_disk_for_check`; refuse allure-results root; audit ndjson |
-| **ART-7** | L | **landed** | Execute **Dojo**: test delete только `ENGAGEMENT_MODE=check`; `fixed` → skip | `purge_dojo_for_check` + тест |
-
-### Волна D — границы и приёмка
-
-| ID | Est | Статус | Суть | DoD |
-|---|---|---|---|---|
-| **ART-8** | S | **done** | Граница **lab_clean** vs ART job: cheatsheet/stand — когда какой инструмент | stand + operator-cheatsheet |
-| **ART-9** | M | **done** | Acceptance: unlink · opt-in purge · dry-run job · retention cut | [`acceptance/12-trials-art-cleanup-2026-08-11.md`](acceptance/12-trials-art-cleanup-2026-08-11.md) |
-
-### Зависимости / стены ART
-
-| Зависит от | Зачем |
-|---|---|
-| NAV delete / History UI | ART-2/3 |
-| finalize + Dojo import meta | ART-1 (test_id) |
-| Admin Policies поле retention | ART-4 (уже UI stub) |
-
-| Не делать | Почему |
-|---|---|
-| Cascade delete в `fixed` Dojo | чужие findings |
-| Вешать TTL на клик History | нужен job |
-| Путать waiver `expires_at` с retention отчётов | разные оси |
-
-**Порядок имплементации:** ART-0 → 1 → 2 → 4 → 5 → 3 → 6 → 7 → 8 → 9  
-(сначала index+честность+dry-run; purge UI после API; Dojo последним).
-
-### Волна E — хвост после 9 (ночь / следующий заход)
-
-| ID | Est | Статус | Суть | DoD |
-|---|---|---|---|---|
-| **ART-10** | M | **landed** | Orphan scan: paths на диске без записи в index | `scan_orphan_run_dirs` + Live/CLI |
-| **ART-11** | S | **landed** | History badge «арт.» из index | `/api/artifacts/index` + HistoryPage |
-| **ART-12** | S | **landed** | Audit ndjson export / тонкий viewer | `/api/artifacts/audit` + модалка |
-
----
-
-## Эпик SURVEY — ночной рой дыр (docs → карточки)
-
-Не код без дешёвого PoC. После ART-9 или при упоре.
-
-| ID | Статус | Суть |
-|---|---|---|
-| **SURVEY-1** | **done** | honest-contract + agent-suggested: дыры ниже (ночь 11 авг) |
-| **SURVEY-2** | **done** | Orphan path gaps → ART-10 landed |
-| **SURVEY-3** | **landed (A+B)** | Soft `legal_hold` + `KDT_ARTIFACT_PURGE=0`; [`research/joint/2026-08-11-survey3-legal-hold.md`](research/joint/2026-08-11-survey3-legal-hold.md) · [`acceptance/31-…`](acceptance/31-trials-survey3-logs-secrets-2026-08-11.md) |
-
-### SURVEY-1 notes (11 авг)
-
-| Дыра | Куда |
-|---|---|
-| Orphan disk без index | ART-10 |
-| History не показывает «есть артефакты» | ART-11 |
-| Audit viewer | ART-12 |
-| AUTH-12 / CONN-11 | свои эпики; не ART |
-| Bank legal hold на wipe | SURVEY-3 landed (soft hold) |
-
-## Эпик POC — узкий spike (≤1 цикл, только если survey нашёл)
-
-| ID | Статус | Суть |
-|---|---|---|
-| **POC-*** | — | слот: mock/unit spike + тест; иначе не плодить |
-
-Порядок после ART-9: SURVEY-1 → (PoC если дешёво) → ART-10… или стоп если нужен юзер.
-
----
-
-## Эпик AUTH — авторизация в Studio
-
-Паспорт: [`future-plans.md`](future-plans.md) §1 · hub [`canon/auth-module.md`](canon/auth-module.md) · detail [`internal/auth-module.md`](internal/auth-module.md).
-
-| ID | Статус | Суть |
-|---|---|---|
-| **AUTH-10** | **landed (lab)** | module-kind Авторизация; IR/validate |
-| **AUTH-10a** | **landed (lab)** | `auth=chain` + Capture; Http bootstrap |
-| **AUTH-11** | **done** | матрица → [`internal/auth-matrix.md`](internal/auth-matrix.md) |
-| **AUTH-12** | **landed (wave1)** | API Key / Query Key + success check + compose каркас; [`acceptance/30-…`](acceptance/30-trials-auth12-apikey-2026-08-11.md) |
-| **AUTH-13** | **landed (lab)** | CSV/`auth=compose` + form/action dialect → ZAP helper; [`acceptance/34-…`](acceptance/34-trials-auth13-compose-2026-08-11.md) |
-| **AUTH-14** | **landed (lab A+B+C)** | Form dialect + Selenium + cookies→Http/ZAP + Studio тип+значение; [`acceptance/35-…`](acceptance/35-trials-auth14-form-browser-2026-08-11.md) |
-| **AUTH-15** | **landed (lab)** | MFA TOTP/SMS + split OTP + cookies→Http/ZAP; [`acceptance/36-…`](acceptance/36-trials-auth15-mfa-2026-08-11.md) · [`37-…`](acceptance/37-trials-auth-browser-zap-cookie-2026-08-11.md) |
-| **AUTH residual** | **evolve** | deep SSO / Push/WebAuthn / script slots — по кивку (UI form+action + compose harden landed) |
-
----
-
-## Эпик CONN — коннекторы
-
-Паспорт: [`future-plans.md`](future-plans.md) §2 · [`internal/connectors.md`](internal/connectors.md) · EVIDENCE [`history/2026-08-11-conn-admin-activate/`](history/2026-08-11-conn-admin-activate/).
-
-| ID | Статус | Суть |
-|---|---|---|
-| **CONN-10** | **landed (lab)** | Admin packs + Studio activate + snapshot |
-| **CONN-11** | **landed** | PrettyK init + Prom pack (`KDT_CONNECTOR_LIVE`); [`acceptance/27-…`](acceptance/27-trials-conn11-prom-2026-08-11.md) |
-| **CONN-12** | **landed (SSH)** | `ВыполнитьКомандуSSH` + allowlist; [`acceptance/29-…`](acceptance/29-trials-self-l3-conn12-mc4-2026-08-11.md) |
-| **CONN-logs** | **landed (thin)** | `ЗапроситьЛогиКоннектора` HTTP GET (`KDT_CONNECTOR_LOGS`); after-fuzz dispatch; [`acceptance/31-…`](acceptance/31-trials-survey3-logs-secrets-2026-08-11.md) · [`32-…`](acceptance/32-trials-hold-badge-afterfuzz-logs-2026-08-11.md) |
-| **CONN-13** | **landed (thin)** | MQ/DB TCP probe (`KDT_CONNECTOR_MQ`/`DB`); [`acceptance/33-…`](acceptance/33-trials-conn13-mq-db-2026-08-11.md) |
-| **CONN-13** | **landed (TCP)** | MQ/DB reachability probe (no publish/SQL); [`acceptance/33-…`](acceptance/33-trials-conn13-mq-db-2026-08-11.md) |
-
-### Review later (не пилить сейчас)
-
-| ID | Суть |
-|---|---|
-| **CONN-ADAPT-SPLIT** | Логически выделять отдельные adapter-классы под каждый тул (SSH/MQ/CLI…) — **отложено**. Сейчас расширение = MethodId-обёртки на существующих компонентах (`core`/`http`/…), как RF keywords. Вернуться, если появятся общие lifecycle/секреты/пулинг. |
-| **RF-BRIDGE** | Пайплайн RF UI → HAR/proxy → KDT security gate (не замена UI-регресса). |
-| **ONBOARD-1D** | Онбординг «с улицы»: lab + 1 манифест + два exit-кода + словарь MethodId. |
-
----
-
-## Ядро — внешние команды (RF-паритет обёрток)
-
-| ID | Статус | Суть |
-|---|---|---|
-| **CORE-CMD-1** | **landed** | `ВыполнитьКоманду` → `core|run_command`; gate `KDT_EXECUTE_COMMAND` + opt `KDT_COMMAND_ALLOWLIST`; dry `KDT_API_LAB_DRY` | `test_run_command.py` |
-
-Потенциал «нарезать keywords как RF» = этот паттерн, не бесконечный marketplace adapters.
-
----
-
-## Эпик NAV — CheckInstance / History
-
-Паспорт: [`nav-check-epic.md`](nav-check-epic.md). Hub: [`canon/nav-check.md`](canon/nav-check.md).
-
-| ID | Статус | Суть |
-|---|---|---|
-| **NAV-1…6** | **done** | store, hash, lifecycle, history UI, docs |
-| **NAV-RUN** | **landed (lab)** | Live/CI → `runs[]` |
-| **NAV-API** | **landed (lab)** | `/api/checks` file-bus |
-| **NAV-POL** | **landed (lab)** | Policies ≠ runs → Admin |
-| **NAV-DEL** | **→ ART-2/3** | семантика delete карточки вынесена в ART (не плодить второй эпик) |
-
----
-
-## Эпик E2E — shell Login / Home / ЖЦ
-
-Паспорт: [`e2e-shell-epic.md`](e2e-shell-epic.md). Hub: [`canon/fe-shell.md`](canon/fe-shell.md).
-
-| ID | Статус | Суть |
-|---|---|---|
-| **E2E-1…6** | **done** | Login, Home, import, History shell, dark, hub mute |
-| **E2E-HIST** | **done (lab)** | History = NAV registry |
-| **E2E-LOGIN-BG** | **done** | video + glass |
-| **E2E-SSO / AUTH** | **open** | Blitz / server auth |
-| **E2E-POL** | **partial** | shell + QG-AF-7; SSO open |
-
----
-
-## Эпик ADM — SecOps Admin
-
-Паспорт: [`internal/admin-secops.md`](internal/admin-secops.md). Hub слой: [`canon/admin-integrations.md`](canon/admin-integrations.md).
-
-| ID | Статус | Суть |
-|---|---|---|
-| **ADM-1…5** | **landed** | KPI live, gates sync, evidence charts, waivers UI |
-| **ADM-6** | **done** | docs/acceptance |
-| **ADM-POC-A** | **landed** | секция «Прогоны»: `collectAdminRuns` + RunsPanel + Runs·7d; [acc 42](acceptance/42-trials-admin-runs-ledger-2026-08-12.md) |
-| **ADM-POC-B** | **landed** | Live runs index + Admin merge + Deploy last N · [acc 45](acceptance/45-trials-admin-poc-b-runs-index-2026-08-12.md) |
-| **ADM-E1…4** | **landed** | Overview→Прогоны · Owner filter · Evidence→Deploy · Policy fingerprint |
-| **ADM-E5…7** | **landed** | probe honesty · bulk link · waiver warn · [acc 46](acceptance/46-trials-admin-e5-e7-2026-08-12.md) · [research](research/2026-08-12-epic-admin-features.md) |
-| **ADM-DOJO-1/2** | **landed (code)** · hand OPEN | [acc 58](acceptance/58-trials-admin-dojo-program-2026-08-12.md) · [FR](friend-requests/2026-08-12-admin-dojo-inhabitant.md) |
-| **ADM-VIS-ANALYSIS** | **code+shot · await owner** | Overview Pro Analysis · [ref](research/assets/admin-assortment/pro-analysis-ref/) |
-| **ADM-VIS-1** | **landed (code)** | Overview Analysis + mini Runs · [assortment V1](research/2026-08-12-admin-visual-assortment.md) |
-| **ADM-VIS-3** | **landed (code)** | SecOps tokens Admin radius 5–6 |
-| **ADM-VIS-2** | **landed (code)** | ProTable Прогоны/Реестр |
-| **ADM-VIS-4** | **landed (code)** | Evidence tabs · empty Result |
-| **ADM-VIS-5** | **landed (code)** | Deploy Descriptions + empty Result |
-| **ADM-RU-INTL** | **landed** | `theme/kdtRuIntl.ts` · Pro switch Вкл/Выкл |
-| **ADM-BRAND** | **plan** | Полный скоуп бренд/иконка/морда — [delivery plan](research/2026-08-12-secops-lab-brand-delivery-plan.md) |
-| **BRAND-0** | **landed** | Inventory + plan MD |
-| **BRAND-1** | **open · P0** | Favicon F1 виден на вкладке (Editor/Admin); cache-bust если надо · `public/secops-lab-icon.*` |
-| **BRAND-2** | **open · P0** | Wordmark SecOps Lab: Login/Home/Admin/Live — один проход глазами |
-| **BRAND-3** | **landed (21:31)** | `vite build`; повтор после правок brand |
-| **BRAND-4** | **open · P0** | Owner: «вижу F1 + SecOps Lab» → ADM-BRAND landed |
-| **VIS-ACC** | **open · P1** | Закрыть галочки V1…V6 в assortment: принято / хвост |
-| **VIS-ANALYSIS** | **code+shot · await owner** | Pro Analysis Overview · shot `pro-analysis-ref/admin-overview-analysis.png` · Maxim: «как Analysis» → V1 accept |
-| **VIS-D*** | **open · P1** | Дельты D1–D6 polish · D7–D8 later · [trudyaga](history/2026-08-12-trudyaga-admin-vis-dig.md) |
-| **THEME-LIGHT** | **park** | Light SecOps pack — только по кивку |
-| **ADM-NOTIFY** | **landed** | Оповещения в Admin · `notifyRules.ts` + `NotifyPanel.tsx` · [wire](history/2026-08-12-bro-admin-wave-cut.md) |
-| **ADM-APPCODE** | **open** | Project code в Admin · § PAL-ADM-APPCODE |
-| **ADM-RET** | **→ ART-4** | retention field wiring — в ART, не второй сюжет |
-| **2-bot cut** | **now** | [history/…adm-dojo-vis-2bot-cut](history/2026-08-12-adm-dojo-vis-2bot-cut.md) |
-
----
-
-## Эпик QG-AF — Quality Gate Auto Filtering
-
-Паспорт: [`qg-af-epic.md`](qg-af-epic.md). Hub: [`canon/admission.md`](canon/admission.md).  
-Контур **lab landed** (0…13, поле 9). Новое — regress / bank process, не спринт с нуля.
-
-| Блок | ID | Статус |
-|---|---|---|
-| Спринт A | **QG-AF-0…5** | **landed** |
-| Волна B | **QG-AF-6…13** (порядок был 10→11→6→12→7→8→13→9) | **landed** / **9 lab** |
-
-Детали filter/act/zip — не дублировать здесь: [`internal/results-as-built.md`](internal/results-as-built.md) · [`admission-act-ib.md`](admission-act-ib.md).
-
----
-
-## Эпик RES — Результаты проверки
-
-Паспорт: [`results-epic.md`](results-epic.md).  
-**Lab DoD + bank tails MC-RES-1…3/5 — closed** (11 авг). **MC-RES-4** wont (стена Job API).
-
-| Якорь | Факт |
-|---|---|
-| RES-3…7 / L / H / ACT / GATE | lab landed |
-| Pipe + Juice ПИ | [`acceptance/10-…`](acceptance/10-trials-act-gates-pipe-2026-08-11.md) · [`11-…`](acceptance/11-trials-juice-pi-act-2026-08-11.md) |
-| Очередь | не RES — см. индекс (§ ART / AUTH / CONN) |
-
----
-
-## Эпик DF — DAST-фаззинг Phase 2
-
-Канон narrative: [`dast-fuzzing.md`](dast-fuzzing.md). Hub wave: [`canon/dast-wave.md`](canon/dast-wave.md).
-
-| ID | Статус |
-|---|---|
-| **DF-10…14** + MC-3 reflection | **closed** |
-
-Не блокер демо ЖЦ. SoT `wave_mode` — maybe-cool / приказ.
-
----
-
-## Эпик FE — Studio UI polish
-
-Спека: [`frontend-spec.md`](frontend-spec.md).
-
-| ID | Статус | Суть |
-|---|---|---|
-| **FE-10** | **done** | light contrast |
-| **FE-11** | **done** | `$var` glow light |
-| **FE-FORM** | **done** | rhythm + actions pad |
-| **FE-ED** near | **done** (11 авг) | context menu, SignatureHelp, cmdk, HUD |
-| **FE-12** | **open (P2)** | Monaco semantic tokens — не near; [`future-plans.md`](future-plans.md) §7 |
-
----
-
-## Эпик S — сессия / браузерный контекст
-
-Паспорт: [`session-epic.md`](session-epic.md).
-
-| ID | Статус | Суть | Якорь |
-|---|---|---|---|
-| **S-1** | **landed** | Replay storage keys → fuzz `Authorization` | [`acceptance/25-…`](acceptance/25-trials-live-session-lane-2026-08-11.md) |
-| **S-2** | **landed** | Redact storage keys in reports (имена, не JWT) | same |
-| **S-3** | **landed** | ZAP `httpSessions` snapshot: имена/count в meta/digest | `http_sessions_snapshot_meta` |
-
----
-
-## Эпик L — Live / мониторинг
-
-Паспорт: [`monitoring.md`](monitoring.md). Hub roles: [`canon/runtime-shell.md`](canon/runtime-shell.md).
-
-| ID | Статус | Суть | Якорь |
-|---|---|---|---|
-| **L-1** | **landed** | Presets фильтра Live (`all`/`signal`/`errors`) | [`acceptance/25-…`](acceptance/25-trials-live-session-lane-2026-08-11.md) |
-| **L-2** | **landed** | Deep-link Allure / WireK | same |
-| **L-3** | **landed** | Redact Bearer/JWT/password в Live diary NDJSON/SSE | [`acceptance/29-…`](acceptance/29-trials-self-l3-conn12-mc4-2026-08-11.md) |
-
-> **Мульти-монитор / replay / отмотка** — отдельный эпик **MONITOR** (§ выше), не L. L — фильтры/deep-links/redact.
-
----
-
-## Эпик SONAR — quality cuts (infra)
-
-Стенд: [`sonar-lab.md`](sonar-lab.md). Скан **только** по приказу (inline: `orchestrator/tools/sonar_scan.ps1`).
-
-| Пульт | Факт |
-|---|---|
-| Цикл **12 авг** risk/QG | **ACCEPTED** · verify-2 Open BE **121** / FE **30** · bugs/vuln **0** · QG **OK/OK** · A/A/A · [`sonar-closeout-2026-08-12.md`](sonar-closeout-2026-08-12.md) §7 |
-| Старт дня 12 авг | BE Open **176** · bugs **1** · vuln **2** · QG **ERROR** · FE Open **40** |
-| Rematch 11 авг | FE **0** / BE **105** · bugs/vuln **0** · оба QG **OK** |
-| Inventory | [`history/2026-08-sonar-dig/sonar-inventory-2026-08-12.md`](history/2026-08-sonar-dig/sonar-inventory-2026-08-12.md) · verify2 `reports/sonar-snapshot-2026-08-12-verify2/` |
-| Хвост Open | **SQ-BE-74** / **SQ-FE-60** — backlog **maintainability**, не блокер risk/QG |
-| Verify-3 pulse 12 авг | BE smells **96** · FE **45** · bugs BE **1→fix S5850** (language_engine lookahead) · QG FE OK; BE был ERROR на bug |
-| Не путать | **Musthave / profile** ≠ **копаем extracts’ами** (см. таблицу ниже) |
-
-**Не путать (канон triage):**
-
-| Класс | Что | Действие |
-|---|---|---|
-| **Musthave / profile** | Style · lab-http · RU MethodId literals (`S1192`) | Profile / musthave. **Не** размазываем в константы «ради нуля». **Не** mass-WONTFIX на всё подряд |
-| **Чиним (dig)** | Реальный долг: **S3776** и прочий maint Open | Packs **SQ-BE-74** / **SQ-FE-60** — extracts’ами; Open цифры после verify |
-
-### Микро-бэклог хвоста maintainability (дальше копаем)
-
-> Скан подтверждён давно (verify-2 **ACCEPTED**: BE Open **121** / FE **30**, bugs/vuln **0**, QG **OK/OK**).  
-> После пост-verify dig в backlog — **Verify-3 pulse**: BE smells **96** / FE **45** (BE bug `S5850` → fix pending).  
-> Хвост = чистый eloquency: **S3776** и maint Open, **не** musthave, **не** suppress.
-
-| ID | Est | Статус | Суть |
-|---|---|---|---|
-| **SQ-BE-74a** | L | **open · dig** | left-overs **S3776** фуксов после BE-70…73: в т.ч. `utils/*` + `core/run_package` + `reporter` (см. verify-3: BE **96**) |
-| **SQ-BE-74b** | M | **open · dig** | maint Open **non-S3776** (`S8786` misc): regex/auth/wire хвост, не правило-профиль |
-| **SQ-FE-60a** | M | **open · dig** | leftover **S3776** FE после FE-56…59: StudioWorkspace / chain / RunTable хвост (verify-3: FE **45**) |
-| **SQ-FE-60b** | S | **open · dig** | maint Open FE: `S7718`/`S8786` misc — extract, не suppress |
-| **SQ-VERIFY-3** | — | **open · по команде** | после закрытой порции — `sonar_scan -Target both` по приказу (cap при ожидании) |
-| **SQ-BE-75** / **SQ-FE-61** | S | **meta · done** | как только дойдём до 0-остатка по зоне — закрыть «следующий dig» ref'ом сюда |
-
-**Правило:** копаем **extracts’ами** пачками (не по одному smell → один тест). Musthave/style/RU-S1192 не трогаем. Контроль — только после явной команды Максима.
-
-### Следующий dig — feature packs (очередь)
-
-| ID | Est | Статус | Суть |
-|---|---|---|---|
-| **SQ-BE-60** | S | **landed (code)** | P0 ×5: S3923 GraphQL endpoint · S4790 TOTP NOSONAR · S2068 param label · S3516 coverage/FE return · `set_proxy` True/False |
-| **SQ-BE-61** | L | **landed (code)** | `auth_module.py` S3776 — dispatch validate/bootstrap + apply helpers (pytest auth batch 79) |
-| **SQ-BE-62** | L | **landed (code)** | `chain_ops.py` S3776 — extract/suggest/apply/materialize helpers (pytest chain 26) |
-| **SQ-BE-63** | L | **landed (code)** | `zap_adapter.py` S3776 — auth/chain/graphql/poll helpers (pytest zap+chain 53) |
-| **SQ-BE-64** | L | **landed (code)** | `fuzzing.py` S3776 — hole/digest/live/wave/chain helpers |
-| **SQ-BE-65** | L | **landed (code)** | `controller.py` S3776 — auth bootstrap / Zap enrich / suite imports (pytest 50) |
-| **SQ-BE-66** | M | **landed (code)** | language/expr/parse/validate/pretty — S3776 helpers; controller stub `manifest` soft; pytest language batch **113** |
-| **SQ-BE-67** | M | **landed (code)** | connector/run_package/api_runtime/lab_run/live S3776 helpers; pytest runtime batch **77** |
-| **SQ-BE-68** | S | **landed (code)** | af_plan/auth_bootstrap/log_cuts/gate/pipeline/gha helpers; pytest misc batch **61** |
-| **SQ-BE-69** | — | **verify-1 done** | Open **119** (vuln 0); closeout 12 авг |
-| **SQ-BE-69a** | S | **landed (code)** | post-verify bug `traffic_insertion_points` S3923; pytest 5 |
-| **SQ-BE-70** | M | **landed (code)** | non-S3776 + extracts; pytest zone **43**; Open цифры после скана |
-| **SQ-BE-71** | L | **landed (code)** | S3776 extracts (manifest/connector/pattern/artifact/openapi/dojo/job); pytest **47** |
-| **SQ-BE-72** | L | **landed (code)** | run_command/dojo cursor/live json/artifact purge/legacy policy/G-64; pytest **57** |
-| **SQ-BE-73** | L | **landed (code)** | final dig fuzz/lab/reporter/chain/grpc/heal/console/job; pytest **55+43** |
-| **SQ-BE-74** | L | **backlog maint** | чиним: leftover **S3776** (+ maint Open) extracts’ами; не musthave; Open после verify |
-| **SQ-FE-50** | M | **landed (code)** | `ResourceFormPanel` → `resourceFormHints` (S3358/S3776); vitest hints |
-| **SQ-FE-51** | M | **landed (code)** | `chainModuleFields` slot/value-pack/bindings helpers |
-| **SQ-FE-52** | M | **landed (code)** | `studioWorkspaceFormFlags` + `studioActionFormSubmit` |
-| **SQ-FE-53** | S | **landed (code)** | auth serialize + API inventory text (OA/GQL/gRPC) |
-| **SQ-FE-54** | S | **landed (code)** | suiteZip entry + studioResources path; vitest зона **33** |
-| **SQ-FE-55** | — | **verify-1 done** | Open **30**; QG ERROR new bug S2871 |
-| **SQ-FE-55a** | S | **landed (code)** | `RunsPanel` `localeCompare` sort |
-| **SQ-FE-56** | M | **landed (code)** | S7718/S8786/S3776 extracts; vitest **25**; Open после скана |
-| **SQ-FE-57** | M | **landed (code)** | ActionForm sections + Workspace pane/chain helpers; vitest **13** |
-| **SQ-FE-58** | M | **landed (code)** | ActiveBody/chain-play/ActionKind/OA inventory/suiteZip/admin runs; vitest **13** |
-| **SQ-FE-59** | M | **landed (code)** | shared auth options + wire label + admin filter; vitest **6+** |
-| **SQ-FE-60** | M | **backlog maint** | чиним: leftover **S3776** (+ maint Open) extracts’ами; не musthave; Open после verify |
-| **SQ-VERIFY-2** | — | **done** | Open BE **121** / FE **30**; bugs 0; QG OK/OK |
-| **SQ-ACCEPT-12** | — | **ACCEPTED** | risk/QG цикл 12 авг · closeout §7 · boss-report |
-| **SQ-BOSS-12** | — | **done** | [`sonar-boss-report-2026-08-12.md`](sonar-boss-report-2026-08-12.md) |
-| Closeout | — | **accepted** | [`sonar-closeout-2026-08-12.md`](sonar-closeout-2026-08-12.md) · dig [`history/2026-08-sonar-dig/sonar-dig-2026-08-12.md`](history/2026-08-sonar-dig/sonar-dig-2026-08-12.md) |
-
----
-
-## Эпик QA — тестовый контур (политика)
-
-| ID | Статус | Суть |
-|---|---|---|
-| **QA-0** | **closed** | lint/vitest baseline |
-| **QA-1** | **landed** | markers `heavy`/`lab` + `pytest_fast.ps1` + notes в `development.md` §6 |
-
----
-
-## Эпик CANON-CULT — окультуривание FRIEND (docs)
-
-Только docs. Правка `docs/canon/**` — **2FA** ([`canon/INDEX.md`](canon/INDEX.md) § Замок).
-
-| ID | Топик | Статус |
-|---|---|---|
-| **CANON-CULT-1** | [`canon/data-modules.md`](canon/data-modules.md) | **done** 11 авг |
-| **CANON-CULT-2** | [`canon/admin-integrations.md`](canon/admin-integrations.md) | **done** 11 авг |
-| **CANON-CULT-3** | [`canon/auth-slots.md`](canon/auth-slots.md) | **done** 11 авг |
-| **CANON-CULT-4** | [`canon/lab-up.md`](canon/lab-up.md) | **done** 11 авг |
-| **CANON-CULT-5** | [`canon/security-lab.md`](canon/security-lab.md) | **done** 11 авг |
-
-Эпик CULT **closed** (смотритель). Не путать с кодом ART/AUTH.
-
----
-
-## Эпик DOC-POC — пакет proof_of_concept (docs)
-
-Папка: [`proof_of_concept/`](proof_of_concept/). База: [`proof_of_concept/walkthrough.md`](proof_of_concept/walkthrough.md).  
-**Не hub:** SOLID/2FA CANON не применяются. Rewrite и дописывание — норма. Приоритет: держать комплекс актуальным.
-
-| ID | Статус | Суть |
-|---|---|---|
-| **DOC-POC-0** | **landed** | База `walkthrough.md` (нейтральный research) + политика пакета в README |
-| **DOC-POC-1** | **open** | При смене осмотра / рынка / исходного контура — апдейт walkthrough (+ `sources`, затронутые черновики `00`–`06`) |
-| **DOC-POC-2** | **landed (11 авг)** | Сверка walkthrough: нейтральный research, без продукта «между строк» |
-| **DOC-POC-3** | **landed spike (12 авг)** | Allure Wave A RU + allure3-secops `:5051` SecOps logo — [`acceptance/40-…`](acceptance/40-trials-allure-brand-spike-2026-08-12.md) · research PoC |
-| **DOC-POC-4** | **landed (12 авг)** | Stage 2 проблема/тупик (цепь ИБ) — [`06`](proof_of_concept/06-stage2-platform-as-is.md) · эпик **PAL** |
-| **DOC-POC-5** | **landed (12 авг)** | Нейтральный нарратив разрыва JTBD — [`08`](proof_of_concept/08-narrative-gap.md) |
-| **DOC-POC-6** | **landed (13 авг)** | Allure 3 кастомный плагин **SecOps** (Overview + категории + тёмная тема) — [`research/2026-08-13-allure3-custom-plugin.md`](research/2026-08-13-allure3-custom-plugin.md) · FR [`…-allure3-custom-plugin`](friend-requests/2026-08-13-allure3-custom-plugin.md) |
-
----
-
-## Эпик PAL (IHSTTYPWNB) — `cosmo-custom`
-
-Паспорт: [`ihsttypwnb-epic.md`](ihsttypwnb-epic.md). Alias **PAL** · FR [`friend-requests/2026-08-12-pal-cosmo-custom.md`](friend-requests/2026-08-12-pal-cosmo-custom.md) (`evolve`).  
-Тезисы (нейтрально): [`proof_of_concept/08-narrative-gap.md`](proof_of_concept/08-narrative-gap.md). Пайп священен; hub FRIEND — только 2FA.
-
-### Тезисы → очередь (из волны 12 авг)
-
-| ID | Статус | Тезис / DoD (коротко) | Якорь |
-|---|---|---|---|
-| **PAL-THESIS** | **landed** | Цепь карточка→ЖЦ→URL→автотесты→DAST→hub; тон без упрёка | [`08`](proof_of_concept/08-narrative-gap.md) · [`06`](proof_of_concept/06-stage2-platform-as-is.md) |
-| **PAL-CARD-LIST** | partial | Таблица `/projects`: код, тип, группа, видимость по команде | [wave1](research/2026-08-12-cosmo-portal-settings-wave1.md) |
-| **PAL-CARD-NEW** | open | Форма `/projects/new` → сущности create (скелет) | wave1 · PAL-3 |
-| **PAL-CARD-TABS** | partial | Табы карточки: Информация · Сборки · Релизы · **Команда** · Квоты · Настройки | [routes](research/2026-08-12-pal-card-routes-wave.md) |
-| **PAL-TEAM-RBAC** | open | Команда + AD-группы → права/видимость; роли (не только ФИО) | wave1 · owner nshr note |
-| **PAL-LC-STEPS** | **landed (fact)** | ЖЦ `stepId` (build…owasp_dast) + custom build/deploy | [lc map](research/2026-08-12-pal-lc-stage-map-draft.md) · dig lc-body |
-| **PAL-PIPE-CUSTOM** | open | Custom child до BRPO; при custom стандартный build/deploy off | `lc-test-build-include` / `build.yml` / `deploy.yml` (вне репо) |
-| **PAL-AUTOTEST-REPO** | draft | Автотесты (Maven/Java/Allure/Selenoid) + ZAP-файлы в **репе релиза** — запах | [PAL-5](research/2026-08-12-pal-release-repo-zap-anchor.md) |
-| **PAL-DAST-PIPE** | open | Модалка → job → AF/autorun → SARIF → AppSecHub; vars/zap шпаргалки | [pipe-vs-box](research/2026-08-12-cosmo-pipe-vs-box.md) · PAL-4 |
-| **PAL-PI-SALVAGE** | **landed** | Спасение ПИ: custom CI + script-auth (факт, не архитектура) | [salvage](research/2026-08-12-pal-pi-salvage-before-after.md) |
-| **PAL-NOTIFY-ASIS** | partial | Portal `/settings/notifications`: таблица, create modal, Команда→Приложение+роль | wave1 · dig-notify-team |
-| **PAL-ADM-NOTIFY** | **open · P0 Admin** | **В нашу Admin — оповещения** (смысл as-is: тип · заголовок · адресаты · окно · вкл; Команда = app + роль; доставка GUI/email). Не копипаст морды портала | → **ADM-NOTIFY** |
-| **PAL-ADM-APPCODE** | **open · P0 Admin** | **Project code / код приложения тянуть в Admin** (программа, фильтры, связка Dojo `Product.name`/`project_id`, адресаты оповещений) | → **ADM-APPCODE** · Dojo acc 58 |
-| **PAL-SKELETON** | draft | Единый скелет сущностей Project / LcStep / NotifyRule / Team… | [skeleton](research/2026-08-12-pal-entity-skeleton-draft.md) |
-| **PAL-MAP-Q** | open | Вопросы владельцу → логическая карта v1 | паспорт §4 |
-
-### ID-очередь (короткие)
-
-| ID | Статус | Суть |
-|---|---|---|
-| **PAL-0** | **landed** | Stage 2 (`06`) |
-| **PAL-1** | **landed** | card routes + settings ЖЦ |
-| **PAL-2** | partial | = PAL-NOTIFY-ASIS |
-| **PAL-3** | draft | = PAL-SKELETON + CARD-* |
-| **PAL-4** | open | = PAL-DAST-PIPE (карточка → переменные job) |
-| **PAL-5** | draft | = PAL-AUTOTEST-REPO + hub/QG pain |
-| **PAL-6** | **landed** | = PAL-PI-SALVAGE |
-| **PAL-7** | **→ split** | было «admin/notify brief» → **PAL-ADM-NOTIFY** + **PAL-ADM-APPCODE** |
-| **PAL-8** | open | = PAL-MAP-Q |
-| **PAL-9** | park | Live API / БД стенда |
-| **PAL-10** | wall | Подмена BRPO / SoT под модалку |
-| **PAL-FR** | evolve | Promote FRIEND PAL — не раньше ready+2FA |
-
----
-
-## Эпик DBG — режим отладки (**closed**)
-
-`infrastructure.debug_mode`: пауза Live, all-failsafe, admission VOID.  
-Код: `debug_run.py` · Live `/api/debug/*`. Self-heal — не DBG (см. Дно).
-
----
-
-## maybe-cool (кивок Максима)
-
-| ID | Est | Статус | Суть |
-|---|---|---|---|
-| **MC-1** | S | **landed** | Sonar exclusions бинарников/медиа (BE/FE/joint properties) |
-| **MC-2** | M | **landed** | Coverage → Sonar properties + `sonar_coverage_prep` | [`acceptance/28-…`](acceptance/28-trials-multi-mc2-survey-conn-2026-08-11.md) |
-| **MC-4** | M | **landed** | Juice MASK_1/2: `lab_fuzz_juice_df11` + `test_fuzz_df11` | [`acceptance/29-…`](acceptance/29-trials-self-l3-conn12-mc4-2026-08-11.md) |
-| **MC-5** | L | wall | SoT `wave_mode` в манифест — по приказу |
-
----
-
-## Дно (не поднимать без явной фразы)
-
-| ID | Суть |
-|---|---|
-| **DISC-1…3** | [`canon/discovery-heal.md`](canon/discovery-heal.md) §1–2 (HEAL §3 — не дно) |
-| **FE-INS / VALUE / Probe Farm** | **SHELVED («Полка»)** — unmute только по явной фразе |
-
----
-
-## Эпик ADM-V2 — Новая админка + Automation Lab Wedge (CLOSED · 23 авг 2026; ADM-5 superseded для pure)
-
-> **Research:** [`docs/research/2026-08-23-admin-poc-plan.md`](research/2026-08-23-admin-poc-plan.md)  
-> **Стратегия:** двухуровневая продуктовая линейка — Automation Lab (бросовая цена, входной продукт) и SecOps Lab (Enterprise).  
-> **Ветка:** `dev`. Статус: `evolve / PoC-planning`. Код не писать до приказа.
-
-### Что хотим получить
-
-Три чистые поверхности на **React Admin (MUI, MIT core, $0)** вместо legacy-монолита на antd (13 секций):
-1. **Control Panel (`#/control`)** — инфра-админка для `admin_service`: здоровье демонов, Retention, Vault.
-2. **SecOps Control (`#/admin`)** — ИБ-администрирование для `admin_sec`: приложения/цели, проверки и прогоны, находки, политики гейтов.
-3. **Dashboard (`#/dashboard`)** — агрегированный фид результатов для всех ролей.
-
-> **Стек (забетонирован 23 авг):**
-> - **Админ-панели:** [React Admin](https://marmelab.com/react-admin/) + Material UI (MIT, $0). RBAC / Audit Log — заглушки до первого enterprise-чека (дальше: EE €145/мес или сами за ~50h).
-> - **Studio / Canvas / War Room:** shadcn/ui + Tailwind v4 (без изменений).
-> - **Рантайм:** единый Playwright Browser Core + Actions/DSL/Wired.
-> - **Иерархия:** Box → Org → Space → Project → Check/Run. Подробно в [`docs/research/2026-08-23-additional-architecture-round.md`](research/2026-08-23-additional-architecture-round.md).
-
-Плюс продуктовый Wedge: Automation Lab как облегчённый entry-point продукт (Common DSL/Wired/Canvas без ZAP/Dojo/Allure) → естественный апгрейд до SecOps Lab.
-
-### Нарезка PoC (не код, карточки для обсуждения и приказа)
-
-| ID | Суть | Приёмочный GWT | Est |
-|---|---|---|---|
-| **ADM-0** | **Contract Proof:** один Automation Flow + один Security Check через общий runtime | **Given:** общий Browser Core/Actions/DSL/Wired. **When:** сценарий из 4–5 шагов запускается в режиме Automation и Security. **Then:** оба возвращают success/failure через один runner envelope; Automation не требует ZAP/Dojo/Allure; Security добавляет scan-specific findings без изменения DSL. | 4h |
-| **ADM-1** | **Backup/audit legacy Admin** | **Given:** старая админка (antd, 13 секций). **When:** делается аудит. **Then:** создан каталог `legacy/admin-old/` с полным слепком; в документе перечислены модули на вынос (deployStore, adminApi, deriveKpi, notifyRules и др.) и модули на утилизацию (antd UI). | 2h |
-| **ADM-2** | **Skeleton Control Panel** для `admin_service`: React Admin (MUI) shell, роутинг `#/control` | **Given:** пустой Control. **When:** `admin_service` заходит в `#/control`. **Then:** видит тёмный телеметрический shell c placeholder-карточками здоровья демонов. `sec_expert` и `user` получают 403/редирект. | 3h |
-| **ADM-3** | **Retention в Control Panel:** React Admin-интерфейс на существующий Retention API | **Given:** Retention API работает. **When:** `admin_service` открывает панель Retention. **Then:** видит состояние хранилища, задаёт TTL, запускает очистку; старый antd RetentionPanel удалён. | 2h |
-| **ADM-4** | **Skeleton SecOps Control:** React Admin (MUI) shell, роутинг `#/admin`, доступ `admin_sec` + `admin_abnormal` | **Given:** пустой SecOps Control. **When:** `admin_sec` заходит в `#/admin`. **Then:** видит shell с DataGrid и формами. Старый `AdminLayout.tsx` заменён на redirect/заглушку. | 3h |
-| **ADM-5** | **Deploy Registry + Blank provisioning в SecOps Control** | **SUPERSEDED для pure:** deploy остаётся cosmo/integration-направлением; в pure заменяется target-centric концепцией ADM-PURE ниже. Исторический прототип не расширять как ядро продукта. | 3h |
-| **ADM-6** | **Skeleton Dashboard:** React Admin (MUI) shell, роутинг `#/dashboard`, полиморфные карточки результатов | **Given:** есть минимум 1 Automation-прогон и 1 Security-прогон. **When:** пользователь открывает `#/dashboard`. **Then:** видит фид с полиморфными карточками: Automation — скриншот + шаги; Security — severity breakdown + Dojo/Allure links. Ролевая фильтрация работает. | 3h |
-| **ADM-7** | **Automation Lab concept doc:** документ-концепт двухуровневой линейки и GTM Wedge | **Given:** решение о продуктовом разделении. **When:** Keeper пишет документ. **Then:** описан состав Automation Lab, отличия от SecOps Lab, ценовое позиционирование, профили поставки (light vs full compose). | 2h |
-| **ADM-8** | **Industry validation:** отделить подтверждённые competitive facts от маркетинговых гипотез | **Given:** research по aqua/Testim/ACCELQ/Katalon. **When:** Keeper проверяет документацию конкурентов. **Then:** сформирована таблица подтверждённых/неподтверждённых отличий; claims готовы к внешнему использованию. | 2h |
-| **ADM-9** | **Интеграционная проверка:** три панели живут рядом, роли работают, legacy не сломан | **Given:** реализованы ADM-0…6. **When:** Flash выполняет acceptance-сценарии, Keeper принимает. **Then:** три поверхности не конфликтуют; `#/admin`, `#/control`, `#/dashboard` переключаются; старые роуты не ломают новую админку. | 2h |
-| | | **ИТОГО ADM-V2 PoC** | **26h** |
-
-### Распределение: Boss vs Keeper (Flash только ADM-3,5,9)
-
-| Этап | Кто делает | Что именно | Est |
-|---|---|---|---|
-| **ADM-0** | Boss | Код: общий runtime, два consumer-профиля, contract proof | 4h |
-| **ADM-1** | Boss + Keeper | Boss: слепок `legacy/admin-old/`, удаление antd UI. Keeper: документ salvage-list (что выдираем — deployStore, adminApi, deriveKpi, notifyRules etc.) | 2h |
-| **ADM-2** | Boss | Код: React Admin (MUI) shell для Control Panel | 3h |
-| **ADM-3** | Flash | Код: Retention UI на React Admin (MUI) поверх готового API | 2h |
-| **ADM-4** | Boss | Код: React Admin (MUI) shell для SecOps Control | 3h |
-| **ADM-5** | Flash | Код: Deploy Registry + Blank provisioning | 3h |
-| **ADM-6** | Boss | Код: React Admin (MUI) shell для Dashboard | 3h |
-| **ADM-7** | **Keeper** ✅ | Документ: Automation Lab concept, GTM Wedge, профили поставки | 2h |
-| **ADM-8** | **Keeper** ✅ | Исследование: таблица фактов/гипотез по конкурентам (aqua/Testim/ACCELQ/Katalon) | 2h |
-| **ADM-9** | Flash + **Keeper** (приёмка) | Flash гоняет acceptance-сценарии, Keeper принимает по GWT | 2h |
-
-**Итог:**
-- Boss: ADM-0,1,2,4,6 = **15h**
-- Flash: ADM-3,5,9 = **7h** (ждёт ADM-2 и ADM-4 от Boss'а)
-- Keeper: ADM-7 ✅, ADM-8 ✅, salvage-документ ADM-1, приёмка ADM-9
-
-### План Keeper'а (своё)
-
-Пока Boss пишет код (ADM-0,1,2,4,6 = 15h), Keeper делает:
-
-1. **ADM-1 salvage-документ** — список файлов/модулей из `cosmo/src/admin/`:
-   - Что выдираем (чистая логика: deployStore, adminApi, deriveKpi, notifyRules, applyDojoProgram, collectAdminRuns, buildWiredFromDeploy, syncEvidenceFromLive).
-   - Что утилизируем (весь antd UI: AdminLayout, PageContainer, ProTable/ProForm/ProCard и их обёртки).
-   - Формат: markdown-таблица с именем файла, типом (логика/UI) и решением (salvage/discard).
-
-2. **ADM-7 ✅ сделано** — [`docs/research/2026-08-23-automation-lab-concept.md`](research/2026-08-23-automation-lab-concept.md)
-
-3. **ADM-8 ✅ сделано** — [`docs/research/2026-08-23-industry-validation.md`](research/2026-08-23-industry-validation.md)
-
-4. **Приёмка ADM-9** — когда Flash сдаст интеграционные сценарии, Keeper принимает по GWT.
-
-5. **Синхронизация** — держит research ↔ backlog актуальным после каждого этапа.
-
-## Эпик ADM-PURE — SecOps Control: Applications, Runs, Findings & Policies (EVOLVE · 24 авг 2026)
-
-> **QUEUE / evolve — не CANON.** Это зафиксированное продуктовое решение для pure после обсуждения с Максимом. Код не начинать до отдельного приказа и декомпозиции Boss.
-> **Профиль:** `secops-lab-pure`. **Граница:** pure-ядро ИБ-операций отдельно от cosmo-custom/CI/CD-интеграций.
-
-### Ч — что сказал заказчик
-
-> «Пока Deploy как явление у нас сильно не проросло — переобдумаем его. Deploy был скорее cosmo канон, мы под него старую админку затачивали. Сейчас pure приоритет и мне что-то подсказывает что не особо кто в индустрии голову этим ебет именно как мы под банк. Это больше про интеграцию, будем когда надо думать об этом уже когда pure solid будет, согласен? Переобдумаем может концепцию? Что нам надо на SecOps Control #/admin по уму разуму?
-> Просто вот deploy мы хотели чисто чтоб URL атаки тянуть. Нам в теории надо будет вообще например результаты деплоя подтягивать. Условно интегрировать нашу коробку в CI/CD принимая на вход деплой. Или в т.ч. быть хабом куда эти записи о деплоях бы падали хуком условно. Что думаешь о таком брат?»
-
-### И — продуктовый интент
-
-`#/admin` в pure — командный пункт ИБ-операций. Администратор управляет объектами, которые проверяются, политиками допуска, прогонами и находками. Deploy не должен быть обязательным центром навигации или обязательным объектом pure-модели.
-
-Термины:
-
-- **Application** — стабильная прикладная сущность, которую команда защищает.
-- **Target** — конкретная проверяемая поверхность приложения; URL или другой адрес — её часть.
-- **Check** — описание проверки, которую запускают для цели.
-- **Run** — один фактический запуск проверки.
-- **Finding** — нормализованная находка, связанная с целью и запуском.
-- **Policy** — правило, по которому результат запуска получает gate-вердикт.
-- **Deploy event** — внешнее событие от CI/CD; не обязательная сущность pure-ядра.
-
-### С — сценарии и требования
-
-| ID | Что получает пользователь | Приёмочный сценарий GWT |
-|---|---|---|
-| **ADM-PURE-1** | Обзор состояния ИБ-контуров | **Given:** в системе есть приложения, запуски и находки. **When:** `admin_sec` открывает `#/admin`. **Then:** видит активные запуски, последние результаты, открытые Critical/High находки и текущие gate-вердикты. **Edge:** при пустых данных видит честные empty-states, а не нулевые «успешные» метрики. |
-| **ADM-PURE-2** | Реестр приложений и целей | **Given:** приложение ещё не заведено или уже существует. **When:** `admin_sec` создаёт/открывает приложение и добавляет проверяемую цель. **Then:** цель получает стабильную карточку, отображает адрес, последнее состояние проверки, число активных находок и действие «Новая проверка». **Negative:** некорректный или пустой адрес не создаёт цель и объясняет ошибку. |
-| **ADM-PURE-3** | Переход от цели к проверкам | **Given:** у цели есть хотя бы один запуск. **When:** пользователь открывает цель или нажимает «История». **Then:** видит связанные проверки и прогоны с датой, статусом, gate-вердиктом и переходом к результатам. **Edge:** незавершённый запуск явно помечен running; недоступность источника не отображается как completed/pass. |
-| **ADM-PURE-4** | Управление gate-политиками | **Given:** у администратора есть право менять политики. **When:** он создаёт, редактирует, включает или выключает policy. **Then:** в списке видны её условия и состояние. **Negative:** выключенная policy не влияет на gate; изменение не переписывает исторический вердикт уже завершённого запуска. |
-| **ADM-PURE-5** | Честный gate по результату запуска | **Given:** запуск завершился и для него выбрана действующая policy. **When:** система оценивает находки. **Then:** пользователь видит `passed`, `warning` или `failed` с объяснением по severity/правилу. **Edge:** отсутствие данных, ошибка проверки или недоступность источника не превращаются в `passed`. |
-| **ADM-PURE-6** | Единый реестр находок | **Given:** несколько приложений и запусков содержат находки. **When:** пользователь открывает Findings. **Then:** видит агрегированный список с severity, целью, статусом, CWE/типом, первым и последним обнаружением; фильтры не смешивают разные цели. **Edge:** повторное обнаружение той же логической находки не создаёт визуальный дубликат без объяснения. |
-| **ADM-PURE-7** | История запусков | **Given:** цель проверялась несколько раз. **When:** пользователь открывает Runs. **Then:** видит хронологию запусков, их статусы, policy/gate и ссылку на результат. **Edge:** running, failed, cancelled и unavailable различаются визуально и текстом. |
-
-### Т — DoD pure-среза
-
-- `#/admin` открывается как SecOps Control для `admin_sec` и показывает Overview, Applications/Targets, Policies, Findings и Runs.
-- Пользователь может пройти путь `Application → Target → New Check → Run → Findings → Gate` без создания Deploy.
-- Target сохраняет стабильную идентичность между повторными запусками и не дублируется из-за повторного открытия той же цели.
-- Policy оценивает результат запуска; изменение policy не переписывает историю прошлых запусков.
-- Empty, running, failed, unavailable и no-permission состояния различимы и не маскируются под успех.
-- Каждая находка имеет понятную связь с целью и запуском; список не теряет контекст при фильтрации.
-- В интерфейсе pure нет обязательного шага «создать deploy», чтобы начать проверку URL.
-- Запрещённая роль не получает рабочий control plane через прямой переход на `#/admin`.
-
-### О — ограничения
-
-**В этот pure-срез не входят:**
-
-- Deploy Registry как основная вкладка или обязательная сущность.
-- Поля и workflow, нужные только для банковской лестницы App → Build → Deploy.
-- CI/CD webhook, приём deploy events и callback в pipeline.
-- Импорт результатов внешних сканеров и нормализация сторонних отчётов.
-- Автоматическое создание проверки по каждому входящему deploy event.
-- Cosmo-портал, банковские роли и портал-специфичные URL.
-- Переписывание Control Panel, Studio/Canvas, War Room и Dashboard.
-- Перенос deploy-логики в pure до появления согласованного integration contract.
-
-### Будущий integration-контур
-
-Когда pure-ядро устойчиво, отдельный integration-профиль может принимать deploy event от CI/CD. Событие должно разрешать или создать Application/Target, прикрепить provenance билда, запустить проверку по политике и вернуть наружу результат gate. Отдельным потоком позже рассматривается приём внешних scan reports.
-
-Критерий готовности integration-контракта: можно однозначно ответить, что является источником истины для Application, Target, Run, Finding и Gate, а deploy остаётся триггером/контекстом, а не подменяет эти сущности.
-
-### Решение на сейчас
-
-- Текущий pure-интерфейс Deploy Registry не расширять.
-- ADM-5 считать superseded для pure, а не полноценным DoD коробки.
-- Target-centric модель подготовить как следующий продуктовый срез после текущей визуальной волны ADM-V3.
-- Cosmo-specific deploy ladder сохранить только как отдельное integration/evolve-направление.
-
----
-
-## Эпик AUTH-PROF — Единая система профилей пользователей, гранулярный RBAC и PAT-токены (CLOSED · 24 авг 2026)
-
-> **Статус: PoC сдан.** UI-контракт реализован и пригоден как view-model.  
-> **НЕ является production auth backend.** `localStorage` — не источник истины. Криптография сессий и lifecycle токенов на клиенте — небезопасно.  
-> **Production backend → Эпик AUTH-SPIKE (ниже).**  
-> **Research:** [`docs/research/2026-08-24-user-profiles-and-rbac.md`](research/2026-08-24-user-profiles-and-rbac.md)  
-> **Профиль:** `secops-lab-pure` (автономное ядро) + `cosmo-custom` (SSO/IdP-адаптер).
-
-### Доставка (факт)
-
-| Кто | ID | Задача | Статус |
-|---|---|---|---|
-| **Boss** | B-1 | `profileStore.ts` — Unified Profile Store, Capabilities матрица, useUserProfile хук | ✅ |
-| **Boss** | B-2 | `adminAuthProvider.ts` — Forward-compatible React Admin authProvider | ✅ |
-| **Boss** | B-3 | `tokenEngine.ts` — PAT генератор, маскировка, list/revoke/validate | ✅ |
-| **Flash** | F-1 | `ProfileDrawer.tsx` — Cyber Glass Drawer, 3 вкладки, 248 lines | ✅ |
-| **Flash** | F-2 | Header Wiring — ShellChrome бейдж → openDrawer на всех поверхностях | ✅ |
-| **Flash** | F-3 | Preferences + Locales — реактивная смена темы/шрифта/языка в Drawer | ✅ |
-
-### Чек-лист приёмки
-
-- [x] `tsc --noEmit` — 0 ошибок.
-- [x] `vitest` targeted/auth — 39/39 pass (Boss 35 + Flash 4).
-- [x] Profile Drawer открывается кликом по бейджу в хедере на всех поверхностях.
-- [x] Смена имени/темы/шрифта в Drawer мгновенно обновляет UI без F5.
-- [x] PAT: создание, список, маска `pk_live_****`, отзыв.
-- [x] Capabilities матрица типизирована, хардкод ролей в UI заменён.
-
-### Важное ограничение
-
-**Текущий код — UI PoC, не production auth.**
-
-- `profileStore.ts` хранит профиль в `localStorage` → небезопасно.
-- `tokenEngine.ts` генерирует токены клиент-сайд → не является authority.
-- `adminAuthProvider.ts` — адаптер к `localStorage`, не к реальному auth service.
-- Сессии, refresh, revoke, rate limits, audit — отсутствуют.
-
-**Эти файлы не выбрасываем, а переводим в статус view-model / UI-адаптера.**  
-Реальный auth backend — Better Auth (см. AUTH-SPIKE ниже).
-
-### Что сделано (файлы)
-
-- `cosmo/src/auth/profileStore.ts` — типы UserProfile/UserCapability/UserPreferences/PAT, Zustand store, capability matrix, persistence
-- `cosmo/src/auth/adminAuthProvider.ts` — React Admin authProvider bridge
-- `cosmo/src/auth/tokenEngine.ts` — PAT lifecycle
-- `cosmo/src/auth/profileStore.test.ts` — 29 тестов
-- `cosmo/src/auth/index.ts` — barrel
-- `cosmo/src/shell/useProfileStore.ts` — Zustand store (identity, preferences, tokens, drawer)
-- `cosmo/src/shell/ProfileDrawer.tsx` — Cyber Dark Glass Drawer (3 tabs, 248 lines)
-- `cosmo/src/shell/ShellChrome.tsx` — useProfileStore.openDrawer() на клик по бейджу
-- `cosmo/src/shell/AppShell.tsx` — ProfileDrawer глобально
-- `cosmo/src/locales/types.ts` — profile section types
-- `cosmo/src/locales/ru.ts` — profile.ru словарь
-- `cosmo/src/locales/en.ts` — profile.en словарь
-
----
-
-## Эпик AUTH-SPIKE — Better Auth vs Keycloak: Production Auth Backend Spike (CLOSED · 24 авг 2026 — spike accepted)
-
-> **Срочность:** КРИТИЧЕСКАЯ. Текущий `profileStore.ts` — **UI PoC на localStorage**. Не является production auth.  
-> **Задача:** завтра (25 авг) провести технический spike: развернуть Better Auth, подключить к Vite-фронту, сравнить с Keycloak.
-
-### Ч — что сказал заказчик (verbatim)
-
-> «А мы точно движок профилей ни у кого откопипастить уже реализованый не могли на изи чем вот щас башку ебать будем? Наверняка есть же супер решения для этого? Просканируй инет.»
->
-> «Пиши в беклог все это брат. Завтра сделаем. Свою хуйню сделали. Завтра сделаем как американцы сказали. А потом сравним.»
-
-### И — продуктовый интент
-
-Заменить самописный `localStorage`-профиль на production-grade auth backend, который обеспечивает: серверные сессии, refresh/revoke токенов, RBAC/permissions, управление пользователями, API keys (PAT), OIDC/SAML SSO, аудит — без написания собственного криптографического кода.
-
-### Исследование Keeper (24 авг 2026)
-
-**Проведён полный скан рынка.** Проанализированы и проверены через живые docs/API:
-
-| Решение | Лицензия | Что закрывает | Вердикт |
-|---|---|---|---|
-| **Better Auth v1.7** | MIT | Auth, users, profile, sessions, RBAC, admin, orgs, API keys, OIDC/SAML, multi-session, cookie cache, stateless mode | 🥇 **Лучший fit.** TypeScript, plugin-архитектура, почти 1:1 с нашими требованиями. Требует Node/TS backend. |
-| **Keycloak 26.7.2** | Apache 2.0 | OIDC, SAML, LDAP/AD, MFA/TOTP, WebAuthn/passkeys, users/groups/roles, sessions, admin console, account console, SCIM, audit events, identity brokering, organizations, workflows | 🥈 **Enterprise-стандарт.** Тяжёлый (Java), но полностью самодостаточный. PAT/API keys — слабее, нужен доп. сервис. |
-| **SuperTokens** | Apache 2.0 / EE | Self-hosted auth, sessions, MFA, roles, multi-tenancy, user dashboard | Хорош для auth/sessions, но API keys и enterprise SSO слабее Better Auth. Java-бэкенд. |
-| **Ory Kratos + Keto** | Apache 2.0 | Identity (Kratos) + authorization (Keto), Ory Permission Language, Zanzibar-based | Сильно мощнее, но требует сборки нескольких сервисов. Нет admin UI из коробки. |
-| **Authentik** | MIT / Enterprise | Self-hosted IdP/SSO, users, groups, flows, OIDC/SAML/LDAP/SCIM, admin UI | Хорош как SSO-шлюз, не как app-owned profile backend. |
-| **ZITADEL** | Apache 2.0 | Cloud-native IdP, OIDC, SAML, multi-tenancy, users, PAT, metadata | Cloud-first, self-hosted сложнее. PAT и metadata API хорошие. |
-| **FastAPI Users** | MIT | Ready-to-use auth routes для FastAPI | Наш стек (Python), но проект в **maintenance mode**. Нет RBAC/PAT/admin уровня. |
-| **Casbin** | Apache 2.0 | Authorization engine: RBAC, ABAC, ReBAC, policy DSL | Только authorization, не identity/sessions/tokens. **Дополнение, не замена.** |
-| **React Admin `ra-rbac`** | EE €145/мес | UI-level permissions | Не хранит пользователей, не управляет сессиями. **UI-слой, не backend.** |
-
-**Источники (живые docs, все проверены 24 авг):**
-- [Better Auth — Introduction](https://www.better-auth.com/docs/introduction)
-- [Better Auth — User & Accounts](https://www.better-auth.com/docs/concepts/users-accounts)
-- [Better Auth — Admin plugin](https://www.better-auth.com/docs/plugins/admin)
-- [Better Auth — Organization plugin](https://www.better-auth.com/docs/plugins/organization)
-- [Better Auth — API Key plugin](https://www.better-auth.com/docs/plugins/api-key)
-- [Better Auth — Session Management](https://www.better-auth.com/docs/concepts/session-management)
-- [Better Auth — SSO plugin (OIDC/SAML)](https://www.better-auth.com/docs/plugins/sso)
-- [Better Auth — Multi Session](https://www.better-auth.com/docs/plugins/multi-session)
-- [Keycloak — Server Admin Guide](https://www.keycloak.org/docs/latest/server_admin/)
-- [Keycloak — JavaScript Adapter](https://www.keycloak.org/securing-apps/javascript-adapter)
-- [React Admin — Auth Provider Setup](https://marmelab.com/react-admin/Authentication.html)
-- [React Admin — RBAC (ra-rbac)](https://marmelab.com/react-admin/AuthRBAC.html)
-- [Supertokens Core](https://github.com/supertokens/supertokens-core)
-- [Ory Keto](https://www.ory.sh/docs/keto)
-- [Ory Kratos Quickstart](https://www.ory.sh/docs/kratos/quickstart)
-- [ZITADEL Quickstart](https://zitadel.com/docs/guides/start/quickstart)
-- [ZITADEL Users](https://zitadel.com/docs/concepts/structure/users)
-- [Authentik Docs](https://goauthentik.io/docs/)
-- [Casbin Overview](https://casbin.org/docs/overview)
-- [FastAPI Users](https://github.com/fastapi-users/fastapi-users)
-
-### С — сценарии и требования к spike
-
-| ID | Что получает пользователь | Приёмочный сценарий GWT |
-|---|---|---|
-| **AUTH-SPIKE-1** | Better Auth service развёрнут и доступен локально | **Given:** Docker / Node.js окружение. **When:** запущен Better Auth. **Then:** сервис отвечает на `/api/auth/*`, создана база, миграции применены. |
-| **AUTH-SPIKE-2** | Логин/логаут через реальный сервер | **Given:** Better Auth запущен. **When:** пользователь вводит логин/пароль в текущем UI. **Then:** сессия создаётся на сервере, cookies установлены, `getSession` возвращает профиль. Logout очищает сессию. |
-| **AUTH-SPIKE-3** | Профиль пользователя читается из серверной сессии | **Given:** пользователь авторизован. **When:** открыт Profile Drawer. **Then:** имя, email, роль — из серверной сессии, не из localStorage. Preferences сохраняются в user metadata. |
-| **AUTH-SPIKE-4** | RBAC / Capabilities через серверные роли | **Given:** пользователь имеет роль `admin_sec`. **When:** фронт запрашивает permissions. **Then:** массив `UserCapability[]` маппится из серверной матрицы ролей, UI гварды работают. |
-| **AUTH-SPIKE-5** | PAT / API Keys через серверный плагин | **Given:** пользователь авторизован. **When:** создаёт API key через Drawer. **Then:** ключ создаётся на сервере (Better Auth API Key plugin), маска корректна, отзыв работает. |
-| **AUTH-SPIKE-6** | React Admin authProvider подключён к реальному auth | **Given:** Better Auth работает. **When:** открыт Admin (`#/admin`). **Then:** `authProvider.login` идёт в Better Auth, `getIdentity` возвращает профиль, `getPermissions` — capabilities, `checkError` обрабатывает 401. |
-| **AUTH-SPIKE-7** | Сравнение с Keycloak | **Given:** оба сервиса развёрнуты локально. **When:** выполнены одинаковые сценарии (логин, сессия, роли, токены, админка). **Then:** документированы плюсы/минусы каждого, выбрана цель для production. |
-
-### Сравнительная таблица: Better Auth vs Keycloak (для spike)
-
-| Критерий | Better Auth | Keycloak |
-|---|---|---|
-| Язык / стек | TypeScript, Node.js | Java (Quarkus) |
-| Лицензия | MIT | Apache 2.0 |
-| Запуск | `npm install` + `npx auth migrate` | Docker Compose / JAR |
-| Размер | ~500 KB npm package | ~200 MB Docker image |
-| Users / Profiles | ✅ (user table + additional fields + metadata) | ✅ (user profile, attributes, managed/unmanaged) |
-| Sessions | ✅ (cookie-based, refresh, revoke, multi-session, cookie cache, stateless) | ✅ (sessions, offline, transient, revocation) |
-| RBAC / Permissions | ✅ (access control, custom roles, `hasPermission`) | ✅ (realm roles, client roles, composite, fine-grained admin) |
-| Admin Panel | ✅ (CLI create-admin + plugin endpoints) | ✅ (Admin Console — built-in UI) |
-| Account Console | ❌ (нужен самописный UI) | ✅ (Account Console — built-in) |
-| Organizations / Tenants | ✅ (org plugin: members, teams, invitations) | ✅ (organizations, domains, members, IdP linking) |
-| API Keys / PAT | ✅ (API Key plugin: create, verify, list, revoke, rate limits, permissions, metadata) | ⚠️ (через Service Account + client credentials; не полноценный PAT) |
-| OIDC Provider | ✅ (SSO plugin: OIDC, SAML, auto-discovery) | ✅ (OIDC, full OpenID Connect provider) |
-| OIDC Client | ✅ (SSO plugin) | ✅ |
-| SAML | ✅ (SSO plugin: SP-initiated, IdP-initiated, signed AuthnRequests, assertion replay protection) | ✅ |
-| LDAP / AD | ❌ | ✅ |
-| MFA / 2FA | ✅ (TOTP, passkeys — через плагины) | ✅ (OTP, WebAuthn, passkeys, recovery codes) |
-| Identity Brokering | ⚠️ (SSO plugin, но не полноценный identity broker) | ✅ (Social, OIDC, SAML, Kubernetes, SPIFFE) |
-| Audit Events | ⚠️ (через database hooks) | ✅ (login events, admin events, listeners) |
-| SCIM | ❌ | ✅ |
-| Multi-Tenancy | ✅ (organization plugin) | ✅ (realms — полная изоляция) |
-| Self-Hosted | ✅ | ✅ |
-| Операционная сложность | Низкая (встроен в код, schema-миграции автоматические) | Средняя-высокая (отдельный сервис, конфигурация realms/clients/scopes/mappers) |
-| Соответствие нашим требованиям | **~90%** (нет LDAP, SCIM; admin UI самописный) | **~85%** (нет чистого PAT; тяжелее оперировать; admin UI встроенный) |
-
-### Рекомендация Keeper
-
-```text
-┌─────────────────────────────────────────────────────────┐
-│           Production Auth Backend Decision               │
-├─────────────────────────────────────────────────────────┤
-│                                                          │
-│  🥇 Better Auth — для текущего продукта                  │
-│     • Самый точный fit: профили, RBAC, PAT, сессии       │
-│     • TypeScript — единый стек с фронтом                 │
-│     • Минимальная операционная сложность                 │
-│     • Легко встроить как auth boundary                   │
-│                                                          │
-│  🥈 Keycloak — для enterprise deployment                 │
-│     • Когда нужен LDAP/Active Directory                  │
-│     • Когда нужен встроенный Admin/Account Console       │
-│     • Когда требования compliance (FAPI, OAuth 2.1...)   │
-│     • Когда заказчик уже использует Keycloak             │
-│                                                          │
-│  ❌ НЕ рекомендую:                                       │
-│     • FastAPI Users — maintenance mode                   │
-│     • Ory — слишком много сборки для MVP                 │
-│     • Casbin вместо auth — это authorization layer       │
-│     • Свой движок криптографии / сессий / токенов        │
-│                                                          │
-└─────────────────────────────────────────────────────────┘
-```
-
-### План spike (завтра, 25 авг)
-
-```text
-Волна 1 — Better Auth Standalone (Boss)
-  1. Поднять минимальный Better Auth service.
-  2. Настроить email/password, sessions, admin plugin.
-  3. Подключить текущий Vite фронт к Better Auth.
-  4. Проверить: login → getSession → имя в хедере.
-  5. Проверить: Profile Drawer читает профиль из серверной сессии.
-  6. Проверить: Preferences сохраняются в user metadata.
-  7. Проверить: роли маппятся на UserCapability[].
-  8. Проверить: PAT/API keys через API Key plugin.
-  9. Проверить: React Admin authProvider → `#/admin` работает.
-
-Волна 2 — Keycloak Comparison (Boss, параллельно или последовательно)
-  1. Поднять Keycloak через Docker Compose.
-  2. Настроить realm, client, roles.
-  3. Подключить keycloak-js к Vite.
-  4. Проверить: login → сессия → профиль.
-  5. Проверить: роли маппятся на capabilities.
-  6. Проверить: Service Account / PAT.
-  7. Сравнить: таблица плюсов/минусов.
-
-Волна 3 — Flash (параллельно с Boss)
-  1. Сохранить ProfileDrawer как UI.
-  2. Обновить useProfileStore: чтение из Better Auth / Keycloak, не localStorage.
-  3. Адаптировать adminAuthProvider под реальный auth backend.
-  4. Маппинг ролей → capabilities сохранить.
-  5. PAT UI оставить, бэкенд заменить на API keys.
-
-Волна 4 — Решение и переход
-  1. Сравнительный отчёт.
-  2. Выбор production auth backend.
-  3. Миграция текущего PoC на выбранный backend.
-  4. Удаление localStorage как authority.
-```
-
-### Т — DoD spike
-
-- Better Auth service запущен локально и отвечает на запросы.
-- Login/logout работают через реальный сервер (не localStorage).
-- `getSession` возвращает профиль с именем, email, ролью.
-- Preferences сохраняются в user metadata и переживают перезагрузку.
-- Роли маппятся на `UserCapability[]`, UI гварды работают.
-- PAT создаётся/отзывается через серверный API key plugin.
-- React Admin `authProvider` подключён к Better Auth.
-- Keycloak альтернативно проверен, задокументированы различия.
-- Принято решение: Better Auth или Keycloak для production.
-
-### О — ограничения
-
-- Не пишем production auth до завершения spike и выбора backend.
-- Не выбрасываем текущий ProfileDrawer/useProfileStore до подтверждения миграции.
-- Не добавляем OIDC/SAML/LDAP до необходимости (pure box работает автономно).
-- Не усложняем: для spike достаточно email/password + sessions + RBAC + API keys.
-- Не делаем миграцию существующих пользователей (PoC → production).
-
-### Go/No-Go gates (на завтра)
-
-1. **Auth gate:** Better Auth service развёрнут, login/logout работают через сервер.
-2. **Profile gate:** имя/email/роль из серверной сессии отображаются в хедере/Drawer.
-3. **RBAC gate:** серверные роли маппятся на `UserCapability[]`, UI гварды работают.
-4. **PAT gate:** API key создаётся/отзывается через серверный плагин.
-5. **Admin gate:** React Admin `authProvider` работает с реальным auth.
-6. **Comparison gate:** Keycloak проверен, документированы различия, принято решение.
-
-### Что НЕ делаем
-
-- ❌ Не пишем свой криптографический движок сессий/токенов.
-- ❌ Не храним профиль в `localStorage` как authority.
-- ❌ Не используем `tokenEngine.ts` для production PAT.
-- ❌ Не откладываем выбор backend на неопределённый срок.
-- ❌ Не подключаем OIDC/SAML SSO до необходимости.
-- ❌ Не делаем миграцию данных из текущего PoC — начнём с чистого backend.
-
-### Продуктовая стратегия (обновлённая)
-
-```text
-Frontend (React/Vite + ProfileDrawer + adminAuthProvider — view-model)
-        │
-        ├── Production Auth Backend (Better Auth или Keycloak)
-        │   ├─ Users / Accounts / Sessions
-        │   ├─ RBAC / Permissions
-        │   ├─ PAT / API Keys
-        │   ├─ Admin Operations
-        │   └─ Audit Events
-        │
-        └── Future: OIDC/SAML SSO Bridge
-            ├─ Keycloak / AD FS / Azure AD
-            └─ IdP Claims → PrettyK Capabilities
-```
-
-### Итог приёмки AUTH-SPIKE (24 авг 2026)
-
-**Вердикт Keeper: принято как spike. ✅**
-
-| Проверка | Результат |
-|---|---|
-| `tsc --noEmit` | **0 ошибок** |
-| `profileStore.test.ts` | 29/29 ✅ |
-| `auth.test.ts` | 3/3 ✅ |
-| `hashRoute.test.ts` | 3/3 ✅ |
-| `AdminShowcase.test.ts` | 13/13 ✅ |
-| Итого заявленных | **48/48** ✅ |
-
-**Принятое решение (документировано):** Better Auth — основной auth-провайдер; Keycloak — запасной enterprise-слот (OIDC/SAML/LDAP).
-
-**Граница (что это НЕ закрывает):** spike закрыт, но это **не production auth**. Production не начинать до согласования. Открытые разрывы:
-
-1. **SQLite ↔ PostgreSQL.** Spike работает на `spike-auth.db` (SQLite). Канон `infra-stack.md` уже зачислил **PostgreSQL 16** как source of truth. Линия «Pure Box = SQLite, один бинарник» и линия «Docker-first enterprise = PostgreSQL» не разрешены — требуется явное решение владельца.
-2. **Миграции.** Схема создаётся вручную `scripts/migrate-db.ts`. Для production — официальные адаптеры Better Auth (drizzle/kysely → PostgreSQL) + версионированные миграции.
-3. **Секреты.** Auth secret/session key и `KDT_WIRED_KEY` должны уйти в OpenBao, не в env/compose.
-4. **Hardening.** `requireEmailVerification: false`, dev `trustedOrigins` — допустимо только для spike. Production: email verification, rate limiting на auth endpoints, 2FA/TOTP, audit.
-5. **Дубль `adminAuthProvider.ts`** (`src/auth/` + `src/admin/`) — техдолг, не блокер; развести при production-миграции.
-
----
-
-## Эпик AUTH-PROD — Production Auth Boundary (NEW · 24 авг 2026)
-
-> **Срочность:** P0 (после разрешения SQLite↔PostgreSQL).  
-> **Цель:** превратить spike в production auth boundary, а не ещё один самописный велосипед.
-
-### Ч — что сказал заказчик (verbatim)
-
-> «Свою хуйню сделали. Завтра сделаем как американцы сказали. А потом сравним.» → сравнение сдано, выбрана цель.
-
-### И — продуктовый интент
-
-Пользователь логинится один раз; его сессия, роли (capabilities), PAT и preferences живут в **durable источнике истины** и переживают рестарт стенда. Ни один секрет не лежит в коде/env. Frontend никогда не видит master key, database password или OpenBao token.
-
-### С — сценарии (happy + edge)
-
-| ID | Сценарий GWT |
-|---|---|
-| **AUTH-PROD-1** | **Given:** Better Auth на PostgreSQL. **When:** пользователь логинится. **Then:** сессия в `session`-таблице, `getSession` возвращает профиль после перезапуска сервера. |
-| **AUTH-PROD-2** | **Given:** секрет скомпрометирован. **When:** ротация. **Then:** сессия/key перевыпускается без ручной правки файлов. |
-| **AUTH-PROD-3** | **Given:** новый стенд из compose. **When:** `up -d`. **Then:** миграции применяются автоматически, seed admin создаётся. |
-| **AUTH-PROD-4** | **Given:** email verification включён. **When:** регистрация. **Then:** без подтверждения email сессия не выдаётся. |
-
-### Т — DoD (факты, проверяемые)
-
-- Better Auth подключён к `prettyk-postgres`, `spike-auth.db` удалён/не используется.
-- Миграции версионированы (не ручной `migrate-db.ts`).
-- Auth secrets в OpenBao; ни одного hardcoded password/session key в compose/env.
-- Email verification + rate limiting + 2FA включены.
-- `tsc --noEmit` 0, auth-тесты зелёные.
-- Дубль `adminAuthProvider.ts` разведён в один источник.
-
-### О — ограничения / out-of-scope
-
-- Не пишем production auth до решения владельца по SQLite↔PostgreSQL.
-- Не выбрасываем Keycloak-заготовку (остаётся enterprise-слот).
-- OIDC/SAML/LDAP — по запросу клиента, не сейчас.
-
----
-
-## Эпик PRETTYK-CI — Security Pipeline Platform (NEW · 24 авг 2026)
-
-> **Срочность:** P0-направление, Wave 1 стартует параллельно с WEB-IDE-TERMINAL.  
-> **Концепт:** [`docs/research/2026-08-24-prettyk-ci-concept.md`](research/2026-08-24-prettyk-ci-concept.md).  
-> **Суть:** свой security-смысл и контракт — свои; generic CI execution — не наш велосипед.  
-> **Владелец эпика:** Boss — весь эпик целиком (вертикальный срез end-to-end, ноль коллизий).
-
-### Ч — что сказал заказчик (verbatim)
-
-> «Нам нужны свои механизмы? Мы однозначно будем подключаемы к любому. Но свой тоже бы надо иметь возможность предоставлять? Брат тулы или свое писать?»
-
-> «Голова ушла на восток. Превращаем концепты в эпики, режем пацанам, пацаны делают»
-
-### И — продуктовый интент
-
-Команда безопасности один раз описывает проверку как понятный граф действий и запускает её либо в самом PrettyK, либо встраивает в существующий CI/CD — без потери scope, policy, approvals, версий инструментов, статусов, findings, evidence и provenance. Пользователь не переписывает один и тот же security intent отдельно для каждого внешнего пайпа.
-
-### Граница «что берём / что строим»
-
-- **Готовое:** внешние CI/CD-системы как хозяева build/deploy, Docker/K8s как исполнение, OpenBao для секретов, S3 для артефактов, OpenTelemetry для корреляции.
-- **Своё:** security pipeline semantics, собственный конвейер, каталог security-компонентов, scope/policy/approvals, finding/evidence lifecycle, native worker execution, run debugger/replay, proof package, адаптеры, единый UI.
-- **Не строим:** свой Jenkins, свой Kubernetes, свой generic shell runner, бесконтрольное исполнение произвольного кода из UI.
-
-### Нарезка
-
-#### Волна 1 — Фундамент (Boss + Flash параллельно)
-
-| ID | Что получает пользователь | Приёмочный GWT | Est | Кто |
-|---|---|---|---|---|
-| **PK-CI-1** | Проверка описывается как граф шагов с зависимостями, параллельными ветками, scope, policy и approvals; описание переживает рестарт стенда и не живёт только в памяти. | **Given:** пользователь собрал проверку с последовательными и параллельными шагами. **When:** стенд перезапущен. **Then:** описание проверки восстанавливается без ручного ввода; зависимости и порядок шагов сохранены. | 5h | Boss |
-| **PK-CI-2** | Собственный запуск проверки выполняется изолированно и имеет честный статус: ожидание → очередь → выполняется → отменяется → успех/провал/отменено/просрочено; повтор не создаёт дублей находок и доказательств. | **Given:** запущена проверка. **When:** воркер пропал или запуск повторён. **Then:** статус честно отражает реальность, повтор не дублирует findings/evidence, зависший запуск переходит в retryable/failed. | 6h | Boss |
-| **PK-CI-3** | Пользователь собирает проверку визуально (граф) и видит тот же смысл в тексте — два вида одного описания, а не два разных источника. | **Given:** описание проверки открыто. **When:** пользователь меняет граф или текст. **Then:** изменения отражаются в другом виде; клик по узлу открывает нужный шаг, клик по шагу подсвечивает узел. | 4h | Boss |
-| **PK-CI-4** | Есть каталог готовых security-шагов (Browser Discovery, ZAP Active Scan, Corpus Fuzzing, Quality Gate, Evidence Pack и т. д.), каждый с видимым назначением, риском, требуемыми правами и выходными артефактами. | **Given:** пользователь открывает каталог. **When:** выбирает шаг и добавляет в проверку. **Then:** видит назначение, риск, права, входы/выходы и добавляет шаг без знания внутренностей инструмента. | 3h | Boss |
-
-#### Волна 2 — Запуск и внешние CI/CD
-
-| ID | Что получает пользователь | Приёмочный GWT | Est | Кто |
-|---|---|---|---|---|
-| **PK-CI-5** | Перед запуском система проверяет scope, policy, approvals и права; действие вне разрешённого scope или без approval блокируется с причиной и попадает в аудит. | **Given:** проверка пытается активную проверку адреса вне scope. **When:** нажат запуск. **Then:** запуск заблокирован до исправления/approval, причина показана, событие в аудите; тихого «ну попробуем» нет. | 4h | Boss |
-| **PK-CI-6** | Проверку можно вызвать из внешнего CI/CD: внешний пайп получает стабильный статус, exit-семантику и ссылку на доказательство. | **Given:** внешний пайп вызвал проверку PrettyK. **When:** проверка завершилась. **Then:** внешний job получает однозначный статус и ссылку на результат; PrettyK не подменяет build/deploy-процесс. | 5h | Boss |
-| **PK-CI-7** | До запуска виден план: какие шаги выполнятся, какие права и секреты нужны (только ссылками), какие gates могут остановить, сколько ресурсов уйдёт. | **Given:** проверка собрана. **When:** пользователь открывает предпросмотр. **Then:** видит полный план с рисками, правами, gates и ресурсами до нажатия запуска. | 3h | Boss |
-| **PK-CI-8** | Импорт/экспорт показывает уровни совместимости (без потерь / эквивалент / с потерями / не поддерживается) и явный список потерь; тихого удаления шага нет. | **Given:** импортируется внешний пайп с неподдерживаемым шагом. **When:** открыт отчёт совместимости. **Then:** пользователь видит точный список потерь и принимает решение; неподдерживаемый шаг не выкидывается молча. | 3h | Boss |
-
-#### Волна 3 — Доказательство и replay
-
-| ID | Что получает пользователь | Приёмочный GWT | Est | Кто |
-|---|---|---|---|---|
-| **PK-CI-9** | Переиспользуемые security-компоненты версионируются; production-проверка не может ссылаться на «последнюю» версию без явного подтверждения. | **Given:** проверка ссылается на компонент. **When:** версия не зафиксирована. **Then:** запуск блокируется до явного выбора версии или digest; история версий видна. | 3h | Boss |
-| **PK-CI-10** | По завершении доступно доказательство: кто, зачем, какой scope, какая policy, какие версии инструментов, какие шаги выполнены, какие findings, какие checksum у артефактов. | **Given:** проверка завершилась. **When:** открыт результат. **Then:** видно полное доказательство с provenance, а не только exit-код. | 4h | Boss |
-| **PK-CI-11** | Из любой находки можно получить минимальный воспроизводимый конвейер (Reproduce) без ручной сборки истории. | **Given:** есть finding. **When:** нажато «Воспроизвести». **Then:** собран минимальный повторяемый конвейер с нужным scope, версиями и входными данными. | 3h | Boss |
-| **PK-CI-12** | Шаг можно отладить: посмотреть вход/выход, повторить только его, повторить с изменённым payload, сравнить два прогона. | **Given:** шаг дал finding или упал. **When:** открыт режим отладки. **Then:** виден вход/выход шага, доступен повтор с изменённым payload и сравнение двух прогонов. | 4h | Boss |
-
-#### Волна 4 — Позже (по реальному спросу)
-
-| ID | Что получает пользователь | Est | Кто |
-|---|---|---|---|
-| **PK-CI-13** | Адаптеры к Jenkins / Tekton / Argo / Azure DevOps. | — | Boss |
-| **PK-CI-14** | AI-подсказки только как suggestion/diff; без права менять scope, policy или запускать destructive-действия. | — | Boss |
-
-### DoD эпика
-
-- Есть собственный security-конвейер с durable состоянием и честной state machine.
-- Одно описание проверки запускается native и подключается к внешнему CI без дублирования смысла.
-- Scope, policy, approval и секреты проходят preflight; нарушение — fail-closed с аудитом.
-- Импорт/экспорт сообщает о потерях явно.
-- Повтор запуска не создаёт неконтролируемые дубликаты.
-- Finding, артефакты и provenance связаны с конкретным запуском.
-- Каждый запуск предъявляет доказательство, из finding можно собрать Reproduce.
-- `latest`, непроверенные образы и непинованные компоненты не проходят production gate.
-
-### Что не делать
-
-- Не писать свой Jenkins/Kubernetes/generic shell runner.
-- Не обещать безусловный lossless-импорт любого vendor DSL.
-- Не добавлять Kafka/RabbitMQ только ради pipeline-слова.
-- Не давать AI право самостоятельно менять scope/policy или запускать destructive actions.
-- Не переписывать доменные движки (DSL, discovery, browser runtime, fuzzing, finding identity).
-
-### Распределение
-
-| Кто | Карточки | Сумма |
-|---|---|---|
-| **Boss** | весь эпик: PK-CI-1…14 | 47h + волна 4 |
-| **Flash** | — | — |
-| **Keeper** | приёмка всех карточек | — |
-
----
-
-## Эпик WEB-IDE-TERMINAL — Security Workbench (NEW · 24 авг 2026)
-
-> **Срочность:** P0-направление, Wave 1 стартует параллельно с PRETTYK-CI.  
-> **Концепт:** [`docs/research/2026-08-24-web-ide-terminal-concept.md`](research/2026-08-24-web-ide-terminal-concept.md).  
-> **Суть:** терминал — не дырка в хост, а управляемая поверхность execution и evidence. Monaco — Security Mission Control, а не копия VS Code.  
-> **Владелец эпика:** Flash — весь эпик целиком (вертикальный срез end-to-end, ноль коллизий).
-
-### Ч — что сказал заказчик (verbatim)
-
-> «Мы же в нашу Web IDE может нечто вроде терминала даже въебать. почти полноценного. Разве нет?»
-
-> «А что еще в Web IDE можно добавить из меты библейской? Чем мы наш Monaco можем прокачать функционально еще?»
-
-### И — продуктовый интент
-
-Оператор не переключается между Web IDE, SSH, Docker-логами, CI UI, ZAP UI, Allure и файловым менеджером. Web IDE — одно рабочее место: `Intent → DSL → Pipeline → Run → Logs → Findings → Evidence → Replay`. Пользователь всегда понимает, где выполняется команда, какие права у сессии, какой target затронут, что будет сохранено и почему действие разрешено или заблокировано.
-
-### Нарезка
-
-#### Волна 1 — Терминал и безопасная сессия
-
-| ID | Что получает пользователь | Приёмочный GWT | Est | Кто |
-|---|---|---|---|---|
-| **PK-TRM-1** | Терминал — это изолированное рабочее пространство, а не доступ к машине: сессия управляется на стороне бэкенда, без доступа к хосту и соседним пространствам; есть таймаут, стоп/убить и квоты. | **Given:** открыт терминал. **When:** истёк таймаут или нажата остановка. **Then:** сессия честно завершается, команда после истечения не выполняется, ресурсы ограничены, доступ к хосту отсутствует. | 6h | Flash |
-| **PK-TRM-2** | Каждая опасная команда проходит проверку прав и подтверждение; запуск и завершение команды фиксируются в аудите, секреты в выводе редиактятся. | **Given:** введена команда, которая может затронуть target или удалить данные. **When:** команда запускается. **Then:** показывается риск/права и требуется подтверждение; start/finish/exit в аудите; Cookie/Bearer/password/PAT в выводе замаскированы. | 4h | Flash |
-| **PK-TRM-3** | Терминал в IDE: вкладки/сплиты, копирование, поиск, переподключение после обновления страницы без дублирования процесса, честные статусы (подключено/переподключение/истёк). | **Given:** открыт терминал. **When:** страница обновлена при живой сессии. **Then:** подключение восстанавливается к тому же пространству без второго процесса; статус честный. | 4h | Flash |
-| **PK-TRM-4** | Есть структурированная командная консоль: типовые действия (показать run, список evidence, объяснить policy, повторить шаг) — формой с preview, а не raw shell. | **Given:** пользователю нужно типовое действие. **When:** выбрана команда из консоли. **Then:** действие выполняется через форму с предпросмотром прав и результата, без запоминания shell-синтаксиса. | 3h | Flash |
-
-#### Волна 2 — Run Console и evidence
-
-| ID | Что получает пользователь | Приёмочный GWT | Est | Кто |
-|---|---|---|---|---|
-| **PK-TRM-5** | Есть консоль прогона, привязанная к конкретному запуску: живой статус, безопасные логи и процессы без раскрытия секретов; после завершения пространство живёт по retention-политике. | **Given:** воркер выполняет фаззинг. **When:** открыта консоль прогона. **Then:** виден живой статус, логи и использование ресурсов, но не raw-секрет; после завершения пространство очищается по политике. | 5h | Flash |
-| **PK-TRM-6** | Вывод команды можно сохранить как evidence: связанный с прогоном и исполнителем артефакт с checksum и временем, без секретов. | **Given:** команда вывела диагностический результат. **When:** нажато «Сохранить как evidence». **Then:** создан артефакт с checksum/timestamp/исполнителем, секреты отсутствуют, артефакт связан с прогоном. | 3h | Flash |
-| **PK-TRM-7** | Инспектор запрос/ответ показывает обмен с редиактом секретов; из инспектора можно перейти в finding и обратно. | **Given:** в прогоне есть запрос. **When:** открыт инспектор. **Then:** виден запрос/ответ с замаскированными секретами; переход в finding и обратно работает. | 3h | Flash |
-
-#### Волна 3 — Monaco-интеллект
-
-| ID | Что получает пользователь | Приёмочный GWT | Est | Кто |
-|---|---|---|---|---|
-| **PK-TRM-8** | Редактор понимает PrettyK DSL: автодополнение, подсказки, диагностика, навигация, переименование, форматирование и предупреждения об устаревших/опасных конструкциях. | **Given:** открыто описание на DSL. **When:** пользователь редактирует. **Then:** работает автодополнение, подсказки, диагностика и навигация; устаревшие/опасные конструкции подсвечены. | 6h | Flash |
-| **PK-TRM-9** | Редактор показывает ту же проверку как код и как граф; до запуска виден полный план (шаги, права, gates, ресурсы). | **Given:** описание открыто. **When:** переключён вид или открыт предпросмотр. **Then:** код и граф синхронны; план с рисками и правами виден до запуска. | 4h | Flash |
-
-#### Волна 4 — Отладка и evidence-linked
-
-| ID | Что получает пользователь | Приёмочный GWT | Est | Кто |
-|---|---|---|---|---|
-| **PK-TRM-10** | Шаг можно отлаживать на уровне security-действия: точка останова на шаге, состояние шага, причина блокировки, повтор с изменённым входом. | **Given:** шаг дал finding или упал. **When:** открыт отладчик. **Then:** видно состояние шага, причину разрешения/блокировки и возможен повтор с изменённым входом. | 5h | Flash |
-| **PK-TRM-11** | Редактор связан с доказательством: из строки DSL → прогон → finding → артефакт; режим policy lens показывает, что разрешено/требует approval/нарушено/недоступно роли. | **Given:** есть прогон с findings. **When:** открыт редактор и policy lens. **Then:** из строки виден путь к finding и артефакту; цветовая разметка объясняет решение policy. | 4h | Flash |
-
-#### Волна 5 — Позже
-
-| ID | Что получает пользователь | Est | Кто |
-|---|---|---|---|
-| **PK-TRM-12** | Security Playbook Notebook: исполняемые ячейки (намерение, DSL, действие, ожидаемый результат, output, evidence). | — | Flash |
-| **PK-TRM-13** | AI-подсказки только как suggestion/diff; без права менять scope/policy/запускать destructive. | — | Flash |
-
-### DoD эпика
-
-- Есть workspace-терминал, консоль прогона и структурированная командная консоль.
-- Терминал не имеет прямого доступа к хосту и Docker socket.
-- Каждая опасная команда проходит проверку прав/policy; секреты редиактятся.
-- Есть таймаут, idle timeout, отмена, квоты, аудит и redaction.
-- Переподключение не создаёт дубликат процесса.
-- Вывод команды можно сохранить как evidence без утечки секретов.
-- Monaco понимает PrettyK DSL; проверка видна как код и как граф.
-- До запуска доступен план (scope/policy/ресурсы).
-- Шаг можно отладить/повторить без потери provenance.
-- AI — только suggestion + diff + approval.
-
-### Что не делать
-
-- Не делать терминал дырой к хосту, Docker socket или соседним tenant.
-- Не копировать VS Code Workbench целиком.
-- Не делать полноценную IDE для всех языков.
-- Не давать AI право самостоятельного исполнения.
-- Не сохранять raw-транскрипт терминала без redaction.
-- Не запускать security-операции без target authorization и scope.
-
-### Распределение
-
-| Кто | Карточки | Сумма |
-|---|---|---|
-| **Boss** | — | — |
-| **Flash** | весь эпик: PK-TRM-1…13 | 47h + волна 5 |
-| **Keeper** | приёмка всех карточек | — |
-
----
-
-## Эпик ADM-V3 — Minimal Theme Integration: Cyber-Enterprise Admin Shell (ACTIVE · 24 авг 2026)
-
-## Эпик ADM-V3 — Minimal Theme Integration: Cyber-Enterprise Admin Shell (ACTIVE · 24 авг 2026)
-
-> **Покупка:** Minimal UI Kit v7.7.0 (MUI Store) — лицензия Standard/Plus.  
-> **Архивы:** `Minimal_TypeScript_v7.7.0-pv519o.zip` (36 MB, 6038 entries), `Minimal_JavaScript_v7.7.0-8489jf.zip` (36 MB, 5938 entries), `Minimal_Design_v7.3.0-z8wlwx.zip` (82 MB, `.fig`).  
-> **Reference:** `starter-vite-ts/` — theme primitives. `vite-ts/` — patterns по необходимости.  
-> **Стратегия:** Minimal = **премиальный визуальный слой**, не новый движок. React Admin + MUI остаются.  
-> **Дизайн-инсайт Gemini:** Cyber Minimal — Cyan `#38bdf8` primary, Indigo `#6366f1` secondary, Obsidian `#080c16` canvas, multi-stop тени, soft alpha badges, двойная типографическая сетка Golos UI + JetBrains Mono.
-
-### Текущее состояние (факт, 24 авг)
-
-**Сдано Boss (✅):**
-- `cosmo/src/theme-minimal/` — 22 файла: палитра Cyber Minimal, типографика, тени, custom-shadows, утилиты `minimal-shared`, `MinimalThemeAdapter`, `StyledEngineProvider injectFirst`.
-- `SecOpsControl.tsx`, `ControlPanel.tsx`, `DashboardPage.tsx` — обёрнуты в `MinimalThemeAdapter`.
-- `tsc --noEmit` — **0 ошибок**.
-
-**Не сдано Boss (❌ — критический разрыв):**
-- `core/components/index.ts` — **пустая заглушка** (`export const components = {}`). В архиве Minimal — **44 файла** component overrides: `button.tsx`, `card.tsx`, `table.tsx`, `chip.tsx`, `alert.tsx`, `data-grid.tsx`, `text-field.tsx`, `select.tsx`, `menu.tsx`, `dialog.tsx`, `paper.tsx`, `tabs.tsx`, `tooltip.tsx`, `pagination.tsx`, `stepper.tsx`, `radio.tsx`, `checkbox.tsx`, `switch.tsx`, `slider.tsx`, `progress.tsx`, `avatar.tsx`, `badge.tsx`, `breadcrumbs.tsx`, `drawer.tsx`, `accordion.tsx`, `autocomplete.tsx`, `backdrop.tsx`, `list.tsx`, `popover.tsx`, `rating.tsx`, `skeleton.tsx`, `stack.tsx`, `timeline.tsx`, `link.tsx`, `form.tsx`, `button-fab.tsx`, `button-group.tsx`, `button-icon.tsx`, `button-toggle.tsx`, `svg-icon.tsx`, `mui-x-data-grid.tsx`, `mui-x-date-picker.tsx`, `mui-x-tree-view.tsx`, `index.ts`.
-- `core/mixins/index.ts` — **пустая заглушка** (`export const mixins = {}`). В архиве Minimal — **5 файлов**: `background.ts`, `border.ts`, `global-styles-components.ts`, `mixins.ts`, `text.ts`.
-- `index.ts` — **нет экспорта `minimalTheme`**. Flash'у для F3 нужен `import { minimalTheme } from '../../theme-minimal'`.
-- Без этих 49 файлов MinimalThemeAdapter даёт палитру + типографику, но кнопки/таблицы/чипы/карточки — **vanilla MUI без premium-эффекта**. Multi-stop тени, soft alpha баджи, парящие карточки — не работают.
-
-### Нарезка (двое: Boss + Flash, параллельно)
-
-#### Волна 1 — Параллельный рывок (Boss и Flash одновременно)
-
-**Boss: Theme Completion — закрыть разрывы**
-
-| ID | Суть | Приёмочный GWT | Est |
-|---|---|---|---|
-| **ADM-10** | **Component Overrides:** портировать 44 файла из `starter-vite-ts/src/theme/core/components/` в `cosmo/src/theme-minimal/core/components/`. Адаптировать под Cyber Minimal: цвета заменены на cyan/indigo, тени — на multi-stop, border-radius — по канону 8/12/16px. | **Given:** палитра и типографика Cyber Minimal уже в `theme-minimal`. **When:** все 44 файла портированы и импортированы в `components/index.ts`. **Then:** `components` — не пустой объект; каждый MUI-компонент получает кастомный `styleOverrides` в Minimal-стиле. `tsc --noEmit` — 0 ошибок. | 6h |
-| **ADM-11** | **Mixins:** портировать 5 файлов mixins из архива + адаптировать под Cyber Minimal. | **Given:** mixins сейчас пустые. **When:** портированы `background`, `border`, `text`, `global-styles-components`, `mixins`. **Then:** `mixins` содержат глобальные стили, border-radius-токены, background-градиенты. `tsc --noEmit` — 0 ошибок. | 2h |
-| **ADM-12** | **Экспорт `minimalTheme`:** добавить `export const minimalTheme = createTheme();` в `cosmo/src/theme-minimal/index.ts`. | **Given:** `createTheme()` существует. **When:** экспорт добавлен. **Then:** Flash может сделать `import { minimalTheme } from '../../theme-minimal'`. `tsc --noEmit` — 0 ошибок. | 0.5h |
-
-**Flash: AdminShowcase Wiring**
-
-| ID | Суть | Приёмочный GWT | Est |
-|---|---|---|---|
-| **ADM-13** | **Подключить живые секции:** заменить PlaceholderTabs (вкладки 0,1,2) на реальные `DataGallery`, `FormPatterns`, `NavigationLayout` в `AdminShowcase.tsx`. | **Given:** секции уже лежат в `cosmo/src/design-admin/sections/`. **When:** импорты добавлены, PlaceholderTabs заменены. **Then:** вкладки Data Gallery, Form Patterns, Navigation показывают живой контент (KPI-карточки, Threat DataGrid, Provisioning Wizard, Space Switcher и т.д.). `tsc --noEmit` — 0 ошибок. | 1h |
-| **ADM-14** | **Ленивая загрузка AdminShowcase:** заменить статический `import { AdminShowcase }` на `lazy(() => import(...))` в `AppShell.tsx`, обернуть в `Suspense`. | **Given:** AdminShowcase загружается статически (MUI в бандле всегда). **When:** импорт заменён на lazy + Suspense fallback. **Then:** MUI грузится только при заходе на `#/design-admin`. Кнопка «Back» в Showcase работает. `tsc --noEmit` — 0 ошибок. | 0.5h |
-| **ADM-15** | **5-я тема «Cyber Minimal»:** добавить тему `cyber-minimal` в `ThemeGallery` (тип `AdminThemeId`, карточка в списке). Импорт: `import { minimalTheme } from '../../theme-minimal'`. **Заглушка до сдачи Boss:** пока `minimalTheme` нет — использовать копию `telemetry-cyan` с `// TODO: replace when Boss delivers ADM-12`. | **Given:** `ThemeGallery` показывает 4 темы. **When:** добавлена 5-я карточка. **Then:** переключение на «Cyber Minimal» меняет тему. Пока Boss не сдал — падает на cyan-заглушку. `tsc --noEmit` — 0 ошибок. | 1h |
-| **ADM-16** | **A/B Toggle сравнения:** добавить переключатель «Current Themes / Cyber Minimal» в `ThemeGallery`. Current = 4 старые темы, Minimal = только `cyber-minimal`. | **Given:** 5 тем в галерее. **When:** пользователь переключает тогл. **Then:** в режиме Current видны 4 темы, в Minimal — 1 тема. Один клик — A/B сравнение. `tsc --noEmit` — 0 ошибок. | 1h |
-
-#### Волна 2 — Boss: Визуальная сверка (после ADM-10…12)
-
-| ID | Суть | Приёмочный GWT | Est |
-|---|---|---|---|
-| **ADM-17** | **Визуальная сверка боевых панелей:** после полного theme-minimal проверить `#/admin`, `#/control`, `#/dashboard` — компоненты выглядят в Minimal-стиле (soft badges, multi-stop shadows, custom border-radius). | **Given:** все 44 overrides + 5 mixins портированы. **When:** открыты три панели. **Then:** кнопки, таблицы, чипы, карточки, инпуты — визуально Minimal. DataGrid — custom styled rows. `tsc --noEmit` — 0 ошибок. | 2h |
-| **ADM-18** | **CSS-изоляция:** проверить Emotion injection order, Tailwind preflight, responsive, dark/light режимы. | **Given:** `StyledEngineProvider injectFirst`. **When:** открыты Admin + Canvas/Studio в одном SPA. **Then:** Tailwind-классы не перебиты Emotion; Canvas/Studio не сломаны; dark/light переключается без дефектов. | 1h |
-
-#### Волна 3 — Keeper: Приёмка
-
-| ID | Суть | Приёмочный GWT |
-|---|---|---|
-| **ADM-19** | **Design Admin Showcase:** `#/design-admin` показывает 5 тем, 3 живые секции, A/B toggle, lazy load. | **Given:** ADM-13…16 сданы. **When:** открыт `#/design-admin`. **Then:** Data Gallery (KPI + Threat Grid + Telemetry + Run Cards), Form Patterns (Wizard + Accordion + Alerts), Navigation (Space Switcher + Sidebars + Headers) — все живые. 5 тем переключаются. Toggle сравнения работает. |
-| **ADM-20** | **Battle panels в Minimal:** `#/admin`, `#/control`, `#/dashboard` визуально в Minimal-стиле. | **Given:** ADM-10…12 и ADM-17 сданы. **When:** открыты три панели. **Then:** компоненты выглядят как Minimal (не vanilla MUI): custom card shadows, soft badges, styled DataGrid, form overrides. |
-| **ADM-21** | **CSS-изоляция подтверждена:** Canvas/Studio не сломаны. | **Given:** ADM-18 сдан. **When:** открыты Admin Showcase и Studio v2. **Then:** Tailwind работает, shadcn-компоненты не искажены. |
-| **ADM-22** | **Typecheck и тесты:** `tsc --noEmit` — 0, существующие тесты зелёные. | **Given:** весь код сдан. **When:** запущены `npx tsc --noEmit`, `npx vitest run`. **Then:** 0 ошибок typecheck, все тесты pass. |
-
-### Go/No-Go gates
-
-1. **Theme gate:** 44 компонентных оверрайда + 5 миксинов портированы. Без этого — stop.
-2. **Visual gate:** компоненты в боевых панелях выглядят как Minimal, не vanilla MUI.
-3. **Isolation gate:** Tailwind v4 и shadcn не сломаны.
-4. **Typecheck gate:** 0 ошибок `tsc --noEmit`.
-5. **License gate:** подтверждена лицензия Minimal для коммерческого shipping (отдельная проверка).
-
-### Что НЕ делаем
-
-- ❌ Не заменяем React Admin на Minimal-роутер/auth.
-- ❌ Не тащим Minimal-страницы (e-commerce, CRM, chat, file manager).
-- ❌ Не создаём второй SPA.
-- ❌ Не меняем Canvas/Studio/War Room — они на Tailwind.
-- ❌ Не удаляем старую админку до полной приёмки Minimal.
-
-### Распределение
-
-| Кто | Карточки | Сумма |
-|---|---|---|
-| **Boss** | ADM-10,11,12,17,18 | 11.5h |
-| **Flash** | ADM-13,14,15,16 | 3.5h |
-| **Keeper** | ADM-19,20,21,22 (приёмка) | — |
-| | **ИТОГО ADM-V3** | **15h** |
-
-### Порядок
-
-```text
-Boss: ADM-10 (overrides) + ADM-11 (mixins) ──→ ADM-12 (export minimalTheme)
-                                                    │
-Flash: ADM-13 (sections) + ADM-14 (lazy) ───────────┤
-       ADM-15 (5th theme) + ADM-16 (A/B toggle) ────┘
-                                                    │
-                                            Boss: ADM-17 (visual)
-                                            Boss: ADM-18 (CSS isolation)
-                                                    │
-                                            Keeper: ADM-19…22 (приёмка)
-```
-
----
-
-## Эпик DP-ADM — Admin Showcase: MUI-галерея компонентов (CLOSED · 24 авг 2026)
-> **План:** [`docs/research/2026-08-23-admin-showcase-plan.md`](research/2026-08-23-admin-showcase-plan.md)  
-> **Источники:** Preline UI (972 блока), MUI Templates, React Admin Demos, AdminKit Pro, shadcn/ui Blocks.  
-> **Цель:** отдельный SPA `#/design-admin` с изолированным `ScopedCssBaseline` и 5 флагманскими шоустопперами. Связка с Design Playground через Design Gateway.
-
-### Топ-5 Шоустопперов (Showstoppers):
-1. **Cyber Threat DataGrid:** неоновые бейджи уязвимостей, аккордеон атаки (Payload → Response → PoC) с подсветкой, быстрый триаж в строке.
-2. **Telemetry Live Pulse Grid:** карточки демонов (ZAP, Live, Allure) с живыми Sparklines, пульсирующие индикаторы (`ping`).
-3. **Blank Provisioning Wizard:** 3-шаговый модальный визард (Target App ➔ Gate Policy ➔ Assign Expert) с превью залоченного холста.
-4. **Polymorphic Run Cards:** 3-секундный триаж (Automation: скриншот зум + селектор; Security: матрица CWE + статус гейта).
-5. **Space & Team Switcher:** Command+K быстрый поиск и переключение пространств («Департамент ИБ», «QA Розница»).
-
-### Нарезка
-
-| ID | Суть | Приёмочный GWT | Est | Кто |
-|---|---|---|---|---|
-| **DP-ADM-0** | **Theme Overview & Figma Kit Tab** | **✅ 24 авг.** **Given:** `#/design-admin`. **When:** открывается вкладка Overview. **Then:** отображается Hero-баннер Cyber Minimal темы, обзор стека, 6 ключевых фич, описание пакета Minimal UI Plus и Figma Design System для Веры. | 2h | Boss |
-| **DP-ADM-1** | **Admin Showcase SPA: Gateway & Скелет** | **✅ 24 авг.** **Given:** `#/design-admin`. **When:** открывается роут. **Then:** рендерится изолированный `ScopedCssBaseline`, 6 табов, ленивая подгрузка MUI, нет CSS-конфликтов с Tailwind. | 2h | Boss |
-| **DP-ADM-2** | **Data Gallery: 15 компонентов + Cyber Threat DataGrid** | **✅ 24 авг.** **Given:** таб Data Gallery. **When:** пользователь выбирает компоненты. **Then:** видит 15 типов (KPI Cards со спарклайнами, Bar/Pie Charts, Chart Grid, Progress Cards, Timelines, User/Order Tables, Tabbed DataGrid, Expandable Threat Grid). | 4h | Boss |
-| **DP-ADM-3** | **Form Patterns: 12 компонентов + Blank Wizard** | **✅ 24 авг.** **Given:** таб Form Patterns. **When:** клик по формам. **Then:** доступны 12 паттернов (3-step Provisioning Wizard, Accordion Form, Selectable Cards, TTL Slider, Alert Banners, Filter Bars, Option Pickers). | 4h | Boss |
-| **DP-ADM-4** | **Navigation & Layout: 6 компонентов + Cmd+K** | **✅ 24 авг.** **Given:** таб Navigation. **When:** тестирование навигации. **Then:** работают Space Switcher, Dashboard Headers, App Navbars, Sidebar Variants (collapsed/expanded), Command Palette (Cmd+K). | 2h | Boss |
-| **DP-ADM-5** | **Theme Studio: 5 MUI-пресетов с live-морфингом** | **✅ 24 авг.** **Given:** таб Themes. **When:** выбор темы (Telemetry Cyan, Defense Purple, Dashboard Teal, Light Contrast, Cyber Minimal). **Then:** все компоненты мгновенно перекрашиваются без перезагрузки; кнопка `[ Copy Theme Config ]`. | 2h | Flash |
-| **DP-ADM-6** | **Live Previews: мост к живым панелям** | **✅ 24 авг.** **Given:** таб Live Previews. **When:** клик по карточке панели. **Then:** бесшовный переход в `#/control`, `#/admin`, `#/dashboard`. | 0.5h | Flash |
-| **DP-ADM-7** | **Design Gateway: вкладка в Design Playground** | **✅ 24 авг.** **Given:** `#/design`. **When:** клик на вкладку «🎛 Admin Showcase». **Then:** мгновенный редирект на `#/design-admin` без утечки стилей. | 0.5h | Flash |
-| **DP-ADM-8** | **Studio Playground: shadcn Dashboard Block + Sidebars** | **✅ 24 авг.** **Given:** `#/design`. **When:** открыты секции Studio. **Then:** добавлены dashboard-01 (charts + data table) и sidebar-03/07 (collapsible submenus). | 2h | Boss |
-| **DP-ADM-9** | **Studio Playground: Login Pages + Settings** | **✅ 24 авг.** **Given:** `#/design`. **When:** просмотр auth-секций. **Then:** отрендерены login-03, login-04 и settings page на shadcn. | 1h | Boss |
-| **DP-ADM-10** | **Интеграция и верификация: tsc + vitest** | **✅ 24 авг.** **Given:** выполнены DP-ADM-0…9. **When:** запуск тестов. **Then:** `tsc --noEmit` 0 ошибок, vitest 100% pass, отсутствие деградации верстки. | 1h | Flash |
-| | | **ИТОГО DP-ADM** | **21h** | |
-
-### Распределение
-
-| Кто | Карточки | Часы |
-|---|---|---|
-| Boss | DP-ADM-0, 1, 2, 3, 4, 8, 9 | 17h |
-| Flash | DP-ADM-5, 6, 7, 10 | 4h |
-
----
-## Стены
-
-**CANON:** [`canon/walls.md`](canon/walls.md) · Void: [`canon/INDEX.md`](canon/INDEX.md).  
-Кратко: нет Desktop Fuzzer/Jython; нет LSP; нет Job API из UI; нет SecLists в git; void presentation-tool не воскрешать.
-
----
-
-## Закрытые якоря (не откатывать)
-
-| Эпик | Факт |
-|---|---|
-| **DF-10…14** | session-bound / corpus / pitchfork / alerts / digest — closed |
-| **RES lab + MC-RES-1…3/5** | closed 11 авг; MC-RES-4 wont |
-| **QG-AF lab** | nested ACTIVE + filter + Admin policy — landed |
-| **DBG 0–6** | closed |
+## ⛔ Стены и ограничения (Железобетон)
+
+1. **Gate A — строгий рубеж:** ни один декоративный компонент не должен подменять живой `CheckWorkspace` / `formData`.
+2. **SoT `docs/manifest.json` / `orchestrator/models/wired.py` не ломать:** Machine-контракт неизменен.
+3. **Plaintext-секреты запрещены:** ни в `localStorage`, ни в draft, ни в экспорте, ни в DOM.
+4. **Один Chromium runtime:** Browser Stage и runner изолируют контексты через `BrowserContext`, но не плодят параллельные процессы Chrome.
+5. **Тесты:** при изменениях запускать точечно по затронутым файлам. Весь suite целиком во время отладки не гонять.

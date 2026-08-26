@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 from utils.env_dual import pk_env
 """
 Адаптер браузера: Selenium (сессия) + Selene (действия с элементами).
@@ -13,7 +13,7 @@ from utils.env_dual import pk_env
   * remote — браузер в Selenium Grid (node Chrome/Firefox), драйвер подключается
              к хабу по WebDriver (поведение по умолчанию при поднятом стенде);
   * local  — драйвер и браузер на хосте раннера (airgap / без Docker);
-             KDT_WEBDRIVER_MODE=local.
+             PK_WEBDRIVER_MODE=local.
 
 Режим берётся из переменных окружения, а не из манифеста: JSON-схема манифеста
 (docs/Wired.json) — контракт с фронтендом, и поле infrastructure.webdriver_mode
@@ -22,14 +22,14 @@ from utils.env_dual import pk_env
 по умолчанию — remote (Grid на http://127.0.0.1:4444).
 
 Переменные окружения:
-  KDT_WEBDRIVER_MODE            local | remote (по умолчанию remote)
-  KDT_SELENIUM_URL              адрес Grid (по умолчанию http://127.0.0.1:4444);
-                                устаревший алиас: KDT_SELENOID_URL
-  KDT_PROXY_HOST_FROM_CONTAINER чем заменить loopback в адресе прокси в remote-режиме
+  PK_WEBDRIVER_MODE            local | remote (по умолчанию remote)
+  PK_SELENIUM_URL              адрес Grid (по умолчанию http://127.0.0.1:4444);
+                                устаревший алиас: PK_SELENOID_URL
+  PK_PROXY_HOST_FROM_CONTAINER чем заменить loopback в адресе прокси в remote-режиме
                                 (по умолчанию host.docker.internal)
-  KDT_SELENIUM_VIDEO            se:recordVideo (по умолчанию вкл.; 0 — выкл.);
-                                устаревший алиас: KDT_SELENOID_VIDEO
-  KDT_ELEMENT_TIMEOUT           дедлайн ожиданий Selene (по умолчанию 10 с)
+  PK_SELENIUM_VIDEO            se:recordVideo (по умолчанию вкл.; 0 — выкл.);
+                                устаревший алиас: PK_SELENOID_VIDEO
+  PK_ELEMENT_TIMEOUT           дедлайн ожиданий Selene (по умолчанию 10 с)
 
 Подробности: docs/basis-services.md (Selenium Grid).
 """
@@ -69,7 +69,8 @@ LOOPBACK_HOSTS = ("localhost", "127.0.0.1", "0.0.0.0", "::1", "[::1]")
 
 
 def _env_flag(name, default=False):
-    raw = os.getenv(name)
+    base = name[3:] if name.startswith("PK_") else name
+    raw = os.getenv(f"PK_{base}")
     if raw is None:
         return default
     return raw.strip().lower() in ("1", "true", "yes", "on")
@@ -156,7 +157,7 @@ class WebDriverAdapter(BaseAdapter):
         mode = (pk_env("WEBDRIVER_MODE") or MODE_REMOTE).strip().lower()
         if mode not in SUPPORTED_MODES:
             raise ValueError(
-                f"KDT_WEBDRIVER_MODE must be one of {SUPPORTED_MODES}, got: {mode!r}"
+                f"PK_WEBDRIVER_MODE must be one of {SUPPORTED_MODES}, got: {mode!r}"
             )
         return mode
 
@@ -208,7 +209,7 @@ class WebDriverAdapter(BaseAdapter):
 
     @staticmethod
     def _resolve_selenium_url():
-        """KDT_SELENIUM_URL предпочтителен; KDT_SELENOID_URL — совместимый алиас."""
+        """PK_SELENIUM_URL предпочтителен; PK_SELENOID_URL — совместимый алиас."""
         return (
             pk_env("SELENIUM_URL")
             or pk_env("SELENOID_URL")
@@ -217,11 +218,11 @@ class WebDriverAdapter(BaseAdapter):
 
     @staticmethod
     def _video_enabled():
-        """По умолчанию запись вкл.; явный 0/false на KDT_SELENIUM_VIDEO (или legacy) — выкл."""
+        """По умолчанию запись вкл.; явный 0/false на PK_SELENIUM_VIDEO (или legacy) — выкл."""
         if pk_env("SELENIUM_VIDEO") is not None:
-            return _env_flag("KDT_SELENIUM_VIDEO")
+            return _env_flag("PK_SELENIUM_VIDEO")
         if pk_env("SELENOID_VIDEO") is not None:
-            return _env_flag("KDT_SELENOID_VIDEO")
+            return _env_flag("PK_SELENOID_VIDEO")
         return True
 
     def _create_remote_driver(self, browser, headless, options):
@@ -299,7 +300,7 @@ class WebDriverAdapter(BaseAdapter):
                     "the container display, so the video may be blank. Use a non-headless "
                     "browser_type in the wired for meaningful video."
                 )
-        if _env_flag("KDT_SELENOID_VERBOSE") or _env_flag("KDT_SELENIUM_VERBOSE"):
+        if _env_flag("PK_SELENOID_VERBOSE") or _env_flag("PK_SELENIUM_VERBOSE"):
             logger.info(
                 "Verbose chromedriver dump requested; Grid nodes do not mirror "
                 "Selenoid VERBOSE env — use node container logs if needed"
@@ -340,7 +341,7 @@ class WebDriverAdapter(BaseAdapter):
         logger.info(
             f"Proxy rewritten for remote mode: {host}:{port} -> {container_host}:{port} "
             f"(loopback is unreachable from the browser container; "
-            f"override via KDT_PROXY_HOST_FROM_CONTAINER)"
+            f"override via PK_PROXY_HOST_FROM_CONTAINER)"
         )
         return f"{container_host}:{port}"
 
@@ -1056,7 +1057,7 @@ class WebDriverAdapter(BaseAdapter):
         """
         Кураторская строка дневника: STEP / ERROR / HIGH / NOTE.
 
-        Пишем в лог оркестратора (`[KDT-DIARY]`), не в docker logs ноды Grid.
+        Пишем в лог оркестратора (`[PK-DIARY]`), не в docker logs ноды Grid.
         Дневник живёт рядом с прогоном и в Allure.
 
         live=False — только лог оркестратора, без diary_bus (Allure не затрагивается).
@@ -1070,7 +1071,7 @@ class WebDriverAdapter(BaseAdapter):
         if not text:
             return
         line = text[:400]
-        logger.info("[KDT-DIARY] %s: %s", kind, line)
+        logger.info("[PK-DIARY] %s: %s", kind, line)
         if not live:
             return
         try:
@@ -1642,7 +1643,7 @@ class WebDriverAdapter(BaseAdapter):
   - get_element_by_index
 - Импорт By вынесен в глобальную область.
 - Все методы таблиц и списков используют правильный импорт By.
-- Ассерты оставлены для удобства использования в KDT.
+- Ассерты оставлены для удобства использования в PK.
 
 ================================================================================
 Обновления в версии 1.2 (Selenoid):
@@ -1659,7 +1660,7 @@ class WebDriverAdapter(BaseAdapter):
 - Убран --disable-web-security: к проксированию отношения не имеет, отключает
   same-origin policy и искажает поведение страницы (а без --user-data-dir Chrome его
   всё равно игнорирует).
-- Grid: se:name / se:recordVideo (KDT_SELENIUM_URL, KDT_SELENIUM_VIDEO).
+- Grid: se:name / se:recordVideo (PK_SELENIUM_URL, PK_SELENIUM_VIDEO).
 - shutdown(): идемпотентное завершение сессии для teardown прогона, не бросает исключения.
 ================================================================================
 """

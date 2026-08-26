@@ -295,6 +295,8 @@ export function HomePage({
 
         {/* Center Container pulled slightly towards header with zero scrollbar */}
         <Box
+          data-testid="home-stage"
+          className={`pk-home-stage ${entering ? 'pk-home-stage--enter' : ''}`}
           sx={{
             flex: 1,
             display: 'flex',
@@ -421,7 +423,7 @@ export function HomePage({
                 />
               </>
             ) : (
-              <>
+              <Box data-testid="home-initiate-view">
                 {/* Initiate screen */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
                   <IconButton size="small" onClick={() => { setStep('menu'); setPendingFile(null); }} sx={{ color: '#94a3b8' }}>
@@ -482,7 +484,7 @@ export function HomePage({
                     </Button>
                   )}
                 </Box>
-              </>
+              </Box>
             )}
           </Box>
         </Box>

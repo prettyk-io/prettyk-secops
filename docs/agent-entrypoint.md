@@ -1,4 +1,4 @@
-﻿# Agent entrypoint — prettyk-dev
+# Agent entrypoint — prettyk-dev
 
 > **For agents.** Living queue: [`backlog.md`](backlog.md).  
 > Written for this repo only. Do **not** import Next / shadcn / Playwright / random awesome deploy packs.
@@ -70,7 +70,7 @@ Load / obey — **no** FE OPTION yet:
 | `sanctuary/canon/custom/cosmo/cbr-specific/` | Rule `cbr-cosmo-only.mdc` — local only, never commit to git. |
 | Queue | [`backlog.md`](backlog.md) |
 | Feature tunnel | [`feature-routing-backlog.md`](feature-routing-backlog.md) + [`sanctuary/canon/feature-admission.md`](sanctuary/canon/feature-admission.md) — route-вердикт перед фичей (`pure`/`custom`/`evolve`), extract-карта для ништяков из Cosmo |
-| Lab / secops-lab | Global skill **`secops-lab`** (Docker stack: SonarQube, Selenium Grid, scanner, Juice Shop, Allure3). Startup: `lab_up.ps1` ([`stand.md`](stand.md)). Service `allure3-secops` (`:5050/`, канон). Legacy `allure-light-secops` (`:5051/`). |
+| Lab / prettyk-lab | Global skill **`prettyk-lab`** (Docker stack: SonarQube, Selenium Grid, scanner, Juice Shop, Allure3). Startup: `lab_up.ps1` ([`stand.md`](stand.md)). Service `allure3-secops` (`:5050/`, канон). Legacy `allure-light-secops` (`:5051/`). |
 | Posture / JTBD | [`agent-posture.md`](agent-posture.md) — product vs bankvm; compare via S1–S7 only |
 | Non-routine research | Global skill `research-and-sense` → google practices before coding |
 
@@ -214,5 +214,5 @@ No awesome deploy skills. Lab: `lab_up.ps1`. VPS: order only (don't mention depl
 > Boot → `ru-text` → owner-voice → track chain.  
 > BASE never loads FE. FRONTEND without FE_DEBUG must not blind-patch CSS.  
 > Talk to Maxim in Russian. Ship clean; research before monoliths.
-> **Браузер → global `browser-hands-pure` / `browser-hands-remote`. Дебаг → global `debugging-strategies`. Инфра → global `secops-lab`.**
+> **Браузер → global `browser-hands-pure` / `browser-hands-remote`. Дебаг → global `debugging-strategies`. Инфра → global `prettyk-lab`.**
 > Не плодить свои навыки — их нет, все в global.

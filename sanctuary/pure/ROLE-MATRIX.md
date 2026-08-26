@@ -168,7 +168,65 @@ D:\Buddy\.opencode\agent\          (окно 2 — Buddy)
 
 ---
 
-**2FA sealed · 23 августа 2026.**  
-Забетонировано по личному утверждению Максима: «Бетонируем это как satellite/service-needs, as like we did for design tool and my feedback. That's above canons.»  
-Ролевая матрица, 4×4 архитектура, модели 3.1–3.7, Sanctuary-лор, обезьянник и ритуалы — зачислены в Sanctuary как `service-needs`.  
+## 9. Canon Planning Pipeline (Luna → Gemini → DeepSeek)
+
+> **2FA sealed · 26 августа 2026.**  
+> Канон трёхфазного планирования: от сырых находок до финальной нарезки эпиков.  
+> Каждый этап имеет чёткую границу, не лезет в зону следующего и не пишет код до разрешения.
+
+### Принцип разделения труда
+
+```text
+LUNA (GPT · Discovery & Raw Vision)
+  Raw wall of text, честный, с реальными источниками
+  → Market map, reference architecture
+  → Множественные концепты без фильтрации
+  → «Что есть / чего нет»
+  ↓
+
+GEMINI FLASH (Refinement, Design & Partitioning)
+  Кристаллизация: as-built vs concept
+  → Dependency mapping
+  → Additional design insight / тактические идеи
+  → Rejected ideas с обоснованием
+  → Предварительный порядок волн
+  ↓
+
+DEEPSEEK PRO (Architecture & Backlog)
+  Проверка контрактов и типов
+  → Разбиение на независимые архитектурные стримы
+  → Нарезка major epics (ЧИСТО / GWT)
+  → Boss / Flash ownership
+  → Запись в docs/backlog.md
+```
+
+### Границы этапов
+
+| Этап | Кто | Что делает | Чего НЕ делает |
+|---|---|---|---|
+| Фаза I | **Luna** (GPT) | Discovery, raw findings, market map, «что есть / чего нет», множественные концепты | Не фильтрует, не делит на стримы, не режет эпики, не пишет код |
+| Фаза II | **Gemini Flash** | Кристаллизация (as-built vs concept), dependency mapping, тактические идеи, rejected ideas, предварительный порядок волн | Не пишет код, не меняет канон Sanctuary, не режет эпики, не пишет в backlog |
+| Фаза III | **DeepSeek Pro** | Проверка контрактов и типов, архитектурное разбиение на стримы, нарезка major epics (GWT), Boss/Flash ownership, запись в `docs/backlog.md` | Не начинает реализацию без 2FA, не меняет канон без ритуала |
+
+### Чего нельзя делать ни на одном этапе
+
+- Писать код до получения чистых утверждённых карточек.
+- Менять `sanctuary/pure/INDEX.md` без 2FA.
+- Смешивать research с backlog: документ в `docs/research/` — не разрешение на реализацию.
+- Объявлять rejected concept «просто пока отложенным».
+- Отдавать сырой Luna-текст напрямую Boss/Flash без Gemini-рафинирования.
+
+### Порядок 2FA для новых концептов
+
+1. Максим ставит задачу на research («Узнай, как устроены X»).
+2. Luna → Gemini → DeepSeek по цепочке выше.
+3. DeepSeek выдаёт нарезку major epics с GWT.
+4. Максим утверждает: «Зачисляй», «2FA sealed».
+5. Эпики попадают в `docs/backlog.md`; при необходимости — новые каноны в Sanctuary.
+
+---
+
+**2FA sealed · 26 августа 2026.**  
+Забетонировано по личному утверждению Максима: «Согласен брат, все ты правильно понял. Следуем дальше таким принципом.»  
+Ролевая матрица, 4×4 архитектура, модели 3.1–3.7, Sanctuary-лор, обезьянник, ритуалы и Canon Planning Pipeline (Luna → Gemini → DeepSeek) — зачислены в Sanctuary как `service-needs`.  
 Код агентов зашит в `.opencode/agent/*.md`. Канон отполирован на `deepseek-v4-pro`.

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """gRPC cascade: proto_pack resource → module → attack URL host."""
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from utils.grpc_module_runtime import (
 )
 
 ROOT = Path(__file__).resolve().parents[2]
-PROTO_PACK = ROOT / "services" / "kdt-api-lab" / "proto_pack"
+PROTO_PACK = ROOT / "services" / "pk-api-lab" / "proto_pack"
 
 
 def _Wired(*, proto_as="bank_proto", proto_path=None, allow="127.0.0.1|localhost"):
@@ -70,7 +70,7 @@ def test_reject_absolute_host_in_args():
 
 
 def test_resolve_grpc_module_cascade():
-    if not PROTO_PACK.is_dir():
+    if not PROTO_PACK.is_dir() or not any(PROTO_PACK.rglob("*.proto")):
         pytest.skip("lab proto_pack missing")
     m = _Wired()
     resolved = resolve_grpc_module(m, "bank_grpc", wired_dir=str(ROOT))

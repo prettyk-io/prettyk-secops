@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """K1 calibration: Qwen3 classify vs EXP-01 baseline findings.
 Usage: .\.venv\Scripts\python.exe orchestrator\lab\calibrate_qwen3.py
 """

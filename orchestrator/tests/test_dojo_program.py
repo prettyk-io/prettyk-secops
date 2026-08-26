@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """ADM-DOJO-1: program aggregate honesty + counts."""
 from __future__ import annotations
 
@@ -62,8 +62,8 @@ def test_aggregate_ok_counts(monkeypatch):
     monkeypatch.setattr(
         "adapters.defectdojo_client._env",
         lambda key, default="": {
-            "KDT_DEFECTDOJO_URL": "http://dojo.test",
-            "KDT_DEFECTDOJO_TOKEN": "t",
+            "PK_DEFECTDOJO_URL": "http://dojo.test",
+            "PK_DEFECTDOJO_TOKEN": "t",
         }.get(key, default),
     )
     monkeypatch.setattr(

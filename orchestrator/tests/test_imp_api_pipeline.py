@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """IMP: PrettyK → validator → dry adapter pipeline (без живого ZAP/браузера)."""
 from __future__ import annotations
 
@@ -39,7 +39,7 @@ service Greeter {
 
 @pytest.fixture(autouse=True)
 def _lab_dry(monkeypatch):
-    monkeypatch.setenv("KDT_API_LAB_DRY", "1")
+    monkeypatch.setenv("PK_API_LAB_DRY", "1")
     if not SDL_FILE.exists():
         SDL_FILE.write_text("type Query {\n  products: ID\n}\n", encoding="utf-8")
     if not PROTO_FILE.exists():

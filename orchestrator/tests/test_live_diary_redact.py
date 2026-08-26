@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """L-3: Live diary publish redacts Bearer / JWT-ish tokens."""
 from __future__ import annotations
 

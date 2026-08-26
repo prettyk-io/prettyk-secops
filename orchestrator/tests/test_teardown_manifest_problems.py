@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """TEARDOWN: весь фарш валидации в ERROR-лог."""
 from __future__ import annotations
 

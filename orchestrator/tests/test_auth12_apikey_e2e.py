@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """AUTH-12 wave1: API Key / Query Key + success check + compose list."""
 from __future__ import annotations
 
@@ -70,7 +70,7 @@ class FakeZap:
 
 
 def test_api_key_header_applied(monkeypatch):
-    monkeypatch.delenv("KDT_AUTH_BOOTSTRAP", raising=False)
+    monkeypatch.delenv("PK_AUTH_BOOTSTRAP", raising=False)
     http = FakeHttp()
     out = apply_auth_bootstrap(
         auth_type="API Key",
@@ -82,7 +82,7 @@ def test_api_key_header_applied(monkeypatch):
 
 
 def test_api_key_cookie_place(monkeypatch):
-    monkeypatch.delenv("KDT_AUTH_BOOTSTRAP", raising=False)
+    monkeypatch.delenv("PK_AUTH_BOOTSTRAP", raising=False)
     http = FakeHttp()
     out = apply_auth_bootstrap(
         auth_type="API Key",
@@ -98,7 +98,7 @@ def test_api_key_cookie_place(monkeypatch):
 
 
 def test_query_key_applied(monkeypatch):
-    monkeypatch.delenv("KDT_AUTH_BOOTSTRAP", raising=False)
+    monkeypatch.delenv("PK_AUTH_BOOTSTRAP", raising=False)
     http = FakeHttp()
     out = apply_auth_bootstrap(
         auth_type="Query Key",
@@ -110,7 +110,7 @@ def test_query_key_applied(monkeypatch):
 
 
 def test_success_check_ok(monkeypatch):
-    monkeypatch.delenv("KDT_AUTH_BOOTSTRAP", raising=False)
+    monkeypatch.delenv("PK_AUTH_BOOTSTRAP", raising=False)
     http = FakeHttp()
     http._get_body = "logged-in-marker"
     out = apply_auth_bootstrap(
@@ -129,7 +129,7 @@ def test_success_check_ok(monkeypatch):
 
 
 def test_success_check_fail_string(monkeypatch):
-    monkeypatch.delenv("KDT_AUTH_BOOTSTRAP", raising=False)
+    monkeypatch.delenv("PK_AUTH_BOOTSTRAP", raising=False)
     http = FakeHttp()
     http._get_body = "anonymous"
     out = apply_auth_bootstrap(
@@ -155,7 +155,7 @@ def test_verify_auth_success_skip_without_url():
 
 
 def test_compose_apikey_then_bearer(monkeypatch):
-    monkeypatch.delenv("KDT_AUTH_BOOTSTRAP", raising=False)
+    monkeypatch.delenv("PK_AUTH_BOOTSTRAP", raising=False)
     http = FakeHttp()
     http._get_body = "ok-user"
     out = apply_auth_profile_list(
@@ -183,7 +183,7 @@ def test_compose_apikey_then_bearer(monkeypatch):
 
 
 def test_compose_success_fail(monkeypatch):
-    monkeypatch.delenv("KDT_AUTH_BOOTSTRAP", raising=False)
+    monkeypatch.delenv("PK_AUTH_BOOTSTRAP", raising=False)
     http = FakeHttp()
     http._get_body = "nope"
     out = apply_auth_profile_list(
@@ -234,7 +234,7 @@ def test_zap_query_key_honest_not_applied(monkeypatch):
 
 
 def test_dialect_apikey_maps_bootstrap(monkeypatch):
-    monkeypatch.delenv("KDT_AUTH_BOOTSTRAP", raising=False)
+    monkeypatch.delenv("PK_AUTH_BOOTSTRAP", raising=False)
     profile = parse_auth_module(
         "\n".join(
             [
@@ -267,7 +267,7 @@ def test_dialect_apikey_maps_bootstrap(monkeypatch):
 
 
 def test_dialect_querykey(monkeypatch):
-    monkeypatch.delenv("KDT_AUTH_BOOTSTRAP", raising=False)
+    monkeypatch.delenv("PK_AUTH_BOOTSTRAP", raising=False)
     profile = parse_auth_module("auth=querykey\nname=api_key\ntoken=q\n")
     assert profile.kind == "querykey"
     assert profile.bootstrap_auth_type() == "Query Key"

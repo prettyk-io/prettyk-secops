@@ -37,7 +37,7 @@ jobs:
       maxDuration: 2
   - type: activeScan-policy
     parameters:
-      name: kdt-smoke
+      name: pk-smoke
     policyDefinition:
       defaultStrength: Low
       defaultThreshold: Medium
@@ -46,7 +46,7 @@ jobs:
       context: juice_ctx
       maxRuleDurationInMins: 1
       maxScanDurationInMins: 3
-      policy: kdt-smoke
+      policy: pk-smoke
   - type: report
     parameters:
       template: traditional-html

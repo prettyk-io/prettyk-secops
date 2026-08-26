@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """G-RT / BE-RT: validate-only для authoring export (режим A)."""
 from __future__ import annotations
 

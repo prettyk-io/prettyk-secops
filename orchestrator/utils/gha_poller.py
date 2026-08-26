@@ -1,14 +1,14 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 RES-G: GitHub Actions → Live CI status (не poll из браузера).
 
 Env:
-  KDT_GHA_TOKEN   — required for real API
-  KDT_GHA_REPO    — owner/name
-  KDT_GHA_WORKFLOW — optional workflow file or id
-  KDT_GHA_BRANCH  — optional branch filter
-  KDT_GHA_JOB     — optional job name (prefer for conclusion/url)
-  KDT_GHA_API_BASE — default https://api.github.com
+  PK_GHA_TOKEN   — required for real API
+  PK_GHA_REPO    — owner/name
+  PK_GHA_WORKFLOW — optional workflow file or id
+  PK_GHA_BRANCH  — optional branch filter
+  PK_GHA_JOB     — optional job name (prefer for conclusion/url)
+  PK_GHA_API_BASE — default https://api.github.com
 
 Канон: docs/internal/gha-poller.md
 """
@@ -26,7 +26,7 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-_KDT_EXIT_RE = re.compile(r"KDT_EXIT\s*=\s*([012])", re.IGNORECASE)
+_PK_EXIT_RE = re.compile(r"PK_EXIT\s*=\s*([012])", re.IGNORECASE)
 
 logger = logging.getLogger("orchestrator")
 
@@ -46,7 +46,7 @@ class GhaPollerConfig:
     def owner_repo(self) -> Tuple[str, str]:
         parts = (self.repo or "").strip().split("/", 1)
         if len(parts) != 2 or not parts[0] or not parts[1]:
-            raise ValueError("KDT_GHA_REPO must be owner/name")
+            raise ValueError("PK_GHA_REPO must be owner/name")
         return parts[0], parts[1]
 
 
@@ -54,9 +54,9 @@ def load_gha_config_from_env() -> GhaPollerConfig:
     token = (pk_env("GHA_TOKEN") or "").strip()
     repo = (pk_env("GHA_REPO") or "").strip()
     if not token:
-        raise ValueError("KDT_GHA_TOKEN is required")
+        raise ValueError("PK_GHA_TOKEN is required")
     if not repo:
-        raise ValueError("KDT_GHA_REPO is required (owner/name)")
+        raise ValueError("PK_GHA_REPO is required (owner/name)")
     return GhaPollerConfig(
         token=token,
         repo=repo,
@@ -84,7 +84,7 @@ def _auth_headers(token: str) -> Dict[str, str]:
         "Accept": "application/vnd.github+json",
         "Authorization": f"Bearer {token}",
         "X-GitHub-Api-Version": "2022-11-28",
-        "User-Agent": "zap-kdt-gha-poller",
+        "User-Agent": "pk-gha-poller",
     }
 
 
@@ -147,7 +147,7 @@ def _pick_job(jobs: List[Dict[str, Any]], job_name: str) -> Optional[Dict[str, A
     return jobs[0]
 
 
-def _kdt_exit_chunks(
+def _pk_exit_chunks(
     run: Dict[str, Any], job: Optional[Dict[str, Any]]
 ) -> List[str]:
     chunks: List[str] = [
@@ -174,15 +174,15 @@ def _kdt_exit_chunks(
     return chunks
 
 
-def extract_kdt_exit(
+def extract_pk_exit(
     run: Dict[str, Any],
     job: Optional[Dict[str, Any]] = None,
 ) -> Optional[int]:
     """
     MC-RES-5: явный сигнал exit 2 / fail_gate из GHA.
-    Ищем `KDT_EXIT=0|1|2` в display_title, job name, step names, annotations text.
+    Ищем `PK_EXIT=0|1|2` в display_title, job name, step names, annotations text.
     """
-    match = _KDT_EXIT_RE.search("\n".join(_kdt_exit_chunks(run, job)))
+    match = _PK_EXIT_RE.search("\n".join(_pk_exit_chunks(run, job)))
     if not match:
         return None
     return int(match.group(1))
@@ -211,15 +211,15 @@ def _gha_job_description(run: Dict[str, Any]) -> str:
 
 
 def _gha_exit_and_gate(
-    phase: str, kdt_exit: Optional[int], conclusion: str
+    phase: str, pk_exit: Optional[int], conclusion: str
 ) -> tuple[Optional[int], str]:
     if phase != "completed":
         return None, ""
-    if kdt_exit == 2:
+    if pk_exit == 2:
         return 2, "fail"
-    if kdt_exit == 0:
+    if pk_exit == 0:
         return 0, "pass"
-    if kdt_exit == 1:
+    if pk_exit == 1:
         return 1, "error"
     if conclusion == "success" or conclusion in ("neutral", "skipped"):
         return 0, "pass"
@@ -244,8 +244,8 @@ def map_gha_to_ci_status(
         (job or {}).get("html_url") or run.get("html_url") or ""
     ).strip()
     job_description = _gha_job_description(run)
-    kdt_exit = extract_kdt_exit(run, job)
-    exit_code, gate = _gha_exit_and_gate(phase, kdt_exit, conclusion)
+    pk_exit = extract_pk_exit(run, job)
+    exit_code, gate = _gha_exit_and_gate(phase, pk_exit, conclusion)
 
     payload: Dict[str, Any] = {
         "phase": phase,
@@ -262,8 +262,8 @@ def map_gha_to_ci_status(
         payload["exit_code"] = exit_code
     if gate:
         payload["gate"] = gate
-    if kdt_exit is not None:
-        payload["kdt_exit"] = kdt_exit
+    if pk_exit is not None:
+        payload["pk_exit"] = pk_exit
     # Drop Nones for notify_ci_status cleanliness
     return {k: v for k, v in payload.items() if v is not None}
 

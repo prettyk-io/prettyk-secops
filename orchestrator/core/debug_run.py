@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Режим отладки (эпик DBG): pause/resume Live + флаги для controller/main."""
 from __future__ import annotations
 

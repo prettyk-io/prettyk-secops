@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 RES-7 MVP: zip-пакет прогона.
 
@@ -587,7 +587,7 @@ def build_run_package(
     """
     Собрать zip. Возвращает dict: path, filename, run_id, files[], bytes.
 
-    recalc_gate: MC-RES-3 — пересчёт admission из hooks (None → env KDT_PACKAGE_RECALC_GATE).
+    recalc_gate: MC-RES-3 — пересчёт admission из hooks (None → env PK_PACKAGE_RECALC_GATE).
     """
     from utils import diary_bus
     from utils.package_gate_recalc import recalculate_package_gate
@@ -632,7 +632,7 @@ def build_run_package(
         _package_add_run_and_fuzz(w, zf, run_dir)
 
         inventory: Dict[str, Any] = {
-            "kind": "kdt_run_package",
+            "kind": "pk_run_package",
             "version": 1,
             "run_id": run_key,
             "built_at": time.time(),

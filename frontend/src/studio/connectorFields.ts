@@ -1,6 +1,6 @@
 /**
  * Studio connector: активация типа; доступ/packs — Admin → Интеграции.
- * Вызов: PrettyK ИнициализироватьКоннектор / ЗапроситьМетрикиКоннектора (CONN-11; live KDT_CONNECTOR_LIVE).
+ * Вызов: PrettyK ИнициализироватьКоннектор / ЗапроситьМетрикиКоннектора (CONN-11; live PK_CONNECTOR_LIVE).
  */
 import { defaultMetricPacksCsv } from '../admin/metricPacks';
 import type { AirgapConnectors } from '../admin/types';

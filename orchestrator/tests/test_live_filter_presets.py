@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """L-1 / L-2: Live filter presets + deep-link markup smoke."""
 from __future__ import annotations
 

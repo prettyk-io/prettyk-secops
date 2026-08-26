@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 PageResolver: page.element → constructor; page.action; payload→slot bind.
 """

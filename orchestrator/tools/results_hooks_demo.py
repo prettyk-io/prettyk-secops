@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Lab demo: push Allure / DefectDojo report URLs into Live for Results glow."""
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ SEED_DOJO_STATS = {
     "info": 0,
 }
 SEED_DOJO_COLLAPSE = {
-    "kind": "kdt_finding_collapse",
+    "kind": "pk_finding_collapse",
     "version": 1,
     "raw_count": 5,
     "cluster_count": 2,

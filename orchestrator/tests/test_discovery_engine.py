@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """W5 acceptance: Discovery Engine models + extractor + builder + compiler."""
 import pytest
 from models.discovery import (

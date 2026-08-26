@@ -1,9 +1,9 @@
-/**
+﻿/**
  * Field trial: seed manual check → click «Запустить Baseline» → Webswing up → idle kill ~5m.
  *
  *   cd frontend && node scripts/trial-manual-baseline-idle.cjs
  *
- * Env: KDT_IDLE_WAIT_MS (default 390000 ≈ 6.5m), KDT_EDITOR_URL, EDGE_PATH
+ * Env: PK_/PK_IDLE_WAIT_MS (default 390000 ≈ 6.5m), PK_/PK_EDITOR_URL, EDGE_PATH
  */
 const { spawn } = require('child_process');
 const fs = require('fs');
@@ -13,11 +13,11 @@ const EDGE =
   process.env.EDGE_PATH ||
   'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
 const PORT = 9343;
-const EDITOR = process.env.KDT_EDITOR_URL || 'http://localhost:5173/';
+const EDITOR = process.env.PK_EDITOR_URL || process.env.PK_EDITOR_URL || 'http://localhost:5173/';
 const PLAY = 'http://127.0.0.1:8765';
 const LIVE = 'http://127.0.0.1:8767';
 const WEBSWING_API = 'http://127.0.0.1:8090/JSON/core/view/version/';
-const WAIT_MS = Number(process.env.KDT_IDLE_WAIT_MS || 390000);
+const WAIT_MS = Number(process.env.PK_IDLE_WAIT_MS || process.env.PK_IDLE_WAIT_MS || 390000);
 const ROOT = path.resolve(__dirname, '../..');
 const OUT = path.join(ROOT, 'reports', 'trials', `manual-baseline-idle-${Date.now()}.json`);
 
@@ -112,7 +112,7 @@ async function main() {
     },
   };
 
-  const userDataDir = path.join(process.env.TEMP || 'C:\\Temp', 'kdt_trial_manual_idle');
+  const userDataDir = path.join(process.env.TEMP || 'C:\\Temp', 'pk_trial_manual_idle');
   fs.mkdirSync(userDataDir, { recursive: true });
   const edge = spawn(
     EDGE,
@@ -175,9 +175,9 @@ async function main() {
     };
 
     await evalJson(`(() => {
-      sessionStorage.setItem('kdt.auth.user', 'admin');
-      localStorage.setItem('kdt.checks.v1', ${JSON.stringify(JSON.stringify(seed))});
-      localStorage.setItem('kdt.checks.active', ${JSON.stringify(checkId)});
+      sessionStorage.setItem('pk.auth.user', 'admin');
+      localStorage.setItem('pk.checks.v1', ${JSON.stringify(JSON.stringify(seed))});
+      localStorage.setItem('pk.checks.active', ${JSON.stringify(checkId)});
       location.hash = ${JSON.stringify('#/checks/' + checkId + '/form')};
       location.reload();
       return true;
@@ -213,7 +213,7 @@ async function main() {
       const msg = [...document.querySelectorAll('.ant-message-notice')].map((el) =>
         (el.textContent || '').trim(),
       );
-      const penguin = document.querySelector('.kdt-no-penguin, [class*="penguin"]');
+      const penguin = document.querySelector('.pk-no-penguin, [class*="penguin"]');
       return { messages: msg, penguin: penguin ? (penguin.textContent || '').slice(0, 240) : null };
     })()`);
     note('ui_after_click', { uiAfter });

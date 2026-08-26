@@ -1,4 +1,5 @@
 import type * as monacoNs from 'monaco-editor';
+import { methodIdAliases } from '../keywords/methodIds';
 
 const OWNER = 'prettyk-diagnostics';
 
@@ -50,6 +51,7 @@ export function analyzePrettyk(model: monacoNs.editor.ITextModel): PrettyKDiagno
 
     checkPipeSyntax(line, lineNum, indentLen, diagnostics);
     checkRootKeyword(line, rawTrimmed, lineNum, indentLen, diagnostics);
+    checkDeprecatedMethod(line, rawTrimmed, lineNum, indentLen, diagnostics);
     checkBraceBalance(line, lineNum, diagnostics, model);
   }
 
@@ -98,6 +100,32 @@ function checkPipeSyntax(
 }
 
 const URL_PATTERN = /^https?:\/\/\S+$/i;
+
+/**
+ * Устаревшие конструкции: legacy `Утвердить*` → канон `Проверить*` (E1 / PK-TRM-8).
+ * Подсвечиваем как warning, не как error — сценарий всё ещё исполним.
+ */
+function checkDeprecatedMethod(
+  line: string, rawTrimmed: string, lineNum: number, indent: number, diags: PrettyKDiagnostic[],
+): void {
+  const match = /^([A-Za-zА-Яа-яЁё_][\wА-Яа-яЁё]*)/.exec(line);
+  const token = match?.[1];
+  if (!token) return;
+  const canonical = methodIdAliases[token];
+  if (!canonical || canonical === token) return;
+  if (!token.startsWith('Утвердить') || !canonical.startsWith('Проверить')) return;
+
+  const local = rawTrimmed.indexOf(token);
+  const startColumn = indent + (local >= 0 ? local : 0) + 1;
+  diags.push({
+    startLine: lineNum,
+    startColumn,
+    endLine: lineNum,
+    endColumn: startColumn + token.length,
+    message: `Устаревший MethodId «${token}» — используйте «${canonical}»`,
+    severity: 4 as monacoNs.MarkerSeverity,
+  });
+}
 
 function checkRootKeyword(
   line: string, rawTrimmed: string, lineNum: number, indent: number, diags: PrettyKDiagnostic[],

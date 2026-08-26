@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """CD-2: corpus_parser — extract параметры/инпуты из DiscoveryCorpus."""
 from __future__ import annotations
 

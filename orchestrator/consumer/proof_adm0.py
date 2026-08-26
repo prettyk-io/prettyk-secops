@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """ADM-0 Contract Proof: run the same Wired scenario through two consumers.
 
    AutomationConsumer -- Playwright only, no ZAP/Dojo/Allure.

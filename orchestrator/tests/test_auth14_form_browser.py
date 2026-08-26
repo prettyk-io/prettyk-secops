@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """AUTH-14: browser form dialect + Selenium executor (mock driver)."""
 from __future__ import annotations
 
@@ -124,7 +124,7 @@ def test_parse_form_maps_page_auth():
 
 
 def test_form_bolvan_without_env(monkeypatch):
-    monkeypatch.delenv("KDT_AUTH_FORM_BROWSER", raising=False)
+    monkeypatch.delenv("PK_AUTH_FORM_BROWSER", raising=False)
     profile = parse_auth_module(FORM_TEXT)
     out = apply_auth_form(profile, FakeWd(), FakeHttp())
     assert out["applied"] is False
@@ -134,7 +134,7 @@ def test_form_bolvan_without_env(monkeypatch):
 
 
 def test_form_live_mock(monkeypatch):
-    monkeypatch.setenv("KDT_AUTH_FORM_BROWSER", "1")
+    monkeypatch.setenv("PK_AUTH_FORM_BROWSER", "1")
     profile = parse_auth_module(FORM_TEXT)
     wd = FakeWd()
     http = FakeHttp()
@@ -148,7 +148,7 @@ def test_form_live_mock(monkeypatch):
 
 
 def test_form_cookies_to_zap_replacer(monkeypatch):
-    monkeypatch.setenv("KDT_AUTH_FORM_BROWSER", "1")
+    monkeypatch.setenv("PK_AUTH_FORM_BROWSER", "1")
     profile = parse_auth_module(FORM_TEXT)
     wd = FakeWd()
     wd.driver._cookies = [
@@ -164,14 +164,14 @@ def test_form_cookies_to_zap_replacer(monkeypatch):
     assert any("cookies→ZAP Replacer: 2" in n for n in out["notes"])
     assert len(zap.rules) == 1
     desc, match_type, match_string, replacement, _ = zap.rules[0]
-    assert desc == "kdt-auth-browser-cookie"
+    assert desc == "pk-auth-browser-cookie"
     assert match_type == "REQ_HEADER"
     assert match_string == "Cookie"
     assert "sid=abc" in replacement and "csrf=tok" in replacement
 
 
 def test_form_success_fail(monkeypatch):
-    monkeypatch.setenv("KDT_AUTH_FORM_BROWSER", "1")
+    monkeypatch.setenv("PK_AUTH_FORM_BROWSER", "1")
     profile = parse_auth_module(FORM_TEXT)
     wd = FakeWd()
     wd.driver.page_source = "<html>anon</html>"
@@ -181,7 +181,7 @@ def test_form_success_fail(monkeypatch):
 
 
 def test_legacy_page_auth_details(monkeypatch):
-    monkeypatch.setenv("KDT_AUTH_FORM_BROWSER", "1")
+    monkeypatch.setenv("PK_AUTH_FORM_BROWSER", "1")
     profile = profile_from_page_auth_details(
         {
             "URL входа": "https://app.lab/login",
@@ -203,7 +203,7 @@ def test_legacy_page_auth_details(monkeypatch):
 
 
 def test_controller_form_wire(monkeypatch):
-    monkeypatch.setenv("KDT_AUTH_FORM_BROWSER", "1")
+    monkeypatch.setenv("PK_AUTH_FORM_BROWSER", "1")
     from core.controller import Controller
 
     mod = SimpleNamespace(

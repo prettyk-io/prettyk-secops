@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """QWEN3-ALERT-ASSISTANT W1: canonical finding-v1 record.
 
 Source of truth: ZAP raw alerts (pluginid, alertRef, method, uri, param).

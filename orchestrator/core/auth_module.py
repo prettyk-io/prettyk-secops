@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 AUTH-10 / 10a: auth module dialect → AuthProfile IR → validate / dry-run / apply.
 
@@ -35,7 +35,7 @@ Form (AUTH-14) — Selenium + full locators (не id-only как PT)::
     submit_locator=css button[type=submit]
     # form_locator=css form#login
     # success_url=... / success_string=...
-    # live: KDT_AUTH_FORM_BROWSER=1
+    # live: PK_AUTH_FORM_BROWSER=1
 
 Action / MFA (factor-2 after password, ZAP-style TOTP field)::
 
@@ -928,12 +928,12 @@ def resolve_active_auth_profiles(
         notes.append("active_auth_module пуст")
         return [], notes
     if len(ids) == 1:
-        profile, mod_notes = load_auth_profile_from_wired(Wired, ids[0])
+        profile, mod_notes = load_auth_profile_from_wired(wired, ids[0])
         notes.extend(mod_notes)
         if profile is None:
             return [], notes
         if profile.kind == "compose":
-            return expand_compose_profile(Wired, profile)
+            return expand_compose_profile(wired, profile)
         return [profile], notes
     out: List[AuthProfile] = []
     for mid in ids:
@@ -1116,7 +1116,7 @@ def apply_auth_form(
 ) -> Dict[str, Any]:
     """AUTH-14: Selenium form login — full locator strategies; cookies → Http/ZAP.
 
-    Live только при ``KDT_AUTH_FORM_BROWSER=1``.
+    Live только при ``PK_AUTH_FORM_BROWSER=1``.
     """
     result: Dict[str, Any] = {
         "applied": False,
@@ -1155,7 +1155,7 @@ def apply_auth_form(
         return result
     if not _auth_form_browser_enabled():
         result["notes"].append(
-            "form profile ready; set KDT_AUTH_FORM_BROWSER=1 for browser"
+            "form profile ready; set PK_AUTH_FORM_BROWSER=1 for browser"
         )
         return result
 
@@ -1293,7 +1293,7 @@ def _harvest_cookies_to_zap(wd: Any, zap_adapter: Any) -> int:
     header = "; ".join(parts)
     try:
         zap_adapter.add_replacer_rule(
-            "kdt-auth-browser-cookie",
+            "pk-auth-browser-cookie",
             "REQ_HEADER",
             "Cookie",
             header,
@@ -1588,7 +1588,7 @@ def apply_auth_action(
         return result
     if not _auth_form_browser_enabled():
         result["notes"].append(
-            f"MFA profile ready (mfa={mfa}); set KDT_AUTH_FORM_BROWSER=1 for browser"
+            f"MFA profile ready (mfa={mfa}); set PK_AUTH_FORM_BROWSER=1 for browser"
         )
         return result
 
@@ -1753,7 +1753,7 @@ def apply_auth_profiles(
         if any(p.kind in ("form", "action") for p in profiles):
             result["notes"].append(
                 "compose: browser auth profile not applied "
-                "(KDT_AUTH_FORM_BROWSER=1 + webdriver)"
+                "(PK_AUTH_FORM_BROWSER=1 + webdriver)"
             )
         else:
             result["notes"].append(

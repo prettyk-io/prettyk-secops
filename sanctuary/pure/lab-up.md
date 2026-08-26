@@ -1,9 +1,9 @@
-﻿# Lab-up — обязательный контур
+# Lab-up — обязательный контур
 
 > **CANON** — hub topic. Slice: **11 августа 2026** (CULT-4).  
 > PUBLIC команды: [`../stand.md`](../stand.md) · шпаргалка: [`../operator-cheatsheet.md`](../operator-cheatsheet.md).  
 > Roles: [`runtime-shell.md`](runtime-shell.md). ZAP: [`zap-dual.md`](zap-dual.md). Bounds: [`security-lab.md`](security-lab.md).  
-> Реестр: [`INDEX.md`](INDEX.md). Skill: global **`secops-lab`**.
+> Реестр: [`INDEX.md`](INDEX.md). Skill: global **`prettyk-lab`**.
 
 ## 1. Обязательное vs opt-in
 

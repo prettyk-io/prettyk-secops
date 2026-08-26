@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """AUTH-13: compose CSV/modules + form/action dialect."""
 from __future__ import annotations
 
@@ -134,7 +134,7 @@ def test_resolve_csv_and_compose_module():
 
 
 def test_apply_auth_profiles_static_combo(monkeypatch):
-    monkeypatch.delenv("KDT_AUTH_BOOTSTRAP", raising=False)
+    monkeypatch.delenv("PK_AUTH_BOOTSTRAP", raising=False)
     profiles = [
         parse_auth_module("auth=apikey\nname=X-Key\nvalue=1\n", module_id="k"),
         parse_auth_module(
@@ -150,7 +150,7 @@ def test_apply_auth_profiles_static_combo(monkeypatch):
 
 
 def test_apply_auth_profiles_with_call_chain(monkeypatch):
-    monkeypatch.delenv("KDT_AUTH_BOOTSTRAP", raising=False)
+    monkeypatch.delenv("PK_AUTH_BOOTSTRAP", raising=False)
     profiles = [
         parse_auth_module("auth=apikey\nname=X-Key\nvalue=1\n", module_id="k"),
         parse_auth_module(
@@ -173,8 +173,8 @@ def test_apply_auth_profiles_with_call_chain(monkeypatch):
 
 
 def test_form_action_http_not_applied(monkeypatch):
-    monkeypatch.delenv("KDT_AUTH_BOOTSTRAP", raising=False)
-    monkeypatch.delenv("KDT_AUTH_FORM_BROWSER", raising=False)
+    monkeypatch.delenv("PK_AUTH_BOOTSTRAP", raising=False)
+    monkeypatch.delenv("PK_AUTH_FORM_BROWSER", raising=False)
     form = parse_auth_module(
         "\n".join(
             [
@@ -191,7 +191,7 @@ def test_form_action_http_not_applied(monkeypatch):
     http = FakeHttp()
     out = apply_auth_profiles([form], http)
     assert out["applied"] is False
-    assert any("KDT_AUTH_FORM_BROWSER" in n or "form не applied" in n for n in out["notes"])
+    assert any("PK_AUTH_FORM_BROWSER" in n or "form не applied" in n for n in out["notes"])
 
     action = parse_auth_module(
         "\n".join(
@@ -216,7 +216,7 @@ def test_form_action_http_not_applied(monkeypatch):
 
 
 def test_controller_csv_compose(monkeypatch):
-    monkeypatch.delenv("KDT_AUTH_BOOTSTRAP", raising=False)
+    monkeypatch.delenv("PK_AUTH_BOOTSTRAP", raising=False)
     from core.controller import Controller
 
     man = _Wired(
@@ -253,7 +253,7 @@ def test_compose_cycle_ab_no_recurse():
 
 def test_compose_empty_modules_no_silent_legacy(monkeypatch):
     """BOT-A3: пустой modules= → applied false + notes, не legacy auth_type."""
-    monkeypatch.delenv("KDT_AUTH_BOOTSTRAP", raising=False)
+    monkeypatch.delenv("PK_AUTH_BOOTSTRAP", raising=False)
     from core.controller import Controller
 
     man = _Wired(_mod("c", "auth=compose\nmodules=\n"))

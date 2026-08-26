@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """G-46…G-49: logout avoidance, sequence scan, scan depth, report templates."""
 import sys
 from pathlib import Path
@@ -124,7 +124,7 @@ def test_af_plan_har_sequence_job():
 def test_depth_spec_profiles():
     smoke = depth_spec_for_profile("smoke")
     assert smoke["defaultStrength"] == "Low"
-    assert smoke["policy_name"] == "kdt-smoke"
+    assert smoke["policy_name"] == "pk-smoke"
     assert depth_spec_for_profile("crawler") is None
 
 
@@ -132,7 +132,7 @@ def test_af_plan_active_scan_policy_job():
     text = build_af_plan(base_url="http://app.test", scan_policy="custom_policy")
     assert "type: activeScan-policy" in text
     assert "defaultStrength: Low" in text
-    assert "policy: kdt-smoke" in text
+    assert "policy: pk-smoke" in text
 
 
 def test_method_id_scan_depth_profile():
@@ -153,7 +153,7 @@ def test_apply_scan_depth_profile_mock():
     out = ZapAdapter.apply_scan_depth_profile(adapter, "smoke")
     assert out["profile"] == "smoke"
     assert out["strength"] == "Low"
-    adapter._zap.ascan.set_scan_policy.assert_called_with("kdt-smoke")
+    adapter._zap.ascan.set_scan_policy.assert_called_with("pk-smoke")
 
 
 def test_apply_scan_depth_profile_unknown():

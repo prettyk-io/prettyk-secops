@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """AUTH-15: MFA action (TOTP/SMS) browser path."""
 from __future__ import annotations
 
@@ -105,7 +105,7 @@ def test_validate_action_mfa():
 
 
 def test_mfa_profile_ready_quiet(monkeypatch):
-    monkeypatch.delenv("KDT_AUTH_FORM_BROWSER", raising=False)
+    monkeypatch.delenv("PK_AUTH_FORM_BROWSER", raising=False)
     profile = parse_auth_module(ACTION_TEXT)
     out = apply_auth_action(profile, FakeWd(), FakeHttp())
     assert out["applied"] is False
@@ -116,7 +116,7 @@ def test_mfa_profile_ready_quiet(monkeypatch):
 
 
 def test_mfa_live_totp(monkeypatch):
-    monkeypatch.setenv("KDT_AUTH_FORM_BROWSER", "1")
+    monkeypatch.setenv("PK_AUTH_FORM_BROWSER", "1")
     profile = parse_auth_module(ACTION_TEXT)
     wd = FakeWd()
     out = apply_auth_action(profile, wd, FakeHttp())
@@ -130,7 +130,7 @@ def test_mfa_live_totp(monkeypatch):
 
 
 def test_mfa_cookies_to_zap_replacer(monkeypatch):
-    monkeypatch.setenv("KDT_AUTH_FORM_BROWSER", "1")
+    monkeypatch.setenv("PK_AUTH_FORM_BROWSER", "1")
     profile = parse_auth_module(ACTION_TEXT)
     zap = FakeZap()
     out = apply_auth_action(profile, FakeWd(), FakeHttp(), zap)
@@ -142,7 +142,7 @@ def test_mfa_cookies_to_zap_replacer(monkeypatch):
 
 
 def test_mfa_sms_code(monkeypatch):
-    monkeypatch.setenv("KDT_AUTH_FORM_BROWSER", "1")
+    monkeypatch.setenv("PK_AUTH_FORM_BROWSER", "1")
     text = ACTION_TEXT.replace("mfa=totp", "mfa=sms").replace(
         "#totp_secret=JBSWY3DPEHPK3PXP", "otp_code=424242"
     )
@@ -157,7 +157,7 @@ def test_mfa_sms_code(monkeypatch):
 
 
 def test_mfa_split_digit_fields(monkeypatch):
-    monkeypatch.setenv("KDT_AUTH_FORM_BROWSER", "1")
+    monkeypatch.setenv("PK_AUTH_FORM_BROWSER", "1")
     lines = [
         "auth=action",
         "login_url=https://app.lab/login",
@@ -192,7 +192,7 @@ def test_mfa_split_digit_fields(monkeypatch):
 
 
 def test_legacy_sso_page_to_action(monkeypatch):
-    monkeypatch.setenv("KDT_AUTH_FORM_BROWSER", "1")
+    monkeypatch.setenv("PK_AUTH_FORM_BROWSER", "1")
     profile = profile_from_sso_auth_details(
         {
             "Провайдер авторизации (IdP URL)": "https://idp/login",

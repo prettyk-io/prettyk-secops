@@ -1,10 +1,10 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 from utils import evidence_refs as er
 
 
 def test_upsert_and_list_for_deploy(monkeypatch, tmp_path):
     path = tmp_path / "refs.json"
-    monkeypatch.setenv("KDT_EVIDENCE_REFS_PATH", str(path))
+    monkeypatch.setenv("PK_EVIDENCE_REFS_PATH", str(path))
     import importlib
 
     importlib.reload(er)

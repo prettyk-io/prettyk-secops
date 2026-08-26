@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """ОбойтиСтраницы → webdriver.crawl_urls."""
 from __future__ import annotations
 

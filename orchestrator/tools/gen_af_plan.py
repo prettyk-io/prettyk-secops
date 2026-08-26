@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 CLI: манифест → ZAP AF YAML (G-38). Только пишет файл, не запускает план.
@@ -26,7 +26,7 @@ from core.af_plan import (  # noqa: E402
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(
-        description="Generate ZAP Automation Framework YAML from KDT wired"
+        description="Generate ZAP Automation Framework YAML from PK wired"
     )
     p.add_argument("--wired", "-m", help="Путь к JSON-манифесту")
     p.add_argument("--base-url", help="URL цели (если без --wired)")

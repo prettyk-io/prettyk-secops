@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """MethodId RU → wire."""
 import sys
 from pathlib import Path

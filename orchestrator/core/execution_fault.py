@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Ось исполнения: classify fatal fault + admission VOID при exit 1."""
 from __future__ import annotations
 

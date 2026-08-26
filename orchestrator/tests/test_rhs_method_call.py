@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """MethodId / ворота / wire справа от Пусть: результат шага → переменная."""
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 from core.constructor_validate import (
     _locate_in_script,
     _token_span_in_text,

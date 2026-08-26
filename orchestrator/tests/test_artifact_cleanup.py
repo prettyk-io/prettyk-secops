@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -20,8 +20,8 @@ from utils.retention_policy import save_retention_policy
 
 
 def test_retention_candidates_and_disk_purge(tmp_path, monkeypatch):
-    monkeypatch.setenv("KDT_ARTIFACT_INDEX_PATH", str(tmp_path / "idx.json"))
-    monkeypatch.setenv("KDT_RETENTION_POLICY_PATH", str(tmp_path / "ret.json"))
+    monkeypatch.setenv("PK_ARTIFACT_INDEX_PATH", str(tmp_path / "idx.json"))
+    monkeypatch.setenv("PK_RETENTION_POLICY_PATH", str(tmp_path / "ret.json"))
     save_retention_policy({"artifact_retention_days": 7})
 
     run_dir = tmp_path / "reports" / "runs" / "old"
@@ -68,8 +68,8 @@ def test_retention_candidates_and_disk_purge(tmp_path, monkeypatch):
 
 
 def test_dojo_purge_skips_fixed_mode(tmp_path, monkeypatch):
-    monkeypatch.setenv("KDT_ARTIFACT_INDEX_PATH", str(tmp_path / "idx.json"))
-    monkeypatch.setenv("KDT_DEFECTDOJO_ENGAGEMENT_MODE", "fixed")
+    monkeypatch.setenv("PK_ARTIFACT_INDEX_PATH", str(tmp_path / "idx.json"))
+    monkeypatch.setenv("PK_DEFECTDOJO_ENGAGEMENT_MODE", "fixed")
     record_finalize_artifacts(
         check_id="chk_d",
         run_id="r",
@@ -81,8 +81,8 @@ def test_dojo_purge_skips_fixed_mode(tmp_path, monkeypatch):
 
 
 def test_orphan_scan_and_badges_and_audit(tmp_path, monkeypatch):
-    monkeypatch.setenv("KDT_ARTIFACT_INDEX_PATH", str(tmp_path / "idx.json"))
-    monkeypatch.setenv("KDT_ARTIFACT_AUDIT_PATH", str(tmp_path / "audit.ndjson"))
+    monkeypatch.setenv("PK_ARTIFACT_INDEX_PATH", str(tmp_path / "idx.json"))
+    monkeypatch.setenv("PK_ARTIFACT_AUDIT_PATH", str(tmp_path / "audit.ndjson"))
     runs = tmp_path / "reports" / "runs"
     known = runs / "known"
     orphan = runs / "orphan_x"
@@ -116,8 +116,8 @@ def test_orphan_scan_and_badges_and_audit(tmp_path, monkeypatch):
 
 
 def test_legal_hold_skips_retention_and_refuses_purge(tmp_path, monkeypatch):
-    monkeypatch.setenv("KDT_ARTIFACT_INDEX_PATH", str(tmp_path / "idx.json"))
-    monkeypatch.setenv("KDT_RETENTION_POLICY_PATH", str(tmp_path / "ret.json"))
+    monkeypatch.setenv("PK_ARTIFACT_INDEX_PATH", str(tmp_path / "idx.json"))
+    monkeypatch.setenv("PK_RETENTION_POLICY_PATH", str(tmp_path / "ret.json"))
     save_retention_policy({"artifact_retention_days": 7})
 
     run_dir = tmp_path / "reports" / "runs" / "held"

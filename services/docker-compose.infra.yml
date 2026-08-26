@@ -1,4 +1,5 @@
-# Infra stack: PostgreSQL 16 (source of truth) + Valkey 8 (cache / pub-sub / job queue).
+# Infra stack: PostgreSQL 16 (source of truth) + Valkey 8 (cache / pub-sub / job queue)
+# + OpenBao (secrets vault).
 # CANON: sanctuary/pure/infra-stack.md §2. Алтарь §11-12.
 #
 # Запуск из корня репозитория:
@@ -7,6 +8,7 @@
 # Порты:
 #   5432 — PostgreSQL 16
 #   6379 — Valkey 8 (Redis-совместимый)
+#   8200 — OpenBao API
 
 services:
   postgres:
@@ -16,14 +18,14 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_USER: prettyk
-      POSTGRES_PASSWORD: prettyk
-      POSTGRES_DB: prettyk
+      POSTGRES_USER: ${PRETTYK_PG_USER:-prettyk}
+      POSTGRES_PASSWORD: ${PRETTYK_PG_PASSWORD:-prettyk}
+      POSTGRES_DB: ${PRETTYK_PG_DB:-prettyk}
     volumes:
       - prettyk_postgres:/var/lib/postgresql/data
       - ./postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U prettyk -d prettyk"]
+      test: ["CMD-SHELL", "pg_isready -U ${PRETTYK_PG_USER:-prettyk} -d ${PRETTYK_PG_DB:-prettyk}"]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -45,11 +47,34 @@ services:
       retries: 5
       start_period: 5s
 
+  openbao:
+    image: openbao/openbao:latest
+    container_name: prettyk-openbao
+    restart: unless-stopped
+    ports:
+      - "8200:8200"
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${PRETTYK_BAO_ROOT_TOKEN:-prettyk-bao-root-dev}
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+      VAULT_ADDR: http://0.0.0.0:8200
+    volumes:
+      - prettyk_openbao:/vault/data
+      - ./openbao/config.hcl:/vault/config/config.hcl:ro
+    healthcheck:
+      test: ["CMD", "vault", "status"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+
 volumes:
   prettyk_postgres:
   prettyk_valkey:
+  prettyk_openbao:
 
 networks:
   default:
-    name: prettyk-net
+    name: pk-net
     external: true

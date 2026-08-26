@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Lab gRPC proto scrape → service/method list (IMP-GRPC)."""
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import tempfile
 import zipfile
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
-from utils.env_dual import pk_env
+from utils.env_dual import pk_env, pk_env_name
 
 _SERVICE_RE = re.compile(
     r"service\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*\{(?P<body>[^}]*)\}",
@@ -104,7 +104,7 @@ def _iter_proto_files(root: Path) -> List[Path]:
 
 
 def _extract_zip_pack(zip_path: Path) -> Tuple[Path, tempfile.TemporaryDirectory[str]]:
-    tmp = tempfile.TemporaryDirectory(prefix="kdt-grpc-pack-")
+    tmp = tempfile.TemporaryDirectory(prefix="pk-grpc-pack-")
     root = Path(tmp.name)
     with zipfile.ZipFile(zip_path, "r") as zf:
         zf.extractall(root)
@@ -270,7 +270,7 @@ def _resolve_import(imp: str, roots: Sequence[Path]) -> bool:
 def try_server_reflection(
     *,
     host: str = "",
-    env_flag: str = "KDT_GRPC_REFLECTION",
+    env_flag: str = "PK_GRPC_REFLECTION",
 ) -> Dict[str, Any]:
     """Reflection path: opt-in; без флага/зависимостей — skip+note."""
     result: Dict[str, Any] = {
@@ -279,7 +279,7 @@ def try_server_reflection(
         "services": [],
         "notes": [],
     }
-    flag = (os.environ.get(env_flag) or "").strip().lower()
+    flag = pk_env_name(env_flag).strip().lower()
     if flag not in ("1", "true", "yes", "on"):
         result["notes"].append(f"{env_flag} не включён — reflection skipped")
         return result
@@ -302,7 +302,8 @@ def _repo_proto_pack_candidates() -> List[Path]:
     here = Path(__file__).resolve()
     # orchestrator/utils → repo root
     root = here.parents[2]
-    out.append(root / "services" / "kdt-api-lab" / "proto_pack")
+    out.append(root / "services" / "pk-api-lab" / "proto_pack")
+    out.append(root / "services" / "pk-api-lab" / "proto_pack")
     return out
 
 
@@ -329,7 +330,7 @@ def _codegen_bank_stubs(proto_root: Path) -> Path:
         raise GrpcParseError(
             f"proto pack без bank/v1/{{common,account}}.proto: {proto_root}"
         )
-    out = Path(tempfile.mkdtemp(prefix="kdt-grpc-gen-"))
+    out = Path(tempfile.mkdtemp(prefix="pk-grpc-gen-"))
     (out / "bank" / "v1").mkdir(parents=True, exist_ok=True)
     rc = grpc_tools.protoc.main(
         [
@@ -355,7 +356,7 @@ def _grpc_dial_target(host: str) -> Tuple[str, List[str]]:
     """
     Цель dial для live unary.
     URL атаки bank lab = HTTP :8090, gRPC слушает :50051 — remap + notes.
-    Override: KDT_GRPC_PORT=50051 (любой host → этот порт).
+    Override: PK_GRPC_PORT=50051 (любой host → этот порт).
     """
     notes: List[str] = []
     target = (host or "").strip()
@@ -372,7 +373,7 @@ def _grpc_dial_target(host: str) -> Tuple[str, List[str]]:
         if target.startswith("[") and "]:" in target:
             name = target.split("]:", 1)[0] + "]"
         target = f"{name}:{override}"
-        notes.append(f"KDT_GRPC_PORT={override} → dial {target}")
+        notes.append(f"PK_GRPC_PORT={override} → dial {target}")
         return target, notes
 
     # api-lab compose: HTTP 8090 + gRPC 50051 на одном хосте
@@ -413,7 +414,7 @@ def _live_unary_bank(
             break
     if proto_root is None:
         raise GrpcParseError(
-            "не найден proto_pack bank/v1 (KDT_GRPC_PROTO_PACK или services/kdt-api-lab/proto_pack)"
+            "не найден proto_pack bank/v1 (PK_GRPC_PROTO_PACK или services/pk-api-lab/proto_pack)"
         )
     notes.append(f"proto_pack={proto_root}")
 
@@ -459,12 +460,12 @@ def unary_call_harness(
     method: str = "",
     request_json: str = "{}",
     proto_pack: str = "",
-    env_flag: str = "KDT_GRPC_UNARY",
+    env_flag: str = "PK_GRPC_UNARY",
 ) -> Dict[str, Any]:
     """
     IMP-GRPC: unary harness.
     Без флага — честный bolvan (сеть не дергаем).
-    С KDT_GRPC_UNARY=1 — live RPC на bank AccountService (codegen из proto_pack).
+    С PK_GRPC_UNARY=1 — live RPC на bank AccountService (codegen из proto_pack).
     """
     result: Dict[str, Any] = {
         "ok": False,
@@ -475,7 +476,7 @@ def unary_call_harness(
         "response": None,
         "notes": [],
     }
-    flag = (os.environ.get(env_flag) or "").strip().lower()
+    flag = pk_env_name(env_flag).strip().lower()
     if flag not in ("1", "true", "yes", "on"):
         result["notes"].append(
             f"{env_flag} не включён — unary stub (bolvan); сеть не дергаем"

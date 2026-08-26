@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 MethodId: русское pretty-имя → wire `component|action|args`.
 
@@ -1166,7 +1166,7 @@ def _resolve_execution_title_meta(
     comp: str, act: str, params: Dict[str, object]
 ) -> tuple[str, str, tuple]:
     descriptor = _STEP_DESCRIPTORS.get((comp, act))
-    category = descriptor.category if descriptor else _CATEGORY_LABELS.get(comp, comp or "KDT")
+    category = descriptor.category if descriptor else _CATEGORY_LABELS.get(comp, comp or "PK")
     if descriptor:
         return category, descriptor.title, descriptor.params
     found = _wire_pretty_lookup(comp, act)
@@ -1339,7 +1339,7 @@ def _apply_bank_overlay() -> None:
     """
     Банковский профиль MethodId без форка этого файла.
 
-    Путь: env KDT_METHOD_OVERLAY или orchestrator/config/bank_method_overlay.json.
+    Путь: env PK_METHOD_OVERLAY или orchestrator/config/bank_method_overlay.json.
     Пример: config/bank_method_overlay.example.json
 
     Поля JSON:

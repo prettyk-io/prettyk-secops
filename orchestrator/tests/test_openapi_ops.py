@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 from pathlib import Path
@@ -52,7 +52,7 @@ def test_ops_to_fuzz_targets_and_seed():
 
 
 def test_zap_import_skipped_without_flag(monkeypatch):
-    monkeypatch.delenv("KDT_OPENAPI_ZAP_IMPORT", raising=False)
+    monkeypatch.delenv("PK_OPENAPI_ZAP_IMPORT", raising=False)
 
     class Zap:
         def import_openapi_spec(self, _):
@@ -64,7 +64,7 @@ def test_zap_import_skipped_without_flag(monkeypatch):
 
 
 def test_zap_import_opt_in(monkeypatch):
-    monkeypatch.setenv("KDT_OPENAPI_ZAP_IMPORT", "1")
+    monkeypatch.setenv("PK_OPENAPI_ZAP_IMPORT", "1")
     calls: list[str] = []
 
     class Zap:

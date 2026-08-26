@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Lab demo: push CI status fixtures into Live for Results UI."""
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ FIXTURES = {
         "phase": "in_progress",
         "job_name": "orchestrator",
         "job_description": "Pytest + validate-only",
-        "job_url": "https://github.com/example/zap-kdt/actions/runs/1",
+        "job_url": "https://github.com/example/prettyk-dev/actions/runs/1",
     },
     "pass": {
         "phase": "completed",
@@ -29,7 +29,7 @@ FIXTURES = {
         "gate": "pass",
         "job_name": "orchestrator",
         "job_description": "Чисто",
-        "job_url": "https://github.com/example/zap-kdt/actions/runs/2",
+        "job_url": "https://github.com/example/prettyk-dev/actions/runs/2",
     },
     "pass_watch": {
         "phase": "completed",
@@ -38,7 +38,7 @@ FIXTURES = {
         "gate": "pass",
         "job_name": "orchestrator",
         "job_description": "Soft findings",
-        "job_url": "https://github.com/example/zap-kdt/actions/runs/3",
+        "job_url": "https://github.com/example/prettyk-dev/actions/runs/3",
         "risk_hints": {
             "highest_severity": "Medium",
             "counts": {"medium": 2, "low": 1},
@@ -65,7 +65,7 @@ FIXTURES = {
         "gate": "fail",
         "job_name": "orchestrator",
         "job_description": "Quality gate",
-        "job_url": "https://github.com/example/zap-kdt/actions/runs/4",
+        "job_url": "https://github.com/example/prettyk-dev/actions/runs/4",
     },
     "fail_run": {
         "phase": "completed",
@@ -74,7 +74,7 @@ FIXTURES = {
         "gate": "error",
         "job_name": "orchestrator",
         "job_description": "Job crashed",
-        "job_url": "https://github.com/example/zap-kdt/actions/runs/5",
+        "job_url": "https://github.com/example/prettyk-dev/actions/runs/5",
     },
 }
 

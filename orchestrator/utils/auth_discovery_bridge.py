@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Auth module ↔ discovery login bridge notes (IMP-AD).
 
 Не реализует АвтоАвторизоваться MethodId (DISC-1 / CANON дно).

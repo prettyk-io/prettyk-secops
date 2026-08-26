@@ -1,8 +1,8 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Dual-axis / QG-AF: resolve Dojo counts vs ZAP fallback."""
 from __future__ import annotations
 
-import main as kdt_main
+import main as pk_main
 from adapters.defectdojo_client import resolve_dojo_gate_counts
 from core.controller import Controller
 from core.gate_policy import AdmissionPolicy, evaluate_admission_gate
@@ -14,7 +14,7 @@ def test_resolve_prefers_finalize_admission_counts(monkeypatch):
     )
     ctrl = object.__new__(Controller)
     ctrl.adapters = {}
-    counts, source, err = kdt_main._resolve_admission_counts(
+    counts, source, err = pk_main._resolve_admission_counts(
         ctrl,
         {
             "dojo_skipped": False,
@@ -45,7 +45,7 @@ def test_resolve_zap_fallback_when_dojo_skipped(monkeypatch):
 
     ctrl = object.__new__(Controller)
     ctrl.adapters = {"zap": Z()}
-    counts, source, err = kdt_main._resolve_admission_counts(
+    counts, source, err = pk_main._resolve_admission_counts(
         ctrl,
         {"dojo_skipped": True, "dojo_ok": True, "dojo_stats": None},
     )
@@ -60,7 +60,7 @@ def test_resolve_dojo_configured_import_fail(monkeypatch):
     )
     ctrl = object.__new__(Controller)
     ctrl.adapters = {}
-    counts, source, err = kdt_main._resolve_admission_counts(
+    counts, source, err = pk_main._resolve_admission_counts(
         ctrl,
         {"dojo_skipped": False, "dojo_ok": False, "dojo_stats": None},
     )
@@ -75,7 +75,7 @@ def test_resolve_fail_closed_when_counts_missing(monkeypatch):
     )
     ctrl = object.__new__(Controller)
     ctrl.adapters = {}
-    counts, source, err = kdt_main._resolve_admission_counts(
+    counts, source, err = pk_main._resolve_admission_counts(
         ctrl,
         {
             "dojo_skipped": False,

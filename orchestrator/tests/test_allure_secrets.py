@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Секреты не должны утекать в semantic trace-заголовки."""
 import sys
 from pathlib import Path

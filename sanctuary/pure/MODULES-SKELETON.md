@@ -196,7 +196,7 @@ flowchart LR
 |---|---|
 | Sonar Open Δ / extract helpers | EVIDENCE dig |
 | Home 96×96 / тени / стрелки | fe-shell QUEUE / session EVIDENCE |
-| Vite Job Object detach | global `secops-lab` (операционный) |
+| Vite Job Object detach | global `prettyk-lab` (операционный) |
 | Admin «5 фич» research без ship | backlog pulse |
 
 ---

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """G-20: run_summary.json — сериализация и запись на диск."""
 from __future__ import annotations
 
@@ -51,7 +51,7 @@ def test_gate_label():
 
 
 def test_write_run_summary_file(tmp_path, monkeypatch):
-    monkeypatch.setenv("KDT_RUN_DIR", str(tmp_path))
+    monkeypatch.setenv("PK_RUN_DIR", str(tmp_path))
     live = tmp_path / "live"
     live.mkdir()
     monkeypatch.setattr("utils.reporter.LIVE_DIR", live)
@@ -78,8 +78,8 @@ def test_write_run_summary_file(tmp_path, monkeypatch):
 
 
 def test_write_from_controller_fixture(tmp_path, monkeypatch):
-    monkeypatch.setenv("KDT_RUN_DIR", str(tmp_path))
-    monkeypatch.setenv("KDT_LIVE", "0")
+    monkeypatch.setenv("PK_RUN_DIR", str(tmp_path))
+    monkeypatch.setenv("PK_LIVE", "0")
     ctrl = SimpleNamespace(
         quality_gate_failed=False,
         quality_gate_summary=None,
@@ -102,8 +102,8 @@ def test_write_from_controller_fixture(tmp_path, monkeypatch):
 
 
 def test_write_from_controller_gate_fail(tmp_path, monkeypatch):
-    monkeypatch.setenv("KDT_RUN_DIR", str(tmp_path))
-    monkeypatch.setenv("KDT_LIVE", "0")
+    monkeypatch.setenv("PK_RUN_DIR", str(tmp_path))
+    monkeypatch.setenv("PK_LIVE", "0")
     ctrl = SimpleNamespace(
         quality_gate_failed=True,
         quality_gate_summary={"total": 3},

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Scenario-level failsafe marker `<!>` (не путать с action `>?`)."""
 from __future__ import annotations
 

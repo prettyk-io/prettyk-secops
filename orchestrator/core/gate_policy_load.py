@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """QG-AF-12: GatePolicy JSON (thresholds + filter + waivers)."""
 from __future__ import annotations
 
@@ -56,10 +56,8 @@ class GatePolicyBundle:
 
 
 def _env(name: str, default: str = "") -> str:
-    pk_val = os.getenv(f"PK_{name}")
-    if pk_val:
-        return pk_val.strip()
-    return (os.getenv(name) or default).strip()
+    base = name[3:] if name.startswith("PK_") else name
+    return (os.getenv(f"PK_{base}") or default).strip()
 
 
 def _as_bool(raw: Any, default: bool) -> bool:
@@ -99,21 +97,21 @@ def filter_policy_from_mapping(data: Optional[Dict[str, Any]]) -> FilterPolicy:
 
 
 def filter_policy_from_env() -> FilterPolicy:
-    """KDT_GATE_FILTER_* overlays on defaults."""
+    """PK_GATE_FILTER_* overlays on defaults."""
     return FilterPolicy(
-        require_active=_as_bool(_env("KDT_GATE_FILTER_REQUIRE_ACTIVE", "1"), True),
+        require_active=_as_bool(_env("PK_GATE_FILTER_REQUIRE_ACTIVE", "1"), True),
         exclude_false_positive=_as_bool(
-            _env("KDT_GATE_FILTER_EXCLUDE_FP", "1"), True
+            _env("PK_GATE_FILTER_EXCLUDE_FP", "1"), True
         ),
-        exclude_duplicate=_as_bool(_env("KDT_GATE_FILTER_EXCLUDE_DUP", "1"), True),
+        exclude_duplicate=_as_bool(_env("PK_GATE_FILTER_EXCLUDE_DUP", "1"), True),
         exclude_mitigated=_as_bool(
-            _env("KDT_GATE_FILTER_EXCLUDE_MITIGATED", "1"), True
+            _env("PK_GATE_FILTER_EXCLUDE_MITIGATED", "1"), True
         ),
-        verified_only=_as_bool(_env("KDT_GATE_FILTER_VERIFIED_ONLY", "0"), False),
-        min_severity=_env("KDT_GATE_FILTER_MIN_SEVERITY", "").lower(),
-        exclude_tags=_as_tags(_env("KDT_GATE_FILTER_EXCLUDE_TAGS", "")),
-        require_tags=_as_tags(_env("KDT_GATE_FILTER_REQUIRE_TAGS", "")),
-        max_age_days=max(0, int(_env("KDT_GATE_FILTER_MAX_AGE_DAYS", "0") or 0)),
+        verified_only=_as_bool(_env("PK_GATE_FILTER_VERIFIED_ONLY", "0"), False),
+        min_severity=_env("PK_GATE_FILTER_MIN_SEVERITY", "").lower(),
+        exclude_tags=_as_tags(_env("PK_GATE_FILTER_EXCLUDE_TAGS", "")),
+        require_tags=_as_tags(_env("PK_GATE_FILTER_REQUIRE_TAGS", "")),
+        max_age_days=max(0, int(_env("PK_GATE_FILTER_MAX_AGE_DAYS", "0") or 0)),
     )
 
 
@@ -137,7 +135,7 @@ def waivers_from_mapping(raw: Any) -> List[WaiverEntry]:
 
 
 def resolve_gate_policy_path() -> Path:
-    raw = _env("KDT_GATE_POLICY_PATH")
+    raw = _env("PK_GATE_POLICY_PATH")
     if raw:
         return Path(raw)
     return DEFAULT_LAB_POLICY

@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
-Мост KDT ↔ Selene (питоний порт Selenide).
+Мост PK ↔ Selene (питоний порт Selenide).
 
 Создание драйвера (local/Selenoid/ZAP-proxy) остаётся на Selenium.
 Все ожидания и действия с элементами — через Selene: lazy-локаторы,
@@ -15,7 +15,7 @@ from selenium.webdriver.remote.webdriver import WebDriver
 def bind_driver(driver: WebDriver | None, timeout: float) -> None:
     """Подключить уже созданный WebDriver к shared `browser` Selene."""
     browser.config.timeout = float(timeout)
-    # Жизненный цикл сессии ведёт KDT (Controller.shutdown), не atexit Selene.
+    # Жизненный цикл сессии ведёт PK (Controller.shutdown), не atexit Selene.
     browser.config.hold_driver_at_exit = True
     # Как Selenide: не кликать, пока поверх элемента другой слой (Material/CDK).
     browser.config.wait_for_no_overlap_found_by_js = True
@@ -33,7 +33,7 @@ def unbind_driver() -> None:
 
 def to_locator(selector_type: str, selector_value: str):
     """
-    KDT (selector_type, selector_value) → локатор Selene.
+    PK (selector_type, selector_value) → локатор Selene.
 
     Те же типы, что понимал WebDriverAdapter._get_by: css/xpath/id/name/class/
     tag/link/partial_link/text/contains_text.

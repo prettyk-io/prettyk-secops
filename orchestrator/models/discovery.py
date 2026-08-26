@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Discovery Engine — IR schema (Pydantic).
 
 Discovery IR (run artifact) != wired.json (executable source).

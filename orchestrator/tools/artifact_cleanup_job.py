@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 ART-5/6 CLI: artifact cleanup job (dry-run default).
 
@@ -78,7 +78,7 @@ def _cmd_hold(*, check_id: str, hold: bool, release: bool, note: str) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="KDT artifact cleanup (ART)")
+    parser = argparse.ArgumentParser(description="PK artifact cleanup (ART)")
     parser.add_argument(
         "--dry-run",
         action="store_true",

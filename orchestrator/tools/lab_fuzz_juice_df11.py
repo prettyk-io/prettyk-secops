@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """DF-11 lab: sniper {MASK} + pitchfork MASK_1/MASK_2 (+ TAB) на Juice search.
 
 Стенд: ZAP demon :8080, Juice через Docker DNS ``juice-shop:3000``.

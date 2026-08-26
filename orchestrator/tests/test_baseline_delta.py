@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """W1 acceptance: deterministic delta builder."""
 import pytest
 from models.finding import CanonicalFinding

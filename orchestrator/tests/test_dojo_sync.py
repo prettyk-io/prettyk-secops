@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """DEFECTDOJO-BIDIRECTIONAL-SYNC: dojo_sync модуль.
 
 Покрытие:
@@ -41,7 +41,7 @@ def _finding(**overrides):
         "payload": "",
         "evidence": "HTTP 500",
         "cwe": "CWE-20",
-        "rule_id": "kdt_fuzz_server_error",
+        "rule_id": "pk_fuzz_server_error",
         "confidence": 2,
         "tags": ["fuzz", "server_error"],
     }
@@ -69,7 +69,7 @@ def test_unique_id_stable_and_different_on_param():
     b = _finding(param="other")
     assert finding_unique_id(a) == finding_unique_id(a)
     assert finding_unique_id(a) != finding_unique_id(b)
-    assert finding_unique_id(a).startswith("kdt-")
+    assert finding_unique_id(a).startswith("pk-")
 
 
 # ── payload mapping ──
@@ -120,8 +120,8 @@ def _capture(method, status_code=201, body=None):
 
 
 def test_push_not_configured(monkeypatch):
-    monkeypatch.delenv("KDT_DEFECTDOJO_URL", raising=False)
-    monkeypatch.delenv("KDT_DEFECTDOJO_TOKEN", raising=False)
+    monkeypatch.delenv("PK_DEFECTDOJO_URL", raising=False)
+    monkeypatch.delenv("PK_DEFECTDOJO_TOKEN", raising=False)
     monkeypatch.setattr("services.dojo_sync._config", lambda: ("", ""))
     res = push_findings_to_dojo([_finding()], test_id=1)
     assert res["ok"] is False

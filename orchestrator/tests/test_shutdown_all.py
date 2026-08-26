@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Таймауты infrastructure — конфиг на старте; shutdown_all гасит ZAP."""
 from __future__ import annotations
 
@@ -94,8 +94,8 @@ def test_shutdown_all_api_success(monkeypatch):
     core = MagicMock()
     zap._zap = MagicMock(core=core)
     zap._connected = True
-    monkeypatch.delenv("KDT_ZAP_STOP_DAEMON_CMD", raising=False)
-    monkeypatch.delenv("KDT_ZAP_STOP_WEBSWING_CMD", raising=False)
+    monkeypatch.delenv("PK_ZAP_STOP_DAEMON_CMD", raising=False)
+    monkeypatch.delenv("PK_ZAP_STOP_WEBSWING_CMD", raising=False)
 
     assert zap.shutdown_all() is True
     core.shutdown.assert_called_once()
@@ -105,19 +105,19 @@ def test_shutdown_all_api_success(monkeypatch):
 
 def test_shutdown_all_falls_back_to_env(monkeypatch):
     zap = ZapAdapter()
-    monkeypatch.setenv("KDT_ZAP_STOP_DAEMON_CMD", "echo stop-daemon")
-    monkeypatch.delenv("KDT_ZAP_STOP_WEBSWING_CMD", raising=False)
+    monkeypatch.setenv("PK_ZAP_STOP_DAEMON_CMD", "echo stop-daemon")
+    monkeypatch.delenv("PK_ZAP_STOP_WEBSWING_CMD", raising=False)
 
     with patch.object(zap, "_ensure_connected", side_effect=RuntimeError("down")):
         with patch.object(zap, "_run_external_mode_cmd", return_value=True) as run:
             assert zap.shutdown_all() is True
-            run.assert_called_once_with("KDT_ZAP_STOP_DAEMON_CMD", "stop ZAP daemon")
+            run.assert_called_once_with("PK_ZAP_STOP_DAEMON_CMD", "stop ZAP daemon")
 
 
 def test_shutdown_all_fails_without_api_or_env(monkeypatch):
     zap = ZapAdapter()
-    monkeypatch.delenv("KDT_ZAP_STOP_DAEMON_CMD", raising=False)
-    monkeypatch.delenv("KDT_ZAP_STOP_WEBSWING_CMD", raising=False)
+    monkeypatch.delenv("PK_ZAP_STOP_DAEMON_CMD", raising=False)
+    monkeypatch.delenv("PK_ZAP_STOP_WEBSWING_CMD", raising=False)
 
     with patch.object(zap, "_ensure_connected", side_effect=RuntimeError("down")):
         with pytest.raises(WiredError, match="shutdown_all"):
@@ -164,7 +164,7 @@ def test_idle_timeout_calls_shutdown_all():
 def test_webswing_hold_awaits_idle_kill(monkeypatch):
     from core.controller import Controller
 
-    monkeypatch.delenv("KDT_WEBSWING_HOLD", raising=False)
+    monkeypatch.delenv("PK_WEBSWING_HOLD", raising=False)
     zap = MagicMock()
     ctrl = Controller.__new__(Controller)
     ctrl.wired = _minimal_Wired(
@@ -191,7 +191,7 @@ def test_webswing_hold_awaits_idle_kill(monkeypatch):
 def test_webswing_hold_disabled(monkeypatch):
     from core.controller import Controller
 
-    monkeypatch.setenv("KDT_WEBSWING_HOLD", "0")
+    monkeypatch.setenv("PK_WEBSWING_HOLD", "0")
     ctrl = Controller.__new__(Controller)
     ctrl.wired = _minimal_Wired(zap_mode="webswing")
     ctrl._work_timer = MagicMock()
@@ -205,7 +205,7 @@ def test_webswing_hold_disabled(monkeypatch):
 def test_idle_timeout_sec_override(monkeypatch):
     from core.controller import Controller
 
-    monkeypatch.setenv("KDT_IDLE_TIMEOUT_SEC", "12")
+    monkeypatch.setenv("PK_IDLE_TIMEOUT_SEC", "12")
     wired = _minimal_Wired(zap_work_timeout_min=60, idle_timeout_min=5)
     with patch.object(Controller, "_init_adapters", lambda self: None):
         with patch.object(Controller, "_register_actions", lambda self: None):
@@ -225,8 +225,8 @@ def test_idle_timeout_sec_override(monkeypatch):
 def test_bootstrap_webswing_calls_start(monkeypatch):
     from core.controller import Controller
 
-    monkeypatch.setenv("KDT_ZAP_START_WEBSWING_CMD", "echo start-ws")
-    monkeypatch.delenv("KDT_ZAP_STOP_DAEMON_CMD", raising=False)
+    monkeypatch.setenv("PK_ZAP_START_WEBSWING_CMD", "echo start-ws")
+    monkeypatch.delenv("PK_ZAP_STOP_DAEMON_CMD", raising=False)
     zap = MagicMock()
     ctrl = Controller.__new__(Controller)
     ctrl.wired = _minimal_Wired(

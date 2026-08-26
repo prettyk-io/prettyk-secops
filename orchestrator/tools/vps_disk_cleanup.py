@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Free VPS disk: drop stale Editor trees/zips + vacuum logs. Keeps live + package + API.
 
 Usage (repo root):

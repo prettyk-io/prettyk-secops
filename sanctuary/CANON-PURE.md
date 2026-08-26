@@ -1,7 +1,7 @@
 # CANON-PURE — спека коробки (prettyk-pure)
 
 > **Sanctuary**. Slice: 13 августа 2026. Отполированная спека коробки (CANON BASE).
-> Основа: `docs/KDTZaproxy.md` (техпаспорт) + `docs/canon/runtime-shell.md` + `docs/canon/*`.
+> Основа: `docs/prettyk.md` (техпаспорт) + `docs/canon/runtime-shell.md` + `docs/canon/*`.
 > Без имени продукта. Без заказчика. Без банка.
 
 Коробка — инструмент оператора ИБ для проведения динамических проверок безопасности

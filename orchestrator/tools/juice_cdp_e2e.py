@@ -1,4 +1,4 @@
-import sys, json
+﻿import sys, json
 sys.path.insert(0, 'orchestrator')
 from utils.discovery_element_extractor import extract_elements
 from lab.discovery_session import (

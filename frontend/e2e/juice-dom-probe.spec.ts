@@ -9,9 +9,9 @@ test('probe juice shop address selection DOM', async ({ page }) => {
   // 1. register
   await page.goto(`${base}/#/register`);
   await page.locator('#emailControl').fill(email);
-  await page.locator('#passwordControl').fill('kdt_password');
-  await page.locator('#repeatPasswordControl').fill('kdt_password');
-  await page.locator('#securityAnswerControl').fill('kdt');
+  await page.locator('#passwordControl').fill('pk_password');
+  await page.locator('#repeatPasswordControl').fill('pk_password');
+  await page.locator('#securityAnswerControl').fill('pk');
   // выбрать секретный вопрос (иначе registerButton disabled)
   await page.locator("mat-select[aria-label='Selection list for the security question']").click();
   await page.waitForTimeout(500);
@@ -23,7 +23,7 @@ test('probe juice shop address selection DOM', async ({ page }) => {
   // 2. login
   await page.goto(`${base}/#/login`);
   await page.locator('#email').fill(email);
-  await page.locator('#password').fill('kdt_password');
+  await page.locator('#password').fill('pk_password');
   await page.locator('#loginButton').click();
   await page.waitForTimeout(1500);
 
@@ -46,7 +46,7 @@ test('probe juice shop address selection DOM', async ({ page }) => {
   await page.locator("button[aria-label='Add a new address']").click();
   await page.waitForTimeout(1000);
   await page.locator("input[placeholder='Please provide a country.']").fill('Russia');
-  await page.locator("input[placeholder='Please provide a name.']").fill('KDT Smoke');
+  await page.locator("input[placeholder='Please provide a name.']").fill('PK Smoke');
   await page.locator("input[placeholder='Please provide a mobile number.']").fill('9990001122');
   await page.locator("input[placeholder='Please provide a ZIP code.']").fill('123456');
   await page.locator('#address').fill('Lenina 1');

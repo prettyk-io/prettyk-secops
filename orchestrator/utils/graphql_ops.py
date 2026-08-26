@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Lab GraphQL → operations list (IMP-GQL). Authoring/lab only; no executor."""
 from __future__ import annotations
 

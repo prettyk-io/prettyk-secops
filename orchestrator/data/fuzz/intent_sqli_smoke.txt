@@ -1,4 +1,4 @@
-# lab — SQLi / NoSQL smoke (кураторский KDT; не SecLists)
+﻿# lab — SQLi / NoSQL smoke (кураторский PK; не SecLists)
 # Назначение: search/filter/login fields; status_changed / 5xx.
 '
 "

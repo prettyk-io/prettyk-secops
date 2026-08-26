@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """G-64: НовыйКонтекст → auto-include base + URL-списков suites."""
 from __future__ import annotations
 

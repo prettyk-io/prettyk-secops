@@ -150,7 +150,7 @@ export function DojoSyncManager(): React.JSX.Element {
             type="warning"
             showIcon
             message="DefectDojo не настроен"
-            description="Задайте KDT_DEFECTDOJO_URL и KDT_DEFECTDOJO_TOKEN в переменных окружения или services/defectdojo/.env.example"
+            description="Задайте PK_DEFECTDOJO_URL и PK_DEFECTDOJO_TOKEN в переменных окружения или services/defectdojo/.env.example"
             data-testid="dojo-sync-unconfigured"
           />
         ) : null}

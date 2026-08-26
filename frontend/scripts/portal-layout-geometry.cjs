@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Live-автотест геометрии «Регламент».
  * Контракт: form ≈ 50% ширины scroll, centered, gutter ≥ 20%.
  * Keep in sync with frontend/src/form/portalFormGeometry.ts
@@ -11,10 +11,11 @@ const path = require('path');
 
 const PORT = 9340;
 const EDGE_PATH =
-  process.env.KDT_EDGE_PATH ||
+  process.env.PK_EDGE_PATH ||
+  process.env.PK_EDGE_PATH ||
   'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
-const BASE = process.env.KDT_EDITOR_URL || 'http://localhost:5173/';
-const USER_DATA = path.join(process.env.TEMP || 'C:\\Temp', 'kdt_portal_layout_geom');
+const BASE = process.env.PK_EDITOR_URL || process.env.PK_EDITOR_URL || 'http://localhost:5173/';
+const USER_DATA = path.join(process.env.TEMP || 'C:\\Temp', 'pk_portal_layout_geom');
 
 const PORTAL_FORM_WIDTH_RATIO = 0.5;
 const PORTAL_FORM_WIDTH_RATIO_TOLERANCE = 0.04;
@@ -119,12 +120,12 @@ async function main() {
           document.querySelector('[data-testid="home-start-check"]')?.click();
           await new Promise((r) => setTimeout(r, 1600));
 
-          const scroll = document.querySelector('.kdt-form-scroll');
+          const scroll = document.querySelector('.pk-form-scroll');
           const form = document.querySelector(
-            '.kdt-form-scroll > form, .kdt-form-scroll > .ant-form, .kdt-form-scroll > .rjsf',
+            '.pk-form-scroll > form, .pk-form-scroll > .ant-form, .pk-form-scroll > .rjsf',
           );
           if (!scroll || !form) {
-            resolve({ error: 'missing .kdt-form-scroll or form.rjsf' });
+            resolve({ error: 'missing .pk-form-scroll or form.rjsf' });
             return;
           }
           const sr = scroll.getBoundingClientRect();
@@ -139,7 +140,7 @@ async function main() {
             formMaxW: getComputedStyle(form).maxWidth,
             formClass: form.className,
             href: location.href,
-            actions: [...document.querySelectorAll('.kdt-form-actions .ant-btn')].map((b) =>
+            actions: [...document.querySelectorAll('.pk-form-actions .ant-btn')].map((b) =>
               (b.textContent || '').trim(),
             ),
           });

@@ -1,4 +1,4 @@
-# PW-BROWSER-CORE: Playwright as primary browser runtime
+﻿# PW-BROWSER-CORE: Playwright as primary browser runtime
 playwright>=1.62,<2
 pydantic>=2.10,<3
 selenium>=4.27,<5
@@ -6,10 +6,10 @@ selene>=2.0.0rc10
 requests>=2.32,<3
 zaproxy>=0.6.0,<1
 allure-python-commons>=2.13.5,<3
-# G-61: Fernet at-rest для kdt:enc:v1:… в манифесте (KDT_WIRED_KEY)
+# G-61: Fernet at-rest для pk:enc:v1:… в манифесте (PK_WIRED_KEY)
 cryptography>=43,<46
 pyyaml>=6.0.0,<7
-# IMP-GRPC: live unary (KDT_GRPC_UNARY=1) + codegen из proto_pack
+# IMP-GRPC: live unary (PK_GRPC_UNARY=1) + codegen из proto_pack
 grpcio>=1.68,<2
 grpcio-tools>=1.68,<2
 protobuf>=5.28,<6

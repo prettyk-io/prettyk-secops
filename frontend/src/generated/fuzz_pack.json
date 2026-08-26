@@ -1,8 +1,8 @@
 {
-  "id": "kdt-intent-pack",
+  "id": "pk-intent-pack",
   "version": "1.0.0",
   "max_lines_default": 200,
-  "notes": "KDT curated lab pack — not SecLists. corpus=auto → location matrix in fuzzing.py",
+  "notes": "pk curated lab pack — not SecLists. corpus=auto → location matrix in fuzzing.py",
   "corpora": [
     {
       "name": "intent_boundary",

@@ -1,5 +1,5 @@
 /**
- * SecOps admin domain: bank portal Deploy → KDT check (anchor meta.project_id).
+ * SecOps admin domain: bank portal Deploy → PK check (anchor meta.project_id).
  */
 
 export type DeployGate = 'unknown' | 'pass' | 'watch' | 'fail';
@@ -45,9 +45,9 @@ export type AdminWaiver = {
 };
 
 export type AdminPolicies = {
-  /** ACTIVE Critical above this → fail_gate (align KDT_GATE_MAX_CRITICAL) */
+  /** ACTIVE Critical above this → fail_gate (align PK_GATE_MAX_CRITICAL) */
   max_critical: number;
-  /** ACTIVE High above this → fail_gate (align KDT_GATE_MAX_HIGH); soft → watch */
+  /** ACTIVE High above this → fail_gate (align PK_GATE_MAX_HIGH); soft → watch */
   max_high: number;
   /** When false → quality gate disabled in written GatePolicy JSON */
   gate_enabled?: boolean;

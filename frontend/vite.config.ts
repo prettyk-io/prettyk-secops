@@ -14,6 +14,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+      // SANCTUARY-MAP: единое описание карты живёт в sanctuary/system-map.json (корень репо),
+      // а не копируется в src — «карта читается из единого описания».
+      '@sanctuary': fileURLToPath(new URL('../sanctuary', import.meta.url)),
     },
   },
   // Workaround для Vite 8: dev-клиент иногда отдаётся с необъявленным
@@ -27,6 +30,8 @@ export default defineConfig({
     strictPort: true,
     // Listen IPv4+IPv6 — иначе только ::1 и http://127.0.0.1:5173/ мёртвый.
     host: true,
+    // SANCTUARY-MAP: разрешить чтение sanctuary/system-map.json вне root frontend/.
+    fs: { allow: [fileURLToPath(new URL('../', import.meta.url))] },
     // Dev API: песочница + валидатор конструкторов → tools/data_playground.py :8765
     // Live: метаданные и результаты → Live (idle) :8767
     // Auth: Better Auth spike server → auth-server.ts :3001

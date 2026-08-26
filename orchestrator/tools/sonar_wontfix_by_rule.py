@@ -1,7 +1,7 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Bulk WONTFIX open issues by rule (lab triage helper).
 
-Pairs with profile deactivation in sonar_kdt_profiles.py so noise does not
+Pairs with profile deactivation in sonar_pk_profiles.py so noise does not
 return on the next scan. Requires SONAR_TOKEN.
 
 Usage:

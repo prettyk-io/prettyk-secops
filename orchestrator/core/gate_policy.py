@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """G-19 / G-21: dual-axis admission gate + обязательность отчётов.
 
 Не секция манифеста. Схему не трогает.
@@ -8,13 +8,13 @@
   security  — evaluate_admission_gate(counts) → fail_gate / watch / pass
 
 Env:
-  KDT_GATE_MAX_CRITICAL — max ACTIVE Critical (default 0); выше → fail_gate
-  KDT_GATE_MAX_HIGH — max ACTIVE High (default 0); выше → fail_gate
-  KDT_GATE_SEVERITY — legacy ZAP floor (High|Medium|…); для сбора ZAP fallback
-  KDT_REQUIRE_ALLURE — 1 → нет/падение Allure влияет на exit (default 0)
-  KDT_REQUIRE_DEFECTDOJO — 1 → нет/падение Dojo import влияет на exit (default 0)
-  KDT_QUALITY_GATE — 0 выключает severity-gate
-  KDT_QUALITY_GATE_ON_ALERT_ERROR — closed|open (G-18)
+  PK_GATE_MAX_CRITICAL — max ACTIVE Critical (default 0); выше → fail_gate
+  PK_GATE_MAX_HIGH — max ACTIVE High (default 0); выше → fail_gate
+  PK_GATE_SEVERITY — legacy ZAP floor (High|Medium|…); для сбора ZAP fallback
+  PK_REQUIRE_ALLURE — 1 → нет/падение Allure влияет на exit (default 0)
+  PK_REQUIRE_DEFECTDOJO — 1 → нет/падение Dojo import влияет на exit (default 0)
+  PK_QUALITY_GATE — 0 выключает severity-gate
+  PK_QUALITY_GATE_ON_ALERT_ERROR — closed|open (G-18)
 """
 from __future__ import annotations
 
@@ -36,10 +36,8 @@ _ALIASES = {
 
 
 def _env(name: str, default: str = "") -> str:
-    pk_val = os.getenv(f"PK_{name}")
-    if pk_val:
-        return pk_val.strip()
-    return (os.getenv(name) or default).strip()
+    base = name[3:] if name.startswith("PK_") else name
+    return (os.getenv(f"PK_{base}") or default).strip()
 
 
 def env_flag(name: str, default: str = "0") -> bool:
@@ -60,7 +58,7 @@ def normalize_severity(raw: str | None) -> str:
 
 def gate_severity_floor() -> str:
     """Legacy ZAP floor (G-19): для сбора алертов fallback, не для max_* admission."""
-    return normalize_severity(_env("KDT_GATE_SEVERITY", "High"))
+    return normalize_severity(_env("PK_GATE_SEVERITY", "High"))
 
 
 def severities_at_or_above(floor: str | None = None) -> List[str]:
@@ -75,15 +73,15 @@ def severities_at_or_above(floor: str | None = None) -> List[str]:
 
 
 def require_allure() -> bool:
-    return env_flag("KDT_REQUIRE_ALLURE", "0")
+    return env_flag("PK_REQUIRE_ALLURE", "0")
 
 
 def require_defectdojo() -> bool:
-    return env_flag("KDT_REQUIRE_DEFECTDOJO", "0")
+    return env_flag("PK_REQUIRE_DEFECTDOJO", "0")
 
 
 def quality_gate_enabled() -> bool:
-    raw = _env("KDT_QUALITY_GATE", "1").lower()
+    raw = _env("PK_QUALITY_GATE", "1").lower()
     return raw not in {"0", "false", "off", "no"}
 
 
@@ -125,8 +123,8 @@ class AdmissionResult:
 
 def admission_policy_from_env() -> AdmissionPolicy:
     return AdmissionPolicy(
-        max_critical=_env_nonneg_int("KDT_GATE_MAX_CRITICAL", 0),
-        max_high=_env_nonneg_int("KDT_GATE_MAX_HIGH", 0),
+        max_critical=_env_nonneg_int("PK_GATE_MAX_CRITICAL", 0),
+        max_high=_env_nonneg_int("PK_GATE_MAX_HIGH", 0),
         enabled=quality_gate_enabled(),
     )
 
@@ -284,17 +282,17 @@ def report_requirement_failures(
     """
     reasons: List[str] = []
     if require_allure() and allure_ok is not True:
-        reasons.append("KDT_REQUIRE_ALLURE=1, но Allure generate неуспешен или results пусты")
+        reasons.append("PK_REQUIRE_ALLURE=1, но Allure generate неуспешен или results пусты")
     if require_defectdojo() and dojo_ok is not True:
         reasons.append(
-            "KDT_REQUIRE_DEFECTDOJO=1, но DefectDojo import неуспешен или нет ZAP XML"
+            "PK_REQUIRE_DEFECTDOJO=1, но DefectDojo import неуспешен или нет ZAP XML"
         )
     return reasons
 
 
 def zap_api_key_from_env() -> str | None:
     """Ключ для industrial ZAP (G-37). Lab disablekey → None ок."""
-    for name in ("KDT_ZAP_API_KEY", "ZAP_API_KEY"):
+    for name in ("PK_ZAP_API_KEY", "ZAP_API_KEY"):
         val = _env(name)
         if val:
             return val

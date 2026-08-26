@@ -1,4 +1,4 @@
-"""Независимая трасса фактического исполнения сценария."""
+﻿"""Независимая трасса фактического исполнения сценария."""
 from __future__ import annotations
 
 from contextlib import contextmanager

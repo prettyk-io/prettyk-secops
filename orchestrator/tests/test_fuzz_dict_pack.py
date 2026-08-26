@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
-"""Wave A: KDT fuzz pack.json + corpora files."""
+﻿# -*- coding: utf-8 -*-
+"""Wave A: pk fuzz pack.json + corpora files."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -19,7 +19,7 @@ def test_pack_json_valid_and_files_exist() -> None:
     errors = validate_fuzz_pack()
     assert errors == [], errors
     pack = load_fuzz_pack()
-    assert pack.get("id") == "kdt-intent-pack"
+    assert pack.get("id") == "pk-intent-pack"
     names = list_pack_corpus_names()
     for required in (
         "intent_boundary",

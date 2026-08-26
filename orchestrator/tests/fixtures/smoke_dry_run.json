@@ -1,14 +1,14 @@
-{
+﻿{
   "meta": {
     "project_id": "smoke-dry-run",
-    "initiator_name": "KDT Smoke",
-    "app_leader": "KDT Smoke",
+    "initiator_name": "PK Smoke",
+    "app_leader": "PK Smoke",
     "assessment_purpose": "emergency",
     "generate_act": false,
     "emergency_reason": "Dry run — validation only, no Dojo",
-    "release_domain": "kdt-smoke",
+    "release_domain": "pk-smoke",
     "compliance_requirements": "",
-    "release_manager": "KDT Smoke",
+    "release_manager": "PK Smoke",
     "app_type": "web"
   },
   "infrastructure": {

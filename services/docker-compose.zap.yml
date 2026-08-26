@@ -19,9 +19,9 @@ services:
     volumes:
       - ../zap/plugins:/zap/plugins:ro
       # IMP-HAR: host reports/runs → ZAP importHar (harFile path rewrite in zap_adapter)
-      - ../reports/runs:/zap/wrk/kdt-runs
+      - ../reports/runs:/zap/wrk/pk-runs
     networks:
-      - kdt-net
+      - pk-net
     # Main слушатель — как в официальном docker guide (-port 8080).
     # Browser proxy (8099) поднимает оркестратор: network.addLocalServer.
     # https://www.zaproxy.org/docs/docker/about/
@@ -61,6 +61,6 @@ services:
       start_period: 40s
 
 networks:
-  kdt-net:
+  pk-net:
     external: true
-    name: kdt-net
+    name: pk-net

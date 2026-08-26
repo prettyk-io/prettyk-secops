@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 RES-3: журнал прогона поверх Live export / diary (не клон Allure).
 
@@ -126,7 +126,7 @@ def build_run_journal(
 ) -> Dict[str, Any]:
     filtered = filter_journal_events(events, preset, limit=limit)
     return {
-        "kind": "kdt_run_journal",
+        "kind": "pk_run_journal",
         "version": 1,
         "built_at": time.time(),
         "run_id": (run_id or "").strip(),

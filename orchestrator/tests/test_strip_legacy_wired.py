@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """BE-RT-2: strip_legacy_wired_dict parity with FE migrateLegacyWired."""
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """QG-AF-9: Juice ZAP XML → live DefectDojo → admission gate (lab field)."""
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ def main() -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # engagement from lab .env.example if unset
-    os.environ.setdefault("KDT_DEFECTDOJO_ENGAGEMENT_MODE", "fixed")
+    os.environ.setdefault("PK_DEFECTDOJO_ENGAGEMENT_MODE", "fixed")
 
     result = trigger_defectdojo_import_detailed(
         xml,

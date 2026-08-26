@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Открыть relative / ОткрытьПоURL allowlist — resolve без драйвера."""
 from __future__ import annotations
 

@@ -1,6 +1,12 @@
 /** Вкладки Editor: keep-alive и отложенный persist `view`. */
 
-export type EditorView = 'studio' | 'results' | 'form';
+export type EditorView =
+  | 'form'
+  | 'studio'
+  | 'editor'
+  | 'studio-old'
+  | 'editor-old'
+  | 'results';
 
 export function withVisitedEditorView(
   visited: ReadonlySet<EditorView>,

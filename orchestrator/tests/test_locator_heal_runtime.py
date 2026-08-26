@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 from utils.locator_heal import fingerprint_from_attrs
 from utils.locator_heal_runtime import (
     clear_fingerprint_store,
@@ -32,7 +32,7 @@ def test_heal_scope_gate():
 
 
 def test_try_resolve_healed_renamed_id(monkeypatch):
-    monkeypatch.delenv("KDT_LOCATOR_HEAL", raising=False)
+    monkeypatch.delenv("PK_LOCATOR_HEAL", raising=False)
     remember_fingerprint(
         fingerprint_from_attrs(
             locator_type="id",
@@ -80,7 +80,7 @@ def test_try_resolve_healed_renamed_id(monkeypatch):
 
 
 def test_try_resolve_blocked_without_gate(monkeypatch):
-    monkeypatch.delenv("KDT_LOCATOR_HEAL", raising=False)
+    monkeypatch.delenv("PK_LOCATOR_HEAL", raising=False)
     remember_fingerprint(
         fingerprint_from_attrs(
             locator_type="id",
@@ -110,7 +110,7 @@ def test_try_resolve_blocked_without_gate(monkeypatch):
 
 def test_fingerprint_persist_roundtrip(tmp_path, monkeypatch):
     path = tmp_path / "fps.json"
-    monkeypatch.setenv("KDT_LOCATOR_FP_PATH", str(path))
+    monkeypatch.setenv("PK_LOCATOR_FP_PATH", str(path))
     clear_fingerprint_store()
     remember_fingerprint(
         fingerprint_from_attrs(
@@ -133,7 +133,7 @@ def test_fingerprint_persist_roundtrip(tmp_path, monkeypatch):
 def test_heal_miss_emits_warning(caplog, monkeypatch):
     import logging
 
-    monkeypatch.delenv("KDT_LOCATOR_HEAL", raising=False)
+    monkeypatch.delenv("PK_LOCATOR_HEAL", raising=False)
     remember_fingerprint(
         fingerprint_from_attrs(
             locator_type="id",
@@ -181,8 +181,8 @@ def test_emit_heal_ok_info(caplog):
 def test_label_first_heals_without_fingerprint(monkeypatch, caplog):
     import logging
 
-    monkeypatch.delenv("KDT_LOCATOR_HEAL", raising=False)
-    monkeypatch.delenv("KDT_LOCATOR_HEAL_LABEL", raising=False)
+    monkeypatch.delenv("PK_LOCATOR_HEAL", raising=False)
+    monkeypatch.delenv("PK_LOCATOR_HEAL_LABEL", raising=False)
     clear_fingerprint_store()
     driver = _FakeDriver(
         [
@@ -214,7 +214,7 @@ def test_label_first_heals_without_fingerprint(monkeypatch, caplog):
 def test_cold_xpath_no_signal(monkeypatch, caplog):
     import logging
 
-    monkeypatch.delenv("KDT_LOCATOR_HEAL", raising=False)
+    monkeypatch.delenv("PK_LOCATOR_HEAL", raising=False)
     clear_fingerprint_store()
     driver = _FakeDriver(
         [

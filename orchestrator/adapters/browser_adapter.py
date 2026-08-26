@@ -1,4 +1,4 @@
-"""
+﻿"""
 Адаптер для управления состоянием браузера:
 куки, сессия, localStorage, sessionStorage, прокси,
 а также Chrome DevTools Protocol (Selenium execute_cdp_cmd) и browser logs.
@@ -378,7 +378,7 @@ class BrowserAdapter:
     #
     # Официальный путь Selenium 4: driver.execute_cdp_cmd(cmd, params).
     # Работает в Chrome/Edge (и Chromium в Selenoid). Firefox — не поддерживает CDP.
-    # Событийный BiDi (async/trio) в KDT не тянем: для сценариев хватает sync-команд
+    # Событийный BiDi (async/trio) в PK не тянем: для сценариев хватает sync-команд
     # + get_log('browser') для консоли.
 
     def _parse_json_arg(self, value, default=None):

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Lab OpenAPI / Swagger → normalized operations (IMP-OA).
 
 Не запускает ZAP scan от галочки анкеты. SoT-манифест не трогает.
@@ -10,6 +10,8 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 from urllib.parse import urljoin
+
+from utils.env_dual import pk_env_name
 
 try:
     import yaml
@@ -197,7 +199,7 @@ def try_zap_import_openapi(
     spec_url_or_file: str,
     *,
     zap_adapter: Any = None,
-    env_flag: str = "KDT_OPENAPI_ZAP_IMPORT",
+    env_flag: str = "PK_OPENAPI_ZAP_IMPORT",
 ) -> Dict[str, Any]:
     """
     Opt-in ZAP OpenAPI import. Без флага / адаптера → skipped (не fail прогона).
@@ -208,7 +210,7 @@ def try_zap_import_openapi(
         "skipped": True,
         "notes": [],
     }
-    flag = (os.environ.get(env_flag) or "").strip().lower()
+    flag = pk_env_name(env_flag).strip().lower()
     if flag not in ("1", "true", "yes", "on"):
         result["notes"].append(f"{env_flag} не включён — ZAP import skipped")
         return result

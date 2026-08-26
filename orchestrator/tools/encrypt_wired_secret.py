@@ -1,12 +1,12 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Зашифровать строку для манифеста (G-61).
 
-  set KDT_WIRED_KEY=...   # Fernet.generate_key()
+  set PK_WIRED_KEY=...   # Fernet.generate_key()
   py -3.13 tools/encrypt_wired_secret.py "my-password"
 
-Печатает одну строку: kdt:enc:v1:…
+Печатает одну строку: pk:enc:v1:…
 """
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ from core.wired_crypto import ENV_WIRED_KEY, encrypt_string
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Encrypt a wired secret (Fernet)")
-    parser.add_argument("plaintext", help="Значение для kdt:enc:v1:…")
+    parser.add_argument("plaintext", help="Значение для pk:enc:v1:…")
     args = parser.parse_args()
     try:
         print(encrypt_string(args.plaintext))

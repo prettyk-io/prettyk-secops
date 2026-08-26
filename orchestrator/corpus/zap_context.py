@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """CD-5: внедрение корпуса (DiscoveryCorpus / RequestTemplate / ServiceMap) в ZAP Context & Sites Tree.
 
 Функционал:
@@ -25,7 +25,7 @@ def build_zap_raw_request(
     template: RequestTemplate,
     *,
     host_header: Optional[str] = None,
-    user_agent: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) KDT-SecOps/1.0",
+    user_agent: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PK-SecOps/1.0",
     headers_extra: Optional[Dict[str, str]] = None,
 ) -> str:
     """Сборка HTTP/1.1 wire-запроса из ``RequestTemplate`` для отправки в ZAP API."""

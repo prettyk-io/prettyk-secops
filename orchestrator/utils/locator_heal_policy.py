@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 HEAL-E: матрица label ∩ fingerprint (DISC-2 ещё дно — политика готова заранее).
 

@@ -59,3 +59,16 @@ export async function signUp(email: string, password: string, name: string) {
   if (error) throw new Error(error.message ?? 'Sign-up failed');
   return data;
 }
+
+/**
+ * Сменить пароль для текущего пользователя.
+ */
+export async function changePassword(currentPassword: string, newPassword: string, revokeOtherSessions = true) {
+  const { data, error } = await authClient.changePassword({
+    currentPassword,
+    newPassword,
+    revokeOtherSessions,
+  });
+  if (error) throw new Error(error.message ?? 'Password change failed');
+  return data;
+}

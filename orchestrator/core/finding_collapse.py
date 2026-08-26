@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 Fingerprint + systemic collapse для акта / RunSummary.
 
@@ -110,7 +110,7 @@ class CollapseResult:
 
     def as_dict(self) -> Dict[str, Any]:
         return {
-            "kind": "kdt_finding_collapse",
+            "kind": "pk_finding_collapse",
             "version": 1,
             "raw_count": self.raw_count,
             "cluster_count": len(self.clusters),

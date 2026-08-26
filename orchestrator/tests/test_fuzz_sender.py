@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Alpha fuzz: генерация httpsender + MethodId wire (без live ZAP)."""
 import sys
 from pathlib import Path
@@ -22,7 +22,7 @@ def test_render_mask_httpsender_contains_mask_and_var():
     assert "function sendingRequest" in code
     assert "ScriptVars.getGlobalVar" in code
     assert "function responseReceived" in code
-    assert "kdtReplaceAll" not in code
+    assert "pkReplaceAll" not in code
     assert "function replaceAll" in code
 
 

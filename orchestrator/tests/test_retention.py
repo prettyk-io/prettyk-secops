@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 RET-TEST: Тестирование retention manager и API управления хранилищем.
 """

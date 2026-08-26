@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """CLI: python -m tools.lab_run_stub --sleep 2 --exit-code 0"""
 from __future__ import annotations
 

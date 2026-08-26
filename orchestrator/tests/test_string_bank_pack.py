@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Банк-пакет строк: ИзвлечьРег*, РазделитьРег, starts/ends, case, fetch, Убрать + условия."""
 from __future__ import annotations
 

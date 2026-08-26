@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """HEAL-F carcass: _locate_with_heal miss → heal → re-locate (без живого Grid/Juice)."""
 from __future__ import annotations
 
@@ -37,7 +37,7 @@ class _FakeEl:
 
 
 def test_locate_with_heal_renames_id(monkeypatch, caplog):
-    monkeypatch.delenv("KDT_LOCATOR_HEAL", raising=False)
+    monkeypatch.delenv("PK_LOCATOR_HEAL", raising=False)
     clear_fingerprint_store()
     remember_fingerprint(
         fingerprint_from_attrs(
@@ -102,7 +102,7 @@ def test_locate_with_heal_renames_id(monkeypatch, caplog):
 
 
 def test_locate_with_heal_miss_escalates(monkeypatch, caplog):
-    monkeypatch.delenv("KDT_LOCATOR_HEAL", raising=False)
+    monkeypatch.delenv("PK_LOCATOR_HEAL", raising=False)
     clear_fingerprint_store()
     remember_fingerprint(
         fingerprint_from_attrs(

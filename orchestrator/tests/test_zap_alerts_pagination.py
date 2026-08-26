@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """ZAP alerts: пагинация, без одного гигантского core.alerts()."""
 import sys
 from pathlib import Path

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """CLI: poll GitHub Actions → Live POST /api/ci/status (RES-G)."""
 from __future__ import annotations
 from utils.env_dual import pk_env
@@ -98,7 +98,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     except ValueError as exc:
         print(f"config: {exc}", file=sys.stderr)
         print(
-            "Set KDT_GHA_TOKEN and KDT_GHA_REPO=owner/name "
+            "Set PK_GHA_TOKEN and PK_GHA_REPO=owner/name "
             "(optional WORKFLOW/BRANCH/JOB).",
             file=sys.stderr,
         )

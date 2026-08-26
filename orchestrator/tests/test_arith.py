@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Арифметика + / − в Пусть и Если."""
 from __future__ import annotations
 

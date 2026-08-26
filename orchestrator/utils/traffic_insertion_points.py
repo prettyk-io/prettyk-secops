@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """TRAF-A: passive observed insertion points from ZAP History (query + JSON).
 
 Не Param Miner. Не SoT. Opt-in feed в ФаззингВолна через env / helper.
@@ -11,6 +11,8 @@ import re
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+
+from utils.env_dual import pk_env_name
 
 # Noise / tracker — не фаззить как дыры (волна A).
 _SKIP_QUERY_NAMES = frozenset(
@@ -49,7 +51,7 @@ _SKIP_JSON_KEYS = frozenset(
 _DEFAULT_OK = frozenset(range(200, 400))
 _FUZZ_METHODS = frozenset({"GET", "POST", "PUT", "PATCH", "DELETE"})
 
-TRAFFIC_FEED_ENV = "KDT_TRAFFIC_INSERTION_FEED"
+TRAFFIC_FEED_ENV = "PK_TRAFFIC_INSERTION_FEED"
 
 
 @dataclass(frozen=True)
@@ -66,8 +68,12 @@ class ObservedInsertionPoint:
 
 
 def traffic_feed_enabled(env: Optional[Dict[str, str]] = None) -> bool:
-    src = env if env is not None else os.environ
-    raw = str(src.get(TRAFFIC_FEED_ENV) or "").strip().lower()
+    if env is not None:
+        raw = str(
+            env.get("PK_TRAFFIC_INSERTION_FEED") or env.get(TRAFFIC_FEED_ENV) or ""
+        ).strip().lower()
+    else:
+        raw = pk_env_name(TRAFFIC_FEED_ENV).strip().lower()
     return raw in {"1", "true", "yes", "on"}
 
 

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """QWEN3-ALERT-ASSISTANT W1: deterministic delta builder.
 
 Always runs — no AI dependency. Computes the delta between two lists of

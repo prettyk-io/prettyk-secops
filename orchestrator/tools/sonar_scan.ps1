@@ -5,7 +5,7 @@
 
 .DESCRIPTION
   Server: docker compose -f services/docker-compose.sonarqube.yml (:9000).
-  Scanner: sonarsource/sonar-scanner-cli on prettyk-net.
+  Scanner: sonarsource/sonar-scanner-cli on pk-net.
   Token: $env:SONAR_TOKEN required. See docs/sonar-lab.md and sonar-access.md.
 
 .EXAMPLE
@@ -81,7 +81,7 @@ try {
             "-Dsonar.token=$env:SONAR_TOKEN"
         )
         docker run --rm `
-            --network prettyk-net `
+            --network pk-net `
             -e "SONAR_TOKEN=$env:SONAR_TOKEN" `
             -v "${RepoRoot}:/usr/src" `
             -w /usr/src `

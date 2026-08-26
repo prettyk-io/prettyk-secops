@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
-"""KDT curated fuzz intent pack (not SecLists). Wave A of fuzz-dictionaries-defaults."""
+﻿# -*- coding: utf-8 -*-
+"""pk curated fuzz intent pack (not SecLists). Wave A of fuzz-dictionaries-defaults."""
 from __future__ import annotations
 
 import json

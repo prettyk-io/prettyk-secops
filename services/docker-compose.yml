@@ -1,4 +1,4 @@
-# Долгоживущие сервисы KDT (данные / пульты).
+﻿# Долгоживущие сервисы PK (данные / пульты).
 # Эфемерные (ZAP в пайпе) сюда не входят.
 #
 # Запуск из корня репозитория:
@@ -13,7 +13,7 @@
 #   5050 — allure3-secops (Allure 3 Awesome: dark/ru/SecOps logo, канон)
 #   5051 — allure-light-secops (Allure 2 legacy, запасной контур)
 #   8766 — LLM server (llama.cpp Qwen3-1.7B Q5_K_M, CPU inference)
-#   EXP-01: KDT_AI_ASSISTANT_ENABLED=0 toggles AI off for baseline runs
+#   EXP-01: PK_AI_ASSISTANT_ENABLED=0 toggles AI off for baseline runs
 #
 # UI: открывать http://127.0.0.1:4444/ или http://127.0.0.1:4444/ui/
 #     (без завершающего слэша /ui — blank page: index.js 404, SeleniumHQ#13757)
@@ -39,7 +39,7 @@ services:
       - "4444:4444"
     environment:
       - SE_SESSION_TIMEOUT=600
-      # Не отклонять неизвестные caps (напр. устаревшие selenoid:options от KDT).
+      # Не отклонять неизвестные caps (напр. устаревшие selenoid:options от PK).
       - SE_REJECT_UNSUPPORTED_CAPS=false
 
   chrome:
@@ -86,7 +86,7 @@ services:
       - "host.docker.internal:host-gateway"
 
   # Запись видео Chrome (1:1 к node). Клиент: se:recordVideo (по умолчанию вкл.;
-  # выкл. — KDT_SELENIUM_VIDEO=0). Файлы → ../reports/video.
+  # выкл. — PK_SELENIUM_VIDEO=0). Файлы → ../reports/video.
   chrome-video:
     image: selenium/video:ffmpeg-7.1-20250717
     container_name: selenium-chrome-video
@@ -105,7 +105,7 @@ services:
   allure-light-secops:
     build:
       context: ./allure-light-secops
-    image: kdt-allure-light-secops:local
+    image: pk-allure-light-secops:local
     container_name: allure-light-secops
     restart: unless-stopped
     ports:
@@ -124,7 +124,7 @@ services:
   allure3-secops:
     build:
       context: ./allure3-secops
-    image: kdt-allure3-secops:local
+    image: pk-allure3-secops:local
     container_name: allure3-secops
     restart: unless-stopped
     ports:
@@ -142,7 +142,7 @@ services:
       - ALLURE_BIN=allure
       - ALLURE_CONFIG=/app/allurerc.mjs
       - ALLURE_LOGO=/app/brand/logo.svg
-      - ALLURE_REPORT_NAME=Проверка KDT
+      - ALLURE_REPORT_NAME=Проверка PK
       - ALLURE_THEME=dark
       - ALLURE_LANG=ru
     healthcheck:
@@ -156,7 +156,7 @@ services:
     image: ghcr.io/ggml-org/llama.cpp:server
     container_name: llama-server
     restart: unless-stopped
-    # KDT_AI_ASSISTANT_ENABLED=0 → skip LLM; set on host before compose up
+    # PK_AI_ASSISTANT_ENABLED=0 → skip LLM; set on host before compose up
     volumes:
       - ./llm-model/qwen3-1.7b-q5_k_m.gguf:/models/qwen3-1.7b-q5_k_m.gguf:ro
     command:
@@ -205,7 +205,7 @@ services:
     build:
       context: ..
       dockerfile: services/llm-server.Dockerfile
-    image: kdt-llm-server:dev
+    image: pk-llm-server:dev
     container_name: llm-server
     restart: unless-stopped
     depends_on:
@@ -214,7 +214,7 @@ services:
       llama-server-reasoning:
         condition: service_healthy
     environment:
-      KDT_AI_ASSISTANT_ENABLED: "${KDT_AI_ASSISTANT_ENABLED:-1}"
+      PK_AI_ASSISTANT_ENABLED: "${PK_AI_ASSISTANT_ENABLED:-1}"
       LLM_MODEL_PATH: /nonexistent
       LLAMA_HOST: llama-server
       LLAMA_PORT: "8768"
@@ -236,7 +236,7 @@ services:
 
 networks:
   default:
-    name: kdt-net
+    name: pk-net
     # Общая сеть с docker-compose.zap.yml и browser nodes.
-    # Создаётся один раз: docker network create kdt-net
+    # Создаётся один раз: docker network create pk-net
     external: true

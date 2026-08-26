@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
-"""diary_bus NDJSON + KDT Live SSE by channel (no browser)."""
+﻿# -*- coding: utf-8 -*-
+"""diary_bus NDJSON + PK Live SSE by channel (no browser)."""
 from __future__ import annotations
 
 import json
@@ -32,8 +32,8 @@ def _isolate_live(monkeypatch, tmp_path):
         "utils.diary_bus.RESULTS_HOOKS_JSON", live_dir / "results_hooks.json"
     )
     monkeypatch.setattr("utils.diary_bus.LIVE_EXPORTS_DIR", exports_dir)
-    monkeypatch.setenv("KDT_LIVE", "1")
-    monkeypatch.setenv("KDT_LIVE_PORT", "18767")
+    monkeypatch.setenv("PK_LIVE", "1")
+    monkeypatch.setenv("PK_LIVE_PORT", "18767")
     diary_bus.clear()
     yield
     stop_live_server()
@@ -71,8 +71,8 @@ def test_publish_writes_ndjson_with_channel():
     assert len(zap) == 1 and zap[0]["text"] == "xss|/api"
 
 
-def test_live_cors_preflight_allows_x_kdt_user():
-    """Admin fetchDojoProgram sends X-KDT-User — preflight must allow it."""
+def test_live_cors_preflight_allows_x_PK_USER():
+    """Admin fetchDojoProgram sends x-pk-user — preflight must allow it."""
     from urllib.request import Request
 
     url = start_live_server(session_name="unit-live-cors")
@@ -82,13 +82,13 @@ def test_live_cors_preflight_allows_x_kdt_user():
         headers={
             "Origin": "http://localhost:5173",
             "Access-Control-Request-Method": "GET",
-            "Access-Control-Request-Headers": "x-kdt-user,content-type",
+            "Access-Control-Request-Headers": "x-pk-user,content-type",
         },
     )
     with urlopen(req, timeout=2) as resp:
         assert resp.status == 204
         allow = (resp.headers.get("Access-Control-Allow-Headers") or "").lower()
-        assert "x-kdt-user" in allow
+        assert "x-pk-user" in allow
         assert "content-type" in allow
 
 
@@ -278,7 +278,7 @@ def test_ci_status_post_sets_meta_verdict():
             "exit_code": 2,
             "gate": "fail",
             "job_name": "orchestrator",
-            "job_url": "https://github.com/example/zap-kdt/actions/runs/9",
+            "job_url": "https://github.com/example/prettyk-dev/actions/runs/9",
         }
     ).encode("utf-8")
     req = Request(
@@ -354,7 +354,7 @@ def test_run_ended_export_and_latest():
 def test_soft_bind_when_port_busy(monkeypatch):
     """If port is taken, start_live_server still returns URL and publish keeps working."""
     port = 18768
-    monkeypatch.setenv("KDT_LIVE_PORT", str(port))
+    monkeypatch.setenv("PK_LIVE_PORT", str(port))
 
     class _H(BaseHTTPRequestHandler):
         def do_GET(self):
@@ -379,7 +379,7 @@ def test_soft_bind_when_port_busy(monkeypatch):
 
 
 def test_live_disabled(monkeypatch):
-    monkeypatch.setenv("KDT_LIVE", "0")
+    monkeypatch.setenv("PK_LIVE", "0")
     assert start_live_server() is None
 
 
@@ -694,17 +694,17 @@ def test_zap_high_alert_is_trace_event_once(monkeypatch):
 
 
 def test_publish_tags_run_id_from_env(monkeypatch):
-    """MON-3: дочерний процесс с KDT_RUN_ID тегирует события run_id."""
-    monkeypatch.setenv("KDT_RUN_ID", "run-abc123")
+    """MON-3: дочерний процесс с PK_RUN_ID тегирует события run_id."""
+    monkeypatch.setenv("PK_RUN_ID", "run-abc123")
     diary_bus.publish("STEP", "tagged-step", channel="diary")
     diary = diary_bus.read_file_backlog("diary")
     assert diary[-1]["run_id"] == "run-abc123"
-    monkeypatch.delenv("KDT_RUN_ID", raising=False)
+    monkeypatch.delenv("PK_RUN_ID", raising=False)
 
 
 def test_publish_without_run_id_has_no_tag(monkeypatch):
-    """MON-3: без KDT_RUN_ID события не несут run_id."""
-    monkeypatch.delenv("KDT_RUN_ID", raising=False)
+    """MON-3: без PK_RUN_ID события не несут run_id."""
+    monkeypatch.delenv("PK_RUN_ID", raising=False)
     diary_bus.publish("NOTE", "untagged", channel="diary")
     diary = diary_bus.read_file_backlog("diary")
     assert "run_id" not in diary[-1]
@@ -907,12 +907,12 @@ def test_serve_retention_api(tmp_path, monkeypatch):
 
 def test_export_diary_filters_by_run_id(monkeypatch):
     """export_diary_snapshot filters events by run_id; events without run_id pass through."""
-    monkeypatch.delenv("KDT_RUN_ID", raising=False)
+    monkeypatch.delenv("PK_RUN_ID", raising=False)
     diary_bus.clear()
     diary_bus.publish("STEP", "shared-no-run", channel="diary")
-    monkeypatch.setenv("KDT_RUN_ID", "alpha")
+    monkeypatch.setenv("PK_RUN_ID", "alpha")
     diary_bus.publish("STEP", "alpha-only", channel="diary")
-    monkeypatch.setenv("KDT_RUN_ID", "beta")
+    monkeypatch.setenv("PK_RUN_ID", "beta")
     diary_bus.publish("STEP", "beta-only", channel="diary")
 
     # Without run_id — all events back (backwards-compat)

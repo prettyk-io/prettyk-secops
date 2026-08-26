@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 RES-4: сводка для Results UI (Allure + ZAP + Dojo) + тренд severity.
 
@@ -88,7 +88,7 @@ def build_run_ui_summary(
     top = _pick_top_findings(collapse, zap)
 
     return {
-        "kind": "kdt_run_ui_summary",
+        "kind": "pk_run_ui_summary",
         "version": 1,
         "built_at": time.time(),
         "run_id": (run_id or "").strip(),

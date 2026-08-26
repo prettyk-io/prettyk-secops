@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """AUTH-1 & AUTH-2: Auth-Chain Vault (мульти-профильная авторизация и цепочки токенов).
 
 Функционал:
@@ -177,7 +177,7 @@ class AuthChainVault:
     def inject_into_zap(
         self,
         zap_adapter: Any,
-        context_name: str = "kdt_ctx",
+        context_name: str = "pk_ctx",
         token_var: str = "auth.token",
         auth_type: str = "bearer",
         header_name: str = "Authorization",
@@ -191,7 +191,7 @@ class AuthChainVault:
         try:
             if auth_type.lower() == "bearer":
                 zap_adapter.add_replacer_rule(
-                    "kdt-vault-bearer",
+                    "pk-vault-bearer",
                     "REQ_HEADER",
                     "Authorization",
                     f"Bearer {val}",
@@ -199,7 +199,7 @@ class AuthChainVault:
                 )
             elif auth_type.lower() == "cookie":
                 zap_adapter.add_replacer_rule(
-                    "kdt-vault-cookie",
+                    "pk-vault-cookie",
                     "REQ_HEADER",
                     "Cookie",
                     str(val),
@@ -207,7 +207,7 @@ class AuthChainVault:
                 )
             else:
                 zap_adapter.add_replacer_rule(
-                    f"kdt-vault-{header_name.lower()}",
+                    f"pk-vault-{header_name.lower()}",
                     "REQ_HEADER",
                     header_name,
                     str(val),

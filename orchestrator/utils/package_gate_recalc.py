@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """MC-RES-3: пересчёт admission gate из Live hooks при сборке zip-пакета."""
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from utils.env_dual import pk_env
 
 
 def package_recalc_enabled() -> bool:
-    """KDT_PACKAGE_RECALC_GATE — default on; 0/false выключает."""
+    """PK_PACKAGE_RECALC_GATE — default on; 0/false выключает."""
     raw = (pk_env("PACKAGE_RECALC_GATE") or "1").strip().lower()
     return raw not in {"0", "false", "off", "no", ""}
 
@@ -103,7 +103,7 @@ def recalculate_package_gate(
     mirrored_gate = str(meta.get("ci_gate") or "").strip().lower()
     mirrored_verdict = str(meta.get("ci_verdict") or "").strip().lower()
     base: Dict[str, Any] = {
-        "kind": "kdt_package_gate_recalc",
+        "kind": "pk_package_gate_recalc",
         "version": 1,
         "enabled": on,
         "mirrored_gate": mirrored_gate or None,
@@ -157,7 +157,7 @@ def recalculate_package_gate(
 def format_recalc_admission_line(recalc: Mapping[str, Any]) -> str:
     """Строка для lab act.html."""
     if not recalc.get("enabled"):
-        return "Пересчёт допуска: выключен (KDT_PACKAGE_RECALC_GATE=0)"
+        return "Пересчёт допуска: выключен (PK_PACKAGE_RECALC_GATE=0)"
     skip = recalc.get("skipped")
     if skip == "admission_void":
         return "Пересчёт допуска: пропущен (допуск недействителен)"

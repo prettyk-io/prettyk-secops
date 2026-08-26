@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """execution_fault classify + admission_void."""
 from __future__ import annotations
 

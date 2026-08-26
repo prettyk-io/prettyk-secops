@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """T-juice-IDE обвязка: sanitized operator fixture → validate-only."""
 from __future__ import annotations
 

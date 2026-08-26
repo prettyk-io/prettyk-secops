@@ -242,7 +242,7 @@ Playwright закрывает auth-сценарии, недоступные Sele
 | Discovery element extractor | `orchestrator/utils/discovery_element_extractor.py` (доработка) |
 | Discovery E2E | `orchestrator/tools/juice_discovery_e2e.py` (доработка) |
 | Action/probe слой | `orchestrator/actions/` (новый) — общий для всех потребителей |
-| Docker | `docker/Dockerfile.secops-lab` (добавить playwright install) |
+| Docker | `docker/Dockerfile.prettyk-lab` (добавить playwright install) |
 | Cosmo e2e | `cosmo/e2e/` (уже использует Playwright — не трогать) |
 
 ---

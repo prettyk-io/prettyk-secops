@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """PW-4: Playwright Discovery Recorder.
 
 Replaces raw CDP listener with Playwright-native API.

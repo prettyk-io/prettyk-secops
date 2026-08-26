@@ -134,7 +134,7 @@ context = await browser.new_context(
 | Discovery recorder | `orchestrator/utils/discovery_cdp_recorder.py` | Переписать на PW API |
 | Element extractor | `orchestrator/utils/discovery_element_extractor.py` | Доработка |
 | Action/probe слой | `orchestrator/actions/` | Новый |
-| Docker | `docker/Dockerfile.secops-lab` | Добавить playwright install |
+| Docker | `docker/Dockerfile.prettyk-lab` | Добавить playwright install |
 | Smoke-скрипты | `cosmo/scripts/smoke-*.mjs` | Уже используют PW |
 
 ## 12. Эпики

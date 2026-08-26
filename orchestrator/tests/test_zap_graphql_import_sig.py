@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """UD-A: ZAP GraphQL import uses (endurl, file|url) — not bare import_file(path)."""
 from __future__ import annotations
 

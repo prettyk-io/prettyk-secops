@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """AUTH-VAULT-CHAIN-INJECTOR: тесты сервисного слоя.
 
 Покрытие:
@@ -33,7 +33,7 @@ from services import auth_vault as av  # noqa: E402
 def test_encrypt_decrypt_roundtrip():
     secret = "super-secret-client-password"
     enc = av.encrypt_secret(secret)
-    assert enc.startswith("kdt:vault:v1:")
+    assert enc.startswith("pk:vault:v1:")
     assert enc != secret
     assert av.is_encrypted(enc)
     assert av.decrypt_secret(enc) == secret
@@ -48,7 +48,7 @@ def test_encrypt_is_randomized():
 
 
 def test_decrypt_invalid_returns_empty():
-    assert av.decrypt_secret("kdt:vault:v1:notbase64:!!") == ""
+    assert av.decrypt_secret("pk:vault:v1:notbase64:!!") == ""
     assert av.decrypt_secret("plain") == ""
 
 
@@ -57,7 +57,7 @@ def test_encrypted_vault_store():
     v.put("client_secret", "abc123")
     assert v.get("client_secret") == "abc123"
     # peek — зашифрованный вид
-    assert v.peek("client_secret").startswith("kdt:vault:v1:")
+    assert v.peek("client_secret").startswith("pk:vault:v1:")
     # masked
     assert av.mask_secret(v.get("client_secret")) != "abc123"
 

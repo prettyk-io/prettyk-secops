@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """LocatorDesc RHS + page layout → PageResolver."""
 from __future__ import annotations
 

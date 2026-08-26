@@ -1,4 +1,4 @@
-# Манифест KDT
+# Манифест PrettyK
 
 > Граница SoT (hub): [`canon/manifest-sot.md`](canon/manifest-sot.md) (**CANON**). Machine-контракт: Pydantic `orchestrator/models/manifest.py`. Legacy JSON Schema: [`manifest.json`](manifest.json).
 

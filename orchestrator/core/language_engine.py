@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 LanguageEngine — системный движок языка сценария (не адаптер).
 
@@ -214,7 +214,7 @@ class LanguageEngine:
         Снять маркеры с constructor-строки.
 
         >?  — soft-skip (failsafe)
-        >#hint — label hint для heal (DISC-2 bridge; нужен soft/`KDT_LOCATOR_HEAL`)
+        >#hint — label hint для heal (DISC-2 bridge; нужен soft/`PK_LOCATOR_HEAL`)
         >@ { recover… } — recover body + retry primary ×1
         Комбо >? и >@ на одном листе — ошибка.
         Хвостовой FE-хвост ` → save_as` снимается в save_as.

@@ -30,6 +30,7 @@ import {
 import { createPrettykSignatureHelpProvider } from './prettykSignatureHelp';
 import { formatPrettykDocument } from './prettykFormat';
 import { createPrettykDocumentSymbolProvider } from './prettykSymbols';
+import { createPrettykRenameProvider } from './prettykRename';
 import {
   collectPrettykSemanticSpans,
   encodePrettykSemanticTokens,
@@ -207,6 +208,7 @@ type FeatureDisposables = {
   definition?: { dispose: () => void };
   references?: { dispose: () => void };
   documentHighlight?: { dispose: () => void };
+  rename?: { dispose: () => void };
   codeAction?: { dispose: () => void };
   folding?: { dispose: () => void };
   hover?: { dispose: () => void };
@@ -235,6 +237,7 @@ export function registerScriptLanguageFeatures(monaco: typeof monacoNs): void {
   store.definition?.dispose();
   store.references?.dispose();
   store.documentHighlight?.dispose();
+  store.rename?.dispose();
   store.codeAction?.dispose();
   store.folding?.dispose();
   store.hover?.dispose();
@@ -260,6 +263,10 @@ export function registerScriptLanguageFeatures(monaco: typeof monacoNs): void {
   store.documentHighlight = monaco.languages.registerDocumentHighlightProvider(
     PRETTYK_LANGUAGE_ID,
     createPrettykDocumentHighlightProvider(),
+  );
+  store.rename = monaco.languages.registerRenameProvider(
+    PRETTYK_LANGUAGE_ID,
+    createPrettykRenameProvider(),
   );
   store.codeAction = monaco.languages.registerCodeActionProvider(
     PRETTYK_LANGUAGE_ID,

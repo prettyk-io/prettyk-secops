@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """G-62: ${ENV:} / secretref: + маскирование."""
 from __future__ import annotations
 
@@ -17,9 +17,9 @@ from core.wired_secretref import prepare_wired_data, resolve_secretref_tree
 
 
 def test_resolve_env_ref(monkeypatch):
-    monkeypatch.setenv("KDT_TEST_SECRET", "env-plain-secret")
+    monkeypatch.setenv("PK_TEST_SECRET", "env-plain-secret")
     data, seeds = resolve_secretref_tree(
-        {"Пароль": "${ENV:KDT_TEST_SECRET}", "ok": 1}
+        {"Пароль": "${ENV:PK_TEST_SECRET}", "ok": 1}
     )
     assert data["Пароль"] == "env-plain-secret"
     assert "env-plain-secret" in seeds
@@ -41,22 +41,22 @@ def test_resolve_secretref_prefix_case_insensitive(monkeypatch):
 
 
 def test_missing_env_raises(monkeypatch):
-    monkeypatch.delenv("MISSING_KDT_SECRET", raising=False)
-    with pytest.raises(WiredError, match="MISSING_KDT_SECRET"):
-        resolve_secretref_tree({"x": "${ENV:MISSING_KDT_SECRET}"})
+    monkeypatch.delenv("MISSING_PK_SECRET", raising=False)
+    with pytest.raises(WiredError, match="MISSING_PK_SECRET"):
+        resolve_secretref_tree({"x": "${ENV:MISSING_PK_SECRET}"})
 
 
 def test_stream_env_path_and_mask(monkeypatch):
-    monkeypatch.setenv("KDT_STREAM_SECRET", "stream-secret-val")
+    monkeypatch.setenv("PK_STREAM_SECRET", "stream-secret-val")
     stream = DataStream()
-    assert stream.resolve("${ENV:KDT_STREAM_SECRET}") == "stream-secret-val"
+    assert stream.resolve("${ENV:PK_STREAM_SECRET}") == "stream-secret-val"
     assert stream.mask_for_log("leak stream-secret-val") == f"leak {SECRET_LOG_MASK}"
 
 
 def test_stream_secretref_string(monkeypatch):
-    monkeypatch.setenv("KDT_SR", "sr-val")
+    monkeypatch.setenv("PK_SR", "sr-val")
     stream = DataStream()
-    assert stream.resolve("secretref:KDT_SR") == "sr-val"
+    assert stream.resolve("secretref:PK_SR") == "sr-val"
     assert stream.mask_for_log("sr-val") == SECRET_LOG_MASK
 
 
@@ -67,11 +67,11 @@ def test_prepare_order_enc_then_env(monkeypatch):
 
     key = Fernet.generate_key().decode("ascii")
     monkeypatch.setenv(ENV_WIRED_KEY, key)
-    monkeypatch.setenv("KDT_NESTED", "from-env")
+    monkeypatch.setenv("PK_NESTED", "from-env")
     # enc вокруг plaintext, не вокруг ENV-ссылки — типичный кейс: либо enc, либо ENV.
     enc = encrypt_string("only-enc")
     data, seeds = prepare_wired_data(
-        {"a": enc, "b": "${ENV:KDT_NESTED}"}
+        {"a": enc, "b": "${ENV:PK_NESTED}"}
     )
     assert data["a"] == "only-enc"
     assert data["b"] == "from-env"

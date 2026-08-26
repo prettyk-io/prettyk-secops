@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """PW-6: Unified actions/probes layer for Playwright.
 
 Single contract for all browser automation consumers:

@@ -1,4 +1,4 @@
-﻿# SANCTUARY REFACTOR 2026-08-16 — финальная конфигурация
+# SANCTUARY REFACTOR 2026-08-16 — финальная конфигурация
 
 > **QUEUE** — не CANON. Хроника двухдневного рефактора + финальное состояние, к которому пришли.  
 > Пишется для нас (Boss / Bro / Flash / Keeper), не для внешних. Это рабочий документ — что сделали и куда встали.
@@ -52,7 +52,7 @@
 
 - **Global skills** (рабочие, единственный источник): `C:\Users\mails\.agents\skills\`.
   - Браузер: `browser-hands-pure` (хост), `browser-hands-remote` (VM).
-  - Инфра: `secops-lab`, `vps-editor`, `bankvm-ssh`, `gap1-portal01-logs`, `portal01-nshr-cdp`, `blitz-auth-entrypoints`, `postgres-readonly-queries`.
+  - Инфра: `prettyk-lab`, `vps-editor`, `bankvm-ssh`, `gap1-portal01-logs`, `portal01-nshr-cdp`, `blitz-auth-entrypoints`, `postgres-readonly-queries`.
   - Код/качество: `debugging-strategies`, `research-and-sense`, `playwright-skill`, `ru-text`, `po-keeper`, `test-automator`, `security-auditor`, `os-scripting`.
 - **Sanctuary skills** (`sanctuary/skills/`) — архив канона, только чтение, не редактировать.
 - **Product-специфика** — в `.opencode/rules/` + `docs/`, не в отдельных skills.

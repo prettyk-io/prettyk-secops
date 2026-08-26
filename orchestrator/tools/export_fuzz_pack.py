@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Copy orchestrator/data/fuzz/pack.json → frontend/src/generated/fuzz_pack.json.
 
 Source of truth for curated intent corpora is the orchestrator pack.

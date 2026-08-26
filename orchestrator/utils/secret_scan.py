@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 High-confidence plaintext secret scan for package/export gate.
 
@@ -61,7 +61,7 @@ _TEXT_SUFFIXES = frozenset(
 
 
 def package_secret_block_enabled() -> bool:
-    """Default on. KDT_PACKAGE_ALLOW_SECRETS=1 → warn-only (lab escape)."""
+    """Default on. PK_PACKAGE_ALLOW_SECRETS=1 → warn-only (lab escape)."""
     raw = (pk_env("PACKAGE_ALLOW_SECRETS") or "").strip().lower()
     return raw not in ("1", "true", "yes", "on")
 

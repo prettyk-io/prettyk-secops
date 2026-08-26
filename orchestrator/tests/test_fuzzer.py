@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """CD-7: fuzzer — генератор мутаций RequestTemplate."""
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Export «Модуль работы с данными» → DataStream."""
 import sys
 from pathlib import Path
@@ -230,23 +230,23 @@ def test_properties_module_secret_hash_and_flat_keys():
         data_storage_fields={
             "editor": (
                 "username=admin\n"
-                "#password_value=kdt_password\n"
-                "#security_answer=kdt\n"
+                "#password_value=pk_password\n"
+                "#security_answer=pk\n"
             )
         },
     )
     ctrl, stream = _ctrl_with_modules([mod])
     ctrl._export_data_modules(stream)
     assert stream.get("username") == "admin"
-    assert stream.get("password_value") == "kdt_password"
+    assert stream.get("password_value") == "pk_password"
     assert stream.is_secret("password_value") is True
     assert stream.is_secret("username") is False
     assert stream.get("auth_data") == {
         "username": "admin",
-        "password_value": "kdt_password",
-        "security_answer": "kdt",
+        "password_value": "pk_password",
+        "security_answer": "pk",
     }
-    assert stream.get_path("auth_data.password_value") == "kdt_password"
+    assert stream.get_path("auth_data.password_value") == "pk_password"
 
 
 def test_properties_then_pretty_override_username():

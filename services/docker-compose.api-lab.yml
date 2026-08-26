@@ -1,4 +1,4 @@
-# Демо API для банка: REST+OpenAPI + GraphQL + gRPC.
+﻿# Демо API для банка: REST+OpenAPI + GraphQL + gRPC.
 #
 #   docker compose -f services/docker-compose.api-lab.yml up -d --build
 #
@@ -7,30 +7,30 @@
 #   http://127.0.0.1:8090/openapi.json
 #   http://127.0.0.1:8090/graphql
 #   gRPC 127.0.0.1:50051
-#   proto pack: services/kdt-api-lab/proto_pack
+#   proto pack: services/pk-api-lab/proto_pack
 #
-# В Docker-сети (ZAP/браузер): http://kdt-api-lab:8090
+# В Docker-сети (ZAP/браузер): http://pk-api-lab:8090
 
 services:
-  kdt-api-lab:
+  pk-api-lab:
     build:
-      context: ./kdt-api-lab
-    image: kdt-api-lab:local
-    container_name: kdt-api-lab
+      context: ./pk-api-lab
+    image: pk-api-lab:local
+    container_name: pk-api-lab
     restart: unless-stopped
     ports:
       - "8090:8090"
       - "50051:50051"
     environment:
-      - KDT_API_LAB_HTTP_PORT=8090
-      - KDT_API_LAB_GRPC_PORT=50051
+      - PK_API_LAB_HTTP_PORT=8090
+      - PK_API_LAB_GRPC_PORT=50051
     volumes:
       # host-readable proto pack for Studio / playground inventory
-      - ./kdt-api-lab/proto_pack:/proto_pack:ro
+      - ./pk-api-lab/proto_pack:/proto_pack:ro
     networks:
-      - kdt-net
+      - pk-net
 
 networks:
-  kdt-net:
+  pk-net:
     external: true
-    name: kdt-net
+    name: pk-net

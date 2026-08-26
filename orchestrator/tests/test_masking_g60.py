@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """G-60: авто-имена секретов, locals, diary / ЛогАтаки / playground wire."""
 from __future__ import annotations
 

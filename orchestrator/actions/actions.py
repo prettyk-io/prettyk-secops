@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """PW-6: Unified actions layer for Playwright.
 
 Consumer-agnostic contract — discovery, regression, CDP-agent, fuzzing

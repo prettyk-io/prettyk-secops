@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 Pretty → wire для слоя данных (+ маркеры листа для LanguageEngine).
 

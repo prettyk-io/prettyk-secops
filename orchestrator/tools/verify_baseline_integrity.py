@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """K5: Baseline integrity verification — EXP-01 fixtures must never mutate.
 Usage: .\.venv\Scripts\python.exe orchestrator\tools\verify_baseline_integrity.py
 """

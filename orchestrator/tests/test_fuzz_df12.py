@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """DF-12: wave_mode sniper / pitchfork / cluster_bomb across targets[]."""
 from __future__ import annotations
 

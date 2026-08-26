@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 Разбор wire `component|action|args…` с учётом кавычек и ${…}.
 

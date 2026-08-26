@@ -1,11 +1,11 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 from typing import Any, Dict
 
 from utils.gha_poller import (
     GhaPollerConfig,
-    extract_kdt_exit,
+    extract_pk_exit,
     map_gha_to_ci_status,
     poll_once,
 )
@@ -56,7 +56,7 @@ def test_map_success_and_failure_with_job():
 
 
 def test_poll_once_with_mock_http():
-    cfg = GhaPollerConfig(token="t", repo="acme/zap-kdt", job_name="orchestrator")
+    cfg = GhaPollerConfig(token="t", repo="acme/prettyk-dev", job_name="orchestrator")
     calls = {"n": 0}
 
     def http_get(url: str, headers: Dict[str, str]) -> Dict[str, Any]:
@@ -108,7 +108,7 @@ def test_poll_once_with_mock_http():
 
 
 def test_poll_once_no_runs():
-    cfg = GhaPollerConfig(token="t", repo="acme/zap-kdt")
+    cfg = GhaPollerConfig(token="t", repo="acme/prettyk-dev")
 
     def http_get(url: str, headers: Dict[str, str]) -> Dict[str, Any]:
         return {"workflow_runs": []}
@@ -118,20 +118,20 @@ def test_poll_once_no_runs():
     assert result.get("skipped") is True
 
 
-def test_extract_kdt_exit_from_step_name():
+def test_extract_pk_exit_from_step_name():
     assert (
-        extract_kdt_exit(
+        extract_pk_exit(
             {"display_title": "CI"},
             {
                 "name": "orchestrator",
-                "steps": [{"name": "Notify Live KDT_EXIT=2"}],
+                "steps": [{"name": "Notify Live pk_exit=2"}],
             },
         )
         == 2
     )
 
 
-def test_map_failure_with_kdt_exit_2_is_fail_gate():
+def test_map_failure_with_pk_exit_2_is_fail_gate():
     run = {
         "id": 9,
         "status": "completed",
@@ -144,9 +144,9 @@ def test_map_failure_with_kdt_exit_2_is_fail_gate():
         "status": "completed",
         "conclusion": "failure",
         "html_url": "https://github.com/o/r/actions/runs/9/job/1",
-        "annotations": [{"message": "gate failed KDT_EXIT=2"}],
+        "annotations": [{"message": "gate failed pk_exit=2"}],
     }
     payload = map_gha_to_ci_status(run, job=job)
     assert payload["exit_code"] == 2
     assert payload["gate"] == "fail"
-    assert payload["kdt_exit"] == 2
+    assert payload["pk_exit"] == 2

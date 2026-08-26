@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 Быстрая болванка lab-прогона (без Juice/Grid/Spider).
 

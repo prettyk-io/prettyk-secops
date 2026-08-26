@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Тесты для AUTH-CHAIN-VAULT (AuthProfile, extract_value_by_path, AuthChainVault)."""
 import json
 from unittest.mock import MagicMock
@@ -83,12 +83,12 @@ def test_auth_chain_vault_inject_into_zap():
     ok_bearer = vault.inject_into_zap(mock_zap, token_var="auth.token", auth_type="bearer")
     assert ok_bearer is True
     mock_zap.add_replacer_rule.assert_any_call(
-        "kdt-vault-bearer", "REQ_HEADER", "Authorization", "Bearer bearer_token_12345", False
+        "pk-vault-bearer", "REQ_HEADER", "Authorization", "Bearer bearer_token_12345", False
     )
 
     # Инъекция Cookie
     ok_cookie = vault.inject_into_zap(mock_zap, token_var="auth.cookie", auth_type="cookie")
     assert ok_cookie is True
     mock_zap.add_replacer_rule.assert_any_call(
-        "kdt-vault-cookie", "REQ_HEADER", "Cookie", "session_id=sess_999", False
+        "pk-vault-cookie", "REQ_HEADER", "Cookie", "session_id=sess_999", False
     )

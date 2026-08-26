@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Playwright Browser Runtime — low-level browser lifecycle.
 
 PW-1: launch, connectOverCDP, new_context, proxy, ignore_https_errors.

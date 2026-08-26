@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 ADM-DOJO-1: per-project severity snapshot for Live `/api/dojo/severity`.
 

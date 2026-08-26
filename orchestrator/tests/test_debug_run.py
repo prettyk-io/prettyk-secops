@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """DBG: debug_mode helpers + Live pause/resume API."""
 from __future__ import annotations
 

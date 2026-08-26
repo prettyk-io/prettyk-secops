@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 from adapters.zap_adapter import ZapAdapter
@@ -16,7 +16,7 @@ class _FakeZap:
 
 
 def test_probe_addon_available_via_url(monkeypatch):
-    monkeypatch.delenv("KDT_API_LAB_DRY", raising=False)
+    monkeypatch.delenv("PK_API_LAB_DRY", raising=False)
     zap = ZapAdapter()
     zap._connected = True
     zap._zap = _FakeZap(alive_prefix="openapi")
@@ -26,7 +26,7 @@ def test_probe_addon_available_via_url(monkeypatch):
 
 
 def test_probe_addon_missing_notes(monkeypatch):
-    monkeypatch.delenv("KDT_API_LAB_DRY", raising=False)
+    monkeypatch.delenv("PK_API_LAB_DRY", raising=False)
     zap = ZapAdapter()
     zap._connected = True
     zap._zap = _FakeZap(alive_prefix=None)
@@ -37,7 +37,7 @@ def test_probe_addon_missing_notes(monkeypatch):
 
 
 def test_probe_dry_skips(monkeypatch):
-    monkeypatch.setenv("KDT_API_LAB_DRY", "1")
+    monkeypatch.setenv("PK_API_LAB_DRY", "1")
     zap = ZapAdapter()
     out = zap._probe_zap_addon(["openapi"])
     assert out["available"] is False

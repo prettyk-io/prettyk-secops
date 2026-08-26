@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """STAB-2: zapv2 API client must pass timeout= to requests."""
 from __future__ import annotations
 
@@ -21,17 +21,17 @@ from adapters.zap_adapter import (
 
 
 def test_zap_api_timeout_seconds_default(monkeypatch):
-    monkeypatch.delenv("KDT_ZAP_API_TIMEOUT", raising=False)
+    monkeypatch.delenv("PK_ZAP_API_TIMEOUT", raising=False)
     assert zap_api_timeout_seconds() == DEFAULT_ZAP_API_TIMEOUT_SEC
 
 
 def test_zap_api_timeout_seconds_env(monkeypatch):
-    monkeypatch.setenv("KDT_ZAP_API_TIMEOUT", "12.5")
+    monkeypatch.setenv("PK_ZAP_API_TIMEOUT", "12.5")
     assert zap_api_timeout_seconds() == 12.5
 
 
 def test_zap_api_timeout_seconds_invalid_falls_back(monkeypatch):
-    monkeypatch.setenv("KDT_ZAP_API_TIMEOUT", "nope")
+    monkeypatch.setenv("PK_ZAP_API_TIMEOUT", "nope")
     assert zap_api_timeout_seconds() == DEFAULT_ZAP_API_TIMEOUT_SEC
 
 

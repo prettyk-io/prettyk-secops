@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 import json
@@ -12,9 +12,9 @@ from utils.allure_report_meta import (
 
 
 def test_write_meta_files(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setenv("KDT_CHECK_ID", "chk_demo")
-    monkeypatch.setenv("KDT_QUALITY_GATE", "0")
-    monkeypatch.delenv("KDT_ALLURE_REPORT_NAME", raising=False)
+    monkeypatch.setenv("PK_CHECK_ID", "chk_demo")
+    monkeypatch.setenv("PK_QUALITY_GATE", "0")
+    monkeypatch.delenv("PK_ALLURE_REPORT_NAME", raising=False)
     info = write_allure_report_meta(tmp_path)
     assert info["report_name"] == DEFAULT_REPORT_NAME
     executor = json.loads((tmp_path / "executor.json").read_text(encoding="utf-8"))
@@ -28,7 +28,7 @@ def test_write_meta_files(tmp_path: Path, monkeypatch) -> None:
 
 
 def test_write_meta_files_dynamic_name(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setenv("KDT_SCENARIO_NAME", "Авторизация и сканирование профиля")
+    monkeypatch.setenv("PK_SCENARIO_NAME", "Авторизация и сканирование профиля")
     info = write_allure_report_meta(tmp_path)
     assert info["report_name"] == "Авторизация и сканирование профиля"
     executor = json.loads((tmp_path / "executor.json").read_text(encoding="utf-8"))
@@ -36,13 +36,13 @@ def test_write_meta_files_dynamic_name(tmp_path: Path, monkeypatch) -> None:
 
 
 def test_resolve_allure_service_base_engine(monkeypatch) -> None:
-    monkeypatch.delenv("KDT_ALLURE_URL", raising=False)
-    monkeypatch.setenv("KDT_ALLURE_ENGINE", "2")
+    monkeypatch.delenv("PK_ALLURE_URL", raising=False)
+    monkeypatch.setenv("PK_ALLURE_ENGINE", "2")
     assert resolve_allure_service_base() == "http://127.0.0.1:5051"
-    monkeypatch.setenv("KDT_ALLURE_ENGINE", "3")
+    monkeypatch.setenv("PK_ALLURE_ENGINE", "3")
     assert resolve_allure_service_base() == "http://127.0.0.1:5050"
-    monkeypatch.delenv("KDT_ALLURE_ENGINE", raising=False)
+    monkeypatch.delenv("PK_ALLURE_ENGINE", raising=False)
     # дефолт engine теперь 3 → канон :5050
     assert resolve_allure_service_base() == "http://127.0.0.1:5050"
-    monkeypatch.setenv("KDT_ALLURE_URL", "http://custom:9/")
+    monkeypatch.setenv("PK_ALLURE_URL", "http://custom:9/")
     assert resolve_allure_service_base() == "http://custom:9"

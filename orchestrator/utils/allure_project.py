@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 Allure project isolation (opt-in).
 
@@ -45,10 +45,10 @@ def slugify_allure_project_id(raw: str, *, max_len: int = 64) -> str:
 def resolve_allure_project_id() -> str:
     """Resolve Allure project_id. Never uses meta.project_id.
 
-    Приоритет: KDT_ALLURE_PROJECT_ID → KDT_CHECK_ID → KDT_RUN_ID.
+    Приоритет: PK_ALLURE_PROJECT_ID → PK_CHECK_ID → PK_RUN_ID.
     check_id стабилен между запусками — история проверки собирается
     в одном Allure-проекте (AL3-INSTANCE: per-instance вместо per-run).
-    KDT_RUN_ID — fallback, когда check_id ещё не назначен.
+    PK_RUN_ID — fallback, когда check_id ещё не назначен.
     """
     if allure_project_mode() != "check":
         return "default"

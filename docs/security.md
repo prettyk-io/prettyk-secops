@@ -1,4 +1,4 @@
-# Безопасная эксплуатация KDT
+# Безопасная эксплуатация PrettyK
 
 > PUBLIC detail. Тезисы hub: [`canon/security-lab.md`](canon/security-lab.md) (**CANON**). Roles: [`canon/runtime-shell.md`](canon/runtime-shell.md).
 
@@ -226,5 +226,5 @@ Alpha не подтверждает готовность к airgap:
 - [ ] оператор понимает значения кодов процесса;
 - [ ] после прогона проверены журнал, quality gate и обязательные артефакты.
 
-Архитектура и коды процесса описаны в [`KDTZaproxy.md`](KDTZaproxy.md), запуск — в [`stand.md`](stand.md).  
+Архитектура и коды процесса описаны в [`prettyk.md`](prettyk.md), запуск — в [`stand.md`](stand.md).  
 Двухосевой допуск (exit 0/1/2) и содержимое акта для ИБ: [`admission-act-ib.md`](admission-act-ib.md).

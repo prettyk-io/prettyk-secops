@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
-"""G-61: Fernet kdt:enc:v1:…"""
+﻿# -*- coding: utf-8 -*-
+"""G-61: Fernet pk:enc:v1:…"""
 from __future__ import annotations
 
 import json

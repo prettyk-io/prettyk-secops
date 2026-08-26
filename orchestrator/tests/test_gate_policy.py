@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 from core.controller import Controller
 from core.gate_policy import (
     AdmissionPolicy,
@@ -26,33 +26,33 @@ def test_severities_at_or_above_medium():
 
 
 def test_gate_severity_floor_env(monkeypatch):
-    monkeypatch.setenv("KDT_GATE_SEVERITY", "medium")
+    monkeypatch.setenv("PK_GATE_SEVERITY", "medium")
     assert gate_severity_floor() == "Medium"
-    monkeypatch.delenv("KDT_GATE_SEVERITY", raising=False)
+    monkeypatch.delenv("PK_GATE_SEVERITY", raising=False)
     assert gate_severity_floor() == "High"
 
 
 def test_report_requirements(monkeypatch):
-    monkeypatch.delenv("KDT_REQUIRE_ALLURE", raising=False)
-    monkeypatch.delenv("KDT_REQUIRE_DEFECTDOJO", raising=False)
+    monkeypatch.delenv("PK_REQUIRE_ALLURE", raising=False)
+    monkeypatch.delenv("PK_REQUIRE_DEFECTDOJO", raising=False)
     assert report_requirement_failures(allure_ok=False, dojo_ok=False) == []
 
-    monkeypatch.setenv("KDT_REQUIRE_ALLURE", "1")
+    monkeypatch.setenv("PK_REQUIRE_ALLURE", "1")
     fails = report_requirement_failures(allure_ok=False, dojo_ok=True)
     assert len(fails) == 1 and "ALLURE" in fails[0]
 
-    monkeypatch.setenv("KDT_REQUIRE_DEFECTDOJO", "1")
+    monkeypatch.setenv("PK_REQUIRE_DEFECTDOJO", "1")
     fails = report_requirement_failures(allure_ok=True, dojo_ok=None)
     assert any("DEFECTDOJO" in x for x in fails)
 
 
 def test_zap_api_key_from_env(monkeypatch):
-    monkeypatch.delenv("KDT_ZAP_API_KEY", raising=False)
+    monkeypatch.delenv("PK_ZAP_API_KEY", raising=False)
     monkeypatch.delenv("ZAP_API_KEY", raising=False)
     assert zap_api_key_from_env() is None
     monkeypatch.setenv("ZAP_API_KEY", "secret")
     assert zap_api_key_from_env() == "secret"
-    monkeypatch.setenv("KDT_ZAP_API_KEY", "prefer")
+    monkeypatch.setenv("PK_ZAP_API_KEY", "prefer")
     assert zap_api_key_from_env() == "prefer"
 
 
@@ -124,9 +124,9 @@ def test_quality_gate_uses_admission_counts(monkeypatch):
     ctrl.quality_gate_summary = None
     ctrl.admission_risk_hints = {}
     ctrl.admission_recommendations = []
-    monkeypatch.delenv("KDT_QUALITY_GATE", raising=False)
-    monkeypatch.delenv("KDT_GATE_MAX_CRITICAL", raising=False)
-    monkeypatch.delenv("KDT_GATE_MAX_HIGH", raising=False)
+    monkeypatch.delenv("PK_QUALITY_GATE", raising=False)
+    monkeypatch.delenv("PK_GATE_MAX_CRITICAL", raising=False)
+    monkeypatch.delenv("PK_GATE_MAX_HIGH", raising=False)
     assert ctrl.evaluate_quality_gate() is True
     assert ctrl.quality_gate_failed is True
     assert ctrl.quality_gate_summary.get("counts", {}).get("high") == 2
@@ -140,7 +140,7 @@ def test_quality_gate_explicit_dojo_counts(monkeypatch):
     ctrl.quality_gate_summary = None
     ctrl.admission_risk_hints = {}
     ctrl.admission_recommendations = []
-    monkeypatch.delenv("KDT_QUALITY_GATE", raising=False)
+    monkeypatch.delenv("PK_QUALITY_GATE", raising=False)
     assert (
         ctrl.evaluate_quality_gate({"medium": 3}, source="dojo") is False
     )

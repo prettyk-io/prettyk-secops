@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 Скрипт сборки автономного релизного бандла для VPS (в папку deploy_vps).
 
@@ -21,10 +21,10 @@ def package() -> None:
 
     DEPLOY_DIR.mkdir(parents=True, exist_ok=True)
 
-    # 1. Cosmo dist -> deploy_vps/www/prettyk
-    fe_dist = ROOT / "cosmo" / "dist"
+    # 1. Frontend dist -> deploy_vps/www/prettyk
+    fe_dist = ROOT / "frontend" / "dist"
     if not fe_dist.exists():
-        raise RuntimeError("cosmo/dist не найден! Выполните npm run build в cosmo")
+        raise RuntimeError("frontend/dist не найден! Выполните npm run build в frontend")
 
     www_dir = DEPLOY_DIR / "www" / "prettyk"
     shutil.copytree(fe_dist, www_dir)
@@ -110,8 +110,8 @@ def package() -> None:
         "apt update && apt install -y apache2 python3-venv\n"
         "python3 -m venv /var/www/.venv\n"
         "/var/www/.venv/bin/pip install -r deploy_vps/requirements-playground.txt\n"
-        "cp deploy_vps/apache-prettyk.conf /etc/apache2/conf-available/kdt-prettyk-root.conf\n"
-        "a2enconf kdt-prettyk-root\n"
+        "cp deploy_vps/apache-prettyk.conf /etc/apache2/conf-available/prettyk-root.conf\n"
+        "a2enconf prettyk-root\n"
         "cp deploy_vps/prettyk-editor-api.service /etc/systemd/system/\n"
         "systemctl daemon-reload\n"
         "systemctl enable --now prettyk-editor-api\n"

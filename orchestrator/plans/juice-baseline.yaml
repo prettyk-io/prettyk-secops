@@ -1,4 +1,4 @@
-# ZAP Automation Framework — эталон Juice Shop (G-38).
+﻿# ZAP Automation Framework — эталон Juice Shop (G-38).
 # Запуск: ZAP План plans/juice-baseline.yaml
 # Не стартует сам из scan_policy — только явный шаг / CLI autorun.
 env:
@@ -44,4 +44,4 @@ jobs:
       template: traditional-html
       reportDir: reports/scanner-results
       reportFile: juice-af-baseline
-      reportDescription: KDT AF juice-baseline
+      reportDescription: PK AF juice-baseline

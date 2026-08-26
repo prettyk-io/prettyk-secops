@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """AST узлы языка сценария (канон в манифесте/памяти)."""
 from __future__ import annotations
 

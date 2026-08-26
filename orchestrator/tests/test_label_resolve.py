@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """DISC-2B/C/D: synthetic label resolve (no browser)."""
 from __future__ import annotations
 

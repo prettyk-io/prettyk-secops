@@ -56,7 +56,7 @@ export function EditorViewSegmented({
         if (next === 'studio' && studioDisabled) {
           return;
         }
-        if (next !== 'studio' && next !== 'results') {
+        if (next !== 'studio' && next !== 'editor' && next !== 'results') {
           return;
         }
         setLocal(next);
@@ -64,6 +64,7 @@ export function EditorViewSegmented({
       }}
       options={[
         { label: 'Студия', value: 'studio' },
+        { label: 'Редактор', value: 'editor' },
         { label: monitorLabel(monitorState), value: 'monitor' },
         { label: 'Результаты', value: 'results' },
       ]}

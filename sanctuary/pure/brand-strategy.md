@@ -40,7 +40,7 @@
 > закладка). Для редактора каноничен кодовый знак `</>`.
 
 Канонические ассеты логотипа зафиксированы в [`pure/brand/logo/`](../../pure/brand/logo/README.md), [`pure/brand/products/`](../../pure/brand/products/README.md) и [`pure/brand/editor/`](../../pure/brand/editor/README.md):
-1. **Мастер-продукты:** `secops-studio-lockup.png` и `secops-lab-lockup.png` (с вертикальным градиентом и оригинальными шевронами).
+1. **Мастер-продукты:** `secops-studio-lockup.png` и `prettyk-lab-lockup.png` (с вертикальным градиентом и оригинальными шевронами).
 2. **Фавиконы (Universal Canon):** `p<` (Brand Squircle Dark) и `</>` (Editor Squircle Dark) во всех размерах от 12px до 512px и `.ico`.
 3. **Иконки Action Hub (3D Neon Cyberpunk):** 6 каноничных категорий в `pure/brand/studio-icons/`.
 

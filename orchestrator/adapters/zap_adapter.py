@@ -1,4 +1,4 @@
-"""
+﻿"""
 Адаптер для OWASP ZAP API.
 """
 from utils.env_dual import pk_env
@@ -20,7 +20,7 @@ logger = logging.getLogger("orchestrator")
 # STAB-2: zapv2 session.request/urlopen без timeout → hang. Env переопределяет.
 DEFAULT_ZAP_API_TIMEOUT_SEC = 60.0
 # Host reports/runs mounted in ZAP container (docker-compose.zap.yml).
-DEFAULT_ZAP_HAR_CONTAINER_ROOT = "/zap/wrk/kdt-runs"
+DEFAULT_ZAP_HAR_CONTAINER_ROOT = "/zap/wrk/pk-runs"
 
 
 def zap_api_timeout_seconds() -> float:
@@ -43,8 +43,8 @@ def zap_har_file_for_api(host_path: str) -> str:
     """
     Map host HAR path under reports/runs to the path ZAP Docker sees.
 
-    Env ``KDT_ZAP_HAR_ROOT`` overrides container mount root (default
-    ``/zap/wrk/kdt-runs``). Paths outside RUNS_DIR are returned unchanged.
+    Env ``PK_ZAP_HAR_ROOT`` overrides container mount root (default
+    ``/zap/wrk/pk-runs``). Paths outside RUNS_DIR are returned unchanged.
     """
     raw = (host_path or "").strip()
     if not raw:
@@ -647,9 +647,10 @@ class ZapAdapter(BaseAdapter):
         self,
         output_path,
         base_url="",
-        context_name="kdt_ctx",
+        context_name="pk_ctx",
         scan_policy="custom_policy",
         manifest_json="",
+        wired_json="",
     ):
         """
         Записать AF YAML на диск (без runPlan). MethodId: СгенерироватьПлан.
@@ -659,9 +660,10 @@ class ZapAdapter(BaseAdapter):
 
         path = Path(str(output_path))
         wired = None
-        if (manifest_json or "").strip():
+        raw_json = manifest_json or wired_json
+        if (raw_json or "").strip():
             try:
-                wired = json.loads(manifest_json)
+                wired = json.loads(raw_json)
             except json.JSONDecodeError as exc:
                 raise WiredError(f"СгенерироватьПлан: manifest_json: {exc}") from exc
             base_url, scan_policy = self._af_plan_overrides_from_manifest(
@@ -675,7 +677,7 @@ class ZapAdapter(BaseAdapter):
         out = write_af_plan(
             path,
             base_url=(base_url or "").strip(),
-            context_name=context_name or "kdt_ctx",
+            context_name=context_name or "pk_ctx",
             scan_policy=scan_policy or "custom_policy",
             report_file=path.stem,
             wired=wired,
@@ -872,7 +874,7 @@ class ZapAdapter(BaseAdapter):
         seq_name = str(name or "").strip()
         if not seq_name:
             raise WiredError("СканПоследовательности: пустое имя последовательности")
-        ctx = (context_name or self.context_name or "kdt_ctx").strip()
+        ctx = (context_name or self.context_name or "pk_ctx").strip()
         scan_policy = str(policy or "Sequence").strip() or "Sequence"
         timeout_minutes = self._as_timeout_minutes(
             timeout_minutes, self.active_scan_timeout
@@ -925,7 +927,7 @@ class ZapAdapter(BaseAdapter):
             f"      context: {_yaml_str(context_name)}\n"
             f"      policy: {_yaml_str(policy)}\n"
         )
-        fd, path = tempfile.mkstemp(prefix="kdt-seq-ascan-", suffix=".yaml")
+        fd, path = tempfile.mkstemp(prefix="pk-seq-ascan-", suffix=".yaml")
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as fh:
                 fh.write(yaml_text)
@@ -997,7 +999,7 @@ class ZapAdapter(BaseAdapter):
             return {
                 "available": False,
                 "component": names[0] if names else None,
-                "notes": ["KDT_API_LAB_DRY — ZAP addon probe skipped"],
+                "notes": ["PK_API_LAB_DRY — ZAP addon probe skipped"],
             }
         self._ensure_connected()
         for name in names:
@@ -1026,7 +1028,7 @@ class ZapAdapter(BaseAdapter):
             "notes": notes
             + [
                 f"API дополнения ZAP недоступен ({', '.join(names)}) — "
-                "перечень операций в KDT получен; импорт и скан в ZAP недоступны"
+                "перечень операций в PK получен; импорт и скан в ZAP недоступны"
             ],
         }
 
@@ -1273,12 +1275,12 @@ class ZapAdapter(BaseAdapter):
     ) -> None:
         from adapters.data_processor import DataProcessor
         from utils.chain_investigate import (
-            purge_kdt_auth_replacer,
+            purge_stale_auth_replacer,
             write_investigate_evidence,
         )
 
         if auth_applied:
-            notes.extend(purge_kdt_auth_replacer(self))
+            notes.extend(purge_stale_auth_replacer(self))
         else:
             notes.append("purge_skip (no auth applied)")
 
@@ -1327,7 +1329,7 @@ class ZapAdapter(BaseAdapter):
         """
         MethodId ``РасследованиеЦепи``:
         log → ctx → auth from HAR (8b) → import+seq → spider/ascan/pscan
-        → evidence sidecar + purge kdt-auth* (8c) → end log → restore.
+        → evidence sidecar + purge pk-auth* (8c) → end log → restore.
         """
         from adapters.data_processor import DataProcessor
         from utils.chain_investigate import (
@@ -1416,7 +1418,7 @@ class ZapAdapter(BaseAdapter):
     def import_openapi_spec(self, spec_url_or_file):
         """
         Импорт OpenAPI в ZAP. Для идентификатора модуля — флаг zap_import
-        (принудительно: переменная окружения). KDT_API_LAB_DRY=1 — только перечень
+        (принудительно: переменная окружения). PK_API_LAB_DRY=1 — только перечень
         операций без вызова ZAP. Нет дополнения — False и заметки.
         """
         from utils.api_import_lab import api_lab_dry
@@ -1447,7 +1449,7 @@ class ZapAdapter(BaseAdapter):
             self._last_openapi_import = {
                 "ok": True,
                 "dry": True,
-                "notes": list(resolved.notes) + ["KDT_API_LAB_DRY"],
+                "notes": list(resolved.notes) + ["PK_API_LAB_DRY"],
                 "inventory": inventory[:120],
             }
             return True
@@ -1521,7 +1523,7 @@ class ZapAdapter(BaseAdapter):
             self._last_openapi_scan = {
                 "ok": True,
                 "dry": True,
-                "notes": list(resolved.notes) + ["KDT_API_LAB_DRY"],
+                "notes": list(resolved.notes) + ["PK_API_LAB_DRY"],
             }
             return True
         probe = self._probe_zap_addon(["openapi"])
@@ -1652,7 +1654,7 @@ class ZapAdapter(BaseAdapter):
             self._last_graphql_import = {
                 "ok": True,
                 "dry": True,
-                "notes": list(resolved.notes) + ["KDT_API_LAB_DRY"],
+                "notes": list(resolved.notes) + ["PK_API_LAB_DRY"],
                 "inventory": inventory[:120],
             }
             return True
@@ -1716,7 +1718,7 @@ class ZapAdapter(BaseAdapter):
             self._last_graphql_scan = {
                 "ok": True,
                 "dry": True,
-                "notes": list(resolved.notes) + ["KDT_API_LAB_DRY"],
+                "notes": list(resolved.notes) + ["PK_API_LAB_DRY"],
             }
             return True
         probe = self._probe_zap_addon(["graphql"])
@@ -1834,7 +1836,7 @@ class ZapAdapter(BaseAdapter):
 
     def import_grpc_proto(self, proto_file_or_dir):
         """
-        Импорт gRPC: перечень сервисов в KDT; при отсутствии API дополнения ZAP —
+        Импорт gRPC: перечень сервисов в PK; при отсутствии API дополнения ZAP —
         заметки, трафик через прокси остаётся. MethodId: ИмпортgRPC.
         """
         from utils.api_import_lab import api_lab_dry
@@ -1846,7 +1848,7 @@ class ZapAdapter(BaseAdapter):
                 "ok": True,
                 "dry": True,
                 "notes": [
-                    "KDT_API_LAB_DRY — только перечень сервисов; трафик через прокси ZAP"
+                    "PK_API_LAB_DRY — только перечень сервисов; трафик через прокси ZAP"
                 ],
                 "inventory": inventory[:120],
             }
@@ -1855,7 +1857,7 @@ class ZapAdapter(BaseAdapter):
         probe = self._probe_zap_addon(["grpc", "grpcSupport", "grpcsupport"])
         if not probe["available"]:
             note = (
-                "API импорта gRPC в ZAP нет — перечень сервисов в KDT сохранён; "
+                "API импорта gRPC в ZAP нет — перечень сервисов в PK сохранён; "
                 "одиночные вызовы через прокси по-прежнему можно сканировать активно"
             )
             logger.warning(note)
@@ -1893,7 +1895,7 @@ class ZapAdapter(BaseAdapter):
 
         if api_lab_dry():
             logger.info("gRPC lab dry scan skipped (no ZAP)")
-            self._last_grpc_scan = {"ok": True, "dry": True, "notes": ["KDT_API_LAB_DRY"]}
+            self._last_grpc_scan = {"ok": True, "dry": True, "notes": ["PK_API_LAB_DRY"]}
             return True
         probe = self._probe_zap_addon(["grpc", "grpcSupport", "grpcsupport"])
         if not probe["available"]:
@@ -1934,7 +1936,7 @@ class ZapAdapter(BaseAdapter):
             return False
 
     def unary_grpc_call(self, host, method, request_json="{}"):
-        """Одиночный вызов gRPC (лаборатория). MethodId: ВызовgRPC. Без KDT_GRPC_UNARY — заглушка."""
+        """Одиночный вызов gRPC (лаборатория). MethodId: ВызовgRPC. Без PK_GRPC_UNARY — заглушка."""
         from utils.api_import_lab import dumps_ops
         from utils.grpc_ops import unary_call_harness
 
@@ -3087,7 +3089,7 @@ class ZapAdapter(BaseAdapter):
     def _summarize_gate_alerts(self, risks=None, limit=30):
         """
         Уникальные алерты для quality gate: имя + URL, без дублей.
-        risks — уровни ZAP (High/Medium/…); None → KDT_GATE_SEVERITY и выше.
+        risks — уровни ZAP (High/Medium/…); None → PK_GATE_SEVERITY и выше.
         Не keyword (leading _).
         """
         if risks is None:
@@ -3328,8 +3330,8 @@ class ZapAdapter(BaseAdapter):
 
         Keyword: внутренний (не MethodId). Вызов из Controller по idle/work timeout.
         Env (опционально, best-effort после API):
-          KDT_ZAP_STOP_DAEMON_CMD
-          KDT_ZAP_STOP_WEBSWING_CMD
+          PK_ZAP_STOP_DAEMON_CMD
+          PK_ZAP_STOP_WEBSWING_CMD
         """
         api_ok = False
         try:
@@ -3345,16 +3347,16 @@ class ZapAdapter(BaseAdapter):
         self._connected = False
 
         daemon_stopped = self._try_external_stop(
-            "KDT_ZAP_STOP_DAEMON_CMD", "stop ZAP daemon"
+            "PK_ZAP_STOP_DAEMON_CMD", "stop ZAP daemon"
         )
         swing_stopped = self._try_external_stop(
-            "KDT_ZAP_STOP_WEBSWING_CMD", "stop Webswing"
+            "PK_ZAP_STOP_WEBSWING_CMD", "stop Webswing"
         )
         if not api_ok and not daemon_stopped and not swing_stopped:
             raise WiredError(
                 "shutdown_all: не удалось погасить ZAP — "
                 "API shutdown не прошёл и не заданы "
-                "KDT_ZAP_STOP_DAEMON_CMD / KDT_ZAP_STOP_WEBSWING_CMD"
+                "PK_ZAP_STOP_DAEMON_CMD / PK_ZAP_STOP_WEBSWING_CMD"
             )
         return True
 
@@ -3374,19 +3376,19 @@ class ZapAdapter(BaseAdapter):
     # ========== DEV-ONLY: demon → webswing ==========
     # НЕ MethodId / НЕ в keywords.json. Банку не светим: webswing заказывают с старта.
     # Личный wire Максима: zap|start_webswing / zap|stop_daemon_start_webswing
-    #   KDT_ZAP_STOP_DAEMON_CMD / KDT_ZAP_START_WEBSWING_CMD
+    #   PK_ZAP_STOP_DAEMON_CMD / PK_ZAP_START_WEBSWING_CMD
 
     def start_webswing(self):
-        """Dev: старт Webswing (env KDT_ZAP_START_WEBSWING_CMD)."""
+        """Dev: старт Webswing (env PK_ZAP_START_WEBSWING_CMD)."""
         return self._run_external_mode_cmd(
-            "KDT_ZAP_START_WEBSWING_CMD",
+            "PK_ZAP_START_WEBSWING_CMD",
             "start Webswing",
         )
 
     def stop_daemon_start_webswing(self):
         """Dev: погасить demon → Webswing. Не для портала/банка."""
         self._run_external_mode_cmd(
-            "KDT_ZAP_STOP_DAEMON_CMD",
+            "PK_ZAP_STOP_DAEMON_CMD",
             "stop ZAP daemon",
         )
         return self.start_webswing()
@@ -3498,7 +3500,7 @@ class ZapAdapter(BaseAdapter):
                     template=template_id,
                     reportdir=report_dir,
                     reportfilename=report_file,
-                    description=f"KDT report ({template_id})",
+                    description=f"PK report ({template_id})",
                     display="false",
                 )
             except TypeError:

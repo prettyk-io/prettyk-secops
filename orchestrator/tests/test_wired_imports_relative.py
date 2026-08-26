@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """BE-RT-4 lite: imports[].path резолвится относительно каталога манифеста."""
 from __future__ import annotations
 

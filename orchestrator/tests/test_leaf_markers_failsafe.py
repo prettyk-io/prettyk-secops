@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Контракт маркеров листа >? (failsafe) и >@ { recover } + retry self×1."""
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""AutoTest — launch reference Juice Shop check via Playground API.
+﻿"""AutoTest — launch reference Juice Shop check via Playground API.
 Usage: py autotest_launch.py [--wait]
 """
 import json, sys, time, requests

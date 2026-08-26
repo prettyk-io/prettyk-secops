@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """LOG-CUT: опции, open/close, auto-close, feed из publish."""
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from utils import log_cuts
 
 @pytest.fixture(autouse=True)
 def _clean_cuts(tmp_path, monkeypatch):
-    monkeypatch.setenv("KDT_RUN_DIR", str(tmp_path))
+    monkeypatch.setenv("PK_RUN_DIR", str(tmp_path))
     log_cuts.clear()
     log_cuts.set_sidecar_providers(browser_logs=None, perf_logs=None)
     yield

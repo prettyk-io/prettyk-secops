@@ -10,7 +10,13 @@ export type CheckStatus =
   | 'failed'
   | 'archived';
 
-export type CheckView = 'form' | 'studio' | 'results';
+export type CheckView =
+  | 'form'
+  | 'studio'
+  | 'editor'
+  | 'studio-old'
+  | 'editor-old'
+  | 'results';
 
 export type CheckRunStatus = 'idle' | 'running' | 'success' | 'failed' | 'unknown';
 

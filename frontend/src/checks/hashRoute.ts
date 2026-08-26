@@ -13,13 +13,21 @@ export type HashRoute =
   | { kind: 'control' }
   | { kind: 'dashboard' }
   | { kind: 'lab' }
-  | { kind: 'studio-v2' }
+  | { kind: 'studio'; checkId?: string }
+  | { kind: 'sanctuary-map' }
   | { kind: 'design-playground' }
   | { kind: 'design-admin' }
   | { kind: 'check'; checkId: string; view: CheckView };
 
 function isCheckView(value: string): value is CheckView {
-  return value === 'form' || value === 'studio' || value === 'results';
+  return (
+    value === 'form' ||
+    value === 'studio' ||
+    value === 'editor' ||
+    value === 'studio-old' ||
+    value === 'editor-old' ||
+    value === 'results'
+  );
 }
 
 /** Разбор `location.hash` (`#/home`, `#/checks/uuid/form`). */
@@ -51,11 +59,19 @@ export function parseHash(hash: string): HashRoute {
   if (head === 'lab') {
     return { kind: 'lab' };
   }
+  if (head === 'studio' || head === 'workbench') {
+    return { kind: 'studio', checkId: parts[1] };
+  }
   if (head === 'studio-v2') {
-    return { kind: 'studio-v2' };
+    // STU-RAILS: публичный -v2 маршрут после переезда не используется.
+    // Перенаправляем на канонический #/checks/<id>/studio через legacy alias.
+    return { kind: 'studio', checkId: parts[1] };
   }
   if (head === 'design-playground') {
     return { kind: 'design-playground' };
+  }
+  if (head === 'sanctuary') {
+    return { kind: 'sanctuary-map' };
   }
   if (head === 'design-admin') {
     return { kind: 'design-admin' };
@@ -93,8 +109,10 @@ export function formatHash(route: HashRoute): string {
       return '#/admin';
     case 'lab':
       return '#/lab';
-    case 'studio-v2':
-      return '#/studio-v2';
+    case 'studio':
+      return route.checkId ? `#/studio/${route.checkId}` : '#/studio';
+    case 'sanctuary-map':
+      return '#/sanctuary/map';
     case 'design-playground':
       return '#/design-playground';
     case 'design-admin':
@@ -135,14 +153,19 @@ export function getRouteTitle(route: HashRoute): string {
       return 'prettyK Dashboard';
     case 'lab':
       return 'prettyK Lab';
-    case 'studio-v2':
-      return 'prettyK Studio';
+    case 'studio':
+      return 'prettyK Studio Workbench';
+    case 'sanctuary-map':
+      return 'prettyK Sanctuary Map';
     case 'design-playground':
       return 'prettyK Lab Design Playground';
     case 'design-admin':
       return 'prettyK Admin Design Playground';
     case 'check':
       if (route.view === 'form') return 'prettyK Editor';
+      if (route.view === 'editor') return 'prettyK Editor';
+      if (route.view === 'studio-old') return 'prettyK Studio (legacy)';
+      if (route.view === 'editor-old') return 'prettyK Editor (legacy)';
       if (route.view === 'results') return 'prettyK Results';
       return 'prettyK Studio';
     default:

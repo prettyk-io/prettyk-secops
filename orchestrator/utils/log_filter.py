@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """W3.8: Live Log Anomaly Filter — поднимает только ошибки/аномалии из потока."""
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """IMP-HAR-4: live ZAP HAR → importHar → sequence activeScan (opt-in)."""
 from __future__ import annotations
 
@@ -35,9 +35,9 @@ def _zap_demon_up() -> bool:
 
 
 def test_har_sequence_live_gate_off_by_default(monkeypatch):
-    monkeypatch.delenv("KDT_HAR_SEQUENCE_LIVE", raising=False)
+    monkeypatch.delenv("PK_HAR_SEQUENCE_LIVE", raising=False)
     assert har_sequence_live_enabled() is False
-    monkeypatch.setenv("KDT_HAR_SEQUENCE_LIVE", "1")
+    monkeypatch.setenv("PK_HAR_SEQUENCE_LIVE", "1")
     assert har_sequence_live_enabled() is True
 
 
@@ -45,7 +45,7 @@ def test_har_sequence_live_gate_off_by_default(monkeypatch):
 @pytest.mark.lab
 @pytest.mark.skipif(
     not har_sequence_live_enabled(),
-    reason="KDT_HAR_SEQUENCE_LIVE not set (IMP-HAR-4 opt-in)",
+    reason="PK_HAR_SEQUENCE_LIVE not set (IMP-HAR-4 opt-in)",
 )
 def test_live_import_har_and_sequence_active_scan():
     if not _zap_demon_up():
@@ -59,11 +59,11 @@ def test_live_import_har_and_sequence_active_scan():
     dest.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(FIXTURE, dest)
     zap_path = zap_har_file_for_api(str(dest))
-    assert zap_path.startswith("/zap/wrk/kdt-runs/")
+    assert zap_path.startswith("/zap/wrk/pk-runs/")
     assert zap_path.endswith(f"{run_id}/resources/mini_sequence.har")
 
     zap = ZapAdapter(host="127.0.0.1", port=8080)
-    seq = "kdt_har4_mini"
+    seq = "pk_har4_mini"
     imported = zap.import_har_sequence(seq, str(dest), assert_code=False)
     assert imported is True, "importHar failed — check ZAP sequence add-on + volume mount"
 

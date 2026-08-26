@@ -1,13 +1,13 @@
-{
+﻿{
   "meta": {
-    "project_id": "kdt-bank-api-lab",
-    "initiator_name": "kdt-lab",
-    "app_leader": "kdt-lab",
+    "project_id": "pk-bank-api-lab",
+    "initiator_name": "pk-lab",
+    "app_leader": "pk-lab",
     "assessment_purpose": "emergency",
     "emergency_reason": "IMP bank demo OpenAPI/GraphQL/gRPC cascade",
-    "release_domain": "lab-kdt-api",
+    "release_domain": "lab-pk-api",
     "compliance_requirements": "",
-    "release_manager": "kdt-lab",
+    "release_manager": "pk-lab",
     "app_type": "api"
   },
   "infrastructure": {
@@ -20,7 +20,7 @@
     "webswing_session_timeout_min": 30,
     "gui_extra_configs": "",
     "base_url_override": "http://host.docker.internal:8090",
-    "allowed_extra_domains": "prettyk-api-lab|127.0.0.1|localhost|host.docker.internal"
+    "allowed_extra_domains": "pk-api-lab|127.0.0.1|localhost|host.docker.internal"
   },
   "security_configuration": {
     "scan_policy": "custom_policy",
@@ -40,7 +40,7 @@
         "as": "bank_sdl"
       },
       {
-        "path": "../../../services/prettyk-api-lab/proto_pack",
+        "path": "../../../services/pk-api-lab/proto_pack",
         "kind": "proto_pack",
         "as": "bank_proto",
         "import_paths": []
@@ -54,7 +54,7 @@
           {
             "id": "oa_gql_grpc",
             "description": "OpenAPI/GraphQL/gRPC cascade: resource + relative к URL атаки",
-            "constructor": "Лог \"банк: OpenAPI GraphQL gRPC cascade\"\nНовыйКонтекст bank_api \"KDT API Lab\"\nВключитьВКонтекст bank_api\nОткрыть /health\nПауза 1\nСписокОперацийOpenAPI bank_openapi\nИмпортOpenAPI bank_openapi\nВыполнитьОперацииOpenAPI bank_openapi 5\nСписокОперацийGraphQL bank_graphql\nИмпортGraphQL bank_graphql\nВыполнитьGraphQL bank_graphql \"{ health }\"\nСписокСервисовgRPC bank_grpc\nВызовgRPC bank_grpc bank.v1.AccountService/Ping \"{}\"\nЛог \"OpenAPI GraphQL gRPC готовы; активное сканирование — отдельным шагом\"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
+            "constructor": "Лог \"банк: OpenAPI GraphQL gRPC cascade\"\nНовыйКонтекст bank_api \"PK API Lab\"\nВключитьВКонтекст bank_api\nОткрыть /health\nПауза 1\nСписокОперацийOpenAPI bank_openapi\nИмпортOpenAPI bank_openapi\nВыполнитьОперацииOpenAPI bank_openapi 5\nСписокОперацийGraphQL bank_graphql\nИмпортGraphQL bank_graphql\nВыполнитьGraphQL bank_graphql \"{ health }\"\nСписокСервисовgRPC bank_grpc\nВызовgRPC bank_grpc bank.v1.AccountService/Ping \"{}\"\nЛог \"OpenAPI GraphQL gRPC готовы; активное сканирование — отдельным шагом\"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
             "failsafe": false,
             "retry": 0,
             "retry_delay": 2,

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 import json
@@ -144,12 +144,12 @@ def test_resolve_graphql_module():
 
 
 def test_allow_zap_import_gate(monkeypatch):
-    monkeypatch.delenv("KDT_OPENAPI_ZAP_IMPORT", raising=False)
-    monkeypatch.delenv("KDT_API_ZAP_IMPORT", raising=False)
+    monkeypatch.delenv("PK_OPENAPI_ZAP_IMPORT", raising=False)
+    monkeypatch.delenv("PK_API_ZAP_IMPORT", raising=False)
     ok, notes = allow_zap_import(module_flag=False, openapi=True)
     assert ok is False
     assert notes
-    monkeypatch.setenv("KDT_OPENAPI_ZAP_IMPORT", "1")
+    monkeypatch.setenv("PK_OPENAPI_ZAP_IMPORT", "1")
     ok2, _ = allow_zap_import(module_flag=False, openapi=True)
     assert ok2 is True
 
@@ -166,9 +166,9 @@ def test_static_auth_bearer():
 
 
 def test_zap_import_skips_when_module_gate(monkeypatch):
-    monkeypatch.setenv("KDT_API_LAB_DRY", "1")
-    monkeypatch.delenv("KDT_OPENAPI_ZAP_IMPORT", raising=False)
-    monkeypatch.delenv("KDT_API_ZAP_IMPORT", raising=False)
+    monkeypatch.setenv("PK_API_LAB_DRY", "1")
+    monkeypatch.delenv("PK_OPENAPI_ZAP_IMPORT", raising=False)
+    monkeypatch.delenv("PK_API_ZAP_IMPORT", raising=False)
     mod = SimpleNamespace(
         id="bank_openapi",
         module_type="OpenAPI",
@@ -188,7 +188,7 @@ def test_zap_import_skips_when_module_gate(monkeypatch):
 
 
 def test_http_set_proxy_and_exercise_dry(monkeypatch):
-    monkeypatch.setenv("KDT_API_LAB_DRY", "1")
+    monkeypatch.setenv("PK_API_LAB_DRY", "1")
     http = HttpAdapter()
     assert http.set_proxy("127.0.0.1:8099") is True
     assert "http" in http.session.proxies

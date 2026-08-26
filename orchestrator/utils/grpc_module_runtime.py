@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 Каскад gRPC: module → imports proto_pack → host/TLS из URL атаки манифеста.
 """

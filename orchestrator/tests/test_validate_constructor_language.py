@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """validate_constructor: language (? / Пусть) не режется как wire."""
 
 from core.constructor_validate import validate_constructor

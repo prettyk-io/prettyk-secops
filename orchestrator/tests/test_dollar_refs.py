@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Канон ссылок $name / $path (legacy ${…})."""
 from __future__ import annotations
 

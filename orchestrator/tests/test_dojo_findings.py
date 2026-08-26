@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """ADM-DOJO-FULL-1: thin findings envelope honesty."""
 from __future__ import annotations
 
@@ -101,8 +101,8 @@ def test_fetch_findings_ok(monkeypatch):
     monkeypatch.setattr(
         "adapters.defectdojo_client._env",
         lambda key, default="": {
-            "KDT_DEFECTDOJO_URL": "http://dojo.test",
-            "KDT_DEFECTDOJO_TOKEN": "t",
+            "PK_DEFECTDOJO_URL": "http://dojo.test",
+            "PK_DEFECTDOJO_TOKEN": "t",
         }.get(key, default),
     )
     monkeypatch.setattr(

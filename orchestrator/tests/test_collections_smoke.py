@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Коллекции DOM: MethodId surface + filter → list[str] (без браузера)."""
 from __future__ import annotations
 

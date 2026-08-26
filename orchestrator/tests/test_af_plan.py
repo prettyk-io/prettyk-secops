@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """G-38 / G-35 / G-45: генератор AF YAML + MethodId План / mock runPlan."""
 import json
 import sys
@@ -258,8 +258,8 @@ def test_method_id_plan():
 
 def test_controller_init_does_not_run_zap_scans(monkeypatch):
     """Honest Contract: load манифеста не вызывает spider/active/runPlan."""
-    monkeypatch.setenv("KDT_AUTH_BOOTSTRAP", "0")
-    monkeypatch.setenv("KDT_ZAP_AUTH_BOOTSTRAP", "0")
+    monkeypatch.setenv("PK_AUTH_BOOTSTRAP", "0")
+    monkeypatch.setenv("PK_ZAP_AUTH_BOOTSTRAP", "0")
 
     zap = MagicMock()
     zap.run_automation_plan = MagicMock()
