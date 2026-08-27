@@ -22,6 +22,14 @@ vi.mock('@monaco-editor/react', () => ({
 // B4 (STU-RAILS): Monaco language setup — module-level, без loader.config
 vi.mock('../monaco/setup', () => ({
   setupMonaco: () => ({}),
+  DARK_THEME_ID: 'pk-dark',
+  PRETTYK_LANGUAGE_ID: 'prettyk',
+}));
+
+vi.mock('../monaco/metaDarkTheme', () => ({
+  META_DARK_MONACO_THEME_ID: 'prettyk-meta-dark',
+  META_LIGHT_MONACO_THEME_ID: 'prettyk-meta-light',
+  registerMonacoMetaThemes: () => {},
 }));
 
 vi.mock('../monaco/constructorLanguage', () => ({
@@ -118,21 +126,13 @@ describe('EditorWorkbench (PK-EC-1 & PK-EC-5)', () => {
     expect(screen.queryByTestId('workbench-right-panel')).toBeNull();
   });
 
-  it('switches right panel tabs between Context, Inspector, Telemetry, and Browser', () => {
+  it('renders the live Browser stage in the right panel (author mode)', () => {
     render(<EditorWorkbench />);
-    expect(screen.getByText('Runtime Ghost Variables')).toBeDefined();
 
-    // Switch to Inspector
-    fireEvent.click(screen.getByRole('button', { name: /Inspector/i }));
-    expect(screen.getByText('Active Step Parameters')).toBeDefined();
-
-    // Switch to Telemetry
-    fireEvent.click(screen.getByRole('button', { name: /Telemetry/i }));
-    expect(screen.getByText('Live Telemetry')).toBeDefined();
-
-    // Switch to Browser
-    fireEvent.click(screen.getByRole('button', { name: /Browser/i }));
+    // Правая панель теперь — живой браузер (BrowserStage), без старого
+    // переключателя Context/Inspector/Telemetry (переработано под authoring).
     expect(screen.getByTestId('mock-browser-stage')).toBeDefined();
+    expect(screen.getByText(/Browser Stage/)).toBeDefined();
   });
 
   it('supports editing DSL in Monaco and preserves 32 visible lines default canon', () => {
