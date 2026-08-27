@@ -23,6 +23,10 @@ import {
   suggestTryQuestion,
 } from './completionGates';
 import { createConstructorCodeLensProvider } from './constructorLanguageCodeLens';
+import {
+  createScenarioValidateCodeLensProvider,
+  registerValidateConstructorCommand,
+} from './scenarioValidateCodeLens';
 import { createConstructorHoverProvider } from './constructorLanguageHover';
 import { createConstructorSignatureHelpProvider } from './constructorLanguageSignature';
 import { rootMethodSuggestions } from './methodIdSuggest';
@@ -262,6 +266,9 @@ type FeatureDisposables = {
   codeLens?: { dispose: () => void };
   /** Паритет PrettyK (ED5): те же page CodeLens, что на WireK. */
   prettykCodeLens?: { dispose: () => void };
+  /** CodeLens 2.0: «Проверить конструктор» (ED-6). */
+  validateCodeLens?: { dispose: () => void };
+  prettykValidateCodeLens?: { dispose: () => void };
 };
 
 const FEATURES_KEY = '__pkConstructorLanguageFeatures';
@@ -293,6 +300,8 @@ export function registerConstructorLanguageFeatures(monaco: typeof monacoNs): vo
   store.hover?.dispose();
   store.codeLens?.dispose();
   store.prettykCodeLens?.dispose();
+  store.validateCodeLens?.dispose();
+  store.prettykValidateCodeLens?.dispose();
   store.completion = monaco.languages.registerCompletionItemProvider(
     CONSTRUCTOR_LANGUAGE_ID,
     createCompletionProvider(monaco),
@@ -313,6 +322,17 @@ export function registerConstructorLanguageFeatures(monaco: typeof monacoNs): vo
   store.prettykCodeLens = monaco.languages.registerCodeLensProvider(
     PRETTYK_LANGUAGE_ID,
     pageLenses,
+  );
+  // CodeLens 2.0: «Проверить конструктор» на обоих языках.
+  registerValidateConstructorCommand(monaco);
+  const validateLenses = createScenarioValidateCodeLensProvider();
+  store.validateCodeLens = monaco.languages.registerCodeLensProvider(
+    CONSTRUCTOR_LANGUAGE_ID,
+    validateLenses,
+  );
+  store.prettykValidateCodeLens = monaco.languages.registerCodeLensProvider(
+    PRETTYK_LANGUAGE_ID,
+    validateLenses,
   );
 }
 
