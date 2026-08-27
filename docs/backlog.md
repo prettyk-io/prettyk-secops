@@ -35,7 +35,6 @@
 | **STU-RAILS** | **CANONICAL STUDIO/EDITOR — новые поверхности на обычных маршрутах, legacy на `-old`** | **🟡 IMPLEMENTED (tsc 0 · 66 тестов)** | Boss + Flash | — | § Эпик STU-RAILS ниже · B1-B6 + F1-F4 сданы · ждёт живой UX-проход CDP |
 | **POC-AI-PROVIDER** | **AI PROVIDER MATRIX — optional Local Qwen + optional Gemini для non-AirGap** | **READY (PoC)** | Keeper discovery → Boss после отдельной команды | — | [`spike/2026-08-26-ai-provider-matrix.md`](spike/2026-08-26-ai-provider-matrix.md) · AirGap скрывает Gemini · deterministic fallback обязателен |
 | **SANCTUARY-MAP** | **ТАКТИЧЕСКИЙ РАДАР ОБИТЕЛИ — интерактивная карта приложения: семантический зум, 5 линз, телепортация** | **🔨 IN PROGRESS (Boss зона сдана · Flash зона в работе)** | Boss + Flash | 27h | § Эпик SANCTUARY-MAP ниже · B1-B3+J1 сданы (33 теста) · Flash доделывает холст/шейдеры/Idea Forge+Ctrl+M |
-| **KCF** | **KIMAKI CHARACTER FRAMEWORK — Discord × OpenCode × Buddy: разумные боги** | **READY** | Buddy lead + Boss + Flash | — | § Эпик KCF ниже · Полный план: `docs/research/2026-08-25-kimaki-character-framework-plan.md` |
 | **KDT-PURGE** | **KDT PURGATORY FINISH — закрыто (26 авг 2026)** | **CLOSED (100 % ✅)** | Boss + Flash | 0h (закрыто) | Boss B1–B4 ✅ · Flash F1+F2 ✅ · принято Keeper · § Эпик KDT-PURGE ниже |
 | **ADM-PURE** | **SecOps Control для pure — Applications / Targets / Runs / Findings / Policies** | **PARKED (until scanner PR)** | Boss | 17h | Не приоритет. Продукт = сканер, дашборды потом. |
 | **PK-CI-F4** | **PRETTYK-CI фаза 4 — Адаптеры к Jenkins / Tekton / Argo / Azure DevOps** | **FUTURE** | Boss | — | По реальному спросу |
@@ -574,64 +573,7 @@ Studio, переходит в новый Editor той же проверки, н
 
 ---
 
-## 5. Эпик KCF — Kimaki Character Framework (READY · 25 авг 2026)
-
-> **Статус:** `READY` — полный Plan подготовлен; реализацию и эксплуатационный
-> контур ведёт Buddy. Архитектурный и продуктовый результат принимают Keeper и
-> Максим.
-> **План:** [`research/2026-08-25-kimaki-character-framework-plan.md`](research/2026-08-25-kimaki-character-framework-plan.md).
-> **Граница:** «разумные боги» = широкая capability-модель без угодничества,
-> но с неотключаемыми identity/policy/audit/recovery-инвариантами.
-> **Важно:** KCF не является permissionless LLM и не превращает Discord nickname,
-> сообщение или роль в членство PrettyK.
-
-### Epic Brief
-
-**Цель:** дать владельцу и нескольким явно назначенным операторам мощный Discord
-контур, где Kimaki умеет отвечать, помнить подтверждённые предпочтения и
-управлять разрешёнными ресурсами, а Buddy обеспечивает живучесть, секреты,
-наблюдаемость и восстановление.
-
-**Роли:** Buddy — delivery/operations lead; Boss — доменный runtime и интеграции;
-Flash — Discord UX и admin surfaces; Keeper — требования и приёмка; Максим —
-owner и финальное решение.
-
-**Out-of-scope:** self-bot; произвольный REST/shell из LLM; скрытая запись всей
-истории; автоматическое PrettyK enrollment; production install/deploy без
-явного приказа Максима; Sanctuary/canon без 2FA.
-
-### Нарезка задач KCF
-
-| ID | Что получает пользователь | Приёмочный сценарий GWT (ЧИСТО) | Кому |
-|---|---|---|---|
-| **KCF-0** | Ясный режим полномочий: owner, operators, agents, guests; мощное прямое поведение без sycophancy и без саморасширения прав. | **Given:** агент получает запрос на действие. **When:** действие требует capability. **Then:** решение опирается на actor/scope/policy; агент говорит прямо и выполняет разрешённое, а не льстит и не выдумывает доступ. | Buddy lead + Boss |
-| **KCF-1** | Бот подключается к разрешённому guild и устойчиво принимает interactions/events. | **Given:** бот перезапущен или Gateway разорвал соединение. **When:** сервис возвращается. **Then:** heartbeat/reconnect/resume работают; команды не дублируются; состояние здоровья видно оператору. | Buddy + Boss |
-| **KCF-2** | Пользователь всегда узнаётся правильно, даже после смены nickname/username. | **Given:** пользователь меняет отображаемое имя. **When:** он вызывает команду снова. **Then:** открывается прежняя identity; новый дубль не создан; guild scope не перепутан. | Boss |
-| **KCF-3** | Нейтральный guest и управляемый character profile с opt-in, show, edit, export, disable и forget. | **Given:** новый пользователь пишет боту. **When:** нет явного согласия. **Then:** он остаётся guest; после opt-in можно сохранить только подтверждённое предпочтение; show/export/forget показывают честный результат. | Boss + Flash |
-| **KCF-4** | Наблюдения не становятся фактами без подтверждения; profile не становится членством проекта. | **Given:** модель предполагает интерес, роль или шутку. **When:** пользователь не подтвердил это. **Then:** запись остаётся session-only или отбрасывается; Discord membership и PrettyK membership не меняются. | Boss |
-| **KCF-5** | Durable memory и контекст Kimaki выдаются строго в текущем scope. | **Given:** у пользователя есть данные из другого guild/project. **When:** Kimaki отвечает здесь. **Then:** чужой scope не попадает в контекст; после forget факт исчезает из retrieval/cache/новой сессии. | Boss |
-| **KCF-6** | Kimaki получает profile context через OpenCode без загрязнения глобального prompt. | **Given:** запрос приходит из Discord. **When:** создаётся/продолжается агентная сессия. **Then:** identity, guild, consent и approved context связаны с этой сессией; untrusted message не меняет policy или capability. | Boss |
-| **KCF-7** | Discord admin plane с понятными read-only, reversible и destructive действиями. | **Given:** агент предлагает изменение. **When:** операция выполняется. **Then:** typed allowlist, Discord permissions, role hierarchy, scope и approval level проверены; произвольный REST запрещён. | Boss |
-| **KCF-8** | Опасные действия требуют видимого preview/confirmation, а владелец может остановить запись. | **Given:** предлагается удалить, забанить, массово изменить или сменить policy. **When:** нет нужного approval. **Then:** действие не выполняется; при подтверждении есть before/after/result; kill switch блокирует agent writes. | Boss + Flash |
-| **KCF-9** | Полный audit и восстановление: кто, что, где, почему и чем закончилось. | **Given:** изменён профиль, роль, канал или policy. **When:** оператор открывает audit/recovery. **Then:** виден correlation trail; доступен export/revoke/rollback; восстановление проверено на non-production guild. | Buddy + Flash |
-| **KCF-10** | Сервис живёт как управляемый production-like контур: secrets, migrations, health, alerts, backups, rate-limit handling. | **Given:** сервис стартует, падает или получает 401/403/429. **When:** Buddy запускает/обновляет/останавливает его. **Then:** секреты не попадают в repo/logs/prompts; состояние диагностируется; retry уважает Discord headers; restore runbook исполним. | Buddy |
-| **KCF-11** | Private pilot и adversarial acceptance перед расширением полномочий. | **Given:** один тестовый guild и owner/operators. **When:** выполнены IDOR, cross-guild, prompt injection, memory poisoning, replay, secret leakage и rate-limit tests. **Then:** все критические gates green; только после этого разрешается следующий wave/multi-guild. | Boss + Buddy + Keeper |
-
-### KCF acceptance gates
-
-| Gate | Факт |
-|---|---|
-| **KCF-A** | ID stable; nickname changes do not duplicate identity. |
-| **KCF-B** | Guest/profile/membership/permission/memory scopes are isolated. |
-| **KCF-C** | No durable memory without consent; forget is effective everywhere. |
-| **KCF-D** | Agent actions are typed, allowlisted, authorized and audited. |
-| **KCF-E** | Gateway reconnect/resume and Discord rate-limit handling are proven. |
-| **KCF-F** | Kill switch, backup and restore are demonstrated. |
-| **KCF-G** | Private pilot passes adversarial tests; Keeper accepts GWT; Максим sees it. |
-
----
-
-## 6. Эпик ADM-PURE — SecOps Control для pure (PARKED · 25 авг 2026)
+## 5. Эпик ADM-PURE — SecOps Control для pure (PARKED · 25 авг 2026)
 
 > **Статус:** `⏸️ PARKED` — Продукт = сканер. Дашборды и админка — потом, когда будет PR.  
 > **Профиль:** `secops-lab-pure`. **Граница:** pure-ядро ИБ-операций (Applications, Targets, Runs, Findings, Policies).  
