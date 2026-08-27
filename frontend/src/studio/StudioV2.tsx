@@ -12,20 +12,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Code2, FolderTree, Info, Monitor, PanelBottom, ChevronDown,
-  Share2, FileText, Inbox, GitCompare, CheckCircle2, AlertCircle,
+  Code2, Monitor, PanelBottom, ChevronDown, Inbox, CheckCircle2, AlertCircle,
 } from "lucide-react";
 import Editor from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
 import { CanvasV2 } from "./CanvasV2";
 import { BrowserPanel } from "./BrowserPanel";
-import { StudioExplorer } from "./StudioExplorer";
-import { useScenarioDeckStore } from "./ScenarioDeckStore";
 import { updateCheck } from "../checks/checksStore";
 import { saveResourceContents, type ResourceContentsMap } from "./resourceContents";
 import { collectStudioNodes, findNodeByTabId, tabFromNode } from "./collectStudioNodes";
 import type { StudioTabId } from "./studioTabs";
-import { BuddyDockController } from "./buddy/BuddyDockController";
 // ── B4: полноценный конструктор (PrettyK Monaco, gutter-run, diagnostics) ──
 import { setupMonaco, DARK_THEME_ID } from "../monaco/setup";
 import {
@@ -51,9 +47,8 @@ import type { ConstructorDiagnostic } from "../keywords/constructor";
 // ── B5: валидация (локальная + серверная) ──
 import { validateWiredFields } from "../wired/validateWiredFields";
 import { mergeConstructorDiagnostics } from "../monaco/constructorDiagnosticsMerge";
+import { VALIDATE_CONSTRUCTOR_COMMAND_ID } from "../monaco/scenarioValidateCodeLens";
 import { validateConstructorBackend } from "../api/editorValidate";
-// ── B6: цепочка доказательств ──
-import { CommitDiffView } from "../workbench/CommitDiffView";
 // ── B7: живая консоль ──
 import { LIVE_RUN_SUMMARY_URL } from "../api/apiBase";
 
@@ -62,7 +57,7 @@ const monaco = setupMonaco();
 registerConstructorLanguageFeatures(monaco);
 registerScriptLanguageFeatures(monaco);
 
-type RightTab = "code" | "tree" | "inspector" | "browser" | "diff";
+type RightTab = "code" | "browser";
 
 export interface StudioV2Props {
   /** Привязка к конкретной проверке (B1). undefined → честное пустое. */
@@ -94,8 +89,7 @@ export function StudioV2({
     controlledFormData !== undefined && controlledOnFormDataChange !== undefined;
 
   const [bottomOpen, setBottomOpen] = useState(false);
-  const [rightTab, setRightTab] = useState<RightTab>("tree");
-  const [canvasMode, setCanvasMode] = useState<"entity" | "scenarios">("entity");
+  const [rightTab, setRightTab] = useState<RightTab>("code");
 
   // ── B1: standalone fallback — локальный formData, привязан к ЭТОЙ проверке ──
   const [selfFormData, setSelfFormData] = useState<unknown>(initialManifest);
@@ -155,12 +149,6 @@ export function StudioV2({
     [controlled, controlledOnResourceContentsChange, checkId],
   );
 
-  const handleSelectTab = useCallback((tabId: StudioTabId) => {
-    setSelectedTabId(tabId);
-    // Открыть документ: переключаем на вкладку кода (B2 — клик открывает документ)
-    setRightTab("code");
-  }, []);
-
   // ── B1: честное пустое состояние (нет проверки И нет манифеста) ──
   const hasCheck = Boolean(checkId) || formData !== undefined;
   if (!hasCheck) {
@@ -186,23 +174,7 @@ export function StudioV2({
           Здесь — только навигация canvas: Сущности / Сценарии. */}
       <div className="flex-1 flex overflow-hidden">
         <div className="flex-1 flex flex-col overflow-hidden min-w-0" style={{ borderRight: "1px solid #1e293b" }}>
-          <div className="flex items-center justify-end gap-2 px-3 h-8 shrink-0" style={{ background: "#0f172a", borderBottom: "1px solid #1e293b" }}>
-            <button
-              onClick={() => setCanvasMode("entity")}
-              className="flex items-center gap-1 px-2.5 h-6 rounded text-[11px] font-medium transition-colors"
-              style={{ background: canvasMode === "entity" ? "rgba(56,189,248,0.15)" : "transparent", color: canvasMode === "entity" ? "#38bdf8" : "#64748b", fontFamily: "Golos UI, sans-serif" }}
-            >
-              <Share2 className="size-3" /> Сущности
-            </button>
-            <button
-              onClick={() => setCanvasMode("scenarios")}
-              className="flex items-center gap-1 px-2.5 h-6 rounded text-[11px] font-medium transition-colors"
-              style={{ background: canvasMode === "scenarios" ? "rgba(56,189,248,0.15)" : "transparent", color: canvasMode === "scenarios" ? "#38bdf8" : "#64748b", fontFamily: "Golos UI, sans-serif" }}
-            >
-              <FileText className="size-3" /> Сценарии
-            </button>
-          </div>
-          <CanvasV2 mode={canvasMode} counts={{
+          <CanvasV2 counts={{
             pages: tree.pages.length,
             scenarios: tree.scenarios.length,
             modules: tree.modules.length,
@@ -213,31 +185,15 @@ export function StudioV2({
         <div className="shrink-0 flex flex-col overflow-hidden" style={{ background: "#0f172a", width: 380 }}>
           <div className="flex items-center h-9 shrink-0" style={{ borderBottom: "1px solid #1e293b" }}>
             <TabBtn active={rightTab==="code"} onClick={()=>setRightTab("code")} icon={<Code2 className="size-3"/>} label="Код"/>
-            <TabBtn active={rightTab==="tree"} onClick={()=>setRightTab("tree")} icon={<FolderTree className="size-3"/>} label="Дерево"/>
-            <TabBtn active={rightTab==="inspector"} onClick={()=>setRightTab("inspector")} icon={<Info className="size-3"/>} label="Инспектор"/>
             <TabBtn active={rightTab==="browser"} onClick={()=>setRightTab("browser")} icon={<Monitor className="size-3"/>} label="Браузер"/>
-            <TabBtn active={rightTab==="diff"} onClick={()=>setRightTab("diff")} icon={<GitCompare className="size-3"/>} label="Diff"/>
             <div className="flex-1"/>
             <Button variant="ghost" size="icon" className="size-7" onClick={()=>setBottomOpen(v=>!v)}><PanelBottom className="size-3.5"/></Button>
           </div>
           <div className="flex-1 overflow-hidden">
             {rightTab==="code" && <CodePanel formData={formData} onFormDataChange={handleFormDataChange} selectedTabId={selectedTabId} />}
-            {rightTab==="tree" && (
-              <StudioExplorer
-                formData={formData}
-                onFormDataChange={handleFormDataChange}
-                resourceContents={resourceContents}
-                onResourceContentsChange={handleResourceContentsChange}
-                selectedTabId={selectedTabId}
-                onSelectTab={handleSelectTab}
-              />
-            )}
-            {rightTab==="inspector" && <InspectorPanel />}
             {rightTab==="browser" && <BrowserPanel />}
-            {rightTab==="diff" && <DiffPanel checkId={checkId} dslTab={activeDslTab(formData, selectedTabId)} />}
           </div>
         </div>
-        <BuddyDockController />
       </div>
       {bottomOpen && <div className="h-48 shrink-0 flex flex-col overflow-hidden" style={{ background: "#0f172a", borderTop: "1px solid #1e293b" }}>
         <div className="flex items-center justify-between px-3 h-8 shrink-0" style={{ borderBottom: "1px solid #1e293b" }}>
@@ -249,7 +205,7 @@ export function StudioV2({
     </div>);
 }
 
-/** Активный DSL-таб для diff-панели (B6): выбранная сущность, иначе первая. */
+/** Активный DSL-таб для редактора кода: выбранная сущность, иначе первая. */
 function activeDslTab(formData: unknown, selectedTabId?: StudioTabId): DslTabRef | null {
   if (selectedTabId) {
     const d = dslTabForStudioTabId(formData, selectedTabId);
@@ -351,6 +307,23 @@ function CodePanel({ formData, onFormDataChange, selectedTabId }: CodePanelProps
     [merged],
   );
 
+  // ── CodeLens 2.0: «Проверить конструктор» — слушаем команду из Monaco ──
+  useEffect(() => {
+    const handler = () => {
+      if (!dslTab) return;
+      const constructorText = readConstructorText(formData, dslTab.path);
+      validateConstructorBackend(constructorText).then((result) => {
+        const instance = editorRef.current;
+        if (!instance) return;
+        const model = instance.getModel();
+        if (!model) return;
+        applyDiagnostics(monaco, model, mergeConstructorDiagnostics(localDiags, result));
+      });
+    };
+    window.addEventListener(VALIDATE_CONSTRUCTOR_COMMAND_ID, handler);
+    return () => window.removeEventListener(VALIDATE_CONSTRUCTOR_COMMAND_ID, handler);
+  }, [dslTab, formData, localDiags, merged]);
+
   const handleMount = useCallback(
     (instance: editor.IStandaloneCodeEditor) => {
       editorRef.current = instance;
@@ -427,24 +400,6 @@ function CodePanel({ formData, onFormDataChange, selectedTabId }: CodePanelProps
       )}
     </div>
   );
-}
-
-/** B6: цепочка доказательств — diff по коммитам, секреты скрыты (redactDslSecrets). */
-function DiffPanel({ checkId, dslTab }: { checkId?: string; dslTab: DslTabRef | null }) {
-  if (!checkId) {
-    return (
-      <div className="flex flex-col h-full">
-        <div className="flex items-center px-3 h-9 shrink-0" style={{ borderBottom: "1px solid #1e293b" }}>
-          <GitCompare className="size-3.5 mr-1.5" style={{ color: "#38bdf8" }} />
-          <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#64748b" }}>Diff</span>
-        </div>
-        <div className="flex-1 flex items-center justify-center p-3">
-          <span className="text-xs" style={{ color: "#475569" }}>Сравнение доступно только внутри проверки</span>
-        </div>
-      </div>
-    );
-  }
-  return <CommitDiffView checkId={checkId} activeTab={dslTab} />;
 }
 
 /** B7: живая консоль — реальный run_summary, честная пустота без прогона. */
@@ -525,7 +480,3 @@ function ConsolePanel() {
 }
 
 function TabBtn({active,onClick,icon,label}:{active:boolean;onClick:()=>void;icon:ReactNode;label:string}){return <button onClick={onClick} className="flex items-center gap-1.5 px-3 h-full text-xs transition-colors" style={{color:active?"#e2e8f0":"#64748b",borderBottom:active?"2px solid #38bdf8":"2px solid transparent",fontFamily:"Golos UI, sans-serif"}}>{icon}{label}</button>}
-function PR({label,value,color}:{label:string;value:string;color?:string}){return <div className="flex items-center justify-between text-xs"><span style={{color:"#64748b"}}>{label}</span><span style={{color:color??"#e2e8f0"}}>{value}</span></div>}
-
-function InspectorPanel(){const decks=useScenarioDeckStore(s=>s.decks);const deck=decks[0];if(!deck)return <div className="flex-1 flex items-center justify-center p-3"><span className="text-xs" style={{color:"#475569"}}>Нет сценариев</span></div>;const passed=deck.steps.filter(s=>s.led==="success").length;const failed=deck.steps.filter(s=>s.led==="failure").length;return <div className="flex flex-col h-full"><div className="flex items-center px-3 h-9 shrink-0" style={{borderBottom:"1px solid #1e293b"}}><Info className="size-3.5 mr-1.5" style={{color:"#38bdf8"}}/><span className="text-xs font-semibold uppercase tracking-wider" style={{color:"#64748b"}}>Инспектор</span></div><div className="flex-1 overflow-auto p-3 space-y-3"><div className="space-y-1"><Label>Сценарий</Label><p className="text-sm font-semibold" style={{color:"#e2e8f0"}}>{deck.title}</p><p className="text-xs" style={{color:"#64748b"}}>{deck.description}</p></div><hr style={{borderColor:"#1e293b"}}/><div className="space-y-2"><Label>Статистика</Label><PR label="Всего шагов" value={String(deck.steps.length)}/><PR label="Пройдено" value={String(passed)} color="#22c55e"/><PR label="Ошибок" value={String(failed)} color={failed>0?"#ef4444":"#64748b"}/><PR label="Ожидают" value={String(deck.steps.length-passed-failed)} color="#475569"/></div></div></div>}
-function Label({children}:{children:ReactNode}){return <span className="text-[10px] uppercase tracking-wider font-semibold block" style={{color:"#475569"}}>{children}</span>}
