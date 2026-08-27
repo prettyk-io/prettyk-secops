@@ -1,30 +1,30 @@
 /**
- * BrowserPanel — Studio right-tab: internal authoring browser panel.
+ * BrowserPanel — StudioV2 right-tab: authoring browser panel.
  *
  * F-5: живая адресная строка, ← → навигация, лоадер.
  * F-6: Record — end-to-end proposal → DSL → ScenarioDeckStore.
  * F-7: ▶ Play — execute recorded steps in browser.
+ * PW-A3 (27 Aug 2026): живой noVNC-стрим вместо скриншот-поллинга;
+ * клик по стриму = нативный клик (observe через expose_binding), не координаты.
  */
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Globe, RotateCcw, Camera, Link2, Unlink, Loader2, ExternalLink,
-  Circle, Play, Square, ArrowLeft, ArrowRight, Pause,
+  Globe, RotateCcw, Loader2, ExternalLink,
+  Circle, Play, Square, ArrowLeft, ArrowRight, Link2, Unlink,
 } from "lucide-react";
 import { useCdpRecorder } from "../terminal/useCdpRecorder";
 import { DSLProposalBanner } from "../terminal/DiscoveryOverlay";
 import { useScenarioDeckStore } from "./ScenarioDeckStore";
 import { stepToDSL } from "./scenarioStepModel";
 
-interface BS { ok: boolean; connected: boolean; url?: string | null; title?: string | null; purpose?: 'authoring'; transport?: 'playwright'; }
+interface BS { ok: boolean; connected: boolean; url?: string | null; title?: string | null; streamUrl?: string | null; }
 
 export function BrowserPanel() {
   const [status, setStatus] = useState<BS>({ ok: true, connected: false });
   const [navUrl, setNavUrl] = useState("http://juice-shop:3000");
-  const [screenshot, setScreenshot] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [live, setLive] = useState(false);
 
   // ── F-7: Play state ──
   const [playing, setPlaying] = useState(false);
@@ -37,46 +37,34 @@ export function BrowserPanel() {
 
   useEffect(() => { poll(); const i = setInterval(poll, 3000); return () => clearInterval(i); }, [poll]);
 
-  // F-5: sync navUrl from the internal authoring browser
+  // F-5: sync navUrl from CDP
   useEffect(() => { if (status.url) setNavUrl(status.url); }, [status.url]);
 
-  const shot = useCallback(async () => {
-    try {
-      const r = await fetch("/api/browser/screenshot", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
-      const d = await r.json();
-      if (d.ok && d.screenshot) {
-        const raw: string = d.screenshot;
-        setScreenshot(raw.startsWith('data:') ? raw : `data:image/png;base64,${raw}`);
-      }
-    } catch { /* authoring browser down */ }
-  }, []);
-
-  useEffect(() => { if (!live) return; shot(); const i = setInterval(shot, 1500); return () => clearInterval(i); }, [live, shot]);
-
   const nav = useCallback(async () => { if (!navUrl) return; setLoading(true);
-    try { await fetch("/api/browser/navigate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: navUrl }) }); await poll(); setLive(true); } finally { setLoading(false); }
+    try { await fetch("/api/browser/navigate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: navUrl }) }); await poll(); } finally { setLoading(false); }
   }, [navUrl, poll]);
 
   // F-5: back / forward
   const doBack = useCallback(async () => {
     setLoading(true);
-    try { await fetch("/api/browser/back", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }); setTimeout(() => { poll(); shot(); setLoading(false); }, 600); }
+    try { await fetch("/api/browser/back", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }); await poll(); setLoading(false); }
     catch { setLoading(false); }
-  }, [poll, shot]);
+  }, [poll]);
   const doForward = useCallback(async () => {
     setLoading(true);
-    try { await fetch("/api/browser/forward", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }); setTimeout(() => { poll(); shot(); setLoading(false); }, 600); }
+    try { await fetch("/api/browser/forward", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }); await poll(); setLoading(false); }
     catch { setLoading(false); }
-  }, [poll, shot]);
+  }, [poll]);
   const doReload = useCallback(async () => {
     setLoading(true);
-    try { await fetch("/api/browser/eval", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ expression: "window.location.reload()" }) }); setTimeout(() => { poll(); shot(); setLoading(false); }, 800); }
+    try { await fetch("/api/browser/eval", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ expression: "window.location.reload()" }) }); await poll(); setLoading(false); }
     catch { setLoading(false); }
-  }, [poll, shot]);
+  }, [poll]);
 
   const c = status.connected;
+  const streamUrl = status.streamUrl ?? null;
 
-  // ── Record mode (F-6): browser event → proposal → DSL-шаг ──
+  // ── Record mode (F-6): CDP observe → proposal → DSL-шаг ──
   const decks = useScenarioDeckStore(s => s.decks);
   const insertStep = useScenarioDeckStore(s => s.insertStep);
   const deckId = decks[0]?.id ?? "browser-stage";
@@ -116,14 +104,13 @@ export function BrowserPanel() {
         } else if (s.action === "Wait") {
           await new Promise(r => setTimeout(r, Number(s.payload) || 1000));
         }
-        shot();
       } catch { /* step failed — continue */ }
       if (i < steps.length - 1) await new Promise(r => setTimeout(r, 800));
     }
     setPlaying(false);
     setPlayStep(0);
     playAbortRef.current = null;
-  }, [shot]);
+  }, []);
 
   const stopPlay = useCallback(() => {
     playAbortRef.current?.abort();
@@ -170,12 +157,6 @@ export function BrowserPanel() {
       )}
 
       <Button variant="outline" size="icon" className="size-7 shrink-0" onClick={doReload} disabled={loading || !c || playing}><RotateCcw className="size-3"/></Button>
-      <Button variant="outline" size="icon" className="size-7 shrink-0" onClick={shot} disabled={loading || !c || playing}><Camera className="size-3"/></Button>
-
-      {/* Live toggle */}
-      <Button variant={live ? "default" : "outline"} size="icon" className="size-7 shrink-0" onClick={() => setLive(v => !v)} disabled={!c || playing} title={live ? "Live-превью вкл" : "Live-превью выкл"}>
-        <span className="w-2 h-2 rounded-full" style={{ background: live ? "#22c55e" : "#475569" }} />
-      </Button>
 
       {/* F-6: Record toggle */}
       <Button
@@ -195,21 +176,26 @@ export function BrowserPanel() {
     {/* F-6: Proposal banner */}
     {recorder.state.proposal && (
       <div className="px-2 py-1.5 shrink-0" style={{ borderBottom: "1px solid #1e293b" }}>
-        <DSLProposalBanner proposal={recorder.state.proposal} onAccept={() => { recorder.acceptProposal(); shot(); }} onReject={() => { recorder.rejectProposal(); shot(); }} />
+        <DSLProposalBanner proposal={recorder.state.proposal} onAccept={() => { recorder.acceptProposal(); }} onReject={() => { recorder.rejectProposal(); }} />
       </div>
     )}
     {recorder.state.ambiguous && (
       <div className="px-3 py-1.5 shrink-0 text-[10px]" style={{ borderBottom: "1px solid #1e293b", background: "rgba(245,158,11,0.08)", color: "#f59e0b" }}>Неоднозначный локатор — выберите элемент точнее</div>
     )}
 
-    {/* Viewport */}
-    <div className="flex-1 overflow-auto min-h-0 relative" style={{ background: "#09090b" }}>
-      {screenshot ? (
-        <img src={screenshot} alt="screenshot" className="absolute inset-0 w-full h-full object-contain" />
+    {/* Viewport: живой noVNC-стрим (PW-A3) */}
+    <div className="flex-1 overflow-hidden min-h-0 relative" style={{ background: "#09090b" }}>
+      {streamUrl ? (
+        <iframe
+          src={streamUrl}
+          title="Live authoring browser"
+          className="absolute inset-0 w-full h-full border-0"
+          allow="autoplay"
+        />
       ) : (
         <div className="flex flex-col items-center justify-center h-full gap-2" style={{ color: "#475569" }}>
           <Globe className="size-8 opacity-30" />
-          <span className="text-xs">{c ? "Нажми «Запустить» для загрузки страницы" : "Authoring browser не подключён"}</span>
+          <span className="text-xs">{c ? "Запуск живого стрима…" : "Authoring browser не подключён"}</span>
         </div>
       )}
     </div>

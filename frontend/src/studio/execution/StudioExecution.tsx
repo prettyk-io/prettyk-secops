@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useThemeMode } from '../../theme/ThemeProvider';
 import { useExecutionSSE } from './useExecutionSSE';
+import { useExecutionVideoSource } from './useExecutionVideoSource';
 import { useExecutionStore } from './useExecutionStore';
 import { PlayheadBar } from './playhead/PlayheadBar';
 import { HeadquartersView } from './modes/HeadquartersView';
@@ -28,6 +29,9 @@ export function StudioExecution() {
   const store = useExecutionStore();
   const stream = useExecutionSSE();
   const [hitEffects, setHitEffects] = useState<HitEffect[]>([]);
+
+  // PW-E4: live-вид прогона — noVNC из live meta → VideoTrack
+  useExecutionVideoSource();
 
   // Sync markers from SSE
   useEffect(() => { store.setMarkers(stream.markers); }, [stream.markers]);

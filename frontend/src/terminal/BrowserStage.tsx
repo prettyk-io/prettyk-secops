@@ -1,8 +1,10 @@
 /**
- * PK-WB-B2 / POC-CDP-1: Browser Stage Shell — permanent right panel in Author/Record/Debug modes.
+ * PK-WB-B2 / PW-AIRGAP: Browser Stage Shell — permanent right panel in Author/Record/Debug modes.
  * LIVE browser via BrowserSession (no more mock).
  *
- * Live v2 (27 Aug 2026): живая адресная строка, корректный скриншот, растягивание на форму.
+ * PW-A3 (27 Aug 2026): живой noVNC-стрим вместо скриншот-поллинга.
+ * Клик по стриму = нативный клик в браузере (observe ловит через expose_binding),
+ * НЕ эмуляция координатами. Координатный путь (clickCoordinate / observe/click) удалён.
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { cn } from '../lib/utils';
@@ -13,7 +15,6 @@ import {
 import { getBrowserSession } from '../studio/browserSession';
 import type { BrowserSessionStatus } from '../studio/browserSession';
 import { useScenarioDeckStore } from '../studio/ScenarioDeckStore';
-import { computeViewportCoordsFromEvent } from './clickCoordinate';
 
 export type BrowserStageMode = 'author' | 'record' | 'debug';
 
@@ -32,10 +33,8 @@ export interface BrowserStageProps {
   /** CDP recorder state (optional — only used in Record mode). */
   cdpConnected?: boolean;
   cdpObserving?: boolean;
-  /** HDO-F3: Ошибка рекордера (disconnected / timeout). */
+  /** PW-A5: Ошибка рекордера (disconnected / timeout) — честный показ, не «успех». */
   recorderError?: string | null;
-  /** HDO-F1: Колбэк при клике по скриншоту (для координации с родителем). */
-  onScreenshotClick?: () => void;
 }
 
 export function BrowserStage({
@@ -44,11 +43,9 @@ export function BrowserStage({
   onNavigateBack, onNavigateForward, onReload,
   embedded = false,
   cdpConnected = false, cdpObserving = false,
-  recorderError = null, onScreenshotClick,
+  recorderError = null,
 }: BrowserStageProps) {
   const [cdpStatus, setCdpStatus] = useState<BrowserSessionStatus | null>(null);
-  const [screenshot, setScreenshot] = useState<string | null>(null);
-  const [shotLoading, setShotLoading] = useState(false);
   const [navLoading, setNavLoading] = useState(false);
   const [navError, setNavError] = useState<string | null>(null);
   const [navUrl, setNavUrl] = useState(targetUrl);
@@ -57,12 +54,6 @@ export function BrowserStage({
   const [playing, setPlaying] = useState(false);
   const [playStep, setPlayStep] = useState(0);
   const playAbortRef = useRef<AbortController | null>(null);
-  const shotTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  // HDO-F1: Click-on-screenshot state
-  const [clickStatus, setClickStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
-  const [clickError, setClickError] = useState<string | null>(null);
-  const imgRef = useRef<HTMLImageElement | null>(null);
-  const clickLockRef = useRef(false);
 
   // ── Browser status from singleton session ──
   useEffect(() => {
@@ -75,85 +66,13 @@ export function BrowserStage({
   }, []);
 
   const liveCdp = cdpStatus?.connected ?? cdpConnected;
+  // PW-A3: живой стрим вместо скриншотов
+  const streamUrl = cdpStatus?.streamUrl ?? null;
 
   // Синхронизация navUrl с реальным URL из живого браузера
   useEffect(() => {
     if (cdpStatus?.url) setNavUrl(cdpStatus.url);
   }, [cdpStatus?.url]);
-
-  const displayUrl = cdpStatus?.url || targetUrl;
-
-  // ── Live screenshot polling ──
-  const takeShot = useCallback(async () => {
-    if (!liveCdp) return;
-    try {
-      const r = await fetch('/api/browser/screenshot', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      });
-      const d = await r.json();
-      if (d.ok && d.screenshot) {
-        const raw: string = d.screenshot;
-        // Handle both formats: backend may return clean base64 or data-URI
-        setScreenshot(raw.startsWith('data:') ? raw : `data:image/png;base64,${raw}`);
-      }
-    } catch {
-      // Browser down — keep last frame
-    }
-  }, [liveCdp]);
-
-  useEffect(() => {
-    if (!liveCdp) {
-      setScreenshot(null);
-      if (shotTimerRef.current) {
-        clearInterval(shotTimerRef.current);
-        shotTimerRef.current = null;
-      }
-      return;
-    }
-    setShotLoading(true);
-    takeShot().finally(() => setShotLoading(false));
-    shotTimerRef.current = setInterval(takeShot, 1500);
-    return () => {
-      if (shotTimerRef.current) {
-        clearInterval(shotTimerRef.current);
-        shotTimerRef.current = null;
-      }
-    };
-  }, [liveCdp, takeShot]);
-
-  // ── HDO-F1: Клик по скриншоту → координаты viewport (letterboxing) → observe/click ──
-  const handleScreenshotClick = useCallback(async (e: React.MouseEvent<HTMLImageElement>) => {
-    if (clickLockRef.current) return;
-    const img = imgRef.current;
-    if (!img) return;
-
-    const vp = computeViewportCoordsFromEvent(img, e.clientX, e.clientY);
-    if (!vp) return; // клик в поле letterbox — игнорируем
-
-    clickLockRef.current = true;
-    setClickStatus('sending');
-    setClickError(null);
-    onScreenshotClick?.();
-
-    const session = getBrowserSession();
-    const result = await session.observeClick(Math.round(vp.x), Math.round(vp.y));
-
-    if (result.ok) {
-      setClickStatus('sent');
-      // HDO-F3: обновить скриншот после клика (страница могла измениться)
-      setTimeout(async () => {
-        await takeShot();
-        clickLockRef.current = false;
-        setClickStatus('idle');
-      }, 1000);
-    } else {
-      setClickStatus('error');
-      setClickError(result.error || 'observe/click failed');
-      clickLockRef.current = false;
-    }
-  }, [takeShot, onScreenshotClick]);
 
   // ── Навигация (с таймаутом и отменой) ──
   const doNavigate = useCallback(async (url: string) => {
@@ -178,7 +97,7 @@ export function BrowserStage({
       if (d.ok) {
         setNavUrl(d.url || navUrl);
         getBrowserSession().getStatus();
-        setTimeout(() => { takeShot(); setNavLoading(false); }, 800);
+        setNavLoading(false);
       } else {
         setNavError(d.error || 'Navigation failed');
         setNavLoading(false);
@@ -194,7 +113,7 @@ export function BrowserStage({
       }
       setNavLoading(false);
     }
-  }, [navUrl, takeShot]);
+  }, [navUrl]);
 
   const cancelNav = useCallback(() => {
     navAbortRef.current?.abort();
@@ -211,11 +130,12 @@ export function BrowserStage({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ expression: 'window.location.reload()' }),
       });
-      setTimeout(() => { takeShot(); setNavLoading(false); }, 1000);
+      getBrowserSession().getStatus();
+      setNavLoading(false);
     } catch {
       setNavLoading(false);
     }
-  }, [liveCdp, takeShot]);
+  }, [liveCdp]);
 
   const doBack = useCallback(async () => {
     if (!liveCdp) return;
@@ -224,11 +144,12 @@ export function BrowserStage({
       await fetch('/api/browser/back', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
       });
-      setTimeout(() => { takeShot(); setNavLoading(false); }, 600);
+      getBrowserSession().getStatus();
+      setNavLoading(false);
     } catch {
       setNavLoading(false);
     }
-  }, [liveCdp, takeShot]);
+  }, [liveCdp]);
 
   const doForward = useCallback(async () => {
     if (!liveCdp) return;
@@ -237,11 +158,12 @@ export function BrowserStage({
       await fetch('/api/browser/forward', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
       });
-      setTimeout(() => { takeShot(); setNavLoading(false); }, 600);
+      getBrowserSession().getStatus();
+      setNavLoading(false);
     } catch {
       setNavLoading(false);
     }
-  }, [liveCdp, takeShot]);
+  }, [liveCdp]);
 
   // ── F-7: Play / Stop ──
   const doPlay = useCallback(async () => {
@@ -265,14 +187,13 @@ export function BrowserStage({
         } else if (s.action === "Wait") {
           await new Promise(r => setTimeout(r, Number(s.payload) || 1000));
         }
-        takeShot();
       } catch { /* step failed */ }
       if (i < steps.length - 1) await new Promise(r => setTimeout(r, 800));
     }
     setPlaying(false);
     setPlayStep(0);
     playAbortRef.current = null;
-  }, [takeShot]);
+  }, []);
 
   const stopPlay = useCallback(() => {
     playAbortRef.current?.abort();
@@ -366,7 +287,7 @@ export function BrowserStage({
           </button>
         )}
 
-        {/* Live CDP status */}
+        {/* Live status */}
         <span className={cn(
           'flex items-center gap-1 text-[9px] font-mono shrink-0',
           liveCdp ? (cdpObserving ? 'text-red-400' : 'text-emerald-400') : 'text-slate-500',
@@ -383,57 +304,24 @@ export function BrowserStage({
         </button>
       </div>
 
-      {/* ── Viewport ── */}
+      {/* ── Viewport: живой noVNC-стрим (PW-A3) ── */}
       <div className="flex-1 min-h-0 flex items-center justify-center bg-[#080c14] relative overflow-hidden">
-        {liveCdp ? (
-          screenshot ? (
-            <>
-              <img
-                ref={imgRef}
-                src={screenshot}
-                alt={cdpStatus?.title || 'Live viewport'}
-                className={cn(
-                  'w-full h-full object-contain',
-                  cdpObserving && 'cursor-crosshair',
-                )}
-                style={{ imageRendering: 'auto' }}
-                onClick={cdpObserving ? handleScreenshotClick : undefined}
-              />
-              {/* HDO-F3: Индикатор клика (sending / error) */}
-              {clickStatus === 'sending' && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/20 z-10 pointer-events-none">
-                  <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-900/90 border border-cyan-500/30">
-                    <Loader2 className="size-4 animate-spin text-cyan-400" />
-                    <span className="text-[10px] text-cyan-300 font-mono">Sending click…</span>
-                  </div>
-                </div>
-              )}
-              {/* HDO-F3: Ошибка клика */}
-              {clickStatus === 'error' && clickError && (
-                <div className="absolute top-2 left-2 right-2 z-20">
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded border border-red-500/30 bg-red-500/10">
-                    <AlertTriangle className="size-3.5 text-red-400 shrink-0" />
-                    <span className="text-[10px] text-red-400">{clickError}</span>
-                    <button onClick={() => { setClickStatus('idle'); setClickError(null); }}
-                      className="ml-auto text-red-400 hover:text-red-300 text-sm leading-none">&times;</button>
-                  </div>
-                </div>
-              )}
-            </>
-          ) : shotLoading ? (
-            <div className="flex flex-col items-center gap-2 text-center">
-              <Loader2 className="size-10 animate-spin text-cyan-700" />
-              <p className="text-xs text-slate-500">Загрузка первого кадра…</p>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center gap-2 text-center">
-              <Monitor className="size-12 text-emerald-700" />
-              <p className="text-xs font-semibold text-emerald-500">Browser Live</p>
-              <p className="text-[9px] text-slate-500 max-w-[200px]">
-                {cdpStatus?.title || 'Page loaded'}
-              </p>
-            </div>
-          )
+        {streamUrl ? (
+          <iframe
+            src={streamUrl}
+            title={cdpStatus?.title || 'Live authoring browser'}
+            className="w-full h-full border-0"
+            style={{ background: '#000' }}
+            allow="autoplay"
+          />
+        ) : liveCdp ? (
+          <div className="flex flex-col items-center gap-2 text-center">
+            <Loader2 className="size-10 animate-spin text-cyan-700" />
+            <p className="text-xs text-slate-500">Запуск живого стрима…</p>
+            <p className="text-[9px] text-slate-600 max-w-[200px]">
+              {cdpStatus?.title || 'Page loading'}
+            </p>
+          </div>
         ) : (
           <div className="flex flex-col items-center gap-3 text-center px-4">
             {mode === 'record' ? (
@@ -485,8 +373,8 @@ export function BrowserStage({
           </div>
         )}
 
-        {/* HDO-F3: Recording overlay — pulsing indicator */}
-        {liveCdp && cdpObserving && (
+        {/* PW-A5: Recording overlay — pulsing indicator */}
+        {streamUrl && cdpObserving && (
           <div className="absolute top-2 left-2 z-10">
             <span className="flex items-center gap-1 text-[9px] text-red-400 font-mono px-2 py-0.5 rounded bg-red-500/10 border border-red-500/20">
               <Circle className="size-1.5 fill-red-500 text-red-500 animate-pulse" />
@@ -495,7 +383,7 @@ export function BrowserStage({
           </div>
         )}
 
-        {/* HDO-F3: Recorder error (disconnected / timeout) */}
+        {/* PW-A5: Recorder error (disconnected / timeout) — честный показ */}
         {recorderError && cdpObserving && (
           <div className="absolute bottom-2 left-2 right-2 z-20">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded border border-amber-500/30 bg-amber-500/10">

@@ -19,6 +19,8 @@
 | **Selenium Grid** | 4444 | `services/docker-compose.yml` | `curl http://127.0.0.1:4444/status` |
 | **noVNC Chrome** | 7900 | `services/docker-compose.yml` | `netstat -ano \| findstr :7900` |
 | **noVNC Firefox** | 7901 | `services/docker-compose.yml` | `netstat -ano \| findstr :7901` |
+| **noVNC Authoring (Playwright)** | **7902** | `services/docker-compose.yml` → `playwright-authoring` | `curl http://127.0.0.1:7902/vnc.html` |
+| **CDP Authoring (Playwright)** | **9223** | `services/docker-compose.yml` → `playwright-authoring` (маппинг :9223→:9222) | `curl http://127.0.0.1:9223/json/version` |
 | **Juice Shop** | 3000 | `services/docker-compose.target.yml` | `curl http://127.0.0.1:3000/` |
 | **pk-api-lab** | 8090 | `services/docker-compose.api-lab.yml` | `curl http://127.0.0.1:8090/health` |
 | **DefectDojo** | 8081 | `services/docker-compose.defectdojo.yml` | `curl http://127.0.0.1:8081/` |
@@ -94,6 +96,7 @@ PrettyK Live              http://127.0.0.1:8767/
 Editor                http://localhost:5173/
 ZAP demon API         http://127.0.0.1:8080/
 Selenium Grid         http://127.0.0.1:4444/ui/
+Authoring Browser      http://127.0.0.1:7902/vnc.html?autoconnect=1&resize=scale
 Juice Shop            http://127.0.0.1:3000/
 pk-api-lab           http://127.0.0.1:8090/
 SonarQube             http://127.0.0.1:9000/

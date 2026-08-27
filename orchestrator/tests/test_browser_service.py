@@ -504,6 +504,95 @@ def test_browser_context_destroy_closes_page():
     assert bs._connected is False
 
 
+# ── PW-A4: синглтон-владелец / пассивный status / teardown ─────────────────
+
+
+def test_browser_status_passive_does_not_launch():
+    """PW-A4: status() пассивен — НИКОГДА не запускает браузер."""
+    import browser.browser_service as bs
+    from unittest.mock import patch
+
+    bs._page = None
+    bs._connected = False
+    bs._browser_id = None
+
+    with patch("browser.browser_service._get_page") as mock_get:
+        result = bs.browser_status()
+
+    mock_get.assert_not_called()
+    assert result["ok"] is True
+    assert result["connected"] is False
+    assert result["browserId"] is None
+    assert result["purpose"] == "authoring"
+    assert result["transport"] == "playwright"
+    assert result["headless"] is True
+
+
+def test_browser_status_returns_browser_id():
+    """PW-A4: status() возвращает browserId при живой странице."""
+    import browser.browser_service as bs
+
+    page = _mock_page()
+    page.evaluate.side_effect = lambda expr: {
+        "window.location.href": "https://example.com",
+        "document.title": "Example",
+    }.get(expr, "")
+
+    bs._page = page
+    bs._connected = True
+    bs._browser_id = "authoring-test123"
+    try:
+        result = bs.browser_status()
+    finally:
+        bs._page = None
+        bs._connected = False
+        bs._browser_id = None
+
+    assert result["connected"] is True
+    assert result["browserId"] == "authoring-test123"
+    assert result["url"] == "https://example.com"
+
+
+def test_browser_context_ensure_returns_browser_id():
+    """PW-A4: context_ensure возвращает browserId + contextId."""
+    import browser.browser_service as bs
+
+    page = _mock_page()
+    page.url = "about:blank"
+    bs._browser_id = "authoring-test123"
+    _inject_mock_page(page)
+    try:
+        result = bs.browser_context_ensure()
+    finally:
+        patch.stopall()
+        bs._browser_id = None
+
+    assert result["ok"] is True
+    assert result["browserId"] == "authoring-test123"
+    assert result["contextId"] == "authoring-test123:operator"
+    assert result["purpose"] == "authoring"
+
+
+def test_browser_context_destroy_resets_browser_id():
+    """PW-A4: destroy() сбрасывает _browser_id и полный teardown."""
+    import browser.browser_service as bs
+
+    page = _mock_page()
+    bs._page = page
+    bs._browser_obj = MagicMock()
+    bs._pw = MagicMock()
+    bs._connected = True
+    bs._browser_id = "authoring-test123"
+
+    result = bs.browser_context_destroy()
+    assert result["ok"] is True
+    assert bs._page is None
+    assert bs._browser_obj is None
+    assert bs._pw is None
+    assert bs._connected is False
+    assert bs._browser_id is None
+
+
 # ── HDO-B1: headless launch ─────────────────────────────────────────────────
 
 
@@ -726,9 +815,18 @@ def test_headless_observe_click_end_to_end():
         start = bs.browser_observe_start()
         assert start.get("ok") is True
 
-        # 3) observe/click по координатам кнопки (центр ~60,30)
-        click = bs.browser_observe_click(60.0, 30.0)
-        assert click.get("ok") is True, f"click failed: {click}"
+        # 3) observe/click по координатам кнопки (центр ~60,30).
+        #    Ретрай: mouse.click → expose_binding асинхронный (dispatcher-поток),
+        #    на data:URL клик может не долететь с первого раза — честно пробуем
+        #    до 3 попыток, пока событие не встанет в очередь (queued=True).
+        click = None
+        for _attempt in range(3):
+            click = bs.browser_observe_click(60.0, 30.0)
+            assert click.get("ok") is True, f"click failed: {click}"
+            if click.get("queued"):
+                break
+            import time as _t
+            _t.sleep(0.3)
 
         # 4) event не null, с candidates
         result = bs.browser_observe_event()

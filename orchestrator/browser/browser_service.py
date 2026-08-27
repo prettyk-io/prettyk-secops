@@ -11,6 +11,7 @@ from __future__ import annotations
 import base64
 import io
 import logging
+import os
 import threading
 import time
 import uuid
@@ -28,12 +29,14 @@ _browser_id: str | None = None
 
 
 def _get_page():
-    """Lazy-launch authoring browser (Playwright headless).
+    """Lazy-launch authoring browser.
 
-    Это браузер АВТОРИНГА в Editor: headless-процесс внутри Playground,
-    рендер скриншотами, клик оператора по картинке → координаты →
-    page.mouse.click → реальный DOM click → observe → DSL. НЕ execution
-    (то живёт в Studio через Grid/noVNC) и НЕ агентский browser-hands-pure.
+    Режим выбирается через PK_BROWSER_CDP_ENDPOINT (env):
+      - задан  → PW-A2: connect_over_cdp к Playwright-контейнеру (headed под Xvfb).
+      - не задан → HDO: headless launch в том же процессе (локальная разработка).
+
+    Это браузер АВТОРИНГА в Editor. НЕ execution (Grid/noVNC) и НЕ агентский
+    browser-hands-pure.
     """
     global _page, _pw, _browser_obj, _connected, _browser_id
 
@@ -46,6 +49,32 @@ def _get_page():
             _page = None
             _connected = False
 
+    # ── PW-A2: подключение к Playwright-контейнеру (headed под Xvfb) ──
+    cdp_endpoint = os.environ.get("PK_BROWSER_CDP_ENDPOINT")
+    if cdp_endpoint:
+        try:
+            from browser.playwright_runtime import PlaywrightBrowserRuntime
+
+            _runtime = PlaywrightBrowserRuntime()
+            _page = _runtime.connect_over_cdp(cdp_endpoint)
+            _connected = True
+            _browser_obj = _runtime.browser  # для destroy/teardown
+            _pw = _runtime  # храним runtime для shutdown
+            _browser_id = f"container-{uuid.uuid4().hex[:12]}"
+            logger.info(
+                "browser_service: connected to authoring container "
+                "(%s, headed under Xvfb)", cdp_endpoint
+            )
+            return _page
+        except Exception as e:
+            logger.warning(
+                "browser_service: CDP connect to %s failed: %s", cdp_endpoint, e
+            )
+            _page = None
+            _connected = False
+            return None
+
+    # ── HDO fallback: headless Chromium в процессе Playground ──
     try:
         import playwright.sync_api as pw
 
@@ -79,6 +108,11 @@ def browser_status() -> dict:
     Passive check only: NEVER launches a browser.
     """
     global _page, _connected, _browser_id
+    # PW-A3: noVNC-стрим authoring-браузера. Путь по умолчанию — compose-порт :7902.
+    novnc_base = os.environ.get(
+        "PK_AUTHORING_NOVNC_URL",
+        "http://127.0.0.1:7902/vnc.html?autoconnect=1&resize=scale",
+    )
     with _lock:
         if _page is None or not _connected:
             return {
@@ -90,6 +124,7 @@ def browser_status() -> dict:
                 "purpose": "authoring",
                 "transport": "playwright",
                 "headless": True,
+                "streamUrl": None,
             }
 
         try:
@@ -104,6 +139,7 @@ def browser_status() -> dict:
                 "purpose": "authoring",
                 "transport": "playwright",
                 "headless": True,
+                "streamUrl": novnc_base,
             }
         except Exception as e:
             _page = None
@@ -117,6 +153,7 @@ def browser_status() -> dict:
                 "purpose": "authoring",
                 "transport": "playwright",
                 "headless": True,
+                "streamUrl": None,
                 "error": str(e),
             }
 
@@ -755,7 +792,13 @@ def browser_context_destroy() -> dict:
             _browser_obj = None
         if _pw is not None:
             try:
-                _pw.stop()
+                # _pw может быть:
+                #   - Playwright sync instance (HDO path) → .stop()
+                #   - PlaywrightBrowserRuntime (CDP container path) → .close()
+                if hasattr(_pw, 'close'):
+                    _pw.close()
+                else:
+                    _pw.stop()
             except Exception:
                 pass
             _pw = None

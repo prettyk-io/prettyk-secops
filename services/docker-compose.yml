@@ -8,8 +8,9 @@
 #
 # Порты:
 #   4444 — Selenium Grid (WebDriver + UI)
-#   7900 — noVNC Chrome node
-#   7901 — noVNC Firefox node
+#   7900 — noVNC Chrome node (Selenium)
+#   7901 — noVNC Firefox node (Selenium)
+#   7902 — noVNC Chromium (Playwright authoring, headed под Xvfb)   ← PW-A1
 #   5050 — allure3-secops (Allure 3 Awesome: dark/ru/SecOps logo, канон)
 #   5051 — allure-light-secops (Allure 2 legacy, запасной контур)
 #   8766 — LLM server (llama.cpp Qwen3-1.7B Q5_K_M, CPU inference)
@@ -99,6 +100,24 @@ services:
       SE_VIDEO_FILE_NAME: auto
     volumes:
       - ../reports/video:/videos
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # PW-A1: Airgap Playwright container — headed Chromium под Xvfb + noVNC стрим.
+  # Авторинг-браузер живёт в контейнере, на десктопе оператора — ноль окон.
+  # CDP :9222 (внутренний) → browser_service подключается через connect_over_cdp.
+  # После parity (PW-E5) и cutover (PW-C1) Selenium Grid уходит, этот контейнер
+  # остаётся единственным браузерным рантаймом.
+  playwright-authoring:
+    build:
+      context: ./playwright-authoring
+    image: pk-playwright-authoring:local
+    container_name: playwright-authoring
+    restart: unless-stopped
+    shm_size: 2gb
+    ports:
+      - "7902:7902"   # noVNC stream (live Chromium under Xvfb)
+      - "9223:9222"   # CDP for browser_service.py connect_over_cdp
     extra_hosts:
       - "host.docker.internal:host-gateway"
 

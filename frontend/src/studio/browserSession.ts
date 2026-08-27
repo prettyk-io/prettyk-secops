@@ -41,6 +41,8 @@ export interface BrowserSessionStatus {
   /** Internal Playwright transport, not external browser-hands CDP. */
   transport?: 'playwright';
   headless?: boolean;
+  /** PW-AIRGAP: URL живого noVNC-стрима authoring-браузера (headed под Xvfb). */
+  streamUrl?: string | null;
 }
 
 /** Результат навигации. */
@@ -248,18 +250,6 @@ export class BrowserSession {
       return await this.fetchJson('/api/browser/observe/event', { method: 'POST', body: '{}' });
     } catch {
       return { ok: false, connected: false, observing: false, event: null };
-    }
-  }
-
-  /** HDO-F1: Отправить координаты клика headless-браузеру (page.mouse.click). */
-  async observeClick(x: number, y: number): Promise<{ ok: boolean; error?: string }> {
-    try {
-      return await this.fetchJson('/api/browser/observe/click', {
-        method: 'POST',
-        body: JSON.stringify({ x, y }),
-      });
-    } catch {
-      return { ok: false, error: 'observe/click failed' };
     }
   }
 }

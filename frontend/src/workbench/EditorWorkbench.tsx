@@ -1016,7 +1016,7 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
                   <div className="px-2 py-1.5 rounded-md text-slate-400 hover:bg-white/5 hover:text-slate-200 font-medium flex items-center justify-between cursor-pointer">
                     <span className="flex items-center gap-2">
                       <Monitor className="size-3.5 text-indigo-400" />
-                      <span>CDP Session Page</span>
+                      <span>Authoring Browser</span>
                     </span>
                   </div>
                 </div>
@@ -1154,7 +1154,7 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
             {recorderState.error && (
               <div className="px-2 shrink-0">
                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-red-500/30 bg-red-500/5 text-[10px] text-red-400">
-                  <span>CDP: {recorderState.error}</span>
+                  <span>Authoring: {recorderState.error}</span>
                 </div>
               </div>
             )}
