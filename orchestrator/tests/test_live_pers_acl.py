@@ -2,12 +2,10 @@
 from utils.live_pers_acl import (
     filter_evidence_list,
     filter_runs_for_caller,
-    issue_monitor_token,
     may_view_owner,
     parse_caller_user,
     redact_meta_for_caller,
     resolve_run_owner_user_id,
-    verify_monitor_token,
 )
 
 
@@ -49,48 +47,6 @@ def test_redact_and_filter():
     )
     assert hidden == 1
     assert {r["check_id"] for r in kept} == {"1", "3"}
-
-
-# ─────────────────────────── MON-13: bind-токен ───────────────────────────
-
-
-def test_issue_and_verify_token_roundtrip():
-    token = issue_monitor_token("run-abc", "alice", now=1000.0)
-    assert token.count(".") == 1
-    assert verify_monitor_token(token, "run-abc", now=1000.0) == "alice"
-
-
-def test_verify_token_wrong_run_id():
-    token = issue_monitor_token("run-abc", "alice", now=1000.0)
-    assert verify_monitor_token(token, "run-xyz", now=1000.0) is None
-
-
-def test_verify_token_expired():
-    token = issue_monitor_token("run-abc", "alice", ttl=10, now=1000.0)
-    assert verify_monitor_token(token, "run-abc", now=1000.0) == "alice"
-    assert verify_monitor_token(token, "run-abc", now=1011.0) is None
-
-
-def test_verify_token_tampered():
-    token = issue_monitor_token("run-abc", "alice", now=1000.0)
-    payload, _, sig = token.partition(".")
-    forged = f"{payload}.{('0' * len(sig))}"
-    assert verify_monitor_token(forged, "run-abc", now=1000.0) is None
-
-
-def test_verify_token_garbage():
-    assert verify_monitor_token("", "run-abc") is None
-    assert verify_monitor_token("nope", "run-abc") is None
-    assert verify_monitor_token("a.b.c", "run-abc") is None
-
-
-def test_issue_token_requires_run_and_owner():
-    import pytest
-
-    with pytest.raises(ValueError):
-        issue_monitor_token("", "alice")
-    with pytest.raises(ValueError):
-        issue_monitor_token("run-abc", "")
 
 
 # ─────────────────────────── MH-7: ACL-черновик ───────────────────────────

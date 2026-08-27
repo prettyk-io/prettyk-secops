@@ -372,3 +372,17 @@ Vite (`:5173`) — **не был запущен.** Вообще. Весь сте
 **Фикс:** `browser_status()` стал **пассивным** (если страницы нет — вернуть `connected:false`, НИКОГДА не запускать); `BrowserStage` больше не авто-`ensureContext` на mount; `browser_context_destroy` дополнен `playwright.stop()`.
 
 **Мораль:** GET-статус не имеет права иметь сайд-эффект запуска. Проверка здоровья = только чтение. Запуск — только явное действие (navigate/ensure/record).
+
+---
+
+## 016 · 27.08.2026 — HMAC BIND-ТОКЕН ДЛЯ MONITOR (ИЗБЫТОЧНО В UNIFIED-АРХИТЕКТУРЕ)
+
+**Виновник:** заказчик (AUTH/PERS-эпики, когда Monitor жил на другом origin).
+
+**Сцена:** `MON-13` — короткоживущий HMAC-подписанный bind-токен для Monitor (`?run_id=&token=`). Editor mint'ил токен через `POST /api/monitor/token`, Live проверял подпись прежде чем отдать данные. Нужно было, потому что Monitor (HTML из `live_server.py`) открывался в отдельном окне без кук редактора.
+
+**Почему избыточно:** в unified PW-AIRGAP-архитектуре Editor (:5173), Playground (:8765), Live (:8767) и Monitor — все внутри коробки, за одним Vite-прокси. `pk_user`-кука летает во всех запросах и так. ACL по caller identity (`X-PK-User`/cookie) работает без токена — `may_view_run` проверяет ownership напрямую.
+
+**Ущерб:** 120 строк криптографии (`issue_monitor_token`, `verify_monitor_token`, `_b64e`/`_b64d`/`_sign`, `MONITOR_TOKEN_SECRET`) + `/api/monitor/token` эндпоинт + `monitor_token` поле в CheckRunRef + `monitorLink.ts` пробрасывание токена в URL — всё мёртвый код. Множит поверхность для атак (HMAC на dev-секрете) и усложняет деплой (env `MONITOR_TOKEN_SECRET` в airgap).
+
+**Ликвидация:** выпилен полностью — бэкенд (mint/verify/route), фронт (types/link/App), тесты. `may_view_run` упрощён до чистого caller ACL. `live_server._gate_run_id` больше не парсит `?token=`.

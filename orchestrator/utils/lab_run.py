@@ -656,7 +656,7 @@ def start_run(
         )
         try:
             from utils.diary_bus import set_meta
-            from utils.live_pers_acl import issue_monitor_token, resolve_run_owner_user_id
+            from utils.live_pers_acl import resolve_run_owner_user_id
 
             owner = resolve_run_owner_user_id(owner_user_id)
             meta_kwargs = {"run_id": run_id}
@@ -666,7 +666,6 @@ def start_run(
             if cid:
                 meta_kwargs["check_id"] = cid
             set_meta(**meta_kwargs)
-            monitor_token = issue_monitor_token(run_id, owner) if owner else None
 
             # MH-4: space-запись в runs_index при start_run
             _maybe_write_run_space(
@@ -677,7 +676,6 @@ def start_run(
             )
         except Exception:
             owner = None
-            monitor_token = None
         log_fh = open(log_path, "w", encoding="utf-8")  # noqa: SIM115 — kept for Popen lifetime
         try:
             proc = subprocess.Popen(
@@ -718,7 +716,6 @@ def start_run(
             "log_path": str(log_path),
             "phase": "running",
             "stub": bool(stub),
-            "monitor_token": monitor_token,
         }
 
 

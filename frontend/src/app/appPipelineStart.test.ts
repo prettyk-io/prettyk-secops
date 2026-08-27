@@ -45,7 +45,7 @@ describe('runPipelineStart', () => {
     expect(clearBody).toEqual({ clear: true });
     expect(onBeginAwaitStart).toHaveBeenCalledOnce();
     expect(startRun).toHaveBeenCalledOnce();
-    expect(onRunStarted).toHaveBeenCalledWith('r1', undefined);
+    expect(onRunStarted).toHaveBeenCalledWith('r1');
   });
 
   it('blocks on empty check before constructor gate or schema validation', async () => {

@@ -844,51 +844,6 @@ class Handler(BaseHTTPRequestHandler):
         from browser.browser_service import browser_context_destroy
         self._json(200, browser_context_destroy())
 
-    def _post_monitor_token(self, body: dict) -> None:
-        """MON-13: выдать короткоживущий bind-токен для Monitor ?run_id=.
-
-        Body: {"run_id": "...", "owner_user_id"?: "..."}.
-        owner берётся из body или caller (X-PK-User / cookie).
-        Токен подписывает только владелец прогона — чужой run_id → 403.
-        """
-        run_id = str(body.get("run_id") or "").strip()
-        if not run_id:
-            self._json(400, {"ok": False, "error": "run_id required"})
-            return
-        try:
-            from utils.live_pers_acl import (
-                issue_monitor_token,
-                is_secops_admin,
-                parse_caller_user,
-                resolve_run_owner,
-            )
-
-            owner_raw = body.get("owner_user_id")
-            owner = (
-                owner_raw.strip()
-                if isinstance(owner_raw, str) and owner_raw.strip()
-                else None
-            )
-            if not owner:
-                owner = parse_caller_user(self.headers)
-            run_owner = resolve_run_owner(run_id)
-            # Только владелец (или admin/abnormal) может получить bind-токен.
-            if not owner:
-                self._json(403, {"ok": False, "error": "caller unknown"})
-                return
-            if run_owner and owner != run_owner and not is_secops_admin(owner):
-                self._json(403, {"ok": False, "error": "not your run"})
-                return
-            token = issue_monitor_token(run_id, owner)
-            self._json(200, {"ok": True, "token": token, "run_id": run_id})
-            return
-        except ValueError as e:
-            self._json(400, {"ok": False, "error": str(e)})
-            return
-        except Exception as e:
-            self._json(500, {"ok": False, "error": f"{type(e).__name__}: {e}"})
-            return
-
     def do_POST(self) -> None:
         path = urlparse(self.path).path
         body, err = self._read_json_body()
@@ -926,7 +881,6 @@ class Handler(BaseHTTPRequestHandler):
             "/api/browser/observe/click": self._post_browser_observe_click,
             "/api/browser/context/ensure": self._post_browser_context_ensure,
             "/api/browser/context/destroy": self._post_browser_context_destroy,
-            "/api/monitor/token": self._post_monitor_token,
         }
         handler = routes.get(path)
         if handler is not None:

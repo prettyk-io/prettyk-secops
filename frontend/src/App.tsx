@@ -653,14 +653,13 @@ export default function App({
       onSchemaBlocked: () => {
         void message.error(pipelineSchemaBlockedToast());
       },
-      onRunStarted: (runId, monitorToken) => {
+      onRunStarted: (runId) => {
         const activeId = getActiveCheckId();
         if (activeId) {
           upsertCheckRun(activeId, {
             run_id: runId,
             started_at: new Date().toISOString(),
             status: 'running',
-            monitor_token: monitorToken,
           });
         }
         void message.success(pipelineRunStartedToast(runId));

@@ -1,15 +1,14 @@
 ﻿# -*- coding: utf-8 -*-
 """PERS-1L lab: caller from X-PK-User / Cookie; strip foreign novnc/hooks.
 
-MON-13: короткоживущий подписанный bind-токен. Editor → playground mint token
-(owner привязывается к run_id), Live проверяет подпись — «свой инстанс без логина».
+В unified PW-AIRGAP архитектуре Monitor открывается внутри коробки — кука
+уже летает во всех запросах. HMAC bind-токен (бывш. MON-13) удалён за
+избыточностью. ACL работает исключительно через caller identity:
+admin/abnormal видят всё, оператор — только свои прогоны.
 """
 from __future__ import annotations
 from utils.env_dual import pk_env, pk_env_name
 
-import base64
-import hashlib
-import hmac
 import json
 import os
 import re
@@ -22,19 +21,6 @@ ADMIN_USERS = frozenset({"admin", "admin_appsec", "admin_abnormal"})
 
 # Runner/lab: prefer explicit owner env (Editor → playground → subprocess).
 _OWNER_ENV_KEYS = ("PK_OWNER_USER", "PK_USER")
-
-# MON-13: dev-секрет для HMAC bind-токена. В airgap/банке — через env.
-_MONITOR_TOKEN_SECRET = (
-    pk_env("MONITOR_TOKEN_SECRET")
-    or "pk-monitor-bind-dev-secret-2026"
-).encode("utf-8")
-
-try:
-    MONITOR_TOKEN_TTL_SECONDS = max(
-        60, int(pk_env("MONITOR_TOKEN_TTL", "604800"))
-    )
-except (TypeError, ValueError):
-    MONITOR_TOKEN_TTL_SECONDS = 604800  # 7 дней — полный срок жизни артефактов
 
 
 def resolve_run_owner_user_id(explicit: Optional[str] = None) -> Optional[str]:
@@ -84,78 +70,6 @@ def may_view_owner(*, caller: Optional[str], owner: Optional[str]) -> bool:
     return caller.strip() == own
 
 
-# ─────────────────────────── MON-13: bind-токен ───────────────────────────
-
-
-def _b64e(raw: bytes) -> str:
-    return base64.urlsafe_b64encode(raw).rstrip(b"=").decode("ascii")
-
-
-def _b64d(text: str) -> bytes:
-    pad = "=" * (-len(text) % 4)
-    return base64.urlsafe_b64decode(text + pad)
-
-
-def _sign(payload_b64: str) -> str:
-    return _b64e(
-        hmac.new(_MONITOR_TOKEN_SECRET, payload_b64.encode("ascii"), hashlib.sha256).digest()
-    )
-
-
-def issue_monitor_token(
-    run_id: str,
-    owner: str,
-    *,
-    ttl: int = MONITOR_TOKEN_TTL_SECONDS,
-    now: Optional[float] = None,
-) -> str:
-    """Подписать bind-токен: {run_id, owner, exp} + HMAC-SHA256.
-
-    Результат — ``<payload_b64>.<signature_b64>``; короткоживущий (default 1 час).
-    """
-    rid = (run_id or "").strip()
-    own = (owner or "").strip()
-    if not rid:
-        raise ValueError("run_id required for monitor token")
-    if not own:
-        raise ValueError("owner required for monitor token")
-    exp = int((now if now is not None else time.time()) + max(1, int(ttl)))
-    payload = {"run_id": rid, "owner": own, "exp": exp}
-    payload_b64 = _b64e(json.dumps(payload, separators=(",", ":")).encode("utf-8"))
-    return f"{payload_b64}.{_sign(payload_b64)}"
-
-
-def verify_monitor_token(token: str, run_id: str, *, now: Optional[float] = None) -> Optional[str]:
-    """Проверить bind-токен для run_id → owner (или None при невалидности).
-
-    Условия: подпись валидна, run_id совпадает, exp не истёк.
-    """
-    raw = (token or "").strip()
-    rid = (run_id or "").strip()
-    if not raw or not rid or "." not in raw:
-        return None
-    payload_b64, _, sig = raw.partition(".")
-    if not payload_b64 or not sig:
-        return None
-    expected = _sign(payload_b64)
-    if not hmac.compare_digest(expected, sig):
-        return None
-    try:
-        payload = json.loads(_b64d(payload_b64).decode("utf-8"))
-    except (ValueError, json.JSONDecodeError, UnicodeDecodeError):
-        return None
-    if not isinstance(payload, dict):
-        return None
-    if str(payload.get("run_id") or "") != rid:
-        return None
-    exp = payload.get("exp")
-    if not isinstance(exp, (int, float)):
-        return None
-    if (now if now is not None else time.time()) > float(exp):
-        return None
-    return str(payload.get("owner") or "").strip() or None
-
-
 def resolve_run_owner(run_id: str) -> Optional[str]:
     """Owner для конкретного run_id: runs_index → diary meta (если текущий)."""
     rid = (run_id or "").strip()
@@ -182,15 +96,8 @@ def resolve_run_owner(run_id: str) -> Optional[str]:
     return None
 
 
-def may_view_run(*, caller: Optional[str], run_id: str, token: str = "") -> bool:
-    """MON-13: gate доступа к конкретному run_id.
-
-    - token валиден → mint-эндпоинт уже авторизовал (подпись + run_id bound) → True.
-    - без token → обычный ACL: admin/abnormal любой, оператор только свой run.
-    """
-    tok = (token or "").strip()
-    if tok:
-        return verify_monitor_token(tok, run_id) is not None
+def may_view_run(*, caller: Optional[str], run_id: str) -> bool:
+    """Gate доступа к конкретному run_id: admin/abnormal любой, оператор только свой."""
     owner = resolve_run_owner(run_id)
     return may_view_owner(caller=caller, owner=owner)
 

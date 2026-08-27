@@ -31,8 +31,6 @@ export type CheckRunRef = {
   live_session?: string;
   /** PERS: lab owner (FE-auth user id). */
   owner_user_id?: string;
-  /** MON-13: bind-токен для «свой инстанс без логина» в Monitor. */
-  monitor_token?: string;
 };
 
 /** Cap History runs[] per check (newest kept). */

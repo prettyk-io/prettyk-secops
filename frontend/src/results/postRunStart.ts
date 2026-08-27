@@ -10,7 +10,7 @@ import { currentUserId } from '../shell/persAuth';
 import { trafficInsertionFeedEnvPatch } from '../studio/trafficInsertionFeed';
 
 export type StartRunResult =
-  | { ok: true; run_id: string; pid: number; monitor_token?: string }
+  | { ok: true; run_id: string; pid: number }
   | { ok: false; error: string; alreadyRunning?: boolean; unreachable?: boolean };
 
 export async function postRunStart(
@@ -55,7 +55,6 @@ export async function postRunStart(
       error?: string;
       run_id?: string;
       pid?: number;
-      monitor_token?: string;
     };
     if (res.status === 409) {
       return {
@@ -71,10 +70,6 @@ export async function postRunStart(
       ok: true,
       run_id: String(payload.run_id || ''),
       pid: Number(payload.pid || 0),
-      monitor_token:
-        typeof payload.monitor_token === 'string' && payload.monitor_token
-          ? payload.monitor_token
-          : undefined,
     };
   } catch {
     return {

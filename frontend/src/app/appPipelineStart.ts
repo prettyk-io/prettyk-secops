@@ -23,7 +23,7 @@ export type PipelineStartDeps = {
   switchToResults: () => void;
   onBeginAwaitStart?: () => void;
   onSchemaBlocked: () => void;
-  onRunStarted: (runId: string, monitorToken?: string) => void;
+  onRunStarted: (runId: string) => void;
   onRunBlocked: (result: Extract<StartRunResult, { ok: false }>) => void;
   schemaFeedback: (issues: wiredIssue[]) => ValidationFeedback;
 };
@@ -57,7 +57,7 @@ export async function runPipelineStart(deps: PipelineStartDeps): Promise<void> {
     deps.switchToResults();
     const started = await deps.startRun(deps.getFormData());
     if (started.ok) {
-      deps.onRunStarted(started.run_id, started.monitor_token);
+      deps.onRunStarted(started.run_id);
     } else {
       deps.onRunBlocked(started);
     }

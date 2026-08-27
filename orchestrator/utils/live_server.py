@@ -1685,20 +1685,19 @@ class _LiveHandler(BaseHTTPRequestHandler):
         return payload if isinstance(payload, dict) else None
 
     def _gate_run_id(self, run_id: str) -> bool:
-        """MON-13: вернуть True если доступ разрешён, иначе 403 и False.
+        """Верифицировать доступ к run_id через caller ACL (X-PK-User / cookie).
 
-        Приоритет: bind-токен (?token=) → caller ACL (X-PK-User / cookie).
+        В unified PW-AIRGAP-архитектуре Monitor открывается внутри коробки —
+        кука уже летает во всех запросах, bind-токен избыточен.
         """
         rid = (run_id or "").strip()
         if not rid:
             return True
-        qs = parse_qs(urlparse(self.path).query)
-        token = (qs.get("token") or [""])[0]
         try:
             from utils.live_pers_acl import may_view_run, parse_caller_user
 
             caller = parse_caller_user(self.headers)
-            if may_view_run(caller=caller, run_id=rid, token=token):
+            if may_view_run(caller=caller, run_id=rid):
                 return True
         except Exception:
             pass
