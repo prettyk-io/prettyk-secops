@@ -188,6 +188,18 @@ class _LiveHandler(BaseHTTPRequestHandler):
         if path == "/api/recording":
             self._serve_recording()
             return
+        if path == "/api/recording/status":
+            self._serve_recording_status()
+            return
+        if path == "/api/execution/timeline":
+            self._serve_execution_timeline()
+            return
+        if path == "/api/execution/snapshot":
+            self._serve_execution_snapshot()
+            return
+        if path == "/api/execution/scene-graph":
+            self._serve_execution_scene_graph()
+            return
         if path == "/api/journal":
             self._serve_journal_latest()
             return
@@ -215,9 +227,10 @@ class _LiveHandler(BaseHTTPRequestHandler):
             qs = parse_qs(parsed.query)
             channel = (qs.get("channel") or ["all"])[0]
             run_id = (qs.get("run_id") or [""])[0]
+            kind_filter = (qs.get("kind") or [""])[0]
             if run_id and not self._gate_run_id(run_id):
                 return
-            self._serve_diary_sse(channel, run_id=run_id)
+            self._serve_diary_sse(channel, run_id=run_id, kind_filter=kind_filter)
             return
         self.send_error(404, "Not Found")
 
@@ -1775,6 +1788,32 @@ class _LiveHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _serve_recording_status(self):
+        """B-2: статус видео-записи — ready / size / path."""
+        qs = parse_qs(urlparse(self.path).query)
+        run_id = (qs.get("run_id") or [""])[0]
+        if not run_id:
+            self._json_error(400, "run_id required")
+            return
+        if not self._gate_run_id(run_id):
+            return
+        try:
+            from utils.run_recording import find_video_for_run
+            path = find_video_for_run(run_id)
+        except Exception as exc:
+            self._json_error(500, str(exc))
+            return
+        if path is None:
+            payload = {"ok": True, "ready": False}
+        else:
+            try:
+                size = path.stat().st_size
+            except OSError:
+                size = 0
+            payload = {"ok": True, "ready": True, "path": str(path), "size": size}
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        self._json_response(body)
+
     def _serve_runs_index(self):
         """ADM-B1: append-only runs ledger for Admin merge."""
         qs = parse_qs(urlparse(self.path).query)
@@ -1826,6 +1865,122 @@ class _LiveHandler(BaseHTTPRequestHandler):
             self._json_error(500, str(exc))
             return
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        self._cors_headers()
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _serve_execution_timeline(self):
+        """B-4: метаданные таймлайна — duration, markers, статус."""
+        qs = parse_qs(urlparse(self.path).query)
+        run_id = (qs.get("run_id") or [""])[0]
+        if not run_id:
+            self._json_error(400, "run_id required")
+            return
+        if not self._gate_run_id(run_id):
+            return
+        meta = diary_bus.get_meta()
+        run_start_ts = meta.get("run_start_ts")
+        is_running = str(meta.get("status") or "").strip().lower() == "running"
+        duration = round(time.time() - run_start_ts, 3) if (run_start_ts and is_running) else 0.0
+        markers = []
+        marker_kinds = {"RUN_STARTED", "RECORDING_FINALIZED", "SECURITY_GATE"}
+        for ev in diary_bus.read_file_backlog("diary"):
+            if ev.get("run_id") == run_id and ev.get("kind") in marker_kinds:
+                markers.append({"kind": ev["kind"], "t": ev.get("t", 0), "ts": ev.get("ts", 0)})
+        body = json.dumps({"ok": True, "run_id": run_id, "run_start_ts": run_start_ts,
+                          "is_running": is_running, "duration": duration, "markers": markers},
+                          ensure_ascii=False).encode("utf-8")
+        self._json_response(body)
+
+    def _serve_execution_snapshot(self):
+        """B-4: снимок боевой сцены на момент t."""
+        qs = parse_qs(urlparse(self.path).query)
+        run_id = (qs.get("run_id") or [""])[0]
+        try:
+            t = float((qs.get("t") or ["0"])[0])
+        except ValueError:
+            t = 0.0
+        if not run_id:
+            self._json_error(400, "run_id required")
+            return
+        if not self._gate_run_id(run_id):
+            return
+        meta = diary_bus.get_meta()
+        run_start_ts = meta.get("run_start_ts")
+        is_running = str(meta.get("status") or "").strip().lower() == "running"
+        events = []
+        beam_starts_by_id: dict[str, dict] = {}
+        hits_by_target: dict[str, list] = {}
+        for ev in diary_bus.read_file_backlog("diary"):
+            if ev.get("run_id") != run_id:
+                continue
+            ev_t = ev.get("t", float("inf"))
+            if ev_t > t:
+                continue
+            events.append(ev)
+            kind = ev.get("kind", "")
+            if kind in ("FUZZ_BEAM_START", "PAYLOAD_MUTATION"):
+                bid = ev.get("beam_id") or ev.get("targetNodeId") or ev.get("target", "")
+                if not bid:
+                    continue
+                if bid not in beam_starts_by_id:
+                    beam_starts_by_id[bid] = {"beam_id": bid,
+                        "source_node": ev.get("sourceNodeId") or ev.get("source", ""),
+                        "target_node": ev.get("targetNodeId") or ev.get("target", ""),
+                        "started_at": ev_t,
+                        "channeling_stage": ev.get("channeling_stage", "warmup"),
+                        "last_t": ev_t}
+                else:
+                    b = beam_starts_by_id[bid]
+                    b["last_t"] = ev_t
+                    b["channeling_stage"] = ev.get("channeling_stage") or b["channeling_stage"]
+            elif kind == "TARGET_HIT":
+                target = ev.get("targetNodeId") or ev.get("target", "")
+                hits_by_target.setdefault(target, []).append(
+                    {"t": ev_t, "severity": ev.get("severity", "low"), "anomaly_flag": ev.get("anomaly_flag", False)})
+            elif kind == "BEAM_END":
+                bid = ev.get("beam_id") or ev.get("targetNodeId") or ev.get("target", "")
+                beam_starts_by_id.pop(bid, None)
+        active_beams = []
+        for bid, b in beam_starts_by_id.items():
+            stage = b["channeling_stage"]
+            elapsed = max(0, t - b["last_t"])
+            progress = min(1.0, elapsed / 5.0 if stage == "warmup" else elapsed / 3.0 if stage == "cooling" else 0)
+            intensity = {"warmup": progress, "active": 1.0, "cooling": 1.0 - progress, "dead": 0.0}.get(stage, 0.0)
+            target = b["target_node"]
+            active_beams.append({"beam_id": bid, "source_node": b["source_node"],
+                "target_node": target, "channeling_stage": stage,
+                "started_at": b["started_at"], "duration": round(t - b["started_at"], 3),
+                "progress": round(progress, 3), "intensity": round(intensity, 3),
+                "hits": hits_by_target.get(target, [])})
+        body = json.dumps({"ok": True, "run_id": run_id, "t": t, "run_start_ts": run_start_ts,
+                          "is_running": is_running, "active_beams": active_beams,
+                          "event_count": len(events)}, ensure_ascii=False).encode("utf-8")
+        self._json_response(body)
+
+    def _serve_execution_scene_graph(self):
+        """B-4: топология боевой сцены."""
+        qs = parse_qs(urlparse(self.path).query)
+        run_id = (qs.get("run_id") or [""])[0]
+        if not run_id:
+            self._json_error(400, "run_id required")
+            return
+        if not self._gate_run_id(run_id):
+            return
+        meta = diary_bus.get_meta()
+        graph = meta.get("scene_graph")
+        if isinstance(graph, dict) and graph.get("nodes") and graph.get("edges"):
+            body = json.dumps({"ok": True, "run_id": run_id, **graph}, ensure_ascii=False).encode("utf-8")
+        else:
+            body = json.dumps({"ok": True, "run_id": run_id, "nodes": [], "edges": []},
+                            ensure_ascii=False).encode("utf-8")
+        self._json_response(body)
+
+    def _json_response(self, body: bytes) -> None:
         self.send_response(200)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
@@ -1973,19 +2128,24 @@ class _LiveHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def _serve_diary_sse(self, channel: str, run_id: str = ""):
+    def _serve_diary_sse(self, channel: str, run_id: str = "", kind_filter: str = ""):
         """
         File-based SSE so an idle Live process sees events from orchestrator.
         Backlog from diary.ndjson, then byte-offset tail (no in-process dupes).
         run_id — MON-3: filter to a specific run (replay / multi-monitor).
+        kind_filter — B-3: comma-separated kinds.
         """
         filt = (channel or "all").strip().lower() or "all"
         want_run = (run_id or "").strip()
+        want_kind = (kind_filter or "").strip()
 
         def _match(ev: dict) -> bool:
             if want_run and ev.get("run_id") not in (want_run, ""):
-                # Event без run_id не отсеиваем, если нет точного run_id-тэга
                 return False if ev.get("run_id") else True
+            if want_kind:
+                from utils.diary_bus import _kind_match
+                if not _kind_match(want_kind, ev.get("kind", "")):
+                    return False
             return True
 
         backlog = [e for e in diary_bus.read_file_backlog(filt) if _match(e)]
@@ -2028,6 +2188,62 @@ class _LiveHandler(BaseHTTPRequestHandler):
         payload = json.dumps(event, ensure_ascii=False)
         self.wfile.write(f"data: {payload}\n\n".encode("utf-8"))
         self.wfile.flush()
+
+
+def build_scene_graph_from_wired(wired: dict) -> dict[str, list]:
+    """B-6: извлечь ноды и рёбра боевой сцены из wired манифеста."""
+    import hashlib
+    nodes, edges = [], []
+    def _nid(prefix, raw): return hashlib.sha256(f"{prefix}:{raw}".encode()).hexdigest()[:12]
+    suites = wired.get("test_suites") if isinstance(wired, dict) else getattr(wired, "test_suites", None)
+    if not suites:
+        return {"nodes": nodes, "edges": edges}
+    si = suites if isinstance(suites, dict) else suites.model_dump() if hasattr(suites, "model_dump") else {}
+    imports = si.get("imports") or []
+    pages = si.get("pages") or {}
+    modules = si.get("test_data_constructor") or []
+    # Imports → data_module nodes
+    for imp in imports:
+        if isinstance(imp, dict) and imp.get("kind") == "data_file":
+            aid = _nid("data", imp.get("path", ""))
+            nodes.append({"id": aid, "type": "data_module", "label": imp.get("as", "data"), "status": "idle", "position": {"x": -300, "y": len(nodes) * 100}})
+    # Pages → page_model nodes
+    for pid, pdata in (pages.items() if isinstance(pages, dict) else []):
+        nid = _nid("page", str(pid))
+        label = pdata.get("title", pid) if isinstance(pdata, dict) else str(pid)
+        nodes.append({"id": nid, "type": "page_model", "label": label, "status": "idle", "position": {"x": 0, "y": len(nodes) * 130}})
+    # Modules
+    fuzz_count = conn_count = 0
+    for mod in modules:
+        if not isinstance(mod, dict):
+            continue
+        mid = mod.get("id", "")
+        mtype = str(mod.get("module_type") or "")
+        fields = mod.get("fuzzing_fields") or mod.get("connector_fields") or mod.get("data_storage_fields") or {}
+        if isinstance(fields, dict):
+            target = fields.get("target_url") or fields.get("prom_url") or fields.get("dsn") or ""
+        else:
+            target = ""
+        if "fuzzing_fields" in mod or "Fuzzer" in mtype:
+            nid = _nid("fuzz", str(mid))
+            nodes.append({"id": nid, "type": "fuzzer", "label": str(mod.get("label") or mid), "status": "idle", "position": {"x": 300, "y": fuzz_count * 130}})
+            fuzz_count += 1
+            if target:
+                edges.append({"id": _nid("edge", f"fuzz-{mid}"), "type": "dependency", "source": nid, "target": target[:48]})
+        elif "connector_fields" in mod or "Коннектор" in mtype:
+            nid = _nid("conn", str(mid))
+            nodes.append({"id": nid, "type": "connector", "label": str(mod.get("label") or mid), "status": "idle", "position": {"x": 600, "y": conn_count * 130}})
+            conn_count += 1
+        elif "data_storage_fields" in mod:
+            nid = _nid("data", str(mid))
+            nodes.append({"id": nid, "type": "data_module", "label": str(mod.get("label") or mid), "status": "idle", "position": {"x": -300, "y": (len(nodes) + 1) * 100}})
+    # Edges: page→fuzzer, fuzzer→connector, data→page
+    for node in nodes:
+        if node["type"] == "fuzzer":
+            pages_near = [n for n in nodes if n["type"] == "page_model"]
+            if pages_near:
+                edges.append({"id": _nid("edge", f"page-fuzz-{node['id']}"), "type": "fuzz_target", "source": pages_near[0]["id"], "target": node["id"]})
+    return {"nodes": nodes, "edges": edges}
 
 
 def start_live_server(session_name: str = "") -> Optional[str]:
@@ -2343,6 +2559,7 @@ def notify_live_run_ended(
             body = resp.read().decode("utf-8")
         data = json.loads(body)
         if isinstance(data, dict) and data.get("ok"):
+            publish_recording_finalized(run_id)
             return data
         logger.warning("PK Live run_ended HTTP unexpected: %s", body[:200])
     except (HTTPError, URLError, TimeoutError, OSError, json.JSONDecodeError) as e:
@@ -2350,11 +2567,41 @@ def notify_live_run_ended(
 
     try:
         result = handle_run_ended(run_id=run_id, filter_preset=filter_preset)
+        publish_recording_finalized(run_id)
         return {"ok": True, **result}
     except (OSError, ValueError) as e:
         logger.warning("PK Live run_ended local export failed: %s", e)
         diary_bus.set_meta(status="waiting")
         return None
+
+
+def publish_recording_finalized(run_id: str = "") -> None:
+    """B-2/B-8: сигнал готовности видео в SSE (recording_ready + path)."""
+    try:
+        from utils.run_recording import find_video_for_run
+        path = find_video_for_run(run_id)
+    except Exception:
+        path = None
+    if path is None:
+        return
+    try:
+        from utils.diary_bus import append, _active_run_id
+        recording_path = str(path)
+        try:
+            size = path.stat().st_size
+        except OSError:
+            size = 0
+        rid = run_id or _active_run_id()
+        append("diary", {
+            "kind": "RECORDING_FINALIZED",
+            "text": f"Видео готово: {path.name} ({size} bytes)",
+            "run_id": rid,
+            "recording_ready": True,
+            "recording_path": recording_path,
+            "recording_size": size,
+        })
+    except Exception as exc:
+        logger.info("RECORDING_FINALIZED skip: %s", exc)
 
 
 def stop_live_server() -> None:

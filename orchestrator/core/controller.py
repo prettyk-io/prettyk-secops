@@ -1026,10 +1026,16 @@ class Controller:
     def run(self):
         logger.info("Controller started")
         try:
-            from utils.diary_bus import clear as diary_clear, set_meta
+            from utils.diary_bus import (
+                capture_run_start,
+                clear as diary_clear,
+                publish,
+                set_meta,
+            )
             from utils.live_server import default_novnc_url, start_live_server
 
             diary_clear()
+            run_start_ts = capture_run_start()
             try:
                 from utils.log_cuts import set_sidecar_providers
 
@@ -1072,8 +1078,22 @@ class Controller:
                 browser_type=browser,
                 generate_act=generate_act,
                 assessment_purpose=purpose,
+                run_start_ts=run_start_ts,
                 **({"owner_user_id": _owner} if _owner else {}),
             )
+            # B-1: публикация первого события таймлайна с меткой t=0
+            publish(
+                "RUN_STARTED",
+                rf"Прогон {self._session_name() or '—'}' начат",
+                channel="diary",
+            )
+            # B-6: засеять scene_graph из wired манифеста для Live API
+            try:
+                from utils.live_server import build_scene_graph_from_wired
+                graph = build_scene_graph_from_wired(self.wired.model_dump())
+                diary_bus.set_meta(scene_graph=graph)
+            except Exception:
+                pass
             try:
                 from core.debug_run import wired_debug_mode, set_live_debug_flags
 

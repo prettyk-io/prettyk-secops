@@ -69,6 +69,71 @@ class ResponseMetrics:
         }
 
 
+# ── B-5: живые beam-события фаззера → diary_bus ──
+
+def _publish_beam(
+    kind: str,
+    *,
+    run_id: str = "",
+    module_id: str = "",
+    target_origin: str = "",
+    target_node: str = "",
+    source_node: str = "",
+    payload_hash: str = "",
+    channeling_stage: str = "active",
+    severity: str = "",
+    anomaly_flag: bool = False,
+    **extra: Any,
+) -> None:
+    """B-5: emit semantic beam event to diary NDJSON."""
+    try:
+        import hashlib
+        from utils.diary_bus import append as diary_append
+
+        event: Dict[str, Any] = {
+            "kind": kind,
+            "run_id": run_id or "",
+            "beam_id": f"beam-{module_id or 'campaign'}-{hashlib.md5(run_id.encode()).hexdigest()[:8]}",
+        }
+        if kind == "FUZZ_BEAM_START":
+            event.update({
+                "source_node_id": source_node or module_id or "",
+                "target_node_id": target_node or target_origin or "",
+                "payload": payload_hash or "",
+                "channeling_stage": "warmup",
+            })
+        elif kind == "PAYLOAD_MUTATION":
+            event.update({
+                "source_node_id": source_node or "",
+                "target_node_id": target_node or "",
+                "payload_hash": payload_hash or "",
+                "channeling_stage": channeling_stage,
+            })
+        elif kind == "TARGET_HIT":
+            event.update({
+                "target_node_id": target_node or target_origin or "",
+                "severity": severity or "info",
+                "anomaly_flag": bool(anomaly_flag),
+                "channeling_stage": "active",
+            })
+        elif kind == "BEAM_END":
+            event.update({
+                "target_node_id": target_node or target_origin or "",
+                "channeling_stage": "dead",
+                "verdict": extra.get("verdict", "observations_require_review"),
+            })
+        elif kind == "SECURITY_GATE":
+            event.update({
+                "gate_id": extra.get("gate_id", ""),
+                "decision": extra.get("decision", "pass"),
+                "reason": extra.get("reason", ""),
+            })
+        event.update(extra)
+        diary_append("diary", event)
+    except Exception:
+        pass
+
+
 @dataclass(frozen=True)
 class FuzzMessage:
     """Цель кампании: явный same-origin шаблон или выбор из ZAP History."""
@@ -1508,6 +1573,23 @@ class FuzzCampaignRunner:
                 auth_fail_streak=auth_fail_streak,
             )
             rows.append(row)
+            # B-5: beam telemetry per payload case
+            _publish_beam(
+                "PAYLOAD_MUTATION",
+                run_id=target_url,  # используется для контекста
+                module_id=campaign.module_id or "",
+                target_origin=origin_of(target_url),
+            )
+            if row.deltas:
+                _publish_beam(
+                    "TARGET_HIT",
+                    run_id=target_url,
+                    module_id=campaign.module_id or "",
+                    target_origin=origin_of(target_url),
+                    target_node=target_url,
+                    severity="high" if "server_error" in row.deltas else "low",
+                    anomaly_flag=True,
+                )
             if stopped_reason:
                 break
             remaining = interval - (time.monotonic() - started)
@@ -1554,6 +1636,17 @@ class FuzzCampaignRunner:
 
         run_id = (
             f"fuzz-{campaign.module_id or 'campaign'}-{uuid.uuid4().hex[:12]}"
+        )
+        # B-5: beam start — публикуем до первого запроса
+        _publish_beam(
+            "FUZZ_BEAM_START",
+            run_id=run_id,
+            module_id=campaign.module_id or "",
+            target_origin=origin_of(
+                target_url if method else (campaign.message.template or "")
+            ),
+            payload_hash="",
+            channeling_stage="warmup",
         )
         session_meta = session_bound_meta(headers, storage_meta=storage_meta)
         body_template = campaign.message.body or ""
@@ -1650,6 +1743,14 @@ class FuzzCampaignRunner:
         export_meta = export_fuzz_security_artifacts(summary, reports_dir=reports_dir)
         summary["findings_path"] = export_meta.get("findings_path") or ""
         summary["reporting"] = export_meta
+        # B-5: beam end — финальный вердикт
+        _publish_beam(
+            "BEAM_END",
+            run_id=run_id,
+            module_id=campaign.module_id or "",
+            target_origin=target_origin,
+            verdict=stopped_reason or "observations_require_review",
+        )
         return summary
 
     def _send(

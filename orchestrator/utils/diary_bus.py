@@ -40,6 +40,48 @@ _meta: Dict[str, Any] = {
 }
 _file_lock = threading.Lock()
 
+# B-1 Execution Hub: монотонный таймлайн. Захватывается один раз при старте прогона.
+_run_start_ts: Optional[float] = None
+
+
+def capture_run_start() -> float:
+    """Зафиксировать точку отсчёта и вернуть Unix epoch с миллисекундной точностью."""
+    global _run_start_ts
+    _run_start_ts = time.time()
+    return _run_start_ts
+
+
+def relative_ts() -> float:
+    """Относительное время в секундах от старта прогона. None если прогон не начат."""
+    if _run_start_ts is None:
+        return 0.0
+    return time.time() - _run_start_ts
+
+
+def has_run_start() -> bool:
+    return _run_start_ts is not None
+
+# ── B-3 Execution Hub: семантические типы событий ──
+
+SEMANTIC_KINDS = frozenset({
+    "FUZZ_BEAM_START",   # луч фаззера начал атаку: {sourceNodeId, targetNodeId, payload}
+    "PAYLOAD_MUTATION",  # мутация payload: {wordlistEntry, mutationRule}
+    "TARGET_HIT",        # ответ цели с аномалией: {statusCode, anomalyScore}
+    "BEAM_END",          # луч завершён: {verdict}
+    "SECURITY_GATE",     # решение quality gate: {gateId, decision, reason}
+})
+
+
+def _kind_match(wanted_kinds_str: str, event_kind: str) -> bool:
+    """?kind=FUZZ_BEAM_START,TARGET_HIT → true для совпадающих событий."""
+    wanted = (wanted_kinds_str or "").strip()
+    if not wanted:
+        return True
+    wanted_set = {k.strip().upper() for k in wanted.split(",") if k.strip()}
+    if not wanted_set:
+        return True
+    return (event_kind or "").strip().upper() in wanted_set
+
 
 def _channel_match(wanted: str, event_channel: str) -> bool:
     w = (wanted or "all").strip().lower()
@@ -66,12 +108,15 @@ def _redact_live_text(text: str) -> str:
 
 def publish(kind: str, text: str, channel: str = "diary", pretty: str = "") -> None:
     run_id = _active_run_id()
+    now = time.time()
     event = {
         "channel": (channel or "diary").strip().lower() or "diary",
         "kind": str(kind or "NOTE").strip().upper(),
         "text": _redact_live_text(text),
-        "ts": time.time(),
+        "ts": now,
     }
+    if _run_start_ts is not None:
+        event["t"] = round(now - _run_start_ts, 3)
     if pretty:
         event["pretty"] = _redact_live_text(pretty)
     if run_id:
@@ -93,7 +138,10 @@ def append(channel: str, payload: str | Dict[str, Any]) -> None:
     else:
         event = dict(payload)
     event.setdefault("channel", (channel or "diary").strip().lower() or "diary")
-    event.setdefault("ts", time.time())
+    now = time.time()
+    event.setdefault("ts", now)
+    if _run_start_ts is not None and "t" not in event:
+        event["t"] = round(now - _run_start_ts, 3)
     event.setdefault("kind", "NOTE")
     event.setdefault("text", str(event.get("kind") or ""))
     _store_event(event)
