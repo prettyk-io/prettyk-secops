@@ -184,6 +184,29 @@
 
 ---
 
+### Phase 1.5: BR-AUTH — Authoring Browser (Playwright headed, не CDP :9222) · 🔨 QUEUED · 27 авг 2026
+
+> **Контекст (Keeper Dev):** браузер в Editor `BrowserStage` — это **авторинг-браузер**: оператор руками кликает в живом окне → observe захватывает клик → DSL-шаг. Это НЕ execution (тот живёт в Studio через Grid/noVNC `:7900` → VideoTrack) и НЕ агентский `kdt-cdp-chrome :9222` (browser-hands-pure — инструмент агента, не продукта).
+> **Что уже сделано (Keeper Dev):** `browser_service.py` → `_get_page()` переписан на `chromium.launch(headless=False)` (живое окно 1280×800). Убрана привязка к `:9222`. `_on_click` и `browser_observe_*` уже module-level (NameError из Phase 1 закрыт). В `data_playground.py` вычищены дубликаты `_post_browser_back/forward`.
+> **Проверено (Keeper Dev):** `.venv` = `D:\prettyk-dev\.venv\Scripts\python.exe` ✅ · playwright импортируется ✅ · chromium скачан (`ms-playwright\chromium-1234\chrome-win64\chrome.exe`) ✅.
+> **Почему headed обязателен:** observe ловит клик через `document.addEventListener('click')` + `expose_binding`. В headless кликать некому → actions в сценарий не прыгают → headless бессмыслен для авторинга.
+
+| ID | Что делаем | Приёмочный сценарий GWT | Кому |
+|---|---|---|---|
+| **BR-AUTH-1** | Добить/проверить headed-запуск в Playground-процессе. | **Given:** Editor открыт, вкладка Browser. **When:** оператор вводит URL и жмёт Enter. **Then:** `_get_page()` запускает headed Chromium, страница грузится, скриншот/вьюпорт живёт, `liveCdp=true`, кнопки ← → ⟳ разлочены. | Boss |
+| **BR-AUTH-2** | Сквозная проверка observe → DSL в headed. | **Given:** headed-браузер открыт, Record включён. **When:** оператор физически кликает по элементу. **Then:** `expose_binding` → `_on_click` → `build_candidates` → event в очереди → BrowserStage поллит → proposal показан → Accept создаёт ровно один DSL-шаг. | Boss |
+| **BR-AUTH-3** | Вычистить остатки `:9222`/CDP/headless из авторинг-пути. | **Given:** `browser_service.py`. **When:** читаю код. **Then:** нет `connect_over_cdp`, нет `_CDP_ENDPOINT` в авторинг-логике, нет `headless=True` для авторинга; Grid/noVNC не трогается (он в Studio). | Boss |
+
+#### BR-AUTH DoD
+
+- Авторинг-браузер поднимается сам (headed), без `:9222`, без ручного `local.ps1`.
+- Клик оператора в живом окне → DSL-шаг в сценарии.
+- Grid/noVNC `:7900` остаётся execution-only (Studio/VideoTrack), не появляется в Editor.
+- `:9222` остаётся только в `browser-hands-pure` (агентский инструмент), не в продуктовом коде.
+- `python`/`.venv` не хардкодится — Playground стартует через `lab_ensure_ui.ps1`.
+
+---
+
 ### Phase 2: CDP-WIRE Plan (Production · QUEUED · after PROMOTE)
 
 > **Тип:** `Plan` — production-реализация, запускается только после `PROMOTE` Phase 1.  
