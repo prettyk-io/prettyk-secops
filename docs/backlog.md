@@ -746,6 +746,54 @@ owner и финальное решение.
 
 ---
 
+## 10. Эпик PW-AIRGAP — Browser Runtime Unify на Playwright · evolve · 27 авг 2026
+
+> **Тип:** `evolve` — план. Решающий развилок принят: **Путь A (unify now)**.
+> **Research:** [`docs/research/2026-08-27-browser-runtime-airgap.md`](research/2026-08-27-browser-runtime-airgap.md).
+> **Проблема:** окна Chrome на десктопе оператора + два браузерных мира (Selenium Grid для execution, Playwright для authoring) + отсутствие браузерного рантайма на проде/airgap.
+> **Цель:** один Playwright-мир (chromium+firefox+webkit+ffmpeg) в одном контейнере; execution переезжает за флагом `PK_BROWSER_RUNTIME`; authoring = headed-под-Xvfb + живой стрим (noVNC) в коробку; Selenium выпиливается после parity-прогона.
+
+### Нарезка Boss (backend / infra / ядро)
+
+| ID | Что получает оператор | GWT приёмка |
+|---|---|---|
+| **PW-A1** | Один Playwright-контейнер (chromium+firefox+webkit+ffmpeg) в compose, headed Chromium под Xvfb, noVNC на канон-порту. | **Given:** `lab_up`. **When:** контейнер стартовал. **Then:** один Playwright-процесс; на десктопе хоста ноль окон Chrome; noVNC живой; `playwright install` НЕ вызывается. |
+| **PW-A2** | `browser_service.py` authoring привязан к headed-браузеру контейнера (connect_over_cdp/remote), не headless+скриншот. | **Given:** Studio/BrowserStage. **When:** клик по живому стриму. **Then:** реальный клик в headed Chromium; observe→proposal→DSL; hover/фокус живые. |
+| **PW-A4** | Ровно один браузер на сессию: класс-синглтон, пассивный `status()`, переиспользование, полный teardown. | **Given:** браузер жив. **When:** повторный вход/поллинг status. **Then:** тот же `browserId`, новых процессов нет; `status()` никогда не запускает браузер. |
+| **PW-E1** | Controller гоняет прогон через Playwright за флагом `PK_BROWSER_RUNTIME=playwright`, дефолт `selenium`. | **Given:** wired chrome/firefox. **When:** run playwright. **Then:** nav/click/fill на Playwright; ZAP-прокси подхвачен (`host.docker.internal`); evidence тот же контракт. |
+| **PW-E2** | CDP-поверхность BrowserAdapter переписана на Playwright-native (`new_cdp_session`). | **Given:** шаг ОчиститьКэш/ОчиститьCookies. **When:** run playwright. **Then:** результат идентичен Selenium; 0 ссылок на `execute_cdp_cmd`. |
+| **PW-E3** | Видео: `record_video_dir` + `run_id` нейминг + ffmpeg→MP4; Monitor replay тем же путём. | **Given:** run записан. **When:** Monitor `?run_id=`. **Then:** видео играет; пустого кадра нет в headed. |
+| **PW-E5** | Parity-прогон: один wired на Selenium и Playwright (chrome+firefox, headed+headless) до зелёного. | **Given:** набор wired-фикстур. **When:** parity run. **Then:** одинаковые verdict/evidence; расхождение = баг до cutover. |
+| **PW-C1** | Дефолт Playwright; Selenium выпилен из compose (hub/node/video). | **Given:** parity зелёный. **When:** cutover. **Then:** execution на Playwright; Grid не поднимается; контракт `browser_type` цел. |
+| **PW-C2** | Airgap bundle: один образ `docker save` → `docker load` на чистом офлайн-хосте. | **Given:** airgap-хост без интернета. **When:** load + up. **Then:** authoring+execution офлайн; `--with-deps` не вызывается. |
+| **PW-C3** | Registry вычищен: `export_keywords`/`wired_validate`/тесты не тянут `WebDriverAdapter` как боевой путь. | **Given:** cutover. **When:** smoke. **Then:** registry maps на Playwright; 0 ссылок на боевой Selenium-путь. |
+
+### Нарезка Flash (frontend / UI)
+
+| ID | Что получает оператор | GWT приёмка |
+|---|---|---|
+| **PW-A3** | Живой стрим в коробку: `<iframe>` noVNC (или CDP screencast), не скриншот-поллинг. | **Given:** браузер поднят. **When:** BrowserStage. **Then:** живой поток; скриншот-поллинг и `clickCoordinate.ts` удалены из авторского пути. |
+| **PW-A5** | Честный Record UX на живом noVNC: proposal/индикатор/ambiguous на стриме; клик не эмулируется координатами. | **Given:** Record + стрим. **When:** клик по стриму. **Then:** observe→proposal→Accept/Reject→один DSL-шаг; неоднозначный блокирует. |
+| **PW-E4** | Live-вид execution: headed-прогон стримится в Live/VideoTrack (noVNC iframe). | **Given:** run headed. **When:** Live. **Then:** живой экран; noVNC→запись бесшовно. |
+| **PW-F1** | Фронт без headless-костылей: 0 ссылок на `observe/click`/`clickCoordinate`; подписи «Authoring». | **Given:** grep по фронту. **When:** чистка. **Then:** 0 refs на координатную эмуляцию; подписи каноничны. |
+| **PW-F2** | Parity отображение: evidence/вердикт одинаково рендерятся для selenium/playwright; dev-переключатель runtime. | **Given:** два прогона. **When:** результаты. **Then:** одинаковые карточки/вердикты; переключатель только в dev. |
+
+### Приёмка PW-AIRGAP (Keeper)
+
+- Один Playwright-мир; Selenium выпилен; на десктопе юзера ноль окон браузера.
+- Authoring — headed-под-Xvfb + живой стрим (hover/анимация/фокус живые).
+- Execution — parity зелёный до cutover; видео/live-вид идентичны Grid.
+- Airgap bundle разворачивается офлайн без `playwright install`.
+- `status()` пассивен, тестовый путь проходит; весь suite по затронутым файлам.
+
+### Out of scope PW-AIRGAP
+
+- Переписывание ZAP (сканер) — отдельный контур, не трогаем.
+- WebKit как обязательное покрытие в wired — бонус в образе, без приказа не добавляем.
+- Crawler-функции (`crawl_urls`/`gather_info`) полной замены — мигрируем только боевой путь прогона.
+
+---
+
 ## ⛔ Стены и ограничения (Железобетон)
 
 1. **Gate A — строгий рубеж:** ни один декоративный компонент не должен подменять живой `CheckWorkspace` / `formData`.

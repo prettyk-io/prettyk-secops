@@ -49,7 +49,9 @@ def _get_page():
     try:
         import playwright.sync_api as pw
 
-        _pw = pw.sync_playwright().start()
+        if _pw is None:
+            _pw = pw.sync_playwright().start()
+
         # HDO-B1: headless — никаких окон на десктопе оператора.
         _browser_obj = _pw.chromium.launch(
             headless=True,
@@ -72,10 +74,13 @@ def _get_page():
 
 
 def browser_status() -> dict:
-    """GET /api/browser/status — check browser connection and get current page info."""
+    """GET /api/browser/status — check browser connection and get current page info.
+
+    Passive check only: NEVER launches a browser.
+    """
+    global _page, _connected, _browser_id
     with _lock:
-        page = _get_page()
-        if page is None:
+        if _page is None or not _connected:
             return {
                 "ok": True,
                 "connected": False,
@@ -88,8 +93,8 @@ def browser_status() -> dict:
             }
 
         try:
-            url = page.evaluate("window.location.href")
-            title = page.evaluate("document.title")
+            url = _page.evaluate("window.location.href")
+            title = _page.evaluate("document.title")
             return {
                 "ok": True,
                 "connected": True,
@@ -101,12 +106,14 @@ def browser_status() -> dict:
                 "headless": True,
             }
         except Exception as e:
+            _page = None
+            _connected = False
             return {
                 "ok": True,
                 "connected": False,
                 "url": None,
                 "title": None,
-                "browserId": _browser_id,
+                "browserId": None,
                 "purpose": "authoring",
                 "transport": "playwright",
                 "headless": True,
@@ -732,7 +739,7 @@ def browser_context_ensure(context: str = "operator", url: str | None = None) ->
 
 def browser_context_destroy() -> dict:
     """POST /api/browser/context/destroy — закрыть страницу и браузер."""
-    global _page, _browser_obj, _connected, _browser_id
+    global _page, _pw, _browser_obj, _connected, _browser_id
     with _lock:
         if _page is not None:
             try:
@@ -746,6 +753,13 @@ def browser_context_destroy() -> dict:
             except Exception:
                 pass
             _browser_obj = None
+        if _pw is not None:
+            try:
+                _pw.stop()
+            except Exception:
+                pass
+            _pw = None
         _connected = False
+        _browser_id = None
         logger.info("browser_service: authoring browser destroyed")
         return {"ok": True}

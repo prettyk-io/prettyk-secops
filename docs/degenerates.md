@@ -356,3 +356,19 @@ Vite (`:5173`) — **не был запущен.** Вообще. Весь сте
 **Ущерб:** целый эпик HDO (Boss backend 5 карточек, Flash frontend 4 карточки, мой race-fix поверх) — весь на выброс. `headless=True`, `observe/click`, `clickCoordinate.ts`, клик-по-картинке — всё откатывается. Правильно было оставить `headless=False` (как в BR-AUTH и было).
 
 **Мораль:** Headless — это когда НЕКОМУ смотреть. Если оператор руками записывает шаги — ему нужны глаза. Невидимый браузер для ручной записи — это как снимать видео на выключенную камеру.
+
+> **Resolution (27.08.2026):** не откатывается, а закрывается эпиком **PW-AIRGAP** (`docs/research/2026-08-27-browser-runtime-airgap.md`) — authoring переезжает на headed-под-Xvfb + живой стрим noVNC, headless-скриншот-костыль уходит. До cutover хвост `headless=True` + `clickCoordinate.ts` живёт как временный мост.
+
+---
+
+## 015 · 27.08.2026 — STATUS-ПОЛЛИНГ СПАВНИЛ ВЕРЕНИЦУ ОКОН CHROME
+
+**Виновник:** Dev-режим (status-эндпоинт с сайд-эффектом запуска браузера).
+
+**Сцена:** Открыта Studio → поллится `GET /api/browser/status` каждые ~3 сек. `browser_status()` внутри вызывал `_get_page()`, которая при отсутствии страницы **запускала новый Chromium**. Плюс в фоне висел старый процесс `data_playground.py` со старым кодом (`headless=False`). Итог: каждый опрос статуса — новое окно Chrome на десктопе, «вереница каждые 5 секунд».
+
+**Ущерб:** десятки orphan-процессов Chrome + Playwright-драйверов на десктопе. Ловили по `--disable-field-trial-config` (Playwright-маркер) и `playwright\driver\node.exe`.
+
+**Фикс:** `browser_status()` стал **пассивным** (если страницы нет — вернуть `connected:false`, НИКОГДА не запускать); `BrowserStage` больше не авто-`ensureContext` на mount; `browser_context_destroy` дополнен `playwright.stop()`.
+
+**Мораль:** GET-статус не имеет права иметь сайд-эффект запуска. Проверка здоровья = только чтение. Запуск — только явное действие (navigate/ensure/record).

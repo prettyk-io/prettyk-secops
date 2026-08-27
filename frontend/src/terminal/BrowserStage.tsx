@@ -67,15 +67,12 @@ export function BrowserStage({
   // ── Browser status from singleton session ──
   useEffect(() => {
     const session = getBrowserSession();
-    // Studio owns an internal authoring Browser object. It is not the
-    // external browser-hands CDP browser and is never used for execution.
-    session.ensureContext('operator', targetUrl);
-    session.startPolling(3000); // Start polling immediately
+    session.startPolling(3000); // Start polling status passively
     const update = () => setCdpStatus(session.getLastStatus());
     update();
     const unsub = session.onChange(update);
     return () => { session.stopPolling(); unsub(); };
-  }, [targetUrl]);
+  }, []);
 
   const liveCdp = cdpStatus?.connected ?? cdpConnected;
 
