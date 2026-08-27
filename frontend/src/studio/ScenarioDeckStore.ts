@@ -7,6 +7,7 @@ export interface ScenarioDeckStore {
   decks:ScenarioDeckData[];
   setDecks:(decks:ScenarioDeckData[])=>void;
   addStep:(deckId:string)=>void;
+  insertStep:(deckId:string,step:ScenarioStepModel)=>void;
   removeStep:(deckId:string,stepId:string)=>void;
   updateStep:(deckId:string,stepId:string,patch:Partial<ScenarioStepModel>)=>void;
   moveStep:(deckId:string,stepId:string,direction:"up"|"down")=>void;
@@ -23,7 +24,8 @@ export interface ScenarioDeckStore {
 let n=0;function id():string{n++;return`step-${Date.now()}-${n}`;}
 export const useScenarioDeckStore = create<ScenarioDeckStore>((set,get)=>({
   decks:[],setDecks:(decks)=>set({decks}),
-  addStep:(deckId)=>set(s=>({decks:s.decks.map(d=>d.id===deckId?{...d,steps:[...d.steps,emptyStep(id())]}:d)})),
+  addStep:(deckId)=>get().insertStep(deckId,emptyStep(id())),
+  insertStep:(deckId,step)=>set(s=>({decks:s.decks.map(d=>d.id===deckId?{...d,steps:[...d.steps,step]}:d)})),
   removeStep:(deckId,stepId)=>set(s=>({decks:s.decks.map(d=>d.id===deckId?{...d,steps:d.steps.filter(st=>st.id!==stepId)}:d)})),
   updateStep:(deckId,stepId,patch)=>set(s=>({decks:s.decks.map(d=>d.id===deckId?{...d,steps:d.steps.map(st=>st.id===stepId?{...st,...patch}:st)}:d)})),
   moveStep:(deckId,stepId,direction)=>{set(s=>({decks:s.decks.map(d=>{if(d.id!==deckId)return d;const idx=d.steps.findIndex(st=>st.id===stepId);if(idx<0)return d;const t=direction==="up"?idx-1:idx+1;if(t<0||t>=d.steps.length)return d;const nx=[...d.steps];[nx[idx],nx[t]]=[nx[t]!,nx[idx]!];return{...d,steps:nx};})}));},

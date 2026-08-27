@@ -36,7 +36,7 @@ function makeObservation(overrides: Partial<CdpObservation> = {}): CdpObservatio
 describe('POC-CDP-2: observationToDsl / action / strategy', () => {
   it('Click button → Click role="..."', () => {
     const dsl = observationToDsl(makeObservation());
-    expect(dsl).toBe('Click role="Войти"');
+    expect(dsl).toBe('Click role "Войти"');
     expect(observationToAction(makeObservation())).toBe('Click');
     expect(observationToStrategy(makeObservation())).toBe('role');
   });

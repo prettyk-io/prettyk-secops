@@ -755,9 +755,39 @@ class Handler(BaseHTTPRequestHandler):
             return
         self._json(200, browser_navigate(url))
 
+    def _post_browser_back(self, body: dict) -> None:
+        from browser.browser_service import browser_back
+        self._json(200, browser_back())
+
+    def _post_browser_forward(self, body: dict) -> None:
+        from browser.browser_service import browser_forward
+        self._json(200, browser_forward())
+
     def _post_browser_screenshot(self, body: dict) -> None:
         from browser.browser_service import browser_screenshot
         self._json(200, browser_screenshot())
+
+    def _post_browser_click(self, body: dict) -> None:
+        from browser.browser_service import browser_click
+        selector = str(body.get("selector") or "").strip()
+        strategy = str(body.get("strategy") or "css").strip()
+        if not selector:
+            self._json(400, {"ok": False, "error": "selector required"})
+            return
+        self._json(200, browser_click(selector, strategy))
+
+    def _post_browser_type(self, body: dict) -> None:
+        from browser.browser_service import browser_type_text
+        selector = str(body.get("selector") or "").strip()
+        text = str(body.get("text") or "").strip()
+        strategy = str(body.get("strategy") or "css").strip()
+        if not selector:
+            self._json(400, {"ok": False, "error": "selector required"})
+            return
+        if not text:
+            self._json(400, {"ok": False, "error": "text required"})
+            return
+        self._json(200, browser_type_text(selector, text, strategy))
 
     def _post_browser_highlight(self, body: dict) -> None:
         from browser.browser_service import browser_highlight
@@ -787,6 +817,14 @@ class Handler(BaseHTTPRequestHandler):
     def _post_browser_observe_event(self, _body: dict) -> None:
         from browser.browser_service import browser_observe_event
         self._json(200, browser_observe_event())
+
+    def _post_browser_context_ensure(self, _body: dict) -> None:
+        from browser.browser_service import browser_context_ensure
+        self._json(200, browser_context_ensure())
+
+    def _post_browser_context_destroy(self, _body: dict) -> None:
+        from browser.browser_service import browser_context_destroy
+        self._json(200, browser_context_destroy())
 
     def _post_monitor_token(self, body: dict) -> None:
         """MON-13: выдать короткоживущий bind-токен для Monitor ?run_id=.
@@ -857,12 +895,18 @@ class Handler(BaseHTTPRequestHandler):
             "/api/run/start": self._post_run_start,
             "/api/run/step": self._post_run_step,
             "/api/browser/navigate": self._post_browser_navigate,
+            "/api/browser/back": self._post_browser_back,
+            "/api/browser/forward": self._post_browser_forward,
             "/api/browser/screenshot": self._post_browser_screenshot,
             "/api/browser/highlight": self._post_browser_highlight,
             "/api/browser/eval": self._post_browser_eval,
+            "/api/browser/click": self._post_browser_click,
+            "/api/browser/type": self._post_browser_type,
             "/api/browser/observe/start": self._post_browser_observe_start,
             "/api/browser/observe/stop": self._post_browser_observe_stop,
             "/api/browser/observe/event": self._post_browser_observe_event,
+            "/api/browser/context/ensure": self._post_browser_context_ensure,
+            "/api/browser/context/destroy": self._post_browser_context_destroy,
             "/api/monitor/token": self._post_monitor_token,
         }
         handler = routes.get(path)

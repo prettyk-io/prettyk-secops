@@ -115,9 +115,9 @@ export function observationToDsl(obs: CdpObservation): string {
   if (action === 'Type') {
     // POC-CDP-5: plaintext never enters wire. Secret → $secret, else → $value reference.
     const val = obs.valueClass === 'secret' ? SECRET_PLACEHOLDER : VALUE_PLACEHOLDER;
-    return `Type ${strategy}="${name}" ${val}`.trim();
+    return `Type ${strategy} "${name}" ${val}`.trim();
   }
-  return `Click ${strategy}="${name}"`.trim();
+  return `Click ${strategy} "${name}"`.trim();
 }
 
 /** Build provenance marker for Editor DSL. */
@@ -227,7 +227,7 @@ export function useCdpRecorder(options: UseCdpRecorderOptions) {
     const session = getBrowserSession();
     const result = await session.startObserve();
     if (!result.ok) {
-      setState(s => ({ ...s, error: result.error || 'CDP observe start failed', cdpConnected: false }));
+      setState(s => ({ ...s, error: result.error || 'observe start failed', cdpConnected: false }));
       return;
     }
     acceptedEventIds.current.clear();
@@ -348,7 +348,7 @@ export function useCdpRecorder(options: UseCdpRecorderOptions) {
         setState(s => ({
           ...s,
           cdpConnected: false,
-          error: result.connected === false ? 'CDP disconnected' : 'Observe API error',
+          error: result.connected === false ? 'Browser disconnected' : 'Observe API error',
         }));
         return;
       }

@@ -41,10 +41,7 @@ import {
   AlertTriangle,
   Clock,
   Terminal as TerminalIcon,
-  Eye,
   FileText,
-  Bug,
-  GitCompare,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -53,6 +50,7 @@ import {
   META_DARK_MONACO_THEME_ID,
   registerMonacoMetaThemes,
 } from '../monaco/metaDarkTheme';
+import { DARK_THEME_ID, PRETTYK_LANGUAGE_ID } from '../monaco/setup';
 import { COMPACT_EDITOR_OPTIONS } from '../monaco/editorOptions';
 import { bindRunGutter } from '../monaco/runGutter';
 import { setupMonaco } from '../monaco/setup';
@@ -66,6 +64,7 @@ import { collectVariables } from '../keywords/variables';
 import { collectPageIds } from '../keywords/pages';
 import { studioTabWireDiagnostics } from '../studio/studioDiagnostics';
 import { flashDiscoveredLine } from '../monaco/discoveredPulse';
+import { VALIDATE_CONSTRUCTOR_COMMAND_ID } from '../monaco/scenarioValidateCodeLens';
 import { getActiveCheckId, getCheck } from '../checks/checksStore';
 import { parseWired } from '../wired/parse';
 import {
@@ -78,7 +77,6 @@ import {
   resolveNeighborDslTab,
 } from '../wired/wiredDslCodec';
 import { StudioExplorer } from '../studio/StudioExplorer';
-import { CommitDiffView } from './CommitDiffView';
 import { collectStudioNodes, findNodeByTabId, tabFromNode } from '../studio/collectStudioNodes';
 import type { StudioTabId } from '../studio/studioTabs';
 import { BrowserStage, type BrowserStageMode } from '../terminal/BrowserStage';
@@ -87,7 +85,6 @@ import { DSLProposalBanner } from '../terminal/DiscoveryOverlay';
 import { useScenarioDeckStore } from '../studio/ScenarioDeckStore';
 import type { ScenarioStepModel, StrategyKind } from '../studio/scenarioStepModel';
 import { StudioEditorSwitch } from '../terminal/StudioEditorSwitch';
-import { PolicyLens } from '../terminal/PolicyLens';
 import {
   buildEvidenceChain,
   buildStepEvidenceSummary,
@@ -184,7 +181,6 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
     resizeLeft,
     resizeRight,
     resizeBottom,
-    setRightTab,
     setBottomTab,
     setDensity,
     setActiveCheck,
@@ -203,8 +199,7 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
   // Ensure deck exists in ScenarioDeckStore
   const ensureDeck = useScenarioDeckStore(s => s.setDecks);
   const decks = useScenarioDeckStore(s => s.decks);
-  const addStepToDeck = useScenarioDeckStore(s => s.addStep);
-  const updateStepInDeck = useScenarioDeckStore(s => s.updateStep);
+  const insertStepToDeck = useScenarioDeckStore(s => s.insertStep);
 
   useEffect(() => {
     if (!decks.find(d => d.id === scenarioDeckId)) {
@@ -225,7 +220,7 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
     if (!deck) return [];
     return deck.steps.map(s => {
       const a = s.action; const sv = s.strategyValue; const p = s.payload;
-      if (a === 'Click' || a === 'Type') return `${a} ${s.strategy}="${sv}" ${p}`.trim();
+      if (a === 'Click' || a === 'Type') return `${a} ${s.strategy} "${sv}" ${p}`.trim();
       return `${a} ${p}`.trim();
     });
   }, [decks, scenarioDeckId]);
@@ -248,41 +243,31 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
     existingDslLines,
     existingManualLocators: manualLocators,
     onStepAccepted: useCallback((result: CdpStepResult) => {
-      // POC-CDP-3/4: Create canonical step — single identity for Studio + Editor
-      addStepToDeck(scenarioDeckId);
-      // Get the newly added step (last one)
-      const currentDecks = useScenarioDeckStore.getState().decks;
-      const deck = currentDecks.find(d => d.id === scenarioDeckId);
-      const newStep = deck?.steps[deck.steps.length - 1];
-      if (newStep) {
-        updateStepInDeck(scenarioDeckId, newStep.id, {
-          ...result.step,
-          id: newStep.id, // Preserve the store-assigned id (single identity)
-          led: 'predicted' as const,
-        });
+      // POC-CDP-3/4: Create canonical step — single identity for Studio + Editor (F-13: insertStep)
+      insertStepToDeck(scenarioDeckId, { ...result.step, led: 'predicted' as const });
 
-        // POC-CDP-4: Write DSL line into Editor Monaco (same identity)
-        if (activeTabRef.current && formDataRef.current) {
-          const currentText = readConstructorText(formDataRef.current, activeTabRef.current.path);
-          const provenanceComment = `# ${result.provenance}`;
-          const newText = currentText
-            ? `${currentText}\n${provenanceComment}\n${result.step.action} ${result.step.strategy}="${result.step.strategyValue}" ${result.step.payload}`.trim()
-            : `${provenanceComment}\n${result.step.action} ${result.step.strategy}="${result.step.strategyValue}" ${result.step.payload}`;
-          const updated = writeConstructorText(formDataRef.current, activeTabRef.current.path, newText);
-          onFormDataChangeRef.current?.(updated);
-          formDataRef.current = updated;
-          // Refresh Monaco display
-          setDirty(false);
-          lastEmittedRef.current = newText;
-          editorRef.current?.setValue(newText);
+      // POC-CDP-4: Write DSL line into Editor Monaco (same identity)
+      if (activeTabRef.current && formDataRef.current) {
+        const currentText = readConstructorText(formDataRef.current, activeTabRef.current.path);
+        const provenanceComment = `# ${result.provenance}`;
+        const dslLine = `${result.step.action} ${result.step.strategy} "${result.step.strategyValue}" ${result.step.payload}`.trim();
+        const newText = currentText
+          ? `${currentText}\n${provenanceComment}\n${dslLine}`
+          : `${provenanceComment}\n${dslLine}`;
+        const updated = writeConstructorText(formDataRef.current, activeTabRef.current.path, newText);
+        onFormDataChangeRef.current?.(updated);
+        formDataRef.current = updated;
+        // Refresh Monaco display
+        setDirty(false);
+        lastEmittedRef.current = newText;
+        editorRef.current?.setValue(newText);
 
-          // POC-CDP-4: «✨ Discovered» pulse on the freshly drawn DSL line
-          if (editorRef.current) {
-            flashDiscoveredLine(editorRef.current, newText.split('\n').length);
-          }
+        // POC-CDP-4: «✨ Discovered» pulse on the freshly drawn DSL line
+        if (editorRef.current) {
+          flashDiscoveredLine(editorRef.current, newText.split('\n').length);
         }
       }
-    }, [scenarioDeckId, addStepToDeck, updateStepInDeck]),
+    }, [scenarioDeckId, insertStepToDeck]),
     onStepRejected: useCallback(() => {
       // POC-CDP-3: Reject — nothing changes
     }, []),
@@ -556,7 +541,8 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
   const handleEditorDidMount: OnMount = (editorInstance, monacoInstance) => {
     editorRef.current = editorInstance;
     registerMonacoMetaThemes(monacoInstance);
-    monacoInstance.editor.setTheme(META_DARK_MONACO_THEME_ID);
+
+    monacoInstance.editor.setTheme(DARK_THEME_ID);
 
     editorInstance.onDidChangeCursorPosition((e) => {
       setCursorPos({ line: e.position.lineNumber, col: e.position.column });
@@ -587,6 +573,15 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
       applyDiagnostics(monaco, model, liveDiagnostics);
     }
   }, [liveDiagnostics, controlled]);
+
+  /* ── CodeLens 2.0: «Проверить конструктор» из Monaco → validate ── */
+  useEffect(() => {
+    const handler = () => {
+      onCmdValidate?.();
+    };
+    window.addEventListener(VALIDATE_CONSTRUCTOR_COMMAND_ID, handler);
+    return () => window.removeEventListener(VALIDATE_CONSTRUCTOR_COMMAND_ID, handler);
+  }, [onCmdValidate]);
 
   /* ── Push text into Monaco (controlled mode). ── */
   const pushTextToEditor = useCallback(
@@ -1073,7 +1068,7 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
               value={displayText}
               onChange={handleEditorChange}
               onMount={handleEditorDidMount}
-              theme={META_DARK_MONACO_THEME_ID}
+              theme={DARK_THEME_ID}
               options={{
                 ...COMPACT_EDITOR_OPTIONS,
                 glyphMargin: true, // E2: Gutter Run ▶
@@ -1122,136 +1117,46 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
           />
         )}
 
-        {/* RIGHT PANEL: Context / Inspector / Telemetry / Browser */}
+        {/* RIGHT PANEL: Browser (reveal по кнопке toggleRight) */}
         {rightPanel.open && (
           <aside
             data-testid="workbench-right-panel"
             style={{ width: rightPanel.width }}
             className="shrink-0 flex flex-col bg-[#0b101c] border-l border-white/10 overflow-hidden select-none"
           >
-            {/* Tab Bar */}
-            <div className="h-9 border-b border-white/10 flex items-center px-1 bg-[#080c16]/50">
-              {[
-                { id: 'context', label: 'Context', icon: <Eye className="size-3" /> },
-                { id: 'inspector', label: 'Inspector', icon: <Sliders className="size-3" /> },
-                { id: 'telemetry', label: 'Telemetry', icon: <Activity className="size-3" /> },
-                { id: 'browser', label: 'Browser', icon: <Monitor className="size-3" /> },
-                { id: 'evidence', label: 'Evidence', icon: <Bug className="size-3" /> },
-                { id: 'diff', label: 'Diff', icon: <GitCompare className="size-3" /> },
-              ].map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setRightTab(t.id)}
-                  className={`flex-1 py-1 px-1.5 text-[11px] font-semibold flex items-center justify-center gap-1 transition-all rounded ${
-                    rightPanel.activeTab === t.id
-                      ? 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/30'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  {t.icon}
-                  <span>{t.label}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Tab Body */}
-            <div className="flex-1 overflow-y-auto p-3 text-xs">
-              {rightPanel.activeTab === 'context' && (
-                <div className="space-y-3">
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    Runtime Ghost Variables
-                  </div>
-                  <div className="text-slate-500 text-[11px] italic">
-                    {controlled
-                      ? 'Connected to active check workspace. Variables populated at runtime.'
-                      : 'No runtime session. Run the check to populate variables.'}
-                  </div>
+            <BrowserStage
+              mode={browserMode}
+              onModeChange={setBrowserMode}
+              targetUrl="http://juice-shop:3000"
+              collapsed={false}
+              embedded={true}
+              cdpConnected={recorderState.cdpConnected}
+              cdpObserving={recorderState.recording}
+            />
+            {/* POC-CDP-2/3: Proposal banner */}
+            {recorderState.ambiguous && (
+              <div className="px-2 shrink-0">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-amber-500/30 bg-amber-500/5 text-[10px] text-amber-400">
+                  <span>⚠ Ambiguous locator — review needed. Two elements share the same weak selector.</span>
                 </div>
-              )}
-
-              {rightPanel.activeTab === 'inspector' && (
-                <div className="space-y-3">
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    Active Step Parameters
-                  </div>
-                  <div className="text-slate-500 text-[11px] italic">
-                    Select a step in the DSL to inspect its parameters.
-                  </div>
-                </div>
-              )}
-
-              {rightPanel.activeTab === 'telemetry' && (
-                <div className="space-y-3">
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    Live Telemetry
-                  </div>
-                  <div className="text-slate-500 text-[11px] italic">
-                    Telemetry stream active during check execution.
-                  </div>
-                </div>
-              )}
-
-              {rightPanel.activeTab === 'browser' && (
-                <div className="flex flex-col gap-2 h-full">
-                  <BrowserStage
-                    mode={browserMode}
-                    onModeChange={setBrowserMode}
-                    targetUrl={browserMode === 'record' ? undefined : undefined}
-                    collapsed={false}
-                    cdpConnected={recorderState.cdpConnected}
-                    cdpObserving={recorderState.recording}
-                  />
-                  {/* POC-CDP-2/3: Proposal banner */}
-                  {recorderState.ambiguous && (
-                    <div className="px-2">
-                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-amber-500/30 bg-amber-500/5 text-[10px] text-amber-400">
-                        <span>⚠ Ambiguous locator — review needed. Two elements share the same weak selector.</span>
-                      </div>
-                    </div>
-                  )}
-                  {recorderState.proposal && (
-                    <div className="px-2">
-                      <DSLProposalBanner
-                        proposal={recorderState.proposal}
-                        onAccept={acceptProposal}
-                        onReject={rejectProposal}
-                      />
-                    </div>
-                  )}
-                  {recorderState.error && (
-                    <div className="px-2">
-                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-red-500/30 bg-red-500/5 text-[10px] text-red-400">
-                        <span>CDP: {recorderState.error}</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {rightPanel.activeTab === 'evidence' && (
-                <PolicyLens
-                  policyLens={evidenceData?.policyLens}
-                  activeStepChain={evidenceData?.chain}
-                  activeStepSummary={evidenceData?.summary}
+              </div>
+            )}
+            {recorderState.proposal && (
+              <div className="px-2 shrink-0">
+                <DSLProposalBanner
+                  proposal={recorderState.proposal}
+                  onAccept={acceptProposal}
+                  onReject={rejectProposal}
                 />
-              )}
-
-              {rightPanel.activeTab === 'diff' && (
-                checkId ? (
-                  <CommitDiffView
-                    checkId={checkId}
-                    activeTab={activeTab}
-                    variant="inline"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full gap-2 text-slate-500">
-                    <GitCompare className="size-6 opacity-30" />
-                    <p className="text-[11px] italic">No check loaded — save first to enable diff.</p>
-                  </div>
-                )
-              )}
-            </div>
+              </div>
+            )}
+            {recorderState.error && (
+              <div className="px-2 shrink-0">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-red-500/30 bg-red-500/5 text-[10px] text-red-400">
+                  <span>CDP: {recorderState.error}</span>
+                </div>
+              </div>
+            )}
           </aside>
         )}
       </div>
