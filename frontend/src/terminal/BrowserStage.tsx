@@ -8,11 +8,12 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { cn } from '../lib/utils';
 import {
   Monitor, Circle, Bug, PanelRightClose, PanelRightOpen,
-  ArrowLeft, ArrowRight, RefreshCw, Loader2, ExternalLink, Play, Square,
+  ArrowLeft, ArrowRight, RefreshCw, Loader2, ExternalLink, Play, Square, AlertTriangle,
 } from 'lucide-react';
 import { getBrowserSession } from '../studio/browserSession';
 import type { BrowserSessionStatus } from '../studio/browserSession';
 import { useScenarioDeckStore } from '../studio/ScenarioDeckStore';
+import { computeViewportCoordsFromEvent } from './clickCoordinate';
 
 export type BrowserStageMode = 'author' | 'record' | 'debug';
 
@@ -31,6 +32,10 @@ export interface BrowserStageProps {
   /** CDP recorder state (optional — only used in Record mode). */
   cdpConnected?: boolean;
   cdpObserving?: boolean;
+  /** HDO-F3: Ошибка рекордера (disconnected / timeout). */
+  recorderError?: string | null;
+  /** HDO-F1: Колбэк при клике по скриншоту (для координации с родителем). */
+  onScreenshotClick?: () => void;
 }
 
 export function BrowserStage({
@@ -39,6 +44,7 @@ export function BrowserStage({
   onNavigateBack, onNavigateForward, onReload,
   embedded = false,
   cdpConnected = false, cdpObserving = false,
+  recorderError = null, onScreenshotClick,
 }: BrowserStageProps) {
   const [cdpStatus, setCdpStatus] = useState<BrowserSessionStatus | null>(null);
   const [screenshot, setScreenshot] = useState<string | null>(null);
@@ -52,16 +58,24 @@ export function BrowserStage({
   const [playStep, setPlayStep] = useState(0);
   const playAbortRef = useRef<AbortController | null>(null);
   const shotTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // HDO-F1: Click-on-screenshot state
+  const [clickStatus, setClickStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [clickError, setClickError] = useState<string | null>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null);
+  const clickLockRef = useRef(false);
 
   // ── Browser status from singleton session ──
   useEffect(() => {
     const session = getBrowserSession();
+    // Studio owns an internal authoring Browser object. It is not the
+    // external browser-hands CDP browser and is never used for execution.
+    session.ensureContext('operator', targetUrl);
     session.startPolling(3000); // Start polling immediately
     const update = () => setCdpStatus(session.getLastStatus());
     update();
     const unsub = session.onChange(update);
     return () => { session.stopPolling(); unsub(); };
-  }, []);
+  }, [targetUrl]);
 
   const liveCdp = cdpStatus?.connected ?? cdpConnected;
 
@@ -111,6 +125,38 @@ export function BrowserStage({
       }
     };
   }, [liveCdp, takeShot]);
+
+  // ── HDO-F1: Клик по скриншоту → координаты viewport (letterboxing) → observe/click ──
+  const handleScreenshotClick = useCallback(async (e: React.MouseEvent<HTMLImageElement>) => {
+    if (clickLockRef.current) return;
+    const img = imgRef.current;
+    if (!img) return;
+
+    const vp = computeViewportCoordsFromEvent(img, e.clientX, e.clientY);
+    if (!vp) return; // клик в поле letterbox — игнорируем
+
+    clickLockRef.current = true;
+    setClickStatus('sending');
+    setClickError(null);
+    onScreenshotClick?.();
+
+    const session = getBrowserSession();
+    const result = await session.observeClick(Math.round(vp.x), Math.round(vp.y));
+
+    if (result.ok) {
+      setClickStatus('sent');
+      // HDO-F3: обновить скриншот после клика (страница могла измениться)
+      setTimeout(async () => {
+        await takeShot();
+        clickLockRef.current = false;
+        setClickStatus('idle');
+      }, 1000);
+    } else {
+      setClickStatus('error');
+      setClickError(result.error || 'observe/click failed');
+      clickLockRef.current = false;
+    }
+  }, [takeShot, onScreenshotClick]);
 
   // ── Навигация (с таймаутом и отменой) ──
   const doNavigate = useCallback(async (url: string) => {
@@ -332,7 +378,7 @@ export function BrowserStage({
             'size-1.5',
             liveCdp ? (cdpObserving ? 'fill-red-500 text-red-500' : 'fill-emerald-500 text-emerald-500') : 'fill-slate-600 text-slate-600',
           )} />
-          {liveCdp ? (cdpObserving ? '● REC' : 'live') : 'no browser'}
+          {liveCdp ? (cdpObserving ? '● REC' : 'authoring') : 'no browser'}
         </span>
 
         <button onClick={onToggleCollapse} className="p-1 rounded hover:bg-white/5 text-slate-400">
@@ -344,12 +390,39 @@ export function BrowserStage({
       <div className="flex-1 min-h-0 flex items-center justify-center bg-[#080c14] relative overflow-hidden">
         {liveCdp ? (
           screenshot ? (
-            <img
-              src={screenshot}
-              alt={cdpStatus?.title || 'Live viewport'}
-              className="w-full h-full object-contain"
-              style={{ imageRendering: 'auto' }}
-            />
+            <>
+              <img
+                ref={imgRef}
+                src={screenshot}
+                alt={cdpStatus?.title || 'Live viewport'}
+                className={cn(
+                  'w-full h-full object-contain',
+                  cdpObserving && 'cursor-crosshair',
+                )}
+                style={{ imageRendering: 'auto' }}
+                onClick={cdpObserving ? handleScreenshotClick : undefined}
+              />
+              {/* HDO-F3: Индикатор клика (sending / error) */}
+              {clickStatus === 'sending' && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20 z-10 pointer-events-none">
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-900/90 border border-cyan-500/30">
+                    <Loader2 className="size-4 animate-spin text-cyan-400" />
+                    <span className="text-[10px] text-cyan-300 font-mono">Sending click…</span>
+                  </div>
+                </div>
+              )}
+              {/* HDO-F3: Ошибка клика */}
+              {clickStatus === 'error' && clickError && (
+                <div className="absolute top-2 left-2 right-2 z-20">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded border border-red-500/30 bg-red-500/10">
+                    <AlertTriangle className="size-3.5 text-red-400 shrink-0" />
+                    <span className="text-[10px] text-red-400">{clickError}</span>
+                    <button onClick={() => { setClickStatus('idle'); setClickError(null); }}
+                      className="ml-auto text-red-400 hover:text-red-300 text-sm leading-none">&times;</button>
+                  </div>
+                </div>
+              )}
+            </>
           ) : shotLoading ? (
             <div className="flex flex-col items-center gap-2 text-center">
               <Loader2 className="size-10 animate-spin text-cyan-700" />
@@ -415,13 +488,23 @@ export function BrowserStage({
           </div>
         )}
 
-        {/* Recording overlay */}
+        {/* HDO-F3: Recording overlay — pulsing indicator */}
         {liveCdp && cdpObserving && (
           <div className="absolute top-2 left-2 z-10">
             <span className="flex items-center gap-1 text-[9px] text-red-400 font-mono px-2 py-0.5 rounded bg-red-500/10 border border-red-500/20">
               <Circle className="size-1.5 fill-red-500 text-red-500 animate-pulse" />
               Recording clicks
             </span>
+          </div>
+        )}
+
+        {/* HDO-F3: Recorder error (disconnected / timeout) */}
+        {recorderError && cdpObserving && (
+          <div className="absolute bottom-2 left-2 right-2 z-20">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded border border-amber-500/30 bg-amber-500/10">
+              <AlertTriangle className="size-3.5 text-amber-400 shrink-0" />
+              <span className="text-[10px] text-amber-400">{recorderError}</span>
+            </div>
           </div>
         )}
       </div>

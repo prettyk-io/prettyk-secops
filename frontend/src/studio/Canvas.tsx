@@ -20,7 +20,7 @@ const nodeTypes = {
   authDeck: AuthDeckNode,
 };
 
-export interface CanvasV2Counts {
+export interface CanvasCounts {
   pages: number;
   scenarios: number;
   modules: number;
@@ -28,8 +28,8 @@ export interface CanvasV2Counts {
   resources: number;
 }
 
-export interface CanvasV2Props {
-  counts?: CanvasV2Counts;
+export interface CanvasProps {
+  counts?: CanvasCounts;
 }
 
 /** Угловая статичная карточка-счётчик, приклеенная к краю экрана */
@@ -75,7 +75,7 @@ function CornerCard({ label, color, count }: { label: string; color: string; cou
   );
 }
 
-export function CanvasV2({ counts }: CanvasV2Props) {
+export function Canvas({ counts }: CanvasProps) {
   const c = counts ?? { pages: 0, scenarios: 0, modules: 0, fuzzers: 0, resources: 0 };
 
   // ── Сценарии из стора (демо-заполнение при первом входе) ──

@@ -1,5 +1,5 @@
 /**
- * BrowserPanel — StudioV2 right-tab: CDP browser panel.
+ * BrowserPanel — Studio right-tab: internal authoring browser panel.
  *
  * F-5: живая адресная строка, ← → навигация, лоадер.
  * F-6: Record — end-to-end proposal → DSL → ScenarioDeckStore.
@@ -17,7 +17,7 @@ import { DSLProposalBanner } from "../terminal/DiscoveryOverlay";
 import { useScenarioDeckStore } from "./ScenarioDeckStore";
 import { stepToDSL } from "./scenarioStepModel";
 
-interface BS { ok: boolean; connected: boolean; url?: string | null; title?: string | null; }
+interface BS { ok: boolean; connected: boolean; url?: string | null; title?: string | null; purpose?: 'authoring'; transport?: 'playwright'; }
 
 export function BrowserPanel() {
   const [status, setStatus] = useState<BS>({ ok: true, connected: false });
@@ -37,7 +37,7 @@ export function BrowserPanel() {
 
   useEffect(() => { poll(); const i = setInterval(poll, 3000); return () => clearInterval(i); }, [poll]);
 
-  // F-5: sync navUrl from CDP
+  // F-5: sync navUrl from the internal authoring browser
   useEffect(() => { if (status.url) setNavUrl(status.url); }, [status.url]);
 
   const shot = useCallback(async () => {
@@ -48,7 +48,7 @@ export function BrowserPanel() {
         const raw: string = d.screenshot;
         setScreenshot(raw.startsWith('data:') ? raw : `data:image/png;base64,${raw}`);
       }
-    } catch { /* CDP down */ }
+    } catch { /* authoring browser down */ }
   }, []);
 
   useEffect(() => { if (!live) return; shot(); const i = setInterval(shot, 1500); return () => clearInterval(i); }, [live, shot]);
@@ -76,7 +76,7 @@ export function BrowserPanel() {
 
   const c = status.connected;
 
-  // ── Record mode (F-6): CDP observe → proposal → DSL-шаг ──
+  // ── Record mode (F-6): browser event → proposal → DSL-шаг ──
   const decks = useScenarioDeckStore(s => s.decks);
   const insertStep = useScenarioDeckStore(s => s.insertStep);
   const deckId = decks[0]?.id ?? "browser-stage";
@@ -137,7 +137,7 @@ export function BrowserPanel() {
   return <div className="flex flex-col h-full" style={{ background: "#0f172a", color: "#e2e8f0", fontFamily: "Golos UI, sans-serif" }}>
     {/* Status bar */}
     <div className="flex items-center gap-2 px-3 h-9 shrink-0" style={{ borderBottom: "1px solid #1e293b" }}>
-      {c ? <><div className="w-2 h-2 rounded-full" style={{ background: "#22c55e", boxShadow: "0 0 4px #22c55e" }} /><Link2 className="size-3" style={{ color: "#22c55e" }} /><span className="text-xs font-medium" style={{ color: "#22c55e" }}>CDP</span></> : <><div className="w-2 h-2 rounded-full" style={{ background: "#ef4444" }} /><Unlink className="size-3" style={{ color: "#ef4444" }} /><span className="text-xs" style={{ color: "#ef4444" }}>Нет CDP</span></>}
+      {c ? <><div className="w-2 h-2 rounded-full" style={{ background: "#22c55e", boxShadow: "0 0 4px #22c55e" }} /><Link2 className="size-3" style={{ color: "#22c55e" }} /><span className="text-xs font-medium" style={{ color: "#22c55e" }}>Authoring</span></> : <><div className="w-2 h-2 rounded-full" style={{ background: "#ef4444" }} /><Unlink className="size-3" style={{ color: "#ef4444" }} /><span className="text-xs" style={{ color: "#ef4444" }}>Нет браузера</span></>}
       <div className="flex-1" />{loading && <Loader2 className="size-3 animate-spin" style={{ color: "#38bdf8" }} />}
       {playing && <span className="text-[10px] text-cyan-400 font-mono">Step {playStep}/{steps.length}</span>}
       <span className="text-[10px] truncate max-w-[180px]" style={{ color: "#64748b" }}>{status.title || navUrl}</span>
@@ -209,7 +209,7 @@ export function BrowserPanel() {
       ) : (
         <div className="flex flex-col items-center justify-center h-full gap-2" style={{ color: "#475569" }}>
           <Globe className="size-8 opacity-30" />
-          <span className="text-xs">{c ? "Нажми «Запустить» для загрузки страницы" : "CDP Chrome не подключён (:9222)"}</span>
+          <span className="text-xs">{c ? "Нажми «Запустить» для загрузки страницы" : "Authoring browser не подключён"}</span>
         </div>
       )}
     </div>

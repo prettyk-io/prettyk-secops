@@ -94,7 +94,7 @@ import {
 import type { FindingRecord, EvidenceRecord, RunRecord } from '../ci/types';
 
 // ── B4 (STU-RAILS): инженерная проекция — PrettyK-язык (autocomplete/diagnostics).
-// Monaco инициализируется один раз на модуль (идемпотентно), как в StudioV2.
+// Monaco инициализируется один раз на модуль (идемпотентно), как в Studio.
 const monaco = setupMonaco();
 registerConstructorLanguageFeatures(monaco);
 registerScriptLanguageFeatures(monaco);
@@ -1132,6 +1132,7 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
               embedded={true}
               cdpConnected={recorderState.cdpConnected}
               cdpObserving={recorderState.recording}
+              recorderError={recorderState.error}
             />
             {/* POC-CDP-2/3: Proposal banner */}
             {recorderState.ambiguous && (

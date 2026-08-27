@@ -1,7 +1,9 @@
 ﻿# -*- coding: utf-8 -*-
 """Lightweight authoring browser service for Studio Browser Panel.
 
-Manages a Playwright headed Chromium (headless=False).
+Manages a Playwright headless Chromium (headless=True) — браузер живёт ВНУТРИ
+Playground, рендер скриншотами, клики оператора по картинке → координаты →
+page.mouse.click. Никаких окон на десктопе.
 Used by the /api/browser/* endpoints in data_playground.py.
 """
 from __future__ import annotations
@@ -10,6 +12,8 @@ import base64
 import io
 import logging
 import threading
+import time
+import uuid
 from typing import Optional
 
 logger = logging.getLogger("orchestrator.browser")
@@ -20,15 +24,18 @@ _pw: Optional[object] = None
 _browser_obj: Optional[object] = None
 _connected = False
 
+_browser_id: str | None = None
+
 
 def _get_page():
-    """Lazy-launch authoring browser (Playwright headed).
+    """Lazy-launch authoring browser (Playwright headless).
 
-    Это браузер АВТОРИНГА в Editor: оператор руками кликает, observe
-    захватывает клики → DSL. НЕ execution (то живёт в Studio через Grid/noVNC)
-    и НЕ агентский browser-hands-pure.
+    Это браузер АВТОРИНГА в Editor: headless-процесс внутри Playground,
+    рендер скриншотами, клик оператора по картинке → координаты →
+    page.mouse.click → реальный DOM click → observe → DSL. НЕ execution
+    (то живёт в Studio через Grid/noVNC) и НЕ агентский browser-hands-pure.
     """
-    global _page, _pw, _browser_obj, _connected
+    global _page, _pw, _browser_obj, _connected, _browser_id
 
     # Return cached page if browser is still alive
     if _page is not None:
@@ -43,10 +50,10 @@ def _get_page():
         import playwright.sync_api as pw
 
         _pw = pw.sync_playwright().start()
-        # Headed: оператор видит живое окно и кликает руками.
+        # HDO-B1: headless — никаких окон на десктопе оператора.
         _browser_obj = _pw.chromium.launch(
-            headless=False,
-            args=["--no-sandbox", "--disable-gpu"],
+            headless=True,
+            args=["--no-sandbox"],
         )
         ctx = _browser_obj.new_context(
             viewport={"width": 1280, "height": 800},
@@ -54,7 +61,8 @@ def _get_page():
         )
         _page = ctx.new_page()
         _connected = True
-        logger.info("browser_service: launched authoring Chromium (headed 1280x800)")
+        _browser_id = f"authoring-{uuid.uuid4().hex[:12]}"
+        logger.info("browser_service: launched authoring Chromium (headless 1280x800)")
         return _page
     except Exception as e:
         logger.warning("browser_service: Chromium launch failed: %s", e)
@@ -68,14 +76,42 @@ def browser_status() -> dict:
     with _lock:
         page = _get_page()
         if page is None:
-            return {"ok": True, "connected": False, "url": None, "title": None}
+            return {
+                "ok": True,
+                "connected": False,
+                "url": None,
+                "title": None,
+                "browserId": None,
+                "purpose": "authoring",
+                "transport": "playwright",
+                "headless": True,
+            }
 
         try:
             url = page.evaluate("window.location.href")
             title = page.evaluate("document.title")
-            return {"ok": True, "connected": True, "url": url, "title": title}
+            return {
+                "ok": True,
+                "connected": True,
+                "url": url,
+                "title": title,
+                "browserId": _browser_id,
+                "purpose": "authoring",
+                "transport": "playwright",
+                "headless": True,
+            }
         except Exception as e:
-            return {"ok": True, "connected": False, "url": None, "title": None, "error": str(e)}
+            return {
+                "ok": True,
+                "connected": False,
+                "url": None,
+                "title": None,
+                "browserId": _browser_id,
+                "purpose": "authoring",
+                "transport": "playwright",
+                "headless": True,
+                "error": str(e),
+            }
 
 
 def browser_navigate(url: str) -> dict:
@@ -622,22 +658,81 @@ def browser_observe_event() -> dict:
         return {"ok": True, "connected": True, "observing": True, "event": None}
 
 
-def browser_context_ensure() -> dict:
-    """POST /api/browser/context/ensure — no-op (одна глобальная страница).
+def browser_observe_click(x: float, y: float) -> dict:
+    """POST /api/browser/observe/click — клик по скриншоту → реальный DOM click.
 
-    Фронт вызывает ensure перед observe; изоляции контекстов нет — страница
-    глобальная, ensure лишь гарантирует, что браузер поднят.
+    HDO-B2: оператор кликает по картинке (рендер скриншотом), фронт шлёт
+    координаты в масштабе viewport. Здесь `page.mouse.click(x, y)` производит
+    реальный DOM click, который ловится существующим
+    `document.addEventListener('click')` + `expose_binding` → `_on_click` →
+    очередь. Событие достаётся через `browser_observe_event`.
+
+    ВАЖНО: НЕ держим `_lock` во время `page.mouse.click` — sync Playwright
+    синхронно дёргает `expose_binding` → `_on_click` → `_lock` (threading.Lock
+    не reentrant → deadlock при повторном входе).
+
+    RACE FIX: `expose_binding` колбэк выполняется на dispatcher-потоке Playwright
+    АСИНХРОННО — `page.mouse.click()` возвращается раньше, чем `_on_click`
+    успевает положить событие в очередь. Поэтому после клика ждём появления
+    события в `_observed_events` (короткий дедлайн), не полагаясь на тайминг.
+    """
+    global _observe_active, _observed_events
+    if not _observe_active:
+        return {"ok": False, "error": "observe not active — call observe/start first"}
+    page = _observe_page
+    if page is None:
+        return {"ok": False, "error": "browser not available"}
+
+    try:
+        # move() перед click() обязателен: без предварительного движения мыши
+        # Playwright на свежем viewport может не пройти hit-test и mouse.click
+        # не диспатчит DOM click (проверено на реальном headless Chromium).
+        page.mouse.move(float(x), float(y))
+        page.mouse.click(float(x), float(y))
+        logger.info("browser_observe_click: click at (%.1f, %.1f)", x, y)
+
+        # Ждём асинхронный binding-колбэк: событие попадает в очередь с задержкой.
+        deadline = time.time() + 2.0
+        while time.time() < deadline:
+            with _lock:
+                if _observed_events:
+                    break
+            time.sleep(0.02)
+
+        return {"ok": True, "x": x, "y": y, "queued": bool(_observed_events)}
+    except Exception as e:
+        return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+
+
+def browser_context_ensure(context: str = "operator", url: str | None = None) -> dict:
+    """Ensure the Studio authoring Browser object exists.
+
+    There is one authoring context for now. The explicit context contract keeps
+    it separate from execution and from the external browser-hands CDP tool.
     """
     with _lock:
         page = _get_page()
         if page is None:
             return {"ok": False, "error": "browser not available"}
-        return {"ok": True}
+        if url and url != "about:blank":
+            try:
+                if page.url == "about:blank":
+                    page.goto(url, timeout=8000, wait_until="domcontentloaded")
+            except Exception as e:
+                return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+        return {
+            "ok": True,
+            "context": context,
+            "contextId": f"{_browser_id}:operator",
+            "browserId": _browser_id,
+            "purpose": "authoring",
+            "transport": "playwright",
+        }
 
 
 def browser_context_destroy() -> dict:
     """POST /api/browser/context/destroy — закрыть страницу и браузер."""
-    global _page, _browser_obj, _connected
+    global _page, _browser_obj, _connected, _browser_id
     with _lock:
         if _page is not None:
             try:

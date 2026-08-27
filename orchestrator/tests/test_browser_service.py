@@ -502,3 +502,255 @@ def test_browser_context_destroy_closes_page():
     page.close.assert_called_once()
     assert bs._page is None
     assert bs._connected is False
+
+
+# ── HDO-B1: headless launch ─────────────────────────────────────────────────
+
+
+def test_get_page_launches_headless():
+    """HDO-B1: _get_page использует headless=True (без окна на десктопе)."""
+    import browser.browser_service as bs
+    from unittest.mock import MagicMock, patch
+
+    # Техдолг: _inject_mock_page в других тестах не вызывает stop() — патч
+    # _get_page утекает на следующие тесты. Снимаем утечки, чтобы тестировать
+    # реальную логику headless-запуска, а не перехваченный фейк.
+    patch.stopall()
+    bs._page = None
+    bs._pw = None
+    bs._browser_obj = None
+
+    fake_browser = MagicMock()
+    fake_ctx = MagicMock()
+    fake_page = MagicMock()
+    fake_browser.new_context.return_value = fake_ctx
+    fake_ctx.new_page.return_value = fake_page
+
+    fake_pw_instance = MagicMock()
+    fake_pw_instance.chromium.launch.return_value = fake_browser
+
+    fake_sync = MagicMock()
+    fake_sync.return_value.start.return_value = fake_pw_instance
+
+    try:
+        with patch("playwright.sync_api.sync_playwright", new=fake_sync):
+            result = bs._get_page()
+
+        assert result is fake_page
+        # headless=True — критично: никаких окон на десктопе
+        launch_kwargs = fake_pw_instance.chromium.launch.call_args
+        assert launch_kwargs[1].get("headless") is True
+        # viewport 1280x800 через new_context
+        ctx_kwargs = fake_browser.new_context.call_args[1]
+        assert ctx_kwargs.get("viewport") == {"width": 1280, "height": 800}
+    finally:
+        bs._page = None
+        bs._pw = None
+        bs._browser_obj = None
+
+
+# ── HDO-B2: observe/click → page.mouse.click ────────────────────────────────
+
+
+def test_observe_click_requires_observe_active():
+    """browser_observe_click без observe/start → честный fail."""
+    import browser.browser_service as bs
+
+    bs._observe_active = False
+    bs._observe_page = _mock_page()
+
+    result = bs.browser_observe_click(10.0, 20.0)
+    assert result["ok"] is False
+    assert "observe not active" in result.get("error", "")
+
+
+def test_observe_click_dispatches_mouse_click():
+    """browser_observe_click вызывает page.mouse.move + page.mouse.click(x, y)."""
+    import browser.browser_service as bs
+
+    page = _mock_page()
+    page.mouse = MagicMock()
+    page.mouse.move = MagicMock()
+    page.mouse.click = MagicMock()
+
+    bs._observe_active = True
+    bs._observe_page = page
+
+    result = bs.browser_observe_click(640.0, 400.0)
+    assert result["ok"] is True
+    page.mouse.move.assert_called_once_with(640.0, 400.0)
+    page.mouse.click.assert_called_once_with(640.0, 400.0)
+    bs._observe_active = False
+    bs._observe_page = None
+
+
+def test_observe_click_no_browser():
+    """browser_observe_click без браузера → честный fail."""
+    import browser.browser_service as bs
+
+    bs._observe_active = True
+    bs._observe_page = None
+
+    result = bs.browser_observe_click(10.0, 20.0)
+    assert result["ok"] is False
+    assert "browser not available" in result.get("error", "")
+    bs._observe_active = False
+
+
+# ── HDO-B3: enrich в headless — неоднозначный блокирует auto-apply ──────────
+
+
+def test_enrich_ambiguous_candidate_blocks_auto_apply():
+    """HDO-B3: weak non-unique candidate → isAmbiguous=True (блокирует auto-apply)."""
+    import browser.browser_service as bs
+    from unittest.mock import patch
+
+    bs._observe_page = None
+
+    evt = {
+        "eventId": "cdp-1",
+        "timestamp": 0.0,
+        "action": "click",
+        "element": {"tag": "div", "id": "", "text": "Click",
+                    "rect": {"x": 0, "y": 0, "w": 80, "h": 32}},
+    }
+    # weak non-unique candidate (score < 0.7, unique=False)
+    with patch("utils.discovery_candidate_builder.build_candidates") as mock_build:
+        mock_build.return_value = [{"candidates": [
+            {"kind": "css", "value": "div", "score": 0.4, "tier": "T3", "unique": False}
+        ]}]
+        bs._enrich_observed_event(evt)
+
+    assert evt["isAmbiguous"] is True
+
+
+def test_enrich_unique_candidate_not_ambiguous():
+    """HDO-B3: unique strong candidate → isAmbiguous=False."""
+    import browser.browser_service as bs
+    from unittest.mock import patch
+
+    bs._observe_page = None
+
+    evt = {
+        "eventId": "cdp-1",
+        "timestamp": 0.0,
+        "action": "click",
+        "element": {"tag": "button", "id": "submit", "text": "Submit",
+                    "rect": {"x": 0, "y": 0, "w": 80, "h": 32}},
+    }
+    with patch("utils.discovery_candidate_builder.build_candidates") as mock_build:
+        mock_build.return_value = [{"candidates": [
+            {"kind": "css", "value": "#submit", "score": 0.9, "tier": "T1", "unique": True}
+        ]}]
+        bs._enrich_observed_event(evt)
+
+    assert evt["isAmbiguous"] is False
+
+
+# ── HDO-B5: сквозной integration-тест БЕЗ моков на Playwright-уровне ────────
+
+
+def _real_headless_page():
+    """Поднять реальный headless Chromium. Вернуть (page, error_msg).
+
+    Если Chromium недоступен — вернуть (None, reason) для skip.
+    """
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError as e:
+        return None, f"playwright not installed: {e}"
+
+    pw = None
+    try:
+        pw = sync_playwright().start()
+        browser = pw.chromium.launch(headless=True, args=["--no-sandbox"])
+        ctx = browser.new_context(viewport={"width": 1280, "height": 800})
+        page = ctx.new_page()
+        # сохранить ссылку на pw/browser чтобы не собирались GC
+        page._pw_holder = pw
+        page._browser_holder = browser
+        page._ctx_holder = ctx
+        return page, None
+    except Exception as e:
+        if pw is not None:
+            try:
+                pw.stop()
+            except Exception:
+                pass
+        return None, f"chromium unavailable: {e}"
+
+
+@pytest.mark.integration
+def test_headless_observe_click_end_to_end():
+    """HDO-B5: navigate → observe/click {x,y} → mouse.click → event(candidates).
+
+    БЕЗ моков на Playwright-уровне: реальный headless Chromium, реальный DOM.
+    Клик по кнопке с data-testid по известным координатам → observe ловит
+    событие с candidates. event: null не возвращается.
+    """
+    import browser.browser_service as bs
+
+    page, reason = _real_headless_page()
+    if page is None:
+        pytest.skip(reason)
+
+    original_get_page = bs._get_page
+    original_page = bs._page
+    original_browser_obj = bs._browser_obj
+    original_pw_obj = bs._pw
+    original_connected = bs._connected
+    try:
+        # Подмена _get_page → реальная headless-страница
+        bs._get_page = lambda: page
+        # Сброс глобального состояния (утечка от unit-тестов → моки/мёртвые page)
+        bs._page = None
+        bs._connected = False
+        bs._browser_obj = None
+        bs._pw = None
+        bs._observe_active = False
+        bs._observe_page = None
+        bs._observed_events.clear()
+
+        # 1) navigate на data: URL с кнопкой по фиксированным координатам
+        html = """<html><body style="margin:0">
+            <button id="go" data-testid="go-btn"
+                style="position:absolute; left:10px; top:10px; width:100px; height:40px;">
+              Go
+            </button>
+        </body></html>"""
+        import base64
+        data_url = "data:text/html;base64," + base64.b64encode(html.encode()).decode()
+        page.goto(data_url, wait_until="domcontentloaded")
+
+        # 2) observe start (инжектит слушатель + expose_binding)
+        start = bs.browser_observe_start()
+        assert start.get("ok") is True
+
+        # 3) observe/click по координатам кнопки (центр ~60,30)
+        click = bs.browser_observe_click(60.0, 30.0)
+        assert click.get("ok") is True, f"click failed: {click}"
+
+        # 4) event не null, с candidates
+        result = bs.browser_observe_event()
+        assert result.get("ok") is True
+        assert result.get("event") is not None, "event: null — клик потерялся"
+        evt = result["event"]
+        assert evt["action"] == "click"
+        assert isinstance(evt.get("candidates"), list)
+        assert len(evt["candidates"]) > 0
+
+        # 5) stop
+        bs.browser_observe_stop()
+    finally:
+        bs._get_page = original_get_page
+        bs._page = original_page
+        bs._browser_obj = original_browser_obj
+        bs._pw = original_pw_obj
+        bs._connected = original_connected
+        bs._observe_active = False
+        bs._observed_events.clear()
+        try:
+            page._browser_holder.close()
+            page._pw_holder.stop()
+        except Exception:
+            pass

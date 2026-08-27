@@ -818,9 +818,27 @@ class Handler(BaseHTTPRequestHandler):
         from browser.browser_service import browser_observe_event
         self._json(200, browser_observe_event())
 
-    def _post_browser_context_ensure(self, _body: dict) -> None:
+    def _post_browser_observe_click(self, body: dict) -> None:
+        from browser.browser_service import browser_observe_click
+        try:
+            x = float(body.get("x"))
+            y = float(body.get("y"))
+        except (TypeError, ValueError):
+            self._json(400, {"ok": False, "error": "x and y required (numbers)"})
+            return
+        self._json(200, browser_observe_click(x, y))
+
+    def _post_browser_context_ensure(self, body: dict) -> None:
         from browser.browser_service import browser_context_ensure
-        self._json(200, browser_context_ensure())
+        context = body.get("context")
+        url = body.get("url")
+        self._json(
+            200,
+            browser_context_ensure(
+                context=context if isinstance(context, str) and context else "operator",
+                url=url if isinstance(url, str) and url else None,
+            ),
+        )
 
     def _post_browser_context_destroy(self, _body: dict) -> None:
         from browser.browser_service import browser_context_destroy
@@ -905,6 +923,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/browser/observe/start": self._post_browser_observe_start,
             "/api/browser/observe/stop": self._post_browser_observe_stop,
             "/api/browser/observe/event": self._post_browser_observe_event,
+            "/api/browser/observe/click": self._post_browser_observe_click,
             "/api/browser/context/ensure": self._post_browser_context_ensure,
             "/api/browser/context/destroy": self._post_browser_context_destroy,
             "/api/monitor/token": self._post_monitor_token,

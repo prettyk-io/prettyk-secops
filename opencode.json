@@ -10,9 +10,7 @@
     "opencode-background-agents"
   ],
   "compaction": {
-    "auto": true,
-    "preserve_recent_tokens": 15000,
-    "reserved": 8000
+    "auto": false
   },
   "agent": {
     "build": { "disable": true }

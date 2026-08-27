@@ -62,11 +62,6 @@ export function parseHash(hash: string): HashRoute {
   if (head === 'studio' || head === 'workbench') {
     return { kind: 'studio', checkId: parts[1] };
   }
-  if (head === 'studio-v2') {
-    // STU-RAILS: публичный -v2 маршрут после переезда не используется.
-    // Перенаправляем на канонический #/checks/<id>/studio через legacy alias.
-    return { kind: 'studio', checkId: parts[1] };
-  }
   if (head === 'design-playground') {
     return { kind: 'design-playground' };
   }

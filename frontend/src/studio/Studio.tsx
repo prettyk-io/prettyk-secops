@@ -1,6 +1,6 @@
 ﻿"use client";
 /**
- * STU-V2 — Studio v2: рабочая Studio, идущая по конкретной проверке.
+ * Studio — каноническая рабочая поверхность проверки (ранее StudioV2).
  *
  * B1 — привязка к CheckInstance: checkId + initialManifest(legacy formData) + initialResources.
  * B2/B3 — живой Explorer (StudioExplorer = каноническое дерево 6 корней) + CRUD/drag-drop.
@@ -16,8 +16,9 @@ import {
 } from "lucide-react";
 import Editor from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
-import { CanvasV2 } from "./CanvasV2";
+import { Canvas } from "./Canvas";
 import { BrowserPanel } from "./BrowserPanel";
+import { StudioExplorer } from "./StudioExplorer";
 import { updateCheck } from "../checks/checksStore";
 import { saveResourceContents, type ResourceContentsMap } from "./resourceContents";
 import { collectStudioNodes, findNodeByTabId, tabFromNode } from "./collectStudioNodes";
@@ -59,7 +60,7 @@ registerScriptLanguageFeatures(monaco);
 
 type RightTab = "code" | "browser";
 
-export interface StudioV2Props {
+export interface StudioProps {
   /** Привязка к конкретной проверке (B1). undefined → честное пустое. */
   checkId?: string;
   /** Legacy formData проверки (item.wired) — для standalone mode. */
@@ -75,7 +76,7 @@ export interface StudioV2Props {
   onNavigateEditor?: () => void;
 }
 
-export function StudioV2({
+export function Studio({
   checkId,
   initialManifest,
   initialResources,
@@ -84,7 +85,7 @@ export function StudioV2({
   resourceContents: controlledResourceContents,
   onResourceContentsChange: controlledOnResourceContentsChange,
   onNavigateEditor,
-}: StudioV2Props) {
+}: StudioProps) {
   const controlled =
     controlledFormData !== undefined && controlledOnFormDataChange !== undefined;
 
@@ -173,8 +174,24 @@ export function StudioV2({
       {/* Глобальный header (бренд + переключение Студия/Редактор) — в App.tsx.
           Здесь — только навигация canvas: Сущности / Сценарии. */}
       <div className="flex-1 flex overflow-hidden">
+        {/* ── RAILS-L4: Explorer — живое дерево 6 корней (единственная навигация по сущностям) ── */}
+        <div className="shrink-0 flex flex-col overflow-hidden" style={{ width: 280, borderRight: "1px solid #1e293b", background: "#0f172a" }}>
+          <div className="flex items-center h-9 shrink-0 px-3" style={{ borderBottom: "1px solid #1e293b" }}>
+            <span className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: "#64748b" }}>Explorer</span>
+          </div>
+          <div className="flex-1 overflow-auto">
+            <StudioExplorer
+              formData={formData}
+              onFormDataChange={handleFormDataChange}
+              resourceContents={resourceContents}
+              onResourceContentsChange={handleResourceContentsChange}
+              selectedTabId={selectedTabId}
+              onSelectTab={(tabId) => setSelectedTabId(tabId)}
+            />
+          </div>
+        </div>
         <div className="flex-1 flex flex-col overflow-hidden min-w-0" style={{ borderRight: "1px solid #1e293b" }}>
-          <CanvasV2 counts={{
+          <Canvas counts={{
             pages: tree.pages.length,
             scenarios: tree.scenarios.length,
             modules: tree.modules.length,

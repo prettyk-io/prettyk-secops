@@ -65,7 +65,7 @@ import {
 } from './checks/draftRevision';
 import { consumePendingReplay, peekPendingReplay } from './checks/replayCheck';
 import type { ResourceContentsMap } from './studio/resourceContents';
-import { StudioV2 } from './studio/StudioV2';
+import { Studio } from './studio/Studio';
 import { StudioWorkspace } from './studio/StudioWorkspace';
 import { EditorWorkbench } from './workbench/EditorWorkbench';
 import { PipelineLaunchButton } from './results/PipelineLaunchButton';
@@ -955,7 +955,7 @@ export default function App({
               hidden={editorView !== 'studio'}
               aria-hidden={editorView !== 'studio'}
             >
-              <StudioV2
+              <Studio
                 checkId={checkId}
                 formData={rawFormData}
                 onFormDataChange={setFormDataClamped}

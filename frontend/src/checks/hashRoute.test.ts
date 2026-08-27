@@ -55,9 +55,9 @@ describe('hashRoute', () => {
     });
   });
 
-  it('STU-RAILS: -v2 перенаправляется на канонический studio alias', () => {
-    expect(parseHash('#/studio-v2/chk-1')).toEqual({ kind: 'studio', checkId: 'chk-1' });
-    expect(parseHash('#/studio-v2')).toEqual({ kind: 'studio', checkId: undefined });
+  it('STU-RAILS: -v2 маршрут мёртв — уходит в home (как любой неизвестный)', () => {
+    expect(parseHash('#/studio-v2/chk-1')).toEqual({ kind: 'home' });
+    expect(parseHash('#/studio-v2')).toEqual({ kind: 'home' });
   });
 
   it('formatHash симметричен', () => {

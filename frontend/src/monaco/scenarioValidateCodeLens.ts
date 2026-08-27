@@ -2,7 +2,7 @@
  * CodeLens 2.0 — «Проверить конструктор» прямо в редакторе (STU-RAILS / ED-6).
  *
  * Одна ленза на первой строке конструктора.
- * Клик → window CustomEvent 'pk-validate-constructor' → StudioV2 / EditorWorkbench
+ * Клик → window CustomEvent 'pk-validate-constructor' → Studio / EditorWorkbench
  * вызывают validateConstructorBackend() и показывают результат через markers.
  */
 import type * as monacoNs from 'monaco-editor';

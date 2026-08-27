@@ -2,7 +2,7 @@
 import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
-import { StudioV2 } from './StudioV2';
+import { Studio } from './Studio';
 
 // ── Heavy deps mocks (Monaco, CDP, buddy dock, tree, canvas) ──
 vi.mock('@monaco-editor/react', () => ({
@@ -54,8 +54,8 @@ vi.mock('./StudioExplorer', () => ({
   ),
 }));
 
-vi.mock('./CanvasV2', () => ({
-  CanvasV2: (props: { counts?: Record<string, number> }) => (
+vi.mock('./Canvas', () => ({
+  Canvas: (props: { counts?: Record<string, number> }) => (
     <div data-testid="canvas-v2" data-counts={JSON.stringify(props.counts ?? null)} />
   ),
 }));
@@ -97,7 +97,7 @@ function makeManifest(scenarioCount: number, pageCount: number) {
   };
 }
 
-describe('StudioV2 (STU-V2 B1/B2/B4)', () => {
+describe('Studio (STU-V2 B1/B2/B4)', () => {
   beforeEach(() => {
     localStorage.clear();
   });
@@ -107,21 +107,21 @@ describe('StudioV2 (STU-V2 B1/B2/B4)', () => {
   });
 
   it('B1: без проверки и манифеста — честное пустое состояние', () => {
-    render(<StudioV2 />);
+    render(<Studio />);
     expect(screen.getByText('Проверка не выбрана')).toBeDefined();
     expect(screen.queryByTestId('studio-explorer')).toBeNull();
   });
 
-  it('B1+B2: привязан к checkId — Explorer получает formData, CanvasV2 получает реальные счётчики', () => {
+  it('B1+B2: привязан к checkId — Explorer получает formData, Canvas получает реальные счётчики', () => {
     const manifest = makeManifest(2, 1);
-    render(<StudioV2 checkId="chk-12345678" initialManifest={manifest} />);
+    render(<Studio checkId="chk-12345678" initialManifest={manifest} />);
 
     // Explorer привязан именно к этому formData.
     const explorer = screen.getByTestId('studio-explorer');
     const explorerData = JSON.parse(explorer.getAttribute('data-formdata') ?? 'null');
     expect(explorerData).toEqual(manifest);
 
-    // CanvasV2 счётчики — реальные (2 сценария, 1 страница), не литералы.
+    // Canvas счётчики — реальные (2 сценария, 1 страница), не литералы.
     const canvas = screen.getByTestId('canvas-v2');
     const counts = JSON.parse(canvas.getAttribute('data-counts') ?? 'null');
     expect(counts.scenarios).toBe(2);
@@ -132,9 +132,9 @@ describe('StudioV2 (STU-V2 B1/B2/B4)', () => {
   it('B1: другая проверка — свои данные (перезагрузка formData)', () => {
     const first = makeManifest(2, 1);
     const second = makeManifest(1, 3);
-    const { rerender } = render(<StudioV2 checkId="chk-aaa" initialManifest={first} />);
+    const { rerender } = render(<Studio checkId="chk-aaa" initialManifest={first} />);
 
-    rerender(<StudioV2 checkId="chk-bbb" initialManifest={second} />);
+    rerender(<Studio checkId="chk-bbb" initialManifest={second} />);
 
     const explorer = screen.getByTestId('studio-explorer');
     const explorerData = JSON.parse(explorer.getAttribute('data-formdata') ?? 'null');
@@ -148,7 +148,7 @@ describe('StudioV2 (STU-V2 B1/B2/B4)', () => {
 
   it('B4: вкладка «Код» открывает Monaco-конструктор на языке prettyk', () => {
     const manifest = makeManifest(1, 0);
-    render(<StudioV2 checkId="chk-abc" initialManifest={manifest} />);
+    render(<Studio checkId="chk-abc" initialManifest={manifest} />);
 
     fireEvent.click(screen.getByText('Код'));
 

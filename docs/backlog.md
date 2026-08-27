@@ -658,6 +658,94 @@ owner и финальное решение.
 
 ---
 
+## 8. Эпик HDO — Headless Observe (браузер ВНУТРИ коробки) · IN PROGRESS · 27 авг 2026
+
+> **Тип:** `Plan` — переворот авторинг-браузера из «окно на десктопе» в «невидимый
+> headless-процесс + рендер скриншотами + клик по координатам». Это финально
+> закрывает CDP-WIRE Phase 1 (PROMOTE) и разблокирует BUD-E2E + STU-RAILS.
+> **Причина:** headed `chromium.launch(headless=False)` спавнит окно Chrome на
+> десктопе оператора — браузер живёт СНАРУЖИ. Коробке нужен браузер ВНУТРИ:
+> рендер в `<img>` (скриншот), клик оператора по картинке → координаты →
+> `page.mouse.click(x,y)` в headless → реальный DOM click → observe → DSL.
+> **Философия:** никаких окон на десктопе; браузер — невидимый процесс Playground;
+> рендер только скриншоты; клики только координаты.
+
+### Нарезка Boss (backend: headless launch + observe/click + enrich + Play) — 10h
+
+| ID | Что получает оператор | Приёмочный сценарий GWT (ЧИСТО) |
+|---|---|---|
+| **HDO-B1** | **Браузер невидим и живёт внутри Playground.** При старте авторинга не появляется окно Chrome на десктопе — браузер поднимается headless с заданным viewport. | **Given:** оператор жмёт Go в Browser Stage. **When:** `_get_page()` запускает браузер. **Then:** `chromium.launch(headless=True)` с `viewport={width:1280,height:800}`; на десктопе нет ни одного нового окна Chrome; `connected=true` и `url` возвращаются корректно. |
+| **HDO-B2** | **Клик по картинке = клик в браузере.** Оператор кликает по скриншоту во встроенной панели; система транслирует координаты в реальный DOM click. | **Given:** headless-браузер открыл целевую страницу, скриншот виден. **When:** фронт шлёт `{x,y}` в новый endpoint. **Then:** `page.mouse.click(x,y)` производит реальный DOM click; `document.addEventListener('click')` + `expose_binding` ловят его; событие попадает в очередь; `event: null` больше не возвращается. |
+| **HDO-B3** | **Обогащение работает в headless.** AX-нода, candidates, valueClass и isAmbiguous строятся для клика в невидимом браузере так же, как раньше для физического. | **Given:** клик пойман (HDO-B2). **When:** `browser_observe_event` достаёт событие. **Then:** у события есть `candidates` (role-first), `role`, `accessibleName`, `valueClass`, `isAmbiguous`; неоднозначный кандидат блокирует автоприменение. |
+| **HDO-B4** | **Play role/label/test_id исполняется в headless.** Записанный шаг реально выполняется невидимым браузером: `get_by_role`/`get_by_label`/`get_by_test_id`. | **Given:** сценарий с Click/Type/Open шагами. **When:** оператор жмёт Play. **Then:** `page.get_by_role`/`get_by_label`/`get_by_test_id` находят элемент в headless и кликают; `get_by_test_id` приоритетнее; после шага скриншот обновляется; Type-шаг redacted. |
+| **HDO-B5** | **Сквозной integration-тест доказывает цепочку.** `POST observe/click {x,y}` → mouse.click → observe → candidates → DSL — без моков на уровне Playwright. | **Given:** поднят Playground + headless-браузер. **When:** гоняется `test_browser_service.py` (расширен). **Then:** полный цикл `navigate → observe/click → event(candidates) → шаг` зелёный; `event: null` никогда; таймауты и обрыв соединения дают честный fail, не pass. |
+
+### Нарезка Flash (frontend: клик по <img>, proposal, Record UX, StepPill/DSL) — 9h
+
+| ID | Что получает оператор | Приёмочный сценарий GWT (ЧИСТО) |
+|---|---|---|
+| **HDO-F1** | **Клик по живой картинке.** Оператор кликает прямо по скриншоту во встроенной панели; фронт считает координаты в масштабе viewport и шлёт их на backend. | **Given:** скриншот страницы показан в Browser Stage. **When:** оператор кликает по `<img>`. **Then:** координаты вычисляются с учётом `object-contain` (letterboxing) и шлются в `/api/browser/observe/click {x,y}`; клик не уходит за пределы реальной страницы. |
+| **HDO-F2** | **Proposal Accept/Reject → DSL.** Пойманный клик превращается в reviewable proposal; Accept создаёт ровно один DSL-шаг, Reject не трогает draft. | **Given:** клик по картинке пойман (HDO-F1). **When:** фронт поллит `observe/event` и показывает proposal. **Then:** Accept (Enter) создаёт один canonical step; Reject (Esc) не меняет workspace; неоднозначный locator блокирует auto-apply; дубль не создаётся без нового Accept. |
+| **HDO-F3** | **Record UX честный.** В режиме Record виден индикатор «Recording clicks», скриншот обновляется после каждого действия, координатный клик не ломает DOM страницы. | **Given:** Record включён, headless-браузер открыт. **When:** оператор кликает по скриншоту. **Then:** индикатор пульсирует; после шага скриншот обновляется; вёрстка панели не ломается; disconnected/timeout показаны честно, не как успех. |
+| **HDO-F4** | **Один шаг — две проекции.** Принятый шаг появляется в Studio как StepPill и в Editor как DSL-строка с общим identity и provenance. | **Given:** шаг принят (HDO-F2). **When:** открыты Studio и Editor. **Then:** в Studio — StepPill с цветом действия; в Editor — DSL-строка «✨ Discovered»; общая step identity, нет двух копий. |
+
+### Приёмка HDO (Keeper)
+
+- На десктопе оператора НЕ появляется ни одного окна Chrome (headless, внутри Playground).
+- Клик по скриншоту = реальный DOM click в headless; `event: null` не возвращается.
+- AX/candidates/valueClass/isAmbiguous работают в headless; неоднозначный блокирует.
+- Play role/label/test_id исполняется headless; Type redacted.
+- Accept/Reject детерминированы; до Accept workspace не меняется; дублей нет.
+- Studio StepPill + Editor DSL — один шаг, одна identity.
+- Интеграционный тест доказывает `navigate → observe/click → event → DSL`.
+- tsc 0; точечные тесты зелёные; ни один существующий движок (Buddy 64/64, STU-V2 402/402) не регрессит.
+
+### Out of scope HDO
+
+- Live-video/streaming рендер вместо скриншот-поллинга (будущий оптимизационный эпик).
+- Полный crawler, авто-принятие шагов, все action types (только click + type + open + wait).
+- Grid/noVNC execution (`:7900`) — это Studio execution, не авторинг, не трогаем.
+
+---
+
+## 9. Эпик RAILS-PROMOTE — Canonical Rails + BUD-E2E PROMOTE · IN PROGRESS · 27 авг 2026
+
+> **Тип:** `Plan` — финальная канонизация поверхностей и PROMOTE двух PoC.
+> **Контекст:** STU-V2 (402/402) и BUD-E2E движок (64/64) уже реализованы, но живут
+> на временных маршрутах (`#/studio-v2`) и не прошли живой run. STU-RAILS (66 тестов)
+> нарезан ранее. Этот эпик сводит всё к каноническим рельсам и выдаёт PROMOTE после
+> живого CDP-run через новый headless observe (эпик HDO).
+> **Цель:** один instance id → обычные `studio`/`editor`; legacy под `-old`;
+> публичного `-v2` нет; живой run глазами оператора; PROMOTE BUD-E2E и CDP-WIRE.
+
+### Нарезка Luna (канонизация маршрутов + живой PROMOTE) — 14h
+
+| ID | Что получает оператор | Приёмочный сценарий GWT (ЧИСТО) |
+|---|---|---|
+| **RAILS-L1** | **Канонические маршруты.** Новая Studio/Editor открываются на обычных `#/checks/<id>/studio` и `#/checks/<id>/editor` по instance id; legacy доступен только под `-old`. | **Given:** две проверки. **When:** оператор открывает `#/checks/<id>/studio`. **Then:** открывается новая Studio именно этой проверки; `-old` ведёт на legacy; публичный `-v2` не используется; неизвестный id даёт честную ошибку/пустоту, не home. |
+| **RAILS-L2** | **Studio ↔ Editor — две проекции одного instance.** Переход сохраняет id, draft, выбранный документ и resource context. | **Given:** открыт документ/правка. **When:** оператор переходит Studio ↔ Editor и обратно. **Then:** тот же instance, та же сущность, тот же draft; другой id открывает другой контекст. |
+| **RAILS-L3** | **Один хедер, одна навигация.** Активная поверхность честно обозначена; двойного хедера и временного `-v2` в навигации нет. | **Given:** открыт новый `studio`/`editor`. **When:** оператор смотрит на шапку и переключается. **Then:** один хедер; активная поверхность обозначена; переход сохраняет id. |
+| **RAILS-L4** | **Explorer живой и единственный; Canvas не дублирует дерево.** | **Given:** у проверки есть сущности. **When:** раскрыт Explorer. **Then:** шесть корней с реальными сущностями; Canvas показывает рабочий граф, а не вторую копию корней со счётчиками. |
+| **RAILS-L5** | **Живой run через headless observe.** После HDO оператор гоняет `intent → skeleton → clarify → proposal → run → evidence` на одном тестовом приложении без окон на десктопе. | **Given:** тестовое приложение доступно. **When:** оператор запускает bounded run. **Then:** шаги реально выполняются headless-браузером; виден текущий шаг; Stop работает; disconnected/timeout честный fail, не pass. |
+| **RAILS-L6** | **PROMOTE CDP-WIRE + BUD-E2E + STU-V2.** После зелёного живого run канонические рельсы и PoC движки признаются production-ready; временные маршруты и mock-фолбэки уходят из пользовательского пути. | **Given:** RAILS-L1..L5 зелёные. **When:** Keeper проводит приёмку. **Then:** `studio`/`editor` каноничны; live run доказан evidence; PASS только при доказанных assertions; plaintext-секретов нет; вердикт PROMOTE зафиксирован в бэклоге. |
+
+### Приёмка RAILS-PROMOTE (Keeper)
+
+- `studio`/`editor` каноничны, `-old` legacy, `-v2` нет в публичном пути.
+- Studio ↔ Editor сохраняет instance id, draft, документ, resource context.
+- Один хедер; Explorer единственный; Canvas не дублирует дерево.
+- Живой run (headless observe) доказан: клик → event → proposal → Accept → run → evidence.
+- PASS только по доказанным assertions; Stop/отключение не маскируются под успех.
+- PROMOTE выдаётся после зелёной приёмки; tsc 0; Buddy/STU-V2/фундамент не регрессируют.
+
+### Out of scope RAILS-PROMOTE
+
+- Удаление legacy-кода/маршрутов (отдельная команда владельца).
+- Новый функциональный долив вне STU-V2 (уже сдан).
+- Полный redesign Sanctuary Map; AI provider; автономный AI-оператор.
+
+---
+
 ## ⛔ Стены и ограничения (Железобетон)
 
 1. **Gate A — строгий рубеж:** ни один декоративный компонент не должен подменять живой `CheckWorkspace` / `formData`.

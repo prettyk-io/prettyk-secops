@@ -34,6 +34,13 @@ export interface BrowserSessionStatus {
   contexts: BrowserContextKind[];
   /** Версия браузера / Chrome. */
   browserVersion?: string;
+  /** Stable identity of the internal Studio authoring browser object. */
+  browserId?: string | null;
+  /** This session is for authoring, never execution. */
+  purpose?: 'authoring';
+  /** Internal Playwright transport, not external browser-hands CDP. */
+  transport?: 'playwright';
+  headless?: boolean;
 }
 
 /** Результат навигации. */
@@ -104,7 +111,7 @@ export class BrowserSession {
     } catch {
       this.connected = false;
       this.notify();
-      return { ok: true, connected: false, contexts: [] };
+      return { ok: true, connected: false, contexts: [], purpose: 'authoring', transport: 'playwright' };
     }
   }
 
@@ -241,6 +248,18 @@ export class BrowserSession {
       return await this.fetchJson('/api/browser/observe/event', { method: 'POST', body: '{}' });
     } catch {
       return { ok: false, connected: false, observing: false, event: null };
+    }
+  }
+
+  /** HDO-F1: Отправить координаты клика headless-браузеру (page.mouse.click). */
+  async observeClick(x: number, y: number): Promise<{ ok: boolean; error?: string }> {
+    try {
+      return await this.fetchJson('/api/browser/observe/click', {
+        method: 'POST',
+        body: JSON.stringify({ x, y }),
+      });
+    } catch {
+      return { ok: false, error: 'observe/click failed' };
     }
   }
 }
