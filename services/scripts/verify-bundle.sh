@@ -2,6 +2,9 @@
 # PrettyK Pure — integrity check for airgap bundle.
 #
 # Сверяет sha256 контрольные суммы всех файлов с checksums.sha256.
+#   1. Целостность всех файлов (SHA256).
+#   2. Наличие всех обязательных директорий (images/, compose/, scripts/).
+#   3. Отсутствие незапечённых ссылок на внешние ресурсы в compose.
 # Запускать на целевой машине ПЕРЕД install.sh.
 #
 #   ./scripts/verify-bundle.sh
@@ -57,6 +60,28 @@ done < "$CHECKSUM_FILE"
 
 echo "---"
 echo "Matched: $MATCH_COUNT  Failed: $FAIL_COUNT"
+
+# Дополнительная проверка: compose-файлы не содержат внешних URL.
+echo ""
+echo "[verify] compose integrity — no external URLs in build context"
+
+if grep -qE '(https?://|pip install|npm install|playwright install)' "$BUNDLE_ROOT"/compose/*.yml 2>/dev/null; then
+    echo "FAIL: compose-файлы содержат внешние ссылки (запрещено для airgap)"
+    FAIL_COUNT=$((FAIL_COUNT + 1))
+else
+    echo "  compose clean — no external URLs"
+fi
+
+# Проверка наличия всех обязательных директорий.
+for dir in images compose scripts; do
+    if [ ! -d "$BUNDLE_ROOT/$dir" ]; then
+        echo "FAIL: directory $dir/ missing"
+        FAIL_COUNT=$((FAIL_COUNT + 1))
+    fi
+done
+
+echo "---"
+echo "Final: Matched=$MATCH_COUNT  Failed=$FAIL_COUNT"
 
 if [ "$FAIL_COUNT" -gt 0 ]; then
     exit 1

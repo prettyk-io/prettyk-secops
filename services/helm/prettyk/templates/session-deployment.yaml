@@ -1,5 +1,8 @@
 # Session deployment template — используется pk-control для создания сессий.
 # Не применяется helm install напрямую; генерится провайдером через helm template.
+#
+# Upgrade-safe: RollingUpdate (default) — helm upgrade не рвёт живые сессии.
+# Pod заменяется только при изменении spec.template.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -7,8 +10,15 @@ metadata:
   labels:
     {{- include "prettyk.session.labels" . | nindent 4 }}
     com.prettyk.component: {{ .Values.component | quote }}
+  annotations:
+    helm.sh/resource-policy: keep
 spec:
   replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   selector:
     matchLabels:
       com.prettyk.session-id: {{ .Values.sessionId | default "unknown" }}
@@ -20,6 +30,7 @@ spec:
         com.prettyk.component: {{ .Values.component | quote }}
         com.prettyk.generation: {{ .Values.generation | default "1" | quote }}
     spec:
+      terminationGracePeriodSeconds: 30
       containers:
         - name: {{ .Values.component }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"

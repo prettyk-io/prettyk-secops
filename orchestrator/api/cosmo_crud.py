@@ -1,4 +1,4 @@
-"""
+"""# PoC — NOT production. Cosmoport boundary. Do not import into DAST runtime.
 COS-B3: FastAPI CRUD API для Cosmoport Domain Model.
 
 Эндпоинты:

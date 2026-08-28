@@ -2886,11 +2886,11 @@ class Controller:
             return scanner._as_timeout_minutes(
                 timeout, getattr(scanner, "active_scan_timeout", 30)
             )
-        if action == "crawl":
+        if action in {"spider_scan", "spider_scan_spa", "spider_scan_deep", "spider_scan_local"}:
             _, _, timeout, _ = scanner._normalize_spider_scan_args(
                 url, ctx, timeout, params.get("logout_avoidance")
             )
-            return scanner._as_timeout_minutes(timeout, getattr(scanner, "crawl_timeout", 5))
+            return scanner._as_timeout_minutes(timeout, getattr(scanner, "spider_timeout", 5))
         if action == "passive_scan_wait":
             if timeout in (None, ""):
                 return 5

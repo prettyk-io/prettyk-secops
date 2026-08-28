@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Playwright SPA/State Crawler Core (CRAWL-1, CRAWL-5, CRAWL-8)."""
+"""Playwright SPA/State Crawler Core (CRAWL-1, CRAWL-5, CRAWL-8, CRAWL-9)."""
 from __future__ import annotations
 
 import collections
@@ -21,6 +21,8 @@ from crawler.models import (
     CrawlerState,
     CrawlerTransition,
     NetworkDeltaEntry,
+    PersonaAccessRecord,
+    PersonaConfig,
 )
 from crawler.state_fingerprint import compute_state_fingerprint, extract_route
 from crawler.ui_awakening import run_ui_awakening
@@ -58,6 +60,9 @@ class SPACrawler:
         self._network_buffer: List[NetworkDeltaEntry] = []
         self._console_errors: List[str] = []
         self._page_errors: List[str] = []
+        # CRAWL-9: multi-persona access records
+        self.access_records: List[PersonaAccessRecord] = []
+        self._active_persona: Optional[PersonaConfig] = None
 
     def _attach_page_listeners(self, page: Any) -> None:
         """Attach network & console listeners to Playwright page."""
@@ -129,6 +134,25 @@ class SPACrawler:
                 page.wait_for_load_state("domcontentloaded", timeout=timeout)
             except Exception:
                 pass
+
+    def _record_persona_access(self, url: str, status: int, redirected_to: str = "") -> None:
+        """CRAWL-9: записать результат доступа persona к URL."""
+        if self._active_persona is None:
+            return
+        access = "accessible"
+        if 400 <= status < 500:
+            access = "blocked"
+        elif 300 <= status < 400:
+            access = "redirected"
+        record = PersonaAccessRecord(
+            persona_name=self._active_persona.name,
+            persona_hash=self._active_persona.persona_hash(),
+            url=url,
+            status=status,
+            access_result=access,
+            redirected_to=redirected_to,
+        )
+        self.access_records.append(record)
 
     def _extract_dom_metadata(self, page: Any) -> Dict[str, Any]:
         """Extract visible headings, dialogs, active tabs, and form fields via evaluate."""
@@ -261,10 +285,13 @@ class SPACrawler:
         # Initial navigation to seed
         if page is not None:
             try:
-                page.goto(self.config.target_url, timeout=self.config.action_timeout_ms)
+                resp = page.goto(self.config.target_url, timeout=self.config.action_timeout_ms)
+                if resp is not None:
+                    self._record_persona_access(self.config.target_url, resp.status)
                 self._settle(page)
             except Exception as exc:
                 logger.error("Crawler seed navigation failed: %s", exc)
+                self._record_persona_access(self.config.target_url, 0, redirected_to="")
                 return CrawlerRunResult(
                     session_id=self.session_id,
                     target_url=self.config.target_url,
@@ -294,13 +321,18 @@ class SPACrawler:
                 if not replay_res.success:
                     logger.warning("Replay chain failed, falling back to direct navigation: %s", replay_res.diverged_reason)
                     try:
-                        page.goto(item.url, timeout=self.config.action_timeout_ms)
+                        resp = page.goto(item.url, timeout=self.config.action_timeout_ms)
+                        if resp is not None:
+                            self._record_persona_access(item.url, resp.status)
                         self._settle(page)
                     except Exception:
+                        self._record_persona_access(item.url, 0)
                         continue
             elif page is not None and item.url != page.url:
                 try:
-                    page.goto(item.url, timeout=self.config.action_timeout_ms)
+                    resp = page.goto(item.url, timeout=self.config.action_timeout_ms)
+                    if resp is not None:
+                        self._record_persona_access(item.url, resp.status)
                     self._settle(page)
                 except Exception:
                     continue
@@ -420,4 +452,142 @@ class SPACrawler:
             service_map_dict=self.service_map.to_dict(),
             awakened_endpoints=self.awakened_endpoints,
             blocked_actions_count=self.blocked_actions_count,
+            access_records=list(self.access_records),
         )
+
+    # ── CRAWL-9: Multi-persona crawl ──
+
+    def crawl_multi_persona(self, browser: Any) -> Dict[str, CrawlerRunResult]:
+        """Обойти приложение под каждой persona из config.personas.
+
+        Каждая persona получает изолированный BrowserContext, независимый граф
+        состояний и собственный набор access records.
+
+        Если config.personas пуст — запускает обычный crawl() без persona-контекста.
+
+        Args:
+            browser: Playwright Browser instance (sync).
+
+        Returns:
+            ``{persona_name -> CrawlerRunResult}``. Ключ ``"__anonymous__"``
+            используется если personas не заданы, но нужен один прогон.
+        """
+        if not self.config.personas:
+            # Single run without persona — just use default context
+            context = browser.new_context(**self.config.context_options)
+            page = context.new_page()
+            try:
+                result = self.crawl(page)
+            finally:
+                context.close()
+            return {"__anonymous__": result}
+
+        results: Dict[str, CrawlerRunResult] = {}
+        target_urls: Set[str] = set()
+
+        for persona_cfg in self.config.personas:
+            # Создаём изолированный BrowserContext под persona
+            ctx_opts = dict(self.config.context_options)
+            if persona_cfg.viewport:
+                ctx_opts.setdefault("viewport", persona_cfg.viewport)
+
+            context = browser.new_context(**ctx_opts)
+
+            # Применяем cookies если заданы
+            if persona_cfg.cookies:
+                cookie_list = [
+                    {"name": k, "value": v, "url": self.config.target_url}
+                    for k, v in persona_cfg.cookies.items()
+                ]
+                try:
+                    context.add_cookies(cookie_list)
+                except Exception:
+                    pass
+
+            # Устанавливаем extra headers через route interception
+            if persona_cfg.headers:
+                def _set_headers(route):
+                    headers = dict(route.request.headers)
+                    headers.update(persona_cfg.headers)
+                    route.continue_(headers=headers)
+
+                try:
+                    context.route("**/*", _set_headers)
+                except Exception:
+                    pass
+
+            page = context.new_page()
+
+            # Создаём новый экземпляр SPACrawler для изоляции графов
+            persona_crawler = SPACrawler(self.config)
+            persona_crawler.session_id = f"{self.session_id}_{persona_cfg.persona_hash()}"
+            persona_crawler._active_persona = persona_cfg
+
+            try:
+                # Если есть auth_chain — выполняем его перед краулом
+                if persona_cfg.auth_chain:
+                    for step in persona_cfg.auth_chain:
+                        try:
+                            # Простая навигация по шагам auth-цепочки
+                            # (в реальном рантайме здесь был бы MethodId.resolve)
+                            if step.startswith("http"):
+                                resp = page.goto(step, timeout=self.config.action_timeout_ms)
+                                persona_crawler._settle(page)
+                            else:
+                                # Пропускаем не-url шаги — они требуют полноценного MethodId
+                                pass
+                        except Exception:
+                            pass
+
+                result = persona_crawler.crawl(page)
+                results[persona_cfg.name] = result
+                # Собираем URLs для access matrix
+                for state in result.states:
+                    target_urls.add(state.url)
+
+            finally:
+                try:
+                    context.close()
+                except Exception:
+                    pass
+
+        return results
+
+    def build_access_matrix(
+        self, results: Dict[str, CrawlerRunResult]
+    ) -> Dict[str, Dict[str, str]]:
+        """CRAWL-9: построить матрицу доступности persona × URL.
+
+        Returns:
+            ``{persona_name: {url: accessible|blocked|redirected}}``.
+            Только URL, которые были хотя бы у одной persona.
+        """
+        matrix: Dict[str, Dict[str, str]] = {}
+
+        # Собираем все уникальные URL
+        all_urls: Set[str] = set()
+        for result in results.values():
+            for rec in result.access_records if hasattr(result, 'access_records') else []:
+                all_urls.add(rec.url)
+            for state in result.states:
+                all_urls.add(state.url)
+
+        for persona_name, result in results.items():
+            row: Dict[str, str] = {}
+            for url in sorted(all_urls):
+                # Ищем запись доступа для этой persona+url
+                access = "unknown"
+                for rec in result.access_records:
+                    if rec.url == url:
+                        access = rec.access_result
+                        break
+                # fallback: если URL был в графе состояний, считаем accessible
+                if access == "unknown":
+                    for state in result.states:
+                        if state.url == url:
+                            access = "accessible"
+                            break
+                row[url] = access
+            matrix[persona_name] = row
+
+        return matrix

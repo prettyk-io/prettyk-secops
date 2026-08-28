@@ -56,7 +56,7 @@ def test_start_end_cut_writes_file(tmp_path):
     text = Path(out).read_text(encoding="utf-8")
     assert "# wave A" in text
     assert "НачатьЛогирование LEGION security,error" in text
-    assert "scanner" in text and "alert high" in text
+    assert "SCANNER" in text and "alert high" in text
     assert "ERROR" in text and "boom" in text
     assert "ignored" not in text
 

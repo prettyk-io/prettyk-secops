@@ -49,6 +49,8 @@ class _BrowserWorker:
         self._observed_events: list[dict] = []
         self._observe_last_event_id = 0
         self._binding_registered = False
+        # SOR-L2: per-session CDP endpoint override
+        self._cdp_endpoint_override: str | None = None
 
     # ── public dispatch API ──
 
@@ -109,7 +111,10 @@ class _BrowserWorker:
             except Exception:
                 self._page = None
 
-        cdp_endpoint = os.environ.get("PK_BROWSER_CDP_ENDPOINT")
+        cdp_endpoint = (
+            self._cdp_endpoint_override
+            or os.environ.get("PK_BROWSER_CDP_ENDPOINT")
+        )
         if not cdp_endpoint:
             self._last_cdp_error = (
                 "PK_BROWSER_CDP_ENDPOINT not set — "
@@ -597,54 +602,129 @@ def _binding_handler(*args) -> None:
         _on_click(info)
 
 
-# ── Singleton worker ──
+# ── Singleton worker (LEGACY — заменён на SessionManager) ──
 
 _worker = _BrowserWorker()
 
+# ── SOR-L1 / SOR-L2: Per-session BrowserWorker registry ──
 
-# ── Public API (thread-safe: dispatches to worker thread) ──
+class BrowserSessionManager:
+    """SOR-L1 / SOR-L2: per-session BrowserWorker factory.
 
-def browser_status() -> dict:
-    return _worker.dispatch("status")
+    Каждая сессия получает изолированный _BrowserWorker со своим page/context.
+    Две параллельные сессии не смешивают кадры и CDP-таргеты.
 
-def browser_navigate(url: str) -> dict:
-    return _worker.dispatch("navigate", url=url)
+    SOR-L2: каждая сессия может иметь свой CDP endpoint
+    (выделенный headed Chromium per session).
+    """
 
-def browser_screenshot() -> dict:
-    return _worker.dispatch("screenshot")
+    _sessions: dict[str, _BrowserWorker] = {}
+    _cdp_endpoints: dict[str, str] = {}  # SOR-L2: session_id → CDP endpoint URL
+    _lock = threading.Lock()
 
-def browser_back() -> dict:
-    return _worker.dispatch("back")
+    @classmethod
+    def get(cls, session_id: str, cdp_endpoint: str | None = None) -> _BrowserWorker:
+        """Получить (или создать) worker для session_id.
 
-def browser_forward() -> dict:
-    return _worker.dispatch("forward")
+        SOR-L2: cdp_endpoint — опциональный URL CDP для этой сессии
+        (http://host:port). Если задан — worker будет подключаться к нему
+        вместо глобального PK_BROWSER_CDP_ENDPOINT.
+        """
+        if session_id not in cls._sessions:
+            with cls._lock:
+                if session_id not in cls._sessions:
+                    worker = _BrowserWorker()
+                    cls._sessions[session_id] = worker
+        worker = cls._sessions[session_id]
+        if cdp_endpoint:
+            with cls._lock:
+                cls._cdp_endpoints[session_id] = cdp_endpoint
+            worker._cdp_endpoint_override = cdp_endpoint
+        elif session_id in cls._cdp_endpoints:
+            worker._cdp_endpoint_override = cls._cdp_endpoints[session_id]
+        return worker
 
-def browser_click(selector: str, strategy: str = "css") -> dict:
-    return _worker.dispatch("click", selector=selector, strategy=strategy)
+    @classmethod
+    def get_cdp_endpoint(cls, session_id: str) -> str | None:
+        """SOR-L2: получить CDP endpoint для сессии (None = use default)."""
+        with cls._lock:
+            return cls._cdp_endpoints.get(session_id)
 
-def browser_type_text(selector: str, text: str, strategy: str = "css") -> dict:
-    return _worker.dispatch("type_text", selector=selector, text=text, strategy=strategy)
+    @classmethod
+    def set_cdp_endpoint(cls, session_id: str, endpoint: str) -> None:
+        """SOR-L2: назначить выделенный CDP endpoint сессии."""
+        with cls._lock:
+            cls._cdp_endpoints[session_id] = endpoint
 
-def browser_highlight(selector: str, strategy: str = "css") -> dict:
-    return _worker.dispatch("highlight", selector=selector, strategy=strategy)
+    @classmethod
+    def remove(cls, session_id: str) -> None:
+        """Удалить сессию (вызывать при завершении)."""
+        with cls._lock:
+            worker = cls._sessions.pop(session_id, None)
+            cls._cdp_endpoints.pop(session_id, None)
+        if worker is not None and worker._page is not None:
+            try:
+                worker._context.close()
+            except Exception:
+                pass
 
-def browser_eval(expression: str) -> dict:
-    return _worker.dispatch("eval", expression=expression)
+    @classmethod
+    def active_sessions(cls) -> list[str]:
+        """Список активных session_id."""
+        with cls._lock:
+            return list(cls._sessions.keys())
 
-def browser_observe_start() -> dict:
-    return _worker.dispatch("observe_start")
+    @classmethod
+    def worker_for(cls, session_id: str | None) -> _BrowserWorker:
+        """Получить worker для session_id, fallback на глобальный _worker."""
+        if session_id:
+            return cls.get(session_id)
+        return _worker
 
-def browser_observe_stop() -> dict:
-    return _worker.dispatch("observe_stop")
 
-def browser_observe_event() -> dict:
-    return _worker.dispatch("observe_event")
+# ── Public API (thread-safe: dispatches to worker thread, SOR-L1 session-aware) ──
 
-def browser_observe_click(x: float, y: float) -> dict:
-    return _worker.dispatch("observe_click", x=x, y=y)
+def browser_status(session_id: str | None = None) -> dict:
+    return BrowserSessionManager.worker_for(session_id).dispatch("status")
 
-def browser_context_ensure(context: str = "operator", url: str | None = None) -> dict:
-    return _worker.dispatch("context_ensure", context=context, url=url)
+def browser_navigate(url: str, session_id: str | None = None) -> dict:
+    return BrowserSessionManager.worker_for(session_id).dispatch("navigate", url=url)
 
-def browser_context_destroy() -> dict:
-    return _worker.dispatch("context_destroy")
+def browser_screenshot(session_id: str | None = None) -> dict:
+    return BrowserSessionManager.worker_for(session_id).dispatch("screenshot")
+
+def browser_back(session_id: str | None = None) -> dict:
+    return BrowserSessionManager.worker_for(session_id).dispatch("back")
+
+def browser_forward(session_id: str | None = None) -> dict:
+    return BrowserSessionManager.worker_for(session_id).dispatch("forward")
+
+def browser_click(selector: str, strategy: str = "css", session_id: str | None = None) -> dict:
+    return BrowserSessionManager.worker_for(session_id).dispatch("click", selector=selector, strategy=strategy)
+
+def browser_type_text(selector: str, text: str, strategy: str = "css", session_id: str | None = None) -> dict:
+    return BrowserSessionManager.worker_for(session_id).dispatch("type_text", selector=selector, text=text, strategy=strategy)
+
+def browser_highlight(selector: str, strategy: str = "css", session_id: str | None = None) -> dict:
+    return BrowserSessionManager.worker_for(session_id).dispatch("highlight", selector=selector, strategy=strategy)
+
+def browser_eval(expression: str, session_id: str | None = None) -> dict:
+    return BrowserSessionManager.worker_for(session_id).dispatch("eval", expression=expression)
+
+def browser_observe_start(session_id: str | None = None) -> dict:
+    return BrowserSessionManager.worker_for(session_id).dispatch("observe_start")
+
+def browser_observe_stop(session_id: str | None = None) -> dict:
+    return BrowserSessionManager.worker_for(session_id).dispatch("observe_stop")
+
+def browser_observe_event(session_id: str | None = None) -> dict:
+    return BrowserSessionManager.worker_for(session_id).dispatch("observe_event")
+
+def browser_observe_click(x: float, y: float, session_id: str | None = None) -> dict:
+    return BrowserSessionManager.worker_for(session_id).dispatch("observe_click", x=x, y=y)
+
+def browser_context_ensure(context: str = "operator", url: str | None = None, session_id: str | None = None) -> dict:
+    return BrowserSessionManager.worker_for(session_id).dispatch("context_ensure", context=context, url=url)
+
+def browser_context_destroy(session_id: str | None = None) -> dict:
+    return BrowserSessionManager.worker_for(session_id).dispatch("context_destroy")

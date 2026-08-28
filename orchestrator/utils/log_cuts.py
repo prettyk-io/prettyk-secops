@@ -160,7 +160,7 @@ def _is_attack(ev: Dict[str, Any]) -> bool:
 
 
 def _match_security(kind: str, ev: Dict[str, Any], _text_l: str) -> bool:
-    return kind in {"scanner", "ФАЗЗИНГ", "HIGH", "MEDIUM"} or _is_attack(ev)
+    return kind in {"SCANNER", "ФАЗЗИНГ", "HIGH", "MEDIUM"} or _is_attack(ev)
 
 
 def _match_fuzz(kind: str, _ev: Dict[str, Any], text_l: str) -> bool:

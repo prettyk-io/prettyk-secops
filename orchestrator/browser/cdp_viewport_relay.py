@@ -72,7 +72,7 @@ def _pack_frame(jpeg: bytes, width: int, height: int) -> bytes:
 
 
 class CdpViewportRelay:
-    """Асинхронный CDP → WebSockeet relay для screencast + input."""
+    """Асинхронный CDP → WebSocket relay для screencast + input (SOR-L1: per-session)."""
 
     def __init__(
         self,
@@ -80,12 +80,13 @@ class CdpViewportRelay:
         cdp_port: int = 0,
         ws_host: str = "",
         ws_port: int = 0,
+        session_id: str = "",
     ) -> None:
         self._cdp_host = cdp_host or os.environ.get("PK_CDP_RELAY_HOST", "127.0.0.1")
         self._cdp_port = cdp_port or int(os.environ.get("PK_CDP_RELAY_PORT", "9223"))
         self._ws_host = ws_host or os.environ.get("PK_CDP_RELAY_WS_HOST", "0.0.0.0")
         self._ws_port = ws_port or int(os.environ.get("PK_CDP_RELAY_WS_PORT", "9224"))
-
+        self._session_id = session_id
         self._endpoint = f"http://{self._cdp_host}:{self._cdp_port}"
         self._browser_id: str = ""
 
@@ -372,20 +373,24 @@ class CdpViewportRelay:
 
 # ── Точка входа ──
 
-async def _run_relay() -> None:
-    relay = CdpViewportRelay()
+async def _run_relay(session_id: str = "", ws_port: int = 0) -> None:
+    relay = CdpViewportRelay(session_id=session_id, ws_port=ws_port)
     try:
         await relay.start()
     except KeyboardInterrupt:
         await relay.shutdown()
     except Exception:
-        logger.exception("Relay crashed")
+        logger.exception("Relay crashed for session %s", session_id or "default")
         await relay.shutdown()
 
 
-def start_relay() -> None:
-    """Синхронная точка входа для вызова из внещнего кода."""
-    asyncio.run(_run_relay())
+def start_relay(session_id: str = "", ws_port: int = 0) -> None:
+    """SOR-L1: синхронная точка входа с привязкой к session_id.
+
+    Если session_id не указан — используется глобальный порт по умолчанию :9224.
+    Для per-session релея передать session_id + выделенный ws_port.
+    """
+    asyncio.run(_run_relay(session_id=session_id, ws_port=ws_port))
 
 
 if __name__ == "__main__":

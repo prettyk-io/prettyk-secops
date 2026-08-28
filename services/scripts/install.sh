@@ -34,7 +34,7 @@ mkdir -p "$DATA_DIR/reports/allure-results"
 mkdir -p "$DATA_DIR/reports/allure3-report"
 mkdir -p "$DATA_DIR/reports/live"
 mkdir -p "$DATA_DIR/reports/runs"
-mkdir -p "$DATA_DIR/scanner/plugins"
+mkdir -p "$DATA_DIR/zap/plugins"
 
 # 4. Создать сеть
 echo "[install] create network pk-net"

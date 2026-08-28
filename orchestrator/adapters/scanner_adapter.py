@@ -9,7 +9,7 @@ import time
 from pathlib import Path
 
 import requests
-from zapv2 import zapv2
+from zapv2 import ZAPv2 as zapv2
 from core.errors import WiredError, scannerApiError
 from utils.paths import RUNS_DIR, scanner_report_path
 from .base_adapter import BaseAdapter
@@ -650,7 +650,7 @@ class ScannerAdapter(BaseAdapter):
         context_name="pk_ctx",
         scan_policy="custom_policy",
         wired_json="",
-        wired_json="",
+        manifest_json="",
     ):
         """
         Записать AF YAML на диск (без runPlan). MethodId: СгенерироватьПлан.
@@ -660,7 +660,7 @@ class ScannerAdapter(BaseAdapter):
 
         path = Path(str(output_path))
         wired = None
-        raw_json = wired_json or wired_json
+        raw_json = wired_json or manifest_json
         if (raw_json or "").strip():
             try:
                 wired = json.loads(raw_json)
@@ -1036,7 +1036,7 @@ class ScannerAdapter(BaseAdapter):
     def _run_make_wired(self):
         return getattr(self, "_active_run_wired", None)
 
-    @_run_wired.setter
+    @_run_make_wired.setter
     def _run_make_wired(self, val):
         self._active_run_wired = val
 

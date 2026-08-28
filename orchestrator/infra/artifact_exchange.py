@@ -48,7 +48,7 @@ class ArtifactDescriptor:
 
 
 @dataclass
-class RunArtifactWired:
+class RunArtifactManifest:
     """Манифест всех артефактов одного прогона."""
     run_id: str
     session_id: str
@@ -183,7 +183,83 @@ class ArtifactExporter:
             sha256=self._sha256(path),
         )
 
-    # ── Run manifest ──────────────────────────────────────────────
+    # ── OCI Bundle ────────────────────────────────────────────────
+
+    def export_oci_bundle(
+        self,
+        run_id: str,
+        session_id: str,
+        image_paths: Optional[List[str]] = None,
+    ) -> Optional[ArtifactDescriptor]:
+        """Создать OCI-пакет для воспроизведения контура проверки.
+
+        Принимает список путей к .tar-образам или использует образы из бандла.
+        Возвращает дескриптор архивированного OCI-пакета.
+        """
+        import tarfile
+
+        images = image_paths or []
+        if not images:
+            return None
+
+        archive_path = self._output / f"{run_id}-oci-bundle.tar.gz"
+        with tarfile.open(archive_path, "w:gz") as tf:
+            for img in images:
+                img_path = Path(img)
+                if img_path.exists():
+                    tf.add(img_path, arcname=f"images/{img_path.name}")
+
+        return ArtifactDescriptor(
+            run_id=run_id,
+            session_id=session_id,
+            format=ArtifactFormat.OCI_BUNDLE,
+            path=str(archive_path),
+            size_bytes=archive_path.stat().st_size,
+            sha256=self._sha256(archive_path),
+        )
+
+    # ══ License compliance ═══════════════════════════════════════
+
+    @staticmethod
+    def collect_licenses(
+        image_list: List[Dict[str, str]],
+    ) -> dict:
+        """Собрать информацию о лицензиях образов поставки.
+
+        image_list: список {name, version, license_url, license_spdx}.
+        В production — парсинг docker manifest / syft; здесь контракт.
+        """
+        licenses_collected: Dict[str, dict] = {}
+        for img in image_list:
+            name = img.get("name", "unknown")
+            spdx = img.get("license_spdx", "UNKNOWN")
+            licenses_collected[name] = {
+                "version": img.get("version", ""),
+                "license": spdx,
+                "url": img.get("license_url", ""),
+            }
+        return licenses_collected
+
+    def export_license_report(
+        self,
+        run_id: str,
+        image_list: List[Dict[str, str]],
+    ) -> ArtifactDescriptor:
+        """Сформировать отчёт о лицензиях компонентов поставки."""
+        data = {
+            "run_id": run_id,
+            "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "images": self.collect_licenses(image_list),
+        }
+        path = self._write(f"{run_id}-licenses.json", data)
+        return ArtifactDescriptor(
+            run_id=run_id,
+            session_id="",
+            format=ArtifactFormat.RUN_SUMMARY,
+            path=str(path),
+            size_bytes=path.stat().st_size,
+            sha256=self._sha256(path),
+        )
 
     def build_manifest(
         self, run_id: str, session_id: str, artifacts: List[ArtifactDescriptor],

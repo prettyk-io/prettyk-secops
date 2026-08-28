@@ -414,7 +414,7 @@ def test_scan_completion_is_published_to_scanner_channel():
 
     scanner = diary_bus.read_file_backlog("scanner")
     assert any(
-        event["kind"] == "scanner"
+        event["kind"] == "SCANNER"
         and event["text"] == "Active scan completed — found 17 vulnerabilities"
         for event in scanner
     )

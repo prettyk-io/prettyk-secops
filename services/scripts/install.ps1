@@ -38,7 +38,7 @@ New-Item -ItemType Directory -Force -Path "$dataPath\reports\allure-results" | O
 New-Item -ItemType Directory -Force -Path "$dataPath\reports\allure3-report" | Out-Null
 New-Item -ItemType Directory -Force -Path "$dataPath\reports\live" | Out-Null
 New-Item -ItemType Directory -Force -Path "$dataPath\reports\runs" | Out-Null
-New-Item -ItemType Directory -Force -Path "$dataPath\scanner\plugins" | Out-Null
+New-Item -ItemType Directory -Force -Path "$dataPath\zap\plugins" | Out-Null
 
 # 4. Создать сеть
 Write-Host "[install] create network pk-net"

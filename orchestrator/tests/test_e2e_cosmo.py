@@ -1,4 +1,4 @@
-"""
+"""# PoC — NOT production. Cosmoport boundary. Do not import into DAST runtime.
 COS-L20: End-to-end: Domain → Run → Evidence → ГОСТ-Акт.
 
 Полный сквозной сценарий с моками ForgeAdapter, ExecutionAdapter,

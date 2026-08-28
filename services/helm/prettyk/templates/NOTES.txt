@@ -20,7 +20,7 @@ App:     {{ .Chart.AppVersion }}
     helm template session ./helm/prettyk \
       --set sessionId=dev-session \
       --set component=scanner \
-      --set image.repository=zaproxy/scanner-stable \
+      --set image.repository=zaproxy/zap-stable \
       --set image.tag=2.17.0 \
       --set containerPort=8080 \
       | kubectl apply -f -

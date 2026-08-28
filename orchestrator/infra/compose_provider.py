@@ -117,7 +117,7 @@ class ComposeProvider(RuntimeProvider):
     async def check_bundle_health(
         self, session_id: str,
     ) -> Dict[ResourceType, bool]:
-        result: Dict[ResourceType, bool] = {}  # noqa: no-unused-variable placeholder
+        result: Dict[ResourceType, bool] = {}
 
         try:
             containers_raw = await self._docker(

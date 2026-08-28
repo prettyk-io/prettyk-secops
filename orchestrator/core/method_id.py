@@ -317,7 +317,7 @@ _METHOD_ID: Dict[str, WireTarget] = {
     # --- корень: дубли главного из scanner / HTTP / Сессия (полные списки — за воротами) ---
     # spider → crawl (PK-SPIDER-APOCALYPSE)
         "ЗагрузитьФайл": ("webdriver", "upload_file"),
-    "Сканер": ("scanner", "crawl"),
+    "Сканер": ("scanner", "spider_scan"),
     "СканерЛокальный": ("scanner", "spider_scan_local"),
     "Краулер": ("scanner", "ajax_spider_scan"),
     "КраулерКлиент": ("scanner", "client_spider_scan"),
@@ -458,7 +458,7 @@ _FACADE_scanner: Dict[str, WireTarget] = {
     "СписокПользователей": ("scanner", "get_users"),
     # spider → crawl (PK-SPIDER-APOCALYPSE)
         "ЗагрузитьФайл": ("webdriver", "upload_file"),
-    "Сканер": ("scanner", "crawl"),
+    "Сканер": ("scanner", "spider_scan"),
     "СканерЛокальный": ("scanner", "spider_scan_local"),
     "Краулер": ("scanner", "ajax_spider_scan"),
     "КраулерКлиент": ("scanner", "client_spider_scan"),

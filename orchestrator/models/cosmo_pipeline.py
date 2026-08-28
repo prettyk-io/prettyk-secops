@@ -1,4 +1,4 @@
-"""
+"""# PoC — NOT production. Cosmoport boundary. Do not import into DAST runtime.
 COS-B2 дополнение: PipelinePlan, EvidenceLedgerEntry, PlanCompiler.
 """
 from __future__ import annotations

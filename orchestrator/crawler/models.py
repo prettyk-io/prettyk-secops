@@ -249,6 +249,8 @@ class CrawlerRunResult:
     service_map_dict: Dict[str, Any] = field(default_factory=dict)
     awakened_endpoints: List[AwakenedEndpoint] = field(default_factory=list)
     blocked_actions_count: int = 0
+    # CRAWL-9: multi-persona access records
+    access_records: List[PersonaAccessRecord] = field(default_factory=list)
 
     # ── CRAWL-7: Fuzzer handoff ──
 
@@ -285,14 +287,16 @@ class CrawlerRunResult:
 
         fuzzer = CorpusFuzzer()
         all_mutations: List[Any] = []
+        processed = 0
         for ep in fuzzable:
             template = self._endpoint_to_template(ep)
             if template is None:
                 continue
+            processed += 1
             mutations = fuzzer.generate_mutations(template, count=count, mode=mode)
             all_mutations.extend(mutations)
 
-        return all_mutations, len(fuzzable)
+        return all_mutations, processed
 
     @staticmethod
     def _endpoint_to_template(ep: AwakenedEndpoint) -> Any | None:
