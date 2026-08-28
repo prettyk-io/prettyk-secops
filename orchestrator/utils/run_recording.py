@@ -1,14 +1,17 @@
 ﻿# -*- coding: utf-8 -*-
 """
-MON-5: запись видео прогона (Selenium Grid chrome-video → MP4).
+MON-5: запись видео прогона (Selenium Grid chrome-video -> MP4).
 
 Grid уже пишет MP4 в reports/video/ через sidecar chrome-video (ffmpeg).
-Этот модуль находит файл по run_id и отдаёт его в Monitor с поддержкой
-Range (HTTP 206) — так браузер может seek в replay-режиме.
+Playwright пишет webm через record_video_dir.
+
+Этот модуль находит файл по run_id, отдаёт его в Monitor с поддержкой
+Range (HTTP 206) и конвертирует Playright webm -> MP4 (PW-B2).
 """
 from __future__ import annotations
 
 import os
+import subprocess
 from pathlib import Path
 from typing import Optional, Tuple, Union
 
@@ -125,3 +128,48 @@ def serve_video_range_body(
         "Content-Range": f"bytes {start}-{end}/{file_size}",
     })
     return body, 206, headers
+
+
+# ── PW-B2: Playwright webm -> MP4 conversion ────────────────────────────────
+
+
+def convert_webm_to_mp4(target_dir: str, run_id: str) -> Optional[Path]:
+    """
+    Find Playwright webm files in target_dir and convert to MP4
+    with run_id naming for Monitor compatibility.
+
+    Returns path to the converted MP4 file, or None if no webm found.
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    vdir = Path(target_dir)
+    webm_files = sorted(vdir.glob("*.webm"), key=lambda p: p.stat().st_mtime, reverse=True)
+    if not webm_files:
+        logger.debug("No webm files found in %s", target_dir)
+        return None
+
+    src = webm_files[0]
+    dest = Path(VIDEO_DIR) / f"{run_id}.mp4"
+
+    try:
+        # ffmpeg -i input.webm -c copy output.mp4 (fast, no re-encode)
+        result = subprocess.run(
+            ["ffmpeg", "-y", "-i", str(src), "-c", "copy", str(dest)],
+            capture_output=True, text=True, timeout=120,
+        )
+        if result.returncode != 0:
+            logger.warning("ffmpeg conversion failed: %s", result.stderr[:200])
+            return None
+
+        logger.info("Converted %s -> %s", src.name, dest.name)
+        return dest
+    except FileNotFoundError:
+        logger.warning("ffmpeg not installed — skipping webm->mp4 conversion")
+        return None
+    except subprocess.TimeoutExpired:
+        logger.warning("ffmpeg conversion timed out")
+        return None
+    except Exception as e:
+        logger.warning("ffmpeg conversion error: %s", e)
+        return None

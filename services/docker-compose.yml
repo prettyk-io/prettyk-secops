@@ -117,7 +117,7 @@ services:
     shm_size: 2gb
     ports:
       - "7902:7902"   # noVNC stream (live Chromium under Xvfb)
-      - "9223:9222"   # CDP for browser_service.py connect_over_cdp
+      - "9223:9223"   # CDP socat relay (0.0.0.0:9223 → 127.0.0.1:9222) для connect_over_cdp
     extra_hosts:
       - "host.docker.internal:host-gateway"
 

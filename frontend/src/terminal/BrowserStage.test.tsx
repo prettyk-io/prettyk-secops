@@ -1,56 +1,40 @@
 /**
  * @vitest-environment jsdom
- * PW-A3: BrowserStage рендерит живой noVNC-стрим вместо скриншот-поллинга.
+ * VP-F1/VP-F2: BrowserStage рендерит <canvas> (не <img>), не поллит скриншоты.
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
-
-let mockStatus: { connected: boolean; streamUrl: string | null; url: string | null; title: string | null };
-
-vi.mock('../studio/browserSession', () => ({
-  getBrowserSession: () => ({
-    startPolling: () => {},
-    stopPolling: () => {},
-    getLastStatus: () => ({ ok: true, ...mockStatus, contexts: [] }),
-    onChange: () => () => {},
-  }),
-}));
-
 import { BrowserStage } from './BrowserStage';
 import { useScenarioDeckStore } from '../studio/ScenarioDeckStore';
 
-describe('BrowserStage (PW-A3 noVNC)', () => {
-  beforeEach(() => {
-    // Stable deck so the `decks[0]?.steps` selector returns a cached reference
+afterEach(() => cleanup());
+
+describe('BrowserStage (VP-F1 canvas + VP-F2 cleanup)', () => {
+  it('показывает кнопку «Запустить браузер» когда не connected', () => {
     useScenarioDeckStore.getState().setDecks([
       { id: 'deck-1', title: 'Deck', description: '', continueOnError: false, steps: [], collapsed: false },
     ]);
-    mockStatus = {
-      connected: true,
-      streamUrl: 'http://127.0.0.1:7900/?autoconnect=1&resize=scale',
-      url: 'http://juice-shop:3000/',
-      title: 'Juice Shop',
-    };
-  });
-
-  afterEach(() => cleanup());
-
-  it('рендерит живой noVNC iframe когда streamUrl есть', () => {
     const { container } = render(<BrowserStage mode="author" onModeChange={() => {}} />);
-    const iframe = container.querySelector('iframe');
-    expect(iframe).toBeTruthy();
-    expect(iframe!.getAttribute('src')).toContain('7900');
+    expect(container.textContent).toContain('Запустить браузер');
   });
 
-  it('не рендерит iframe и не поллит скриншоты когда streamUrl отсутствует', () => {
-    mockStatus.streamUrl = null;
-    const { container } = render(<BrowserStage mode="author" onModeChange={() => {}} />);
-    expect(container.querySelector('iframe')).toBeFalsy();
-    expect(container.textContent).toContain('Запуск живого стрима');
+  it('НЕ содержит <img> — скриншот-поллинг удалён (VP-F2)', () => {
+    useScenarioDeckStore.getState().setDecks([
+      { id: 'deck-1', title: 'Deck', description: '', continueOnError: false, steps: [], collapsed: false },
+    ]);
+    // И в disconnected, и в connected состоянии — никаких <img>
+    const { container } = render(<BrowserStage mode="author" onModeChange={() => {}} cdpConnected />);
+    expect(container.querySelector('img')).toBeNull();
+    // Даже без cdpConnected
+    const { container: c2 } = render(<BrowserStage mode="author" onModeChange={() => {}} />);
+    expect(c2.querySelector('img')).toBeNull();
   });
 
-  it('показывает «Recording clicks» поверх стрима когда cdpObserving', () => {
-    const { container } = render(<BrowserStage mode="record" onModeChange={() => {}} cdpObserving />);
+  it('показывает «Recording clicks» когда cdpObserving', () => {
+    useScenarioDeckStore.getState().setDecks([
+      { id: 'deck-1', title: 'Deck', description: '', continueOnError: false, steps: [], collapsed: false },
+    ]);
+    const { container } = render(<BrowserStage mode="record" onModeChange={() => {}} cdpConnected cdpObserving />);
     expect(container.textContent).toContain('Recording clicks');
   });
 });

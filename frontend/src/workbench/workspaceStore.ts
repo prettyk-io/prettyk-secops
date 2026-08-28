@@ -65,7 +65,7 @@ const STORAGE_KEY = 'pk.editor.workspace.v1';
 
 const DEFAULT_LAYOUT = {
   leftPanel: { open: true, width: 240 },
-  rightPanel: { open: true, width: 320, activeTab: 'context' },
+  rightPanel: { open: true, width: 480, activeTab: 'browser' },
   bottomDrawer: { open: false, height: 240, activeTab: 'terminal' },
   density: 'comfortable' as WorkspaceDensity,
 };

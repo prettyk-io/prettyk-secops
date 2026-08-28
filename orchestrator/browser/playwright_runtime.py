@@ -51,6 +51,7 @@ class PlaywrightBrowserRuntime:
         viewport_width: int = 1920,
         viewport_height: int = 1080,
         locale: str = "ru-RU",
+        record_video_dir: Optional[str] = None,
     ) -> Page:
         """Launch a new browser and create a fresh context + page.
 
@@ -91,6 +92,14 @@ class PlaywrightBrowserRuntime:
             if proxy_bypass:
                 ctx_kwargs["proxy"]["bypass"] = proxy_bypass
             logger.info("Playwright context proxy: %s", proxy.get("server", "?"))
+
+        # PW-E3: видео прогона через record_video_dir
+        if record_video_dir:
+            import os as _os
+            _os.makedirs(record_video_dir, exist_ok=True)
+            ctx_kwargs["record_video_dir"] = record_video_dir
+            ctx_kwargs["record_video_size"] = {"width": viewport_width, "height": viewport_height}
+            logger.info("Playwright video recording → %s", record_video_dir)
 
         self._context = self._browser.new_context(**ctx_kwargs)
         self._page = self._context.new_page()

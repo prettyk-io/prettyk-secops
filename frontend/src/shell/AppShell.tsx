@@ -201,6 +201,18 @@ export function AppShell(): React.JSX.Element {
     syncDocumentTitle(route);
   }, [route]);
 
+  // MAP-FLASH: Ctrl+M → открыть Sanctuary Map
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'm') {
+        e.preventDefault();
+        navigateHash({ kind: 'sanctuary-map' });
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   const go = useCallback((next: HashRoute) => {
     const guarded = guardAdminRoute(next, readSession());
     navigateHash(guarded);

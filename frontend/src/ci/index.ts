@@ -58,6 +58,10 @@ export {
 } from './pipelineStore';
 export type { PipelineStore, GraphIssue } from './pipelineStore';
 
+// Deterministic plan compiler
+export { compilePipeline, canonicalJson, PlanCompilationError } from './planCompiler';
+export type { PipelinePlan, CompiledBatch } from './planCompiler';
+
 // Run engine
 export { createRunEngine, idempotencyKeyOf } from './runEngine';
 export type { RunEngine } from './runEngine';

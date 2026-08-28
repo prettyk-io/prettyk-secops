@@ -2,7 +2,19 @@ import {create} from "zustand";
 import type {ActionKind, ScenarioStepModel, StepLedState} from "./scenarioStepModel";
 import {emptyStep, stepToDSL} from "./scenarioStepModel";
 import type {StrategyKind} from "./scenarioStepModel";
-export interface ScenarioDeckData {id:string;title:string;description:string;continueOnError:boolean;steps:ScenarioStepModel[];collapsed:boolean;}
+/** WIRE-SYNC-F1: метаданные деки для визуальных оверлеев. */
+export interface DeckDslMeta {
+  /** <!> маркер в первой строке конструктора. */
+  scenarioFailsafe: boolean;
+  /** try-блоки: {start: индекс первого шага, end: индекс последнего (включительно)} */
+  tryBlockRanges: Array<{ start: number; end: number }>;
+  /** recover-блоки: основной шаг + шаги восстановления */
+  recoverBlocks: Array<{ primaryIndex: number; recoverStart: number; recoverEnd: number }>;
+}
+export interface ScenarioDeckData {id:string;title:string;description:string;continueOnError:boolean;steps:ScenarioStepModel[];collapsed:boolean;
+  /** WIRE-SYNC-F1: метаданные блоков DSL. */
+  dslMeta?: DeckDslMeta;
+}
 export interface ScenarioDeckStore {
   decks:ScenarioDeckData[];
   setDecks:(decks:ScenarioDeckData[])=>void;

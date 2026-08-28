@@ -38,6 +38,7 @@ import {
 } from './prettykSemanticTokens';
 import { PRETTYK_LANGUAGE_ID } from './setup';
 import { registerSpiderCompletionProvider } from './spiderCompletions';
+import { registerSmartLocatorHover } from './MonacoHoverProvider';
 
 function linePrefix(model: monacoNs.editor.ITextModel, position: monacoNs.Position): string {
   return model.getLineContent(position.lineNumber).slice(0, position.column - 1);
@@ -215,6 +216,8 @@ type FeatureDisposables = {
   signature?: { dispose: () => void };
   semantic?: { dispose: () => void };
   formatting?: { dispose: () => void };
+  /** DSL-F2: Smart Locator Hover — подсветка в BrowserStage при наведении на селектор. */
+  smartLocatorHover?: { dispose: () => void };
 };
 
 const FEATURES_KEY = '__pkScriptLanguageFeatures';
@@ -244,6 +247,7 @@ export function registerScriptLanguageFeatures(monaco: typeof monacoNs): void {
   store.signature?.dispose();
   store.semantic?.dispose();
   store.formatting?.dispose();
+  store.smartLocatorHover?.dispose();
   store.completion = monaco.languages.registerCompletionItemProvider(
     PRETTYK_LANGUAGE_ID,
     createPrettykCompletionProvider(monaco),
@@ -300,6 +304,7 @@ export function registerScriptLanguageFeatures(monaco: typeof monacoNs): void {
     },
   );
   registerSpiderCompletionProvider(monaco);
+  store.smartLocatorHover = registerSmartLocatorHover(monaco, PRETTYK_LANGUAGE_ID);
   store.formatting = monaco.languages.registerDocumentFormattingEditProvider(
     PRETTYK_LANGUAGE_ID,
     {

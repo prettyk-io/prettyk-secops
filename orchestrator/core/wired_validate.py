@@ -56,7 +56,11 @@ def signature_info(method) -> tuple:
 
 
 def build_dry_action_factory() -> ActionFactory:
-    """Регистрация wire-методов с классов адаптеров — без сети."""
+    """Регистрация wire-методов с классов адаптеров — без сети.
+
+    DSL-B4: webdriver и browser идут через P0_ALLOWLIST (25 методов),
+    не через dir(cls). Остальные адаптеры (zap, http, ...) — dir(cls).
+    """
     from adapters.browser_adapter import BrowserAdapter
     from adapters.data_adapter import DataAdapter
     from adapters.data_processor import DataProcessor
@@ -68,6 +72,7 @@ def build_dry_action_factory() -> ActionFactory:
     from adapters.zap_adapter import ZapAdapter
     from core.fuzzing import FuzzAdapter
     from utils.reporter import Reporter
+    from core.pretty_method_spec import P0_ALLOWLIST
 
     factory = ActionFactory()
     for m in (
@@ -79,9 +84,25 @@ def build_dry_action_factory() -> ActionFactory:
     ):
         factory.register("allure", m, getattr(Reporter, m))
 
+    # ── P0_ALLOWLIST: webdriver — только доказанные методы ──
+    _wd = WebDriverAdapter.__new__(WebDriverAdapter)
+    for spec in P0_ALLOWLIST:
+        if spec.component != "webdriver":
+            continue
+        method = getattr(_wd, spec.action, None)
+        if callable(method):
+            factory.register(spec.component, spec.action, method)
+
+    # ── Browser: dir(BrowserAdapter) — куки, сессия, storage, cdp_command ──
+    _ba = BrowserAdapter(_wd)
+    from core.pretty_method_spec import browser_standard_actions
+    for action in sorted(browser_standard_actions()):
+        method = getattr(_ba, action, None)
+        if callable(method):
+            factory.register("browser", action, method)
+
+    # ── Остальные адаптеры: dir(cls) ──
     adapters = {
-        "webdriver": WebDriverAdapter,
-        "browser": BrowserAdapter,
         "zap": ZapAdapter,
         "http": HttpAdapter,
         "grpc": GrpcAdapter,

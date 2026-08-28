@@ -7,6 +7,7 @@ import os
 import json
 import time
 import difflib
+import re
 import logging
 import traceback
 import inspect
@@ -32,7 +33,7 @@ from adapters.data_processor import DataProcessor
 from adapters.data_adapter import DataAdapter
 from adapters.inspector import Inspector
 from utils.allure_project import resolve_allure_results_dir
-from utils.paths import ensure_reports_dirs
+from utils.paths import ensure_reports_dirs, VIDEO_DIR
 
 # Методы адаптеров, которые не являются keyword'ами сценария.
 _NON_KEYWORD_METHODS = frozenset({
@@ -176,18 +177,46 @@ class Controller:
             browser = browser_type
             headless = False
 
-        webdriver_adapter = WebDriverAdapter(
-            None,
-            browser=browser,
-            headless=headless,
-            proxy=proxy,
-            session_name=self._session_name(),
-            base_url=base_url,
-            allowed_extra_domains=allowed_extra,
-        )
-        self.adapters["webdriver"] = webdriver_adapter
-        self.adapters["browser"] = BrowserAdapter(webdriver_adapter)
-        self.reporter = Reporter(webdriver_adapter)
+        # ── PW-E1: Playwright или Selenium за флагом PK_BROWSER_RUNTIME ──
+        runtime = (pk_env("PK_BROWSER_RUNTIME") or "selenium").strip().lower()
+
+        if runtime == "playwright":
+            # Браузер через Playwright (chromium/firefox/webkit).
+            # ZAP-прокси: loopback 127.0.0.1 → host.docker.internal в контейнере.
+            from adapters.playwright_adapter import PlaywrightAdapter
+
+            playwright_adapter = PlaywrightAdapter(
+                None,
+                browser=browser,
+                headless=headless,
+                proxy=proxy,
+                session_name=self._session_name(),
+                base_url=base_url,
+                allowed_extra_domains=allowed_extra,
+            )
+            # PW-E3: запись видео при headless=False (headed execution)
+            if not headless:
+                safe_session = re.sub(r"[^A-Za-z0-9._-]+", "-", playwright_adapter._session_name).strip("-.") or "run"
+                video_dir = str(VIDEO_DIR / f"record_{safe_session}")
+                playwright_adapter.set_record_video_dir(video_dir)
+            self.adapters["webdriver"] = playwright_adapter
+            self.adapters["browser"] = playwright_adapter
+            self.reporter = Reporter(playwright_adapter)
+            logger.info("Browser runtime: Playwright (PK_BROWSER_RUNTIME=playwright)")
+        else:
+            # Selenium Grid (дефолт, неизменный путь).
+            webdriver_adapter = WebDriverAdapter(
+                None,
+                browser=browser,
+                headless=headless,
+                proxy=proxy,
+                session_name=self._session_name(),
+                base_url=base_url,
+                allowed_extra_domains=allowed_extra,
+            )
+            self.adapters["webdriver"] = webdriver_adapter
+            self.adapters["browser"] = BrowserAdapter(webdriver_adapter)
+            self.reporter = Reporter(webdriver_adapter)
 
         logger.info(
             "ZAP API on 127.0.0.1:%s, browser proxy on %s",
@@ -1241,6 +1270,16 @@ class Controller:
                 adapter.shutdown()
             except Exception as e:
                 logger.warning(f"WebDriver teardown failed: {e}")
+
+        # PW-B2: Playwright webm -> MP4 for Monitor compatibility
+        try:
+            from utils.run_recording import convert_webm_to_mp4
+
+            if hasattr(adapter, "_video_dir") and adapter._video_dir:
+                run_id = (pk_env("RUN_ID") or "").strip() or self._session_name()
+                convert_webm_to_mp4(adapter._video_dir, run_id)
+        except Exception as e:
+            logger.debug("webm->mp4 conversion skipped: %s", e)
         try:
             from utils.log_cuts import close_all as log_cuts_close_all
 

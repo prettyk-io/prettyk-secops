@@ -1,17 +1,20 @@
 ﻿# -*- coding: utf-8 -*-
-"""Lightweight authoring browser service for Studio Browser Panel.
+"""Authoring browser service for Studio Browser Panel — VP-L1 container-only.
 
-Manages a Playwright headless Chromium (headless=True) — браузер живёт ВНУТРИ
-Playground, рендер скриншотами, клики оператора по картинке → координаты →
-page.mouse.click. Никаких окон на десктопе.
-Used by the /api/browser/* endpoints in data_playground.py.
+PK_BROWSER_CDP_ENDPOINT ОБЯЗАТЕЛЕН. Браузер живёт ВНУТРИ playwright-authoring
+контейнера (headed Chromium под Xvfb). Никаких окон на десктопе хоста.
+
+Playwright objects are strictly thread-bound. Все операции диспатчатся через
+однопоточный _BrowserWorker, владеющий единственным CDP-соединением.
 """
 from __future__ import annotations
 
 import base64
 import io
+import json
 import logging
 import os
+import queue
 import threading
 import time
 import uuid
@@ -19,482 +22,593 @@ from typing import Optional
 
 logger = logging.getLogger("orchestrator.browser")
 
-_lock = threading.Lock()
-_page: Optional[object] = None
-_pw: Optional[object] = None
-_browser_obj: Optional[object] = None
-_connected = False
+# ── BrowserWorker — single thread that owns the browser ──
 
-_browser_id: str | None = None
+class _BrowserWorker:
+    """Lazy-started background thread owning Playwright browser.
 
+    Commands are (name, kwargs_dict) tuples. Results are put into
+    queue-of-one queues.
 
-def _get_page():
-    """Lazy-launch authoring browser.
-
-    Режим выбирается через PK_BROWSER_CDP_ENDPOINT (env):
-      - задан  → PW-A2: connect_over_cdp к Playwright-контейнеру (headed под Xvfb).
-      - не задан → HDO: headless launch в том же процессе (локальная разработка).
-
-    Это браузер АВТОРИНГА в Editor. НЕ execution (Grid/noVNC) и НЕ агентский
-    browser-hands-pure.
+    All Playwright operations happen on this worker's thread only.
     """
-    global _page, _pw, _browser_obj, _connected, _browser_id
 
-    # Return cached page if browser is still alive
-    if _page is not None:
+    _TIMEOUT = 15.0
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._cmd_queue: queue.Queue = queue.Queue()
+        self._thread: threading.Thread | None = None
+        self._pw: object | None = None
+        self._browser: object | None = None
+        self._context: object | None = None
+        self._page: object | None = None
+        self._browser_id: str | None = None
+        self._started = False
+        self._observe_active = False
+        self._observed_events: list[dict] = []
+        self._observe_last_event_id = 0
+        self._binding_registered = False
+        # WIRE-SYNC-L1: CDP screencast — live JPEG stream
+        self._screencast_active = False
+        self._last_frame: str | None = None
+        self._cdp_session: object | None = None
+
+    # ── public dispatch API ──
+
+    def dispatch(self, cmd: str, **kwargs) -> dict:
+        """Send command to worker thread, block for result."""
+        if not self._started:
+            with self._lock:
+                if not self._started:
+                    self._start()
+        result_q: queue.Queue = queue.Queue(maxsize=1)
+        self._cmd_queue.put((cmd, kwargs, result_q))
         try:
-            _page.evaluate("1")
-            return _page
-        except Exception:
-            _page = None
-            _connected = False
+            return result_q.get(timeout=self._TIMEOUT)
+        except queue.Empty:
+            return {"ok": False, "error": "browser worker timeout"}
 
-    # ── PW-A2: подключение к Playwright-контейнеру (headed под Xvfb) ──
-    cdp_endpoint = os.environ.get("PK_BROWSER_CDP_ENDPOINT")
-    if cdp_endpoint:
-        try:
-            from browser.playwright_runtime import PlaywrightBrowserRuntime
+    # ── worker lifecycle ──
 
-            _runtime = PlaywrightBrowserRuntime()
-            _page = _runtime.connect_over_cdp(cdp_endpoint)
-            _connected = True
-            _browser_obj = _runtime.browser  # для destroy/teardown
-            _pw = _runtime  # храним runtime для shutdown
-            _browser_id = f"container-{uuid.uuid4().hex[:12]}"
-            logger.info(
-                "browser_service: connected to authoring container "
-                "(%s, headed under Xvfb)", cdp_endpoint
+    def _start(self) -> None:
+        self._thread = threading.Thread(target=self._run, daemon=True, name="browser-worker")
+        self._thread.start()
+        self._started = True
+        logger.info("browser_service: worker thread started")
+
+    def _run(self) -> None:
+        """Main loop: process commands on this thread."""
+        while True:
+            try:
+                cmd, kwargs, result_q = self._cmd_queue.get()
+            except Exception:
+                break
+            try:
+                handler = getattr(self, f"_cmd_{cmd}", None)
+                if handler is None:
+                    result_q.put({"ok": False, "error": f"unknown command: {cmd}"})
+                else:
+                    result_q.put(handler(**kwargs))
+            except Exception as e:
+                logger.exception("browser_service: _cmd_%s failed", cmd)
+                result_q.put({"ok": False, "error": f"{type(e).__name__}: {e}"})
+
+    # ── ensure browser (VP-L1: container-only, no host fallback) ──
+
+    # Cache последней ошибки CDP — не спамим логами на каждый status().
+    _last_cdp_error: str | None = None
+
+    def _ensure_browser(self) -> object | None:
+        """Lazy-launch browser on worker thread. Returns page or None.
+
+        VP-L1: PK_BROWSER_CDP_ENDPOINT обязателен — host-Chromium выпилен.
+        При отсутствии env или недоступности контейнера возвращает None.
+        """
+        if self._page is not None:
+            try:
+                self._page.evaluate("1")
+                self._last_cdp_error = None
+                return self._page
+            except Exception:
+                self._page = None
+
+        cdp_endpoint = os.environ.get("PK_BROWSER_CDP_ENDPOINT")
+        if not cdp_endpoint:
+            self._last_cdp_error = (
+                "PK_BROWSER_CDP_ENDPOINT not set — "
+                "запусти playwright-authoring контейнер: "
+                "docker compose -f services/docker-compose.yml up -d playwright-authoring"
             )
-            return _page
-        except Exception as e:
-            logger.warning(
-                "browser_service: CDP connect to %s failed: %s", cdp_endpoint, e
-            )
-            _page = None
-            _connected = False
+            logger.warning("browser_service: %s", self._last_cdp_error)
             return None
 
-    # ── HDO fallback: headless Chromium в процессе Playground ──
-    try:
-        import playwright.sync_api as pw
-
-        if _pw is None:
-            _pw = pw.sync_playwright().start()
-
-        # HDO-B1: headless — никаких окон на десктопе оператора.
-        _browser_obj = _pw.chromium.launch(
-            headless=True,
-            args=["--no-sandbox"],
-        )
-        ctx = _browser_obj.new_context(
-            viewport={"width": 1280, "height": 800},
-            ignore_https_errors=True,
-        )
-        _page = ctx.new_page()
-        _connected = True
-        _browser_id = f"authoring-{uuid.uuid4().hex[:12]}"
-        logger.info("browser_service: launched authoring Chromium (headless 1280x800)")
-        return _page
-    except Exception as e:
-        logger.warning("browser_service: Chromium launch failed: %s", e)
-        _page = None
-        _connected = False
-        return None
-
-
-def browser_status() -> dict:
-    """GET /api/browser/status — check browser connection and get current page info.
-
-    Passive check only: NEVER launches a browser.
-    """
-    global _page, _connected, _browser_id
-    # PW-A3: noVNC-стрим authoring-браузера. Путь по умолчанию — compose-порт :7902.
-    novnc_base = os.environ.get(
-        "PK_AUTHORING_NOVNC_URL",
-        "http://127.0.0.1:7902/vnc.html?autoconnect=1&resize=scale",
-    )
-    with _lock:
-        if _page is None or not _connected:
-            return {
-                "ok": True,
-                "connected": False,
-                "url": None,
-                "title": None,
-                "browserId": None,
-                "purpose": "authoring",
-                "transport": "playwright",
-                "headless": True,
-                "streamUrl": None,
-            }
-
         try:
-            url = _page.evaluate("window.location.href")
-            title = _page.evaluate("document.title")
+            from browser.playwright_runtime import PlaywrightBrowserRuntime
+            runtime = PlaywrightBrowserRuntime()
+            self._page = runtime.connect_over_cdp(cdp_endpoint)
+            self._browser = runtime.browser
+            self._pw = runtime
+            self._browser_id = f"container-{uuid.uuid4().hex[:12]}"
+            self._last_cdp_error = None
+            self._binding_registered = False  # новая страница — binding нужно регистрировать заново
+            self._start_screencast()
+            logger.info("browser_service: connected to CDP container %s", cdp_endpoint)
+            return self._page
+        except Exception as e:
+            self._last_cdp_error = (
+                f"BROWSER_UNAVAILABLE: CDP connect to {cdp_endpoint} failed — "
+                f"{type(e).__name__}: {e}. "
+                f"Проверьте что playwright-authoring контейнер запущен и CDP порт доступен."
+            )
+            logger.warning("browser_service: %s", self._last_cdp_error)
+            self._page = None
+            return None
+
+    # ── command handlers (run on worker thread) ──
+
+    def _cmd_status(self) -> dict:
+        novnc_base = os.environ.get("PK_AUTHORING_NOVNC_URL", None)
+        if self._page is None:
+            error_msg = None
+            cdp = os.environ.get("PK_BROWSER_CDP_ENDPOINT")
+            if not cdp:
+                error_msg = (
+                    "PK_BROWSER_CDP_ENDPOINT not set — "
+                    "запусти playwright-authoring контейнер: "
+                    "docker compose -f services/docker-compose.yml up -d playwright-authoring"
+                )
+            elif self._last_cdp_error:
+                error_msg = self._last_cdp_error
+            else:
+                error_msg = "BROWSER_UNAVAILABLE"
             return {
-                "ok": True,
-                "connected": True,
-                "url": url,
-                "title": title,
-                "browserId": _browser_id,
-                "purpose": "authoring",
-                "transport": "playwright",
-                "headless": True,
-                "streamUrl": novnc_base,
+                "ok": True, "connected": False, "url": None, "title": None,
+                "browserId": None, "purpose": "authoring", "transport": "playwright",
+                "runtime": "container", "headless": False, "streamUrl": None,
+                "error": error_msg,
+            }
+        try:
+            url = self._page.evaluate("window.location.href")
+            title = self._page.evaluate("document.title")
+            return {
+                "ok": True, "connected": True, "url": url, "title": title,
+                "browserId": self._browser_id, "purpose": "authoring",
+                "transport": "playwright", "runtime": "container",
+                "headless": False, "streamUrl": novnc_base,
             }
         except Exception as e:
-            _page = None
-            _connected = False
+            self._page = None
             return {
-                "ok": True,
-                "connected": False,
-                "url": None,
-                "title": None,
-                "browserId": None,
-                "purpose": "authoring",
-                "transport": "playwright",
-                "headless": True,
-                "streamUrl": None,
-                "error": str(e),
+                "ok": True, "connected": False, "url": None, "title": None,
+                "browserId": None, "purpose": "authoring", "transport": "playwright",
+                "runtime": "container", "headless": False, "streamUrl": None,
+                "error": f"BROWSER_UNAVAILABLE: {type(e).__name__}: {e}",
             }
 
-
-def browser_navigate(url: str) -> dict:
-    """POST /api/browser/navigate — go to URL."""
-    with _lock:
-        page = _get_page()
+    def _cmd_navigate(self, url: str) -> dict:
+        page = self._ensure_browser()
         if page is None:
             return {"ok": False, "error": "browser not available"}
-
+        if not url.startswith(("http://", "https://")):
+            return {"ok": False, "error": f"invalid url: {url}"}
         try:
-            # Quick-reject obviously malformed URLs (commas, missing protocol, etc.)
-            if not url.startswith(("http://", "https://")):
-                return {"ok": False, "error": f"invalid url: {url}"}
             page.goto(url, timeout=8000, wait_until="domcontentloaded")
-            title = page.evaluate("document.title")
-            return {"ok": True, "url": page.evaluate("window.location.href"), "title": title}
+            return {
+                "ok": True,
+                "url": page.evaluate("window.location.href"),
+                "title": page.evaluate("document.title"),
+            }
         except Exception as e:
             return {"ok": False, "error": f"{type(e).__name__}: {e}"}
 
-
-def browser_screenshot() -> dict:
-    """POST /api/browser/screenshot — take viewport screenshot, return base64 PNG."""
-    with _lock:
-        page = _get_page()
+    def _cmd_screenshot(self) -> dict:
+        page = self._ensure_browser()
         if page is None:
             return {"ok": False, "error": "browser not available"}
-
         try:
             data = page.screenshot(type="png", full_page=False)
-            b64 = base64.b64encode(data).decode("utf-8")
-            return {"ok": True, "screenshot": b64, "format": "png"}
+            return {"ok": True, "screenshot": base64.b64encode(data).decode("utf-8"), "format": "png"}
         except Exception as e:
             return {"ok": False, "error": f"{type(e).__name__}: {e}"}
 
+    # ── WIRE-SYNC-L1: CDP screencast (live JPEG stream 10+ fps) ──
 
-def browser_back() -> dict:
-    """POST /api/browser/back — go back in history."""
-    with _lock:
-        page = _get_page()
+    def _start_screencast(self) -> None:
+        """Start Page.startScreencast on the CDP session.
+        Called from _ensure_browser() after browser is launched/connected.
+        """
+        if self._screencast_active or self._page is None:
+            return
+        try:
+            ctx = self._page.context if hasattr(self._page, 'context') else None
+            if ctx is None:
+                ctx = getattr(self._page, '_context', None)
+            if ctx is None and self._context is not None:
+                ctx = self._context
+            if ctx is None:
+                return
+            self._cdp_session = ctx.new_cdp_session(self._page)
+            # Subscribe before starting the stream so the first frame cannot be lost.
+            def _on_frame(params: dict) -> None:
+                data = params.get("data", "")
+                if data:
+                    self._last_frame = data
+                try:
+                    self._cdp_session.send("Page.screencastFrameAck", {"sessionId": params.get("sessionId", 0)})
+                except Exception:
+                    pass
+
+            self._cdp_session.on("Page.screencastFrame", _on_frame)
+            self._cdp_session.send("Page.startScreencast", {
+                "format": "jpeg",
+                "quality": 80,
+                "maxWidth": 1280,
+                "maxHeight": 800,
+                "everyNthFrame": 1,
+            })
+            self._screencast_active = True
+            logger.info("browser_service: CDP screencast started (JPEG 1280x800 q=80)")
+        except Exception as e:
+            logger.warning("browser_service: screencast start failed: %s", e)
+
+    def _cmd_screencast_frame(self) -> dict:
+        """Return the most recent JPEG frame from CDP screencast."""
+        if not self._screencast_active or self._page is None:
+            return {"ok": False, "error": "screencast not active"}
+        if self._last_frame is None:
+            return {"ok": True, "frame": None, "waiting": True}
+        return {"ok": True, "frame": self._last_frame, "format": "jpeg"}
+
+    def _cmd_back(self) -> dict:
+        page = self._ensure_browser()
         if page is None:
             return {"ok": False, "error": "browser not available"}
         try:
             page.go_back(timeout=10000, wait_until="domcontentloaded")
-            url = page.evaluate("window.location.href")
-            title = page.evaluate("document.title")
-            return {"ok": True, "url": url, "title": title}
+            return {"ok": True, "url": page.evaluate("window.location.href"), "title": page.evaluate("document.title")}
         except Exception as e:
             return {"ok": False, "error": f"{type(e).__name__}: {e}"}
 
-
-def browser_forward() -> dict:
-    """POST /api/browser/forward — go forward in history."""
-    with _lock:
-        page = _get_page()
+    def _cmd_forward(self) -> dict:
+        page = self._ensure_browser()
         if page is None:
             return {"ok": False, "error": "browser not available"}
         try:
             page.go_forward(timeout=10000, wait_until="domcontentloaded")
-            url = page.evaluate("window.location.href")
-            title = page.evaluate("document.title")
-            return {"ok": True, "url": url, "title": title}
+            return {"ok": True, "url": page.evaluate("window.location.href"), "title": page.evaluate("document.title")}
         except Exception as e:
             return {"ok": False, "error": f"{type(e).__name__}: {e}"}
 
-
-def browser_click(selector: str, strategy: str = "css") -> dict:
-    """POST /api/browser/click — click element by locator."""
-    with _lock:
-        page = _get_page()
+    def _cmd_click(self, selector: str, strategy: str = "css") -> dict:
+        page = self._ensure_browser()
         if page is None:
             return {"ok": False, "error": "browser not available"}
         try:
-            if strategy == "role":
-                page.get_by_role(selector).click(timeout=5000)
-            elif strategy == "text":
-                page.get_by_text(selector, exact=True).click(timeout=5000)
-            elif strategy == "label":
-                page.get_by_label(selector).click(timeout=5000)
-            elif strategy == "test_id":
-                page.get_by_test_id(selector).click(timeout=5000)
-            elif strategy == "xpath":
-                page.click(f"xpath={selector}", timeout=5000)
-            elif strategy == "css":
-                page.click(selector, timeout=5000)
-            else:
-                page.click(selector, timeout=5000)
+            locator_map = {
+                "role": lambda: page.get_by_role(selector),
+                "text": lambda: page.get_by_text(selector, exact=True),
+                "label": lambda: page.get_by_label(selector),
+                "test_id": lambda: page.get_by_test_id(selector),
+                "xpath": lambda: page.locator(f"xpath={selector}"),
+                "css": lambda: page.locator(selector),
+            }
+            loc = locator_map.get(strategy, lambda: page.locator(selector))()
+            loc.click(timeout=5000)
             return {"ok": True, "selector": selector, "strategy": strategy}
         except Exception as e:
             return {"ok": False, "error": f"{type(e).__name__}: {e}"}
 
-
-def browser_type_text(selector: str, text: str, strategy: str = "css") -> dict:
-    """POST /api/browser/type — type text into element."""
-    with _lock:
-        page = _get_page()
+    def _cmd_type_text(self, selector: str, text: str, strategy: str = "css") -> dict:
+        page = self._ensure_browser()
         if page is None:
             return {"ok": False, "error": "browser not available"}
         try:
-            if strategy == "role":
-                page.get_by_role(selector).fill(text, timeout=5000)
-            elif strategy == "text":
-                page.get_by_text(selector, exact=True).fill(text, timeout=5000)
-            elif strategy == "label":
-                page.get_by_label(selector).fill(text, timeout=5000)
-            elif strategy == "test_id":
-                page.get_by_test_id(selector).fill(text, timeout=5000)
-            elif strategy == "xpath":
-                page.fill(f"xpath={selector}", text, timeout=5000)
-            elif strategy == "css":
-                page.fill(selector, text, timeout=5000)
-            else:
-                page.fill(selector, text, timeout=5000)
+            locator_map = {
+                "role": lambda: page.get_by_role(selector),
+                "text": lambda: page.get_by_text(selector, exact=True),
+                "label": lambda: page.get_by_label(selector),
+                "test_id": lambda: page.get_by_test_id(selector),
+                "xpath": lambda: page.locator(f"xpath={selector}"),
+                "css": lambda: page.locator(selector),
+            }
+            loc = locator_map.get(strategy, lambda: page.locator(selector))()
+            loc.fill(text, timeout=5000)
             return {"ok": True, "selector": selector, "text": text}
         except Exception as e:
             return {"ok": False, "error": f"{type(e).__name__}: {e}"}
 
-
-def browser_highlight(selector: str, strategy: str = "css") -> dict:
-    """POST /api/browser/highlight — highlight an element by selector.
-
-    Uses a temporary overlay to draw a colored border around the element.
-    """
-    with _lock:
-        page = _get_page()
+    def _cmd_highlight(self, selector: str, strategy: str = "css") -> dict:
+        page = self._ensure_browser()
         if page is None:
             return {"ok": False, "error": "browser not available"}
-
         try:
-            # Remove any previous highlight
+            page.evaluate("const old=document.getElementById('__pk_highlight__');if(old)old.remove();")
+            safe = selector.replace("'", "\\'")
+            js = f"""(function(){{
+                let el=null;
+                if('{strategy}'==='role')el=document.querySelector('[role="{safe}"]');
+                else if('{strategy}'==='label'){{const ls=document.querySelectorAll('label');for(const l of ls)if(l.textContent&&l.textContent.trim()==='{safe}'){{el=l;break;}}}}
+                else if('{strategy}'==='text'){{const all=document.querySelectorAll('button,a,span,div');for(const e of all)if(e.textContent&&e.textContent.trim()==='{safe}'){{el=e;break;}}}}
+                else if('{strategy}'==='test_id')el=document.querySelector('[data-testid="{safe}"]');
+                else if('{strategy}'==='xpath')el=document.evaluate('{safe}',document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;
+                else el=document.querySelector('{safe}');
+                if(!el)return JSON.stringify({{found:false}});
+                const ov=document.createElement('div');ov.id='__pk_highlight__';
+                const r=el.getBoundingClientRect();
+                ov.style.cssText='position:fixed;left:'+r.left+'px;top:'+(r.top+window.scrollY)+'px;width:'+r.width+'px;height:'+r.height+'px;border:2px solid #38bdf8;background:rgba(56,189,248,0.08);z-index:2147483647;pointer-events:none;border-radius:4px;box-shadow:0 0 12px rgba(56,189,248,0.3);';
+                document.body.appendChild(ov);
+                return JSON.stringify({{found:true,tag:el.tagName.toLowerCase(),text:(el.textContent||'').slice(0,80).trim(),rect:{{x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height)}}}});
+            }})()"""
+            raw = page.evaluate(js)
+            return {"ok": True, **json.loads(raw)}
+        except Exception as e:
+            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+
+    def _cmd_eval(self, expression: str) -> dict:
+        page = self._ensure_browser()
+        if page is None:
+            return {"ok": False, "error": "browser not available"}
+        try:
+            return {"ok": True, "result": page.evaluate(expression)}
+        except Exception as e:
+            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+
+    # ── observe ──
+
+    def _cmd_observe_start(self) -> dict:
+        page = self._ensure_browser()
+        if page is None:
+            return {"ok": False, "error": "browser not available"}
+        if self._observe_active:
+            return {"ok": True, "status": "already_active"}
+        self._observed_events.clear()
+        self._observe_active = True
+        self._observe_last_event_id = 0
+        try:
+            # VP-L2: expose_binding нельзя снять и нельзя зарегистрировать повторно.
+            # Регистрируем один раз на страницу; повторный start только чинит listener.
+            if not self._binding_registered:
+                page.expose_binding("__pk_cdp_click__", _binding_handler)
+                self._binding_registered = True
             page.evaluate("""
-                const old = document.getElementById('__pk_highlight__');
-                if (old) old.remove();
+                if(!window.__pk_cdp_click_listener__){
+                    window.__pk_cdp_click_listener__=true;
+                    window.__pk_cdp_click_handler__=function(e){
+                        const el=e.target;
+                        const r=el.getBoundingClientRect();
+                        window.__pk_cdp_click__({
+                            tag:el.tagName.toLowerCase(),id:el.id||'',
+                            classes:(el.className&&typeof el.className==='string')?el.className:'',
+                            text:(el.textContent||'').trim(),name:el.getAttribute('name')||'',
+                            placeholder:el.getAttribute('placeholder')||'',
+                            type:el.getAttribute('type')||'',
+                            dataTestId:el.getAttribute('data-testid')||el.getAttribute('data-test-id')||'',
+                            rect:{x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height)}
+                        });
+                    };
+                    document.addEventListener('click',window.__pk_cdp_click_handler__,true);
+                }
             """)
-
-            # Try to locate and highlight
-            js = f"""
-                (function() {{
-                    let el = null;
-                    try {{
-                        if ('{strategy}' === 'role') {{
-                            el = document.querySelector('[role="{selector}"]');
-                        }} else if ('{strategy}' === 'label') {{
-                            const labels = document.querySelectorAll('label');
-                            for (const l of labels) {{
-                                if (l.textContent && l.textContent.trim() === '{selector}') {{
-                                    el = l;
-                                    break;
-                                }}
-                            }}
-                        }} else if ('{strategy}' === 'text') {{
-                            const all = document.querySelectorAll('button, a, span, div');
-                            for (const elm of all) {{
-                                if (elm.textContent && elm.textContent.trim() === '{selector}') {{
-                                    el = elm;
-                                    break;
-                                }}
-                            }}
-                        }} else if ('{strategy}' === 'test_id') {{
-                            el = document.querySelector('[data-testid="{selector}"]');
-                        }} else if ('{strategy}' === 'xpath') {{
-                            el = document.evaluate('{selector}', document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
-                        }} else {{
-                            el = document.querySelector('{selector}');
-                        }}
-                    }} catch(e) {{}}
-
-                    if (!el) return JSON.stringify({{found: false}});
-
-                    const overlay = document.createElement('div');
-                    overlay.id = '__pk_highlight__';
-                    const rect = el.getBoundingClientRect();
-                    overlay.style.cssText = `
-                        position: fixed;
-                        left: ${{rect.left}}px;
-                        top: ${{rect.top + window.scrollY}}px;
-                        width: ${{rect.width}}px;
-                        height: ${{rect.height}}px;
-                        border: 2px solid #38bdf8;
-                        background: rgba(56,189,248,0.08);
-                        z-index: 2147483647;
-                        pointer-events: none;
-                        border-radius: 4px;
-                        box-shadow: 0 0 12px rgba(56,189,248,0.3);
-                    `;
-                    document.body.appendChild(overlay);
-
-                    return JSON.stringify({{
-                        found: true,
-                        tag: el.tagName.toLowerCase(),
-                        text: (el.textContent || '').slice(0, 80).trim(),
-                        rect: {{
-                            x: Math.round(rect.x),
-                            y: Math.round(rect.y),
-                            w: Math.round(rect.width),
-                            h: Math.round(rect.height),
-                        }}
-                    }});
-                }})()
-            """
-
-            result_raw = page.evaluate(js)
-            import json
-            result = json.loads(result_raw)
-            return {"ok": True, **result}
+            logger.info("browser_observe_start: injected")
+            return {"ok": True, "status": "observing"}
         except Exception as e:
+            self._observe_active = False
             return {"ok": False, "error": f"{type(e).__name__}: {e}"}
 
+    def _cmd_observe_stop(self) -> dict:
+        self._observe_active = False
+        count = len(self._observed_events)
+        self._observed_events.clear()
+        if self._page is not None:
+            try:
+                self._page.evaluate(
+                    "if(window.__pk_cdp_click_handler__){"
+                    "document.removeEventListener('click',window.__pk_cdp_click_handler__,true);"
+                    "window.__pk_cdp_click_handler__=null;}"
+                    "window.__pk_cdp_click_listener__=false;"
+                )
+            except Exception:
+                pass
+        logger.info("browser_observe_stop: %d discarded", count)
+        return {"ok": True, "eventsDiscarded": count}
 
-def browser_eval(expression: str) -> dict:
-    """POST /api/browser/eval — run read-only JS, return result."""
-    with _lock:
-        page = _get_page()
+    def _cmd_observe_event(self) -> dict:
+        if not self._observe_active:
+            return {"ok": True, "connected": False, "observing": False}
+        if self._observed_events:
+            evt = self._observed_events.pop(0)
+            self._enrich_event(evt)
+            return {"ok": True, "connected": True, "observing": True, "event": evt}
+        return {"ok": True, "connected": True, "observing": True, "event": None}
+
+    def _cmd_observe_click(self, x: float, y: float) -> dict:
+        if not self._observe_active:
+            return {"ok": False, "error": "observe not active"}
+        page = self._page
         if page is None:
             return {"ok": False, "error": "browser not available"}
-
         try:
-            result = page.evaluate(expression)
-            return {"ok": True, "result": result}
+            # VP-L2 hit-test fix: page.mouse.click(x,y) полагается на физический
+            # hit-test браузера и уязвим к Angular Material backdrop/snackbar overlay.
+            # Между mousedown и mouseup Angular показывает snackbar с
+            # div.cdk-overlay-backdrop, поэтому mousedown ложится на кнопку, а
+            # mouseup уже на backdrop → браузер не формирует click на кнопке
+            # (down и up на разных узлах), а observe ловит backdrop.
+            #
+            # Фиксируем DOM-элемент под координатами ДО клика через
+            # document.elementFromPoint и диспатчим mousedown/mouseup/click на
+            # него напрямую — обходит физический hit-test и гонку появления overlay.
+            page.evaluate(
+                """
+                (x, y) => {
+                    const el = document.elementFromPoint(x, y);
+                    if (!el) return false;
+                    const opts = { bubbles: true, cancelable: true, composed: true, view: window };
+                    const mk = (type, button, buttons) => new MouseEvent(type, {
+                        ...opts, clientX: x, clientY: y, button, buttons
+                    });
+                    el.dispatchEvent(mk('mousedown', 0, 1));
+                    el.dispatchEvent(mk('mouseup', 0, 0));
+                    el.dispatchEvent(mk('click', 0, 0));
+                    return true;
+                }
+                """,
+                float(x),
+                float(y),
+            )
+            logger.info("browser_observe_click at (%.1f,%.1f)", x, y)
+            deadline = time.time() + 2.0
+            while time.time() < deadline:
+                if self._observed_events:
+                    break
+                time.sleep(0.02)
+            return {"ok": True, "x": x, "y": y, "queued": bool(self._observed_events)}
         except Exception as e:
             return {"ok": False, "error": f"{type(e).__name__}: {e}"}
 
+    def _cmd_context_ensure(self, context: str = "operator", url: str | None = None) -> dict:
+        page = self._ensure_browser()
+        if page is None:
+            return {"ok": False, "error": "browser not available"}
+        if url and url != "about:blank":
+            try:
+                if page.url == "about:blank":
+                    page.goto(url, timeout=8000, wait_until="domcontentloaded")
+            except Exception as e:
+                return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+        return {"ok": True, "context": context, "contextId": f"{self._browser_id}:{context}", "browserId": self._browser_id, "purpose": "authoring", "transport": "playwright"}
 
-# ---------------------------------------------------------------------------
-# Browser observe — live click capture for authoring observe → DSL
-# ---------------------------------------------------------------------------
+    def _cmd_context_destroy(self) -> dict:
+        try:
+            if self._page is not None:
+                self._page.close()
+                self._page = None
+        except Exception:
+            pass
+        try:
+            if self._browser is not None:
+                self._browser.close()
+                self._browser = None
+        except Exception:
+            pass
+        try:
+            if self._pw is not None:
+                if hasattr(self._pw, 'close'):
+                    self._pw.close()
+                else:
+                    self._pw.stop()
+        except Exception:
+            pass
+        self._pw = None
+        self._browser_id = None
+        self._context = None
+        logger.info("browser_service: destroyed")
+        return {"ok": True}
 
-_observe_active = False
-_observed_events: list[dict] = []
-_observe_last_event_id = 0
-_observe_page = None  # page, на которой установлен expose_binding
+    # ── event enrichment (on worker thread) ──
 
+    def _enrich_event(self, evt: dict) -> None:
+        element = evt.get("element", {})
+        info = {
+            "tag": element.get("tag", ""), "id": element.get("id", ""),
+            "classes": element.get("classes", ""), "text": element.get("text", ""),
+            "rect": element.get("rect", {"x": 0, "y": 0, "w": 0, "h": 0}),
+            "name": element.get("name", ""), "placeholder": element.get("placeholder", ""),
+            "type": element.get("type", ""), "dataTestId": element.get("dataTestId", ""),
+        }
+        # AX node
+        page = self._page
+        if page is not None:
+            try:
+                ax_node = _find_ax_node_for_element(page, info)
+                if ax_node:
+                    element["role"] = str(ax_node.get("role") or "").strip().lower()
+                    element["accessibleName"] = str(ax_node.get("name") or "").strip()
+                    try:
+                        from utils.discovery_element_extractor import _classify_value
+                        evt["valueClass"] = _classify_value(ax_node)
+                    except ImportError:
+                        pass
+            except Exception:
+                pass
+        # candidates
+        try:
+            from utils.discovery_candidate_builder import build_candidates
+            el = {
+                "test_id": info.get("dataTestId", ""),
+                "clean_id": info.get("id", "") if info.get("id") and not info.get("id", "").startswith(":") else "",
+                "accessible_name": element.get("accessibleName", ""),
+                "role": element.get("role", ""), "label_for": "",
+                "placeholder": info.get("placeholder", ""),
+                "name_attr": info.get("name", ""), "tag": info.get("tag", ""),
+            }
+            cands = build_candidates([el])
+            evt["candidates"] = cands[0].get("candidates", []) if cands else _build_fallback_candidates(info)
+        except Exception:
+            evt["candidates"] = _build_fallback_candidates(info)
+        # ambiguity
+        evt["isAmbiguous"] = False
+        cands = evt.get("candidates", [])
+        if cands and not cands[0].get("unique") and cands[0].get("score", 0) < 0.7:
+            evt["isAmbiguous"] = True
+
+
+# ── fallback candidate builder (module-level, no thread affinity) ──
+
+def _build_fallback_candidates(event_info: dict) -> list[dict]:
+    tag = event_info.get("tag", "")
+    text = (event_info.get("text") or "")[:40].strip()
+    eid = event_info.get("id", "")
+    cands = []
+    if eid and not eid.startswith(":"):
+        cands.append({"kind": "css", "value": f"#{eid}", "score": 0.8, "tier": "T1", "unique": True})
+    if text and tag:
+        cands.append({"kind": "text", "value": f"text={text}", "score": 0.65 if not eid else 0.5, "tier": "T2", "unique": len(text.split()) == 1})
+    if tag:
+        cands.append({"kind": "css", "value": tag, "score": 0.4, "tier": "T3", "unique": False})
+    return cands
+
+
+# ── AX-node finder (module-level, stateless) ──
 
 def _find_ax_node_for_element(page, element_info: dict) -> dict | None:
-    """Walk page.accessibility.snapshot() to find AX node matching clicked element.
-
-    B-5: проверка bounding box — candidate должен пересекаться с координатами клика.
-    """
     try:
         ax = page.accessibility.snapshot()
     except Exception:
         return None
     if ax is None:
         return None
-
     click_rect = element_info.get("rect", {})
     cx = click_rect.get("x", 0) + click_rect.get("w", 0) / 2
     cy = click_rect.get("y", 0) + click_rect.get("h", 0) / 2
-
     target_role = (element_info.get("tag") or "").lower()
-    best: dict | None = None
+    best = None
     best_score = -1.0
 
-    def _rect_overlaps(ax_node: dict) -> bool:
-        """Проверить, что bounding box AX-узла пересекается с точкой клика."""
-        if page is None:
-            return True  # без страницы — пропускаем проверку
-        node_id = ax_node.get("nodeId")
-        if node_id is None:
-            return False
-        try:
-            js = f"""
-            (function() {{
-                try {{
-                    const node = accessibility.getAXNodeById({node_id});
-                    if (!node) return JSON.stringify({{ok: false}});
-                    const rect = node.boundingBox();
-                    if (!rect) return JSON.stringify({{ok: false}});
-                    return JSON.stringify({{
-                        ok: true,
-                        x: rect.x, y: rect.y, w: rect.width, h: rect.height
-                    }});
-                }} catch(e) {{ return JSON.stringify({{ok: false}}); }}
-            }})()
-            """
-            raw = page.evaluate(f"new Function('accessibility', {js!r})(window.accessibility || {{}})")
-            data = __import__("json").loads(raw)
-            if not data.get("ok"):
-                return False
-            bx, by, bw, bh = data["x"], data["y"], data["w"], data["h"]
-            return bx <= cx <= bx + bw and by <= cy <= by + bh
-        except Exception:
-            return True  # fallback — не отсеиваем
-
-    def walk(node: dict) -> None:
+    def walk(node):
         nonlocal best, best_score
         if not isinstance(node, dict):
             return
         role = str(node.get("role") or "").strip().lower()
         if role and (role == target_role or (target_role in ("input", "textarea") and role in ("textbox", "searchbox"))):
-            score = 1.0 if _rect_overlaps(node) else 0.2
-            if score > best_score:
+            score = 1.0
+            if best_score < score:
                 best = node
                 best_score = score
-        children = node.get("children")
-        if isinstance(children, list):
-            for child in children:
-                if isinstance(child, dict):
-                    walk(child)
+        for child in node.get("children") or []:
+            if isinstance(child, dict):
+                walk(child)
 
     walk(ax)
     return best if best_score > 0 else None
 
 
-def _build_fallback_candidates(event_info: dict) -> list[dict]:
-    """B-8: построить candidate locator вручную из tag + text + id."""
-    tag = event_info.get("tag", "")
-    text = (event_info.get("text") or "")[:40].strip()
-    eid = event_info.get("id", "")
-    candidates: list[dict] = []
-    if eid and not eid.startswith(":"):
-        candidates.append({"kind": "css", "value": f"#{eid}", "score": 0.8, "tier": "T1", "unique": True})
-    if text and tag:
-        candidates.append({
-            "kind": "text",
-            "value": f"text={text}",
-            "score": 0.65 if not eid else 0.5,
-            "tier": "T2",
-            "unique": len(text.split()) == 1,
-        })
-    if tag:
-        candidates.append({"kind": "css", "value": tag, "score": 0.4, "tier": "T3", "unique": False})
-    return candidates
-
+# ── expose_binding callback (module-level, invoked from JS in worker thread) ──
 
 def _on_click(event_info: dict) -> None:
-    """Чистый коллектор клика (вызывается из JS через expose_binding).
-
-    B-10: НИКАКИХ page.evaluate / page.accessibility.snapshot / build_candidates
-    здесь — это sync Playwright API, а повторный вход из binding-колбэка
-    = deadlock. Только собрать event_info из JS, инкремент eventId и append
-    в очередь (под _lock — B-11 data race).
-
-    Обогащение (AX-нода, candidates, valueClass, isAmbiguous) — в
-    `_enrich_observed_event`, вызывается из `browser_observe_event` в
-    HTTP-потоке вне binding-колбэка.
-    """
-    global _observe_last_event_id
     evt = {
-        "timestamp": __import__("time").time(),
+        "timestamp": time.time(),
         "action": "click",
         "element": {
             "tag": event_info.get("tag", ""),
@@ -508,90 +622,12 @@ def _on_click(event_info: dict) -> None:
             "dataTestId": event_info.get("dataTestId", ""),
         },
     }
-    with _lock:
-        _observe_last_event_id += 1
-        evt["eventId"] = f"cdp-{_observe_last_event_id}"
-        _observed_events.append(evt)
-
-
-def _enrich_observed_event(evt: dict) -> None:
-    """Обогатить собранное событие (AX-нода, candidates, valueClass, isAmbiguous).
-
-    Вызывается из `browser_observe_event` в HTTP-потоке под _lock, ВНЕ
-    binding-колбэка — здесь page.evaluate / snapshot безопасны.
-    """
-    element = evt.get("element", {})
-    event_info = {
-        "tag": element.get("tag", ""),
-        "id": element.get("id", ""),
-        "classes": element.get("classes", ""),
-        "text": element.get("text", ""),
-        "rect": element.get("rect", {"x": 0, "y": 0, "w": 0, "h": 0}),
-        "name": element.get("name", ""),
-        "placeholder": element.get("placeholder", ""),
-        "type": element.get("type", ""),
-        "dataTestId": element.get("dataTestId", ""),
-    }
-
-    # Merge AX snapshot info
-    page = _observe_page
-    if page is not None:
-        ax_node = _find_ax_node_for_element(page, event_info)
-        if ax_node:
-            element["role"] = str(ax_node.get("role") or "").strip().lower()
-            element["accessibleName"] = str(ax_node.get("name") or "").strip()
-            # Classify value (secret/email/phone)
-            try:
-                from utils.discovery_element_extractor import _classify_value
-                evt["valueClass"] = _classify_value(ax_node)
-            except ImportError:
-                logger.warning("_classify_value not available (discovery_element_extractor missing)")
-                evt["valueClass"] = "unknown"
-
-    # Build candidate locators
-    try:
-        from utils.discovery_candidate_builder import build_candidates
-        el_for_candidate = {
-            "test_id": event_info.get("dataTestId", ""),
-            "clean_id": event_info.get("id", "") if event_info.get("id") and not event_info.get("id", "").startswith(":") else "",
-            "accessible_name": element.get("accessibleName", ""),
-            "role": element.get("role", ""),
-            "label_for": "",
-            "placeholder": event_info.get("placeholder", ""),
-            "name_attr": event_info.get("name", ""),
-            "tag": event_info.get("tag", ""),
-        }
-        candidates = build_candidates([el_for_candidate])
-        if candidates and candidates[0].get("candidates"):
-            evt["candidates"] = candidates[0]["candidates"]
-        else:
-            # B-8: fallback — построить candidate вручную из tag + text + id
-            evt["candidates"] = _build_fallback_candidates(event_info)
-        top_score = evt["candidates"][0].get("score", 0) if evt.get("candidates") else 0
-        logger.info(
-            "browser_observe click: tag=%s text=%.40s candidates=%d top_score=%.2f",
-            event_info.get("tag", "?"),
-            (event_info.get("text") or "")[:40],
-            len(evt.get("candidates", [])),
-            top_score,
-        )
-    except ImportError:
-        logger.warning("build_candidates not available (discovery_candidate_builder missing)")
-        evt["candidates"] = _build_fallback_candidates(event_info)
-    except Exception:
-        evt["candidates"] = _build_fallback_candidates(event_info)
-
-    # Ambiguity: if best candidate is non-unique and weak
-    evt["isAmbiguous"] = False
-    cands = evt.get("candidates", [])
-    if cands:
-        best = cands[0]
-        if not best.get("unique") and best.get("score", 0) < 0.7:
-            evt["isAmbiguous"] = True
+    _worker._observe_last_event_id += 1
+    evt["eventId"] = f"cdp-{_worker._observe_last_event_id}"
+    _worker._observed_events.append(evt)
 
 
 def _binding_handler(*args) -> None:
-    """Playwright expose_binding callback: последний аргумент — info-словарь из JS."""
     if not args:
         return
     info = args[-1]
@@ -599,210 +635,57 @@ def _binding_handler(*args) -> None:
         _on_click(info)
 
 
+# ── Singleton worker ──
+
+_worker = _BrowserWorker()
+
+
+# ── Public API (thread-safe: dispatches to worker thread) ──
+
+def browser_status() -> dict:
+    return _worker.dispatch("status")
+
+def browser_navigate(url: str) -> dict:
+    return _worker.dispatch("navigate", url=url)
+
+def browser_screenshot() -> dict:
+    return _worker.dispatch("screenshot")
+
+def browser_screencast_frame() -> dict:
+    return _worker.dispatch("screencast_frame")
+
+def browser_back() -> dict:
+    return _worker.dispatch("back")
+
+def browser_forward() -> dict:
+    return _worker.dispatch("forward")
+
+def browser_click(selector: str, strategy: str = "css") -> dict:
+    return _worker.dispatch("click", selector=selector, strategy=strategy)
+
+def browser_type_text(selector: str, text: str, strategy: str = "css") -> dict:
+    return _worker.dispatch("type_text", selector=selector, text=text, strategy=strategy)
+
+def browser_highlight(selector: str, strategy: str = "css") -> dict:
+    return _worker.dispatch("highlight", selector=selector, strategy=strategy)
+
+def browser_eval(expression: str) -> dict:
+    return _worker.dispatch("eval", expression=expression)
+
 def browser_observe_start() -> dict:
-    """POST /api/browser/observe/start — begin capturing browser click events."""
-    global _observe_active, _observed_events, _observe_last_event_id, _observe_page
-    with _lock:
-        page = _get_page()
-        if page is None:
-            return {"ok": False, "error": "browser not available"}
-
-        if _observe_active:
-            return {"ok": True, "status": "already_active"}
-
-        _observed_events.clear()
-        _observe_active = True
-        _observe_last_event_id = 0
-        _observe_page = page
-
-        try:
-            # Прямой мост JS → Python: клик в браузере дёргает _binding_handler
-            page.expose_binding("__pk_cdp_click__", _binding_handler)
-
-            page.evaluate("""
-                if (!window.__pk_cdp_click_listener__) {
-                    window.__pk_cdp_click_listener__ = true;
-                    // B-11: именованная функция в window — чтобы stop мог снять
-                    // слушателя через removeEventListener, а не только флаг.
-                    window.__pk_cdp_click_handler__ = function(e) {
-                        const el = e.target;
-                        const rect = el.getBoundingClientRect();
-                        const info = {
-                            tag: el.tagName.toLowerCase(),
-                            id: el.id || '',
-                            classes: (el.className && typeof el.className === 'string') ? el.className : '',
-                            text: (el.textContent || '').trim(),
-                            name: el.getAttribute('name') || '',
-                            placeholder: el.getAttribute('placeholder') || '',
-                            type: el.getAttribute('type') || '',
-                            dataTestId: el.getAttribute('data-testid') || el.getAttribute('data-test-id') || '',
-                            rect: { x: Math.round(rect.x), y: Math.round(rect.y), w: Math.round(rect.width), h: Math.round(rect.height) }
-                        };
-                        window.__pk_cdp_click__(info);
-                    };
-                    document.addEventListener('click', window.__pk_cdp_click_handler__, true);
-                }
-            """)
-
-            logger.info("browser_observe_start: click listener + binding injected")
-            return {"ok": True, "status": "observing"}
-        except Exception as e:
-            _observe_active = False
-            _observe_page = None
-            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
-
+    return _worker.dispatch("observe_start")
 
 def browser_observe_stop() -> dict:
-    """POST /api/browser/observe/stop — stop click capture."""
-    global _observe_active, _observed_events, _observe_page
-    with _lock:
-        _observe_active = False
-        count = len(_observed_events)
-        _observed_events.clear()
-
-        page = _observe_page
-        if page is not None:
-            try:
-                # B-11: снять слушателя через removeEventListener (не только флаг),
-                # чтобы повторный start/stop не плодил лишние listener'ы.
-                page.evaluate(
-                    "if (window.__pk_cdp_click_handler__) {"
-                    " document.removeEventListener('click', window.__pk_cdp_click_handler__, true);"
-                    " window.__pk_cdp_click_handler__ = null;"
-                    "}"
-                    "window.__pk_cdp_click_listener__ = false;"
-                )
-            except Exception:
-                pass
-        _observe_page = None
-
-        logger.info("browser_observe_stop: %d events discarded", count)
-        return {"ok": True, "eventsDiscarded": count}
-
+    return _worker.dispatch("observe_stop")
 
 def browser_observe_event() -> dict:
-    """POST /api/browser/observe/event — pop one observed event (or return empty).
-
-    События попадают в очередь через expose_binding (живой клик) — `_on_click`
-    только собирает сырьё. Здесь в HTTP-потоке (вне binding-колбэка) выполняется
-    обогащение через `_enrich_observed_event` (AX-нода, candidates, valueClass,
-    isAmbiguous) — page.evaluate/snapshot здесь безопасны.
-    """
-    global _observe_active, _observed_events
-
-    with _lock:
-        if not _observe_active:
-            return {"ok": True, "connected": False, "observing": False}
-
-        if _observed_events:
-            evt = _observed_events.pop(0)
-            _enrich_observed_event(evt)
-            return {"ok": True, "connected": True, "observing": True, "event": evt}
-
-        return {"ok": True, "connected": True, "observing": True, "event": None}
-
+    return _worker.dispatch("observe_event")
 
 def browser_observe_click(x: float, y: float) -> dict:
-    """POST /api/browser/observe/click — клик по скриншоту → реальный DOM click.
-
-    HDO-B2: оператор кликает по картинке (рендер скриншотом), фронт шлёт
-    координаты в масштабе viewport. Здесь `page.mouse.click(x, y)` производит
-    реальный DOM click, который ловится существующим
-    `document.addEventListener('click')` + `expose_binding` → `_on_click` →
-    очередь. Событие достаётся через `browser_observe_event`.
-
-    ВАЖНО: НЕ держим `_lock` во время `page.mouse.click` — sync Playwright
-    синхронно дёргает `expose_binding` → `_on_click` → `_lock` (threading.Lock
-    не reentrant → deadlock при повторном входе).
-
-    RACE FIX: `expose_binding` колбэк выполняется на dispatcher-потоке Playwright
-    АСИНХРОННО — `page.mouse.click()` возвращается раньше, чем `_on_click`
-    успевает положить событие в очередь. Поэтому после клика ждём появления
-    события в `_observed_events` (короткий дедлайн), не полагаясь на тайминг.
-    """
-    global _observe_active, _observed_events
-    if not _observe_active:
-        return {"ok": False, "error": "observe not active — call observe/start first"}
-    page = _observe_page
-    if page is None:
-        return {"ok": False, "error": "browser not available"}
-
-    try:
-        # move() перед click() обязателен: без предварительного движения мыши
-        # Playwright на свежем viewport может не пройти hit-test и mouse.click
-        # не диспатчит DOM click (проверено на реальном headless Chromium).
-        page.mouse.move(float(x), float(y))
-        page.mouse.click(float(x), float(y))
-        logger.info("browser_observe_click: click at (%.1f, %.1f)", x, y)
-
-        # Ждём асинхронный binding-колбэк: событие попадает в очередь с задержкой.
-        deadline = time.time() + 2.0
-        while time.time() < deadline:
-            with _lock:
-                if _observed_events:
-                    break
-            time.sleep(0.02)
-
-        return {"ok": True, "x": x, "y": y, "queued": bool(_observed_events)}
-    except Exception as e:
-        return {"ok": False, "error": f"{type(e).__name__}: {e}"}
-
+    return _worker.dispatch("observe_click", x=x, y=y)
 
 def browser_context_ensure(context: str = "operator", url: str | None = None) -> dict:
-    """Ensure the Studio authoring Browser object exists.
-
-    There is one authoring context for now. The explicit context contract keeps
-    it separate from execution and from the external browser-hands CDP tool.
-    """
-    with _lock:
-        page = _get_page()
-        if page is None:
-            return {"ok": False, "error": "browser not available"}
-        if url and url != "about:blank":
-            try:
-                if page.url == "about:blank":
-                    page.goto(url, timeout=8000, wait_until="domcontentloaded")
-            except Exception as e:
-                return {"ok": False, "error": f"{type(e).__name__}: {e}"}
-        return {
-            "ok": True,
-            "context": context,
-            "contextId": f"{_browser_id}:operator",
-            "browserId": _browser_id,
-            "purpose": "authoring",
-            "transport": "playwright",
-        }
-
+    return _worker.dispatch("context_ensure", context=context, url=url)
 
 def browser_context_destroy() -> dict:
-    """POST /api/browser/context/destroy — закрыть страницу и браузер."""
-    global _page, _pw, _browser_obj, _connected, _browser_id
-    with _lock:
-        if _page is not None:
-            try:
-                _page.close()
-            except Exception:
-                pass
-            _page = None
-        if _browser_obj is not None:
-            try:
-                _browser_obj.close()
-            except Exception:
-                pass
-            _browser_obj = None
-        if _pw is not None:
-            try:
-                # _pw может быть:
-                #   - Playwright sync instance (HDO path) → .stop()
-                #   - PlaywrightBrowserRuntime (CDP container path) → .close()
-                if hasattr(_pw, 'close'):
-                    _pw.close()
-                else:
-                    _pw.stop()
-            except Exception:
-                pass
-            _pw = None
-        _connected = False
-        _browser_id = None
-        logger.info("browser_service: authoring browser destroyed")
-        return {"ok": True}
+    return _worker.dispatch("context_destroy")

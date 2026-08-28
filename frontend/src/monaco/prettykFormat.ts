@@ -21,7 +21,7 @@ function indentLanguageBlocks(text: string): string {
   const lines = text.split('\n');
   const out: string[] = [];
   // Кириллица: `\b` не работает — проверяем, что после головы идёт пробел/{/(.
-  const blockHeads = ['Если', 'ИначеЕсли', 'Иначе', 'Цикл', 'ДляКаждого', 'Пока', 'Попробовать', 'Перехватить', 'Финализировать', 'Поймать', 'ВКонце', 'Группа', 'Операция'];
+  const blockHeads = ['Если', 'ИначеЕсли', 'Иначе', 'Цикл', 'ДляКаждого', 'Пока', 'try', 'catch', 'finally', 'Группа', 'Операция'];
   const isBoundary = (ch: string | undefined): boolean =>
     ch === undefined || ch === ' ' || ch === '\t' || ch === '{' || ch === '(';
   const isOpener = (t: string): boolean =>

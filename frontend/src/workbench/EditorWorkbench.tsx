@@ -65,6 +65,7 @@ import { collectPageIds } from '../keywords/pages';
 import { studioTabWireDiagnostics } from '../studio/studioDiagnostics';
 import { flashDiscoveredLine } from '../monaco/discoveredPulse';
 import { VALIDATE_CONSTRUCTOR_COMMAND_ID } from '../monaco/scenarioValidateCodeLens';
+import { applySugarDiagnostics } from '../monaco/MonacoDiagnostics';
 import { getActiveCheckId, getCheck } from '../checks/checksStore';
 import { parseWired } from '../wired/parse';
 import {
@@ -84,6 +85,8 @@ import { useCdpRecorder, type CdpStepResult } from '../terminal/useCdpRecorder';
 import { DSLProposalBanner } from '../terminal/DiscoveryOverlay';
 import { useScenarioDeckStore } from '../studio/ScenarioDeckStore';
 import type { ScenarioStepModel, StrategyKind } from '../studio/scenarioStepModel';
+import { parseWireDocument, documentToScenarioDecks, fastContentHash } from '../editor/wireDocumentParser';
+import { applyCanvasStepPatch } from '../editor/wireDocumentSerializer';
 import { StudioEditorSwitch } from '../terminal/StudioEditorSwitch';
 import {
   buildEvidenceChain,
@@ -134,6 +137,8 @@ Scenario "Empty" {
 
 /** Debounce before writing Monaco edits back to formData. */
 const EDITOR_SYNC_MS = 320;
+/** WIRE-SYNC-L2: debounce before syncing Monaco text → Canvas. */
+const CANVAS_SYNC_MS = 150;
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -194,23 +199,23 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
 
   /* ── CDP Recorder state (POC-CDP-1/2/3/4/5) ── */
   const [browserMode, setBrowserMode] = useState<BrowserStageMode>('author');
-  const scenarioDeckId = activeTab?.entityId || 'cdp-poc';
+  const [browserFullscreen, setBrowserFullscreen] = useState(false);
+  const scenarioDeckId = activeTab?.entityId || '';  // WIRE-SYNC-L2: no cdp-poc zombie, only real entities
 
-  // Ensure deck exists in ScenarioDeckStore
+  // Ensure deck exists in ScenarioDeckStore — only for real entityId
   const ensureDeck = useScenarioDeckStore(s => s.setDecks);
   const decks = useScenarioDeckStore(s => s.decks);
   const insertStepToDeck = useScenarioDeckStore(s => s.insertStep);
 
   useEffect(() => {
-    if (!decks.find(d => d.id === scenarioDeckId)) {
-      ensureDeck([...decks, {
-        id: scenarioDeckId,
-        title: activeTab?.label || 'POC Scenario',
-        description: '',
-        continueOnError: false,
-        steps: [],
-        collapsed: false,
-      }]);
+    if (!scenarioDeckId || !activeTab) return;  // WIRE-SYNC-L2: no entityId → no deck
+    const existing = decks.find(d => d.id === scenarioDeckId);
+    if (!existing) {
+      const initialText = formDataRef.current ? readConstructorText(formDataRef.current, activeTab.path) : '';
+      const doc = parseWireDocument(initialText);
+      const parsedDecks = documentToScenarioDecks(doc, scenarioDeckId);
+      if (activeTab.label && !doc.meta.title) parsedDecks[0]!.title = activeTab.label;
+      ensureDeck([...decks, parsedDecks[0]!]);
     }
   }, [scenarioDeckId, decks, ensureDeck, activeTab]);
 
@@ -239,12 +244,14 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
     acceptProposal,
     rejectProposal,
   } = useCdpRecorder({
-    deckId: scenarioDeckId,
+    deckId: scenarioDeckId || '',
     existingDslLines,
     existingManualLocators: manualLocators,
     onStepAccepted: useCallback((result: CdpStepResult) => {
-      // POC-CDP-3/4: Create canonical step — single identity for Studio + Editor (F-13: insertStep)
-      insertStepToDeck(scenarioDeckId, { ...result.step, led: 'predicted' as const });
+      const deckId = scenarioDeckId || '';
+      if (!deckId) return;
+      // POC-CDP-3/4: Create canonical step
+      insertStepToDeck(deckId, { ...result.step, led: 'predicted' as const });
 
       // POC-CDP-4: Write DSL line into Editor Monaco (same identity)
       if (activeTabRef.current && formDataRef.current) {
@@ -295,6 +302,9 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
   const activeTabRef = useRef<DslTabRef | null>(null);
   const formDataRef = useRef(formData);
   formDataRef.current = formData;
+  /** WIRE-SYNC-L2: contentHash guard — prevents cyclic Monaco↔Canvas updates. */
+  const canvasSyncHashRef = useRef<string>('');
+  const canvasSyncTimerRef = useRef<number | undefined>();
   const onFormDataChangeRef = useRef(onFormDataChange);
   onFormDataChangeRef.current = onFormDataChange;
   const lastStudioTabIdRef = useRef(lastStudioTabId);
@@ -550,7 +560,10 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
 
     // B4: применить живую диагностику при mount
     const model = editorInstance.getModel();
-    if (model) applyDiagnostics(monacoInstance, model, liveDiagnostics);
+    if (model) {
+      applyDiagnostics(monacoInstance, model, liveDiagnostics);
+      applySugarDiagnostics(monacoInstance, model); // DSL-F4
+    }
 
     // E2: Gutter Run ▶ — play glyph + context menu
     const runHandler = controlled ? onCmdRun : onRun;
@@ -571,6 +584,7 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
     const model = ed?.getModel();
     if (ed && model) {
       applyDiagnostics(monaco, model, liveDiagnostics);
+      applySugarDiagnostics(monaco, model); // DSL-F4
     }
   }, [liveDiagnostics, controlled]);
 
@@ -582,6 +596,21 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
     window.addEventListener(VALIDATE_CONSTRUCTOR_COMMAND_ID, handler);
     return () => window.removeEventListener(VALIDATE_CONSTRUCTOR_COMMAND_ID, handler);
   }, [onCmdValidate]);
+
+  /* ── WIRE-SYNC-F1: deep-link из ScenarioStepCard → Monaco линия ── */
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ line: number }>).detail;
+      if (!detail || typeof detail.line !== 'number') return;
+      const ed = editorRef.current;
+      if (!ed) return;
+      ed.revealLineInCenter(detail.line);
+      ed.setPosition({ lineNumber: detail.line, column: 1 });
+      ed.focus();
+    };
+    window.addEventListener('pk-jump-to-line', handler);
+    return () => window.removeEventListener('pk-jump-to-line', handler);
+  }, []);
 
   /* ── Push text into Monaco (controlled mode). ── */
   const pushTextToEditor = useCallback(
@@ -691,6 +720,72 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
 
   /* ── Derived display text (controlled uses formData, standalone uses local state) ── */
   const displayText = controlled ? activeText : code;
+
+  // ── WIRE-SYNC-L2: Monaco → Canvas (150ms debounce) ──
+  useEffect(() => {
+    if (!controlled || !activeTab || !displayText || !scenarioDeckId) return;
+    // Content hash guard: same text → no Canvas update
+    const newHash = fastContentHash(displayText);
+    if (newHash === canvasSyncHashRef.current) return;
+    canvasSyncHashRef.current = newHash;
+
+    // Debounce 150ms before updating Canvas
+    window.clearTimeout(canvasSyncTimerRef.current);
+    canvasSyncTimerRef.current = window.setTimeout(() => {
+      const doc = parseWireDocument(displayText);
+      const parsedDecks = documentToScenarioDecks(doc, scenarioDeckId);
+      if (activeTab?.label && !doc.meta.title) parsedDecks[0]!.title = activeTab.label;
+
+      const currentDecks = useScenarioDeckStore.getState().decks;
+      const otherDecks = currentDecks.filter(d => d.id !== scenarioDeckId);
+      useScenarioDeckStore.getState().setDecks([...otherDecks, parsedDecks[0]!]);
+
+      // Close the loop: store deck hash so Canvas→Monaco doesn't fire back
+      const finalDeck = useScenarioDeckStore.getState().decks.find(d => d.id === scenarioDeckId);
+      if (finalDeck) {
+        const finalKey = finalDeck.steps.map(s => `${s.id}:${s.action}:${s.strategyValue}:${s.payload}:${s.continueOnError}`).join('|');
+        canvasSyncHashRef.current = 'deck:' + finalKey + '|' + finalDeck.steps.length;
+      }
+    }, CANVAS_SYNC_MS) as unknown as number;
+  }, [displayText, controlled, activeTab, scenarioDeckId]);
+
+  // ── WIRE-SYNC-L2: Canvas → Monaco (card edit → Monaco text patch) ──
+  useEffect(() => {
+    if (!controlled || !activeTab || !scenarioDeckId) return;
+    const deck = decks.find(d => d.id === scenarioDeckId);
+    if (!deck) return;
+
+    // Hash for Canvas state
+    const stepsKey = deck.steps.map(s => `${s.id}:${s.action}:${s.strategyValue}:${s.payload}:${s.continueOnError}`).join('|');
+    const deckHash = 'deck:' + stepsKey + '|' + deck.steps.length;
+    if (deckHash === canvasSyncHashRef.current) return;
+    canvasSyncHashRef.current = deckHash;
+
+    // Canvas changed → push to Monaco
+    const ed = editorRef.current;
+    if (!ed) return;
+    const currentMonaco = ed.getValue();
+    if (deck.steps.length === 0) return;
+
+    // Use surgical AST patching
+    const doc = parseWireDocument(currentMonaco);
+    let patchedText = currentMonaco;
+    for (const step of deck.steps) {
+      const patchRes = applyCanvasStepPatch(doc, step.id, step);
+      if (patchRes.patchedNode) {
+        patchedText = patchRes.newText;
+      }
+    }
+
+    if (patchedText === currentMonaco) return;
+    const cursorPos = ed.getPosition();
+    ed.setValue(patchedText);
+    if (cursorPos) ed.setPosition(cursorPos);
+    lastEmittedRef.current = patchedText;
+
+    // Close the loop: store text hash so Monaco→Canvas doesn't fire back
+    canvasSyncHashRef.current = fastContentHash(patchedText);
+  }, [decks, controlled, activeTab, scenarioDeckId]);
 
   /* ── Mouse resize handlers ── */
   const handleMouseDownLeft = (e: React.MouseEvent) => {
@@ -1121,8 +1216,8 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
         {rightPanel.open && (
           <aside
             data-testid="workbench-right-panel"
-            style={{ width: rightPanel.width }}
-            className="shrink-0 flex flex-col bg-[#0b101c] border-l border-white/10 overflow-hidden select-none"
+            style={{ width: browserFullscreen ? '100%' : rightPanel.width }}
+            className="shrink-0 flex flex-col bg-[#0b101c] border-l border-white/10 overflow-hidden select-none transition-all duration-200"
           >
             <BrowserStage
               mode={browserMode}
@@ -1130,6 +1225,8 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
               targetUrl="http://juice-shop:3000"
               collapsed={false}
               embedded={true}
+              fullscreen={browserFullscreen}
+              onToggleFullscreen={() => setBrowserFullscreen(v => !v)}
               cdpConnected={recorderState.cdpConnected}
               cdpObserving={recorderState.recording}
               recorderError={recorderState.error}

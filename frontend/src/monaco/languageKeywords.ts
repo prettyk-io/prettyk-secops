@@ -32,13 +32,6 @@ export const ROOT_LANGUAGE_KEYWORDS: ReadonlyArray<LanguageKw> = [
     detail: 'обход списка/словаря',
   },
   { label: 'Пока', insertText: 'Пока ${1:cond} {\n\t$0\n}', detail: 'while' },
-  {
-    label: 'Попробовать',
-    insertText: 'Попробовать {\n\t$0\n} Перехватить {\n\t\n} Финализировать {\n\t\n}',
-    detail: 'try/catch/finally',
-  },
-  { label: 'Перехватить', insertText: 'Перехватить {\n\t$0\n}', detail: 'catch' },
-  { label: 'Финализировать', insertText: 'Финализировать {\n\t$0\n}', detail: 'finally' },
   { label: 'Группа', insertText: 'Группа "${1:title}" {\n\t$0\n}', detail: 'Allure-группа' },
   { label: 'Прервать', insertText: 'Прервать', detail: 'break' },
   { label: 'Продолжить', insertText: 'Продолжить', detail: 'continue' },
@@ -270,10 +263,10 @@ export const OPERATION_RHS: ReadonlyArray<LanguageKw> = OPERATION_KEYWORDS.map((
 export const TRY_QUESTION_SNIPPET: LanguageKw = {
   label: '?',
   insertText: '? {\n\t$0\n} > {\n\t\n} >! {\n\t\n}',
-  detail: 'try/catch/finally (зеркало Попробовать)',
+  detail: 'try/catch/finally',
 };
 
-/** Родственные блоки языка: catch / finally / полное Попробовать. */
+/** Родственные блоки языка: catch / finally / try. */
 export const TRY_RELATED_SNIPPETS: ReadonlyArray<LanguageKw> = [
   TRY_QUESTION_SNIPPET,
   {
@@ -285,11 +278,6 @@ export const TRY_RELATED_SNIPPETS: ReadonlyArray<LanguageKw> = [
     label: '>! {…}',
     insertText: '>! {\n\t$0\n}',
     detail: 'блок finally (после ? / >)',
-  },
-  {
-    label: 'Попробовать',
-    insertText: 'Попробовать {\n\t$0\n} Перехватить {\n\t\n} Финализировать {\n\t\n}',
-    detail: 'try/catch/finally словами',
   },
 ];
 

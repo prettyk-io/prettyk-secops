@@ -26,23 +26,19 @@ export type BrowserContextKind = 'operator' | 'run' | 'debug';
 export interface BrowserSessionStatus {
   ok: boolean;
   connected: boolean;
-  /** URL активной страницы в контексте оператора. */
   url?: string | null;
-  /** Title страницы. */
   title?: string | null;
-  /** Активные контексты. */
   contexts: BrowserContextKind[];
-  /** Версия браузера / Chrome. */
   browserVersion?: string;
-  /** Stable identity of the internal Studio authoring browser object. */
   browserId?: string | null;
-  /** This session is for authoring, never execution. */
   purpose?: 'authoring';
-  /** Internal Playwright transport, not external browser-hands CDP. */
   transport?: 'playwright';
+  /** VP-L1: runtime всегда "container" */
+  runtime?: 'container';
   headless?: boolean;
-  /** PW-AIRGAP: URL живого noVNC-стрима authoring-браузера (headed под Xvfb). */
   streamUrl?: string | null;
+  /** VP-L1: сообщение об ошибке при недоступном контейнере */
+  error?: string | null;
 }
 
 /** Результат навигации. */
@@ -99,7 +95,11 @@ export class BrowserSession {
     if (!res.ok) {
       throw new Error(`Browser API ${res.status}: ${res.statusText}`);
     }
-    return res.json() as Promise<T>;
+    const text = await res.text();
+    if (!text) {
+      throw new Error(`Browser API empty response (backend down?)`);
+    }
+    return JSON.parse(text) as T;
   }
 
   /** Запросить статус CDP-соединения. */
@@ -168,6 +168,14 @@ export class BrowserSession {
     return this.fetchJson<ScreenshotResult>('/api/browser/screenshot', {
       method: 'POST',
       body: JSON.stringify({ context }),
+    });
+  }
+
+  /** WIRE-SYNC-L1: Получить последний JPEG-кадр из CDP screencast. */
+  async getScreencastFrame(): Promise<{ ok: boolean; frame?: string | null; waiting?: boolean; error?: string }> {
+    return this.fetchJson('/api/browser/screencast/frame', {
+      method: 'POST',
+      body: '{}',
     });
   }
 
@@ -250,6 +258,18 @@ export class BrowserSession {
       return await this.fetchJson('/api/browser/observe/event', { method: 'POST', body: '{}' });
     } catch {
       return { ok: false, connected: false, observing: false, event: null };
+    }
+  }
+
+  /** HDO: Отправить координаты клика headless-браузеру (page.mouse.click). */
+  async observeClick(x: number, y: number): Promise<{ ok: boolean; error?: string }> {
+    try {
+      return await this.fetchJson('/api/browser/observe/click', {
+        method: 'POST',
+        body: JSON.stringify({ x, y }),
+      });
+    } catch {
+      return { ok: false, error: 'observe/click failed' };
     }
   }
 }

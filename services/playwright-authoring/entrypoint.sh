@@ -2,10 +2,10 @@
 set -euo pipefail
 
 echo "[pw-authoring] Starting Xvfb on :99 (1920x1080x24)"
+# Убрать stale lock от предыдущего рестарта контейнера
+rm -f /tmp/.X99-lock 2>/dev/null || true
 Xvfb :99 -screen 0 1920x1080x24 -ac -nolisten tcp +extension RANDR &
 XVFB_PID=$!
-
-# Give Xvfb a moment
 sleep 1
 
 echo "[pw-authoring] Starting x11vnc (no password, forever)"
@@ -17,32 +17,37 @@ echo "[pw-authoring] Starting noVNC websockify on :7902"
 websockify --web /usr/share/novnc 0.0.0.0:7902 localhost:5900 &
 WS_PID=$!
 
-echo "[pw-authoring] Launching Playwright headed Chromium (CDP :9222)"
-exec python3 -c "
-import time, sys
-from playwright.sync_api import sync_playwright
+# VP-L2: Chromium слушает CDP только на loopback (Chrome 128 игнорирует
+# --remote-debugging-address). socat пробрасывает 0.0.0.0:9223 → 127.0.0.1:9222.
+# Внешний browser_service подключается через connect_over_cdp(http://localhost:9223).
+CHROME_BIN=/ms-playwright/chromium-1129/chrome-linux/chrome
+PROFILE_DIR=/tmp/pk-authoring-profile
 
-pw = sync_playwright().start()
-browser = pw.chromium.launch(
-    headless=False,
-    args=[
-        '--no-sandbox',
-        '--disable-gpu',
-        '--remote-debugging-port=9222',
-        '--remote-debugging-address=0.0.0.0',
-        '--window-size=1920,1080',
-    ]
-)
-print('[pw-authoring] Chromium running (headed under Xvfb), CDP on :9222', flush=True)
+echo "[pw-authoring] Launching headed Chromium (CDP 127.0.0.1:9222)"
+"$CHROME_BIN" \
+  --no-sandbox \
+  --disable-gpu \
+  --disable-dev-shm-usage \
+  --remote-debugging-port=9222 \
+  --user-data-dir="$PROFILE_DIR" \
+  --no-first-run \
+  --no-default-browser-check \
+  --window-size=1920,1080 \
+  about:blank &
+CHROME_PID=$!
 
-# Keep the process alive as long as the browser is connected
-try:
-    while browser.is_connected():
-        time.sleep(10)
-except KeyboardInterrupt:
-    pass
-finally:
-    print('[pw-authoring] Shutting down', flush=True)
-    browser.close()
-    pw.stop()
-"
+# Дождаться поднятия CDP на loopback
+for i in $(seq 1 20); do
+  if curl -sf http://127.0.0.1:9222/json/version >/dev/null 2>&1; then
+    echo "[pw-authoring] CDP ready on 127.0.0.1:9222"
+    break
+  fi
+  sleep 1
+done
+
+echo "[pw-authoring] socat: 0.0.0.0:9223 → 127.0.0.1:9222"
+socat TCP-LISTEN:9223,fork,reuseaddr TCP:127.0.0.1:9222 &
+SOCAT_PID=$!
+
+# Держим контейнер живым, пока жив Chrome
+wait "$CHROME_PID"

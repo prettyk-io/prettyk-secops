@@ -7,6 +7,7 @@
  *      детерминированная сетка без пересечения связей.
  * B3 — живой опрос портов, честный статус живой/упавший/не-рантаймный.
  * J1 — телепортация на канонический маршрут (не -v2), стабильность 100+ связей.
+ * MAP-FLASH — Idea Forge поиск узлов + Ctrl+M глобальный хоткей + шейдеры.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -22,7 +23,7 @@ import {
   useReactFlow,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { ChevronLeft, RotateCcw, Map as MapIcon, Home } from 'lucide-react';
+import { ChevronLeft, RotateCcw, Map as MapIcon, Home, Search, Command } from 'lucide-react';
 
 import systemMapJson from '@sanctuary/system-map.json';
 import {
@@ -100,10 +101,13 @@ function SanctuaryMapInner(): React.JSX.Element {
   const { ok, map, issues } = useMemo(() => loadSystemMap(systemMapJson), []);
   const [lens, setLens] = useState<MapLens>('architecture');
   const [focusPath, setFocusPath] = useState<string[]>([]);
+  // MAP-FLASH: Idea Forge — поиск/фильтр узлов
+  const [forgeQuery, setForgeQuery] = useState('');
+  const [forgeOpen, setForgeOpen] = useState(false);
 
   const availableLenses = useMemo(() => (map ? collectLenses(map) : []), [map]);
 
-  // B3: живой опрос статусов рантайм-узлов (всех, независимо от линзы).
+  // B3: живой опрос статусов рантайм-узлов.
   const allNodes = useMemo(() => map?.nodes ?? [], [map]);
   const portStatus = useLivePortStatus(allNodes);
 
@@ -111,6 +115,29 @@ function SanctuaryMapInner(): React.JSX.Element {
     () => (map ? computeView(map, lens, focusPath) : null),
     [map, lens, focusPath],
   );
+
+  // MAP-FLASH: Idea Forge — фильтр узлов по запросу
+  const forgeResults = useMemo(() => {
+    if (!forgeQuery.trim() || !map) return null;
+    const q = forgeQuery.toLowerCase();
+    return map.nodes.filter((n) =>
+      n.id.toLowerCase().includes(q) || n.label.toLowerCase().includes(q),
+    ).slice(0, 8);
+  }, [map, forgeQuery]);
+
+  const handleForgeSelect = useCallback((nodeId: string) => {
+    const targetNode = map?.nodes.find((n) => n.id === nodeId);
+    if (!targetNode) return;
+    // Переключаем линзу если нужно, чтобы узел был видим
+    if (targetNode.lenses && targetNode.lenses.length > 0) {
+      const first = targetNode.lenses[0] as MapLens;
+      if (first !== 'all' && lens !== first) setLens(first);
+    }
+    // Проваливаемся к узлу
+    setFocusPath((p) => drillTo(p, nodeId));
+    setForgeQuery('');
+    setForgeOpen(false);
+  }, [map, lens]);
 
   const handleDrill = useCallback((id: string) => {
     setFocusPath((p) => drillDown(p, id));
@@ -142,10 +169,18 @@ function SanctuaryMapInner(): React.JSX.Element {
     return () => window.clearTimeout(t);
   }, [view?.zoomLevel, lens, focusPath.length, fitView]);
 
-  // Горячие клавиши линз (0–5) и Backspace — наверх.
+  // Горячие клавиши линз (0–5), Backspace — наверх, Ctrl+F/K — Idea Forge.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.metaKey || e.ctrlKey) {
+        if (e.key === 'f' || e.key === 'k') {
+          e.preventDefault();
+          setForgeOpen((v) => !v);
+          return;
+        }
+        return;
+      }
+      if (e.altKey) return;
       const meta = LENS_META.find((l) => l.key === e.key);
       if (meta) {
         e.preventDefault();
@@ -153,12 +188,13 @@ function SanctuaryMapInner(): React.JSX.Element {
         return;
       }
       if (e.key === 'Backspace' || e.key === 'Escape') {
+        if (forgeOpen) { setForgeOpen(false); return; }
         handleAscend();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [handleAscend]);
+  }, [handleAscend, forgeOpen]);
 
   if (!ok || !map || !view) {
     return (
@@ -274,6 +310,65 @@ function SanctuaryMapInner(): React.JSX.Element {
           <RotateCcw className="size-3.5" />
         </button>
       </div>
+
+      {/* Idea Forge — поиск узлов (Ctrl+F / Ctrl+K) */}
+      {forgeOpen && (
+        <div
+          className="absolute top-4 left-1/2 -translate-x-1/2 z-30"
+          style={{ width: 360 }}
+        >
+          <div
+            className="rounded-xl shadow-2xl overflow-hidden"
+            style={{ background: '#0F172A', border: '1px solid #1E293B' }}
+          >
+            <div className="flex items-center gap-2 px-3 h-11">
+              <Search className="size-4" style={{ color: '#64748B' }} />
+              <input
+                type="text"
+                value={forgeQuery}
+                onChange={(e) => setForgeQuery(e.target.value)}
+                placeholder="Поиск узла…"
+                autoFocus
+                className="flex-1 bg-transparent border-0 outline-none text-sm"
+                style={{ color: '#E2E8F0', fontFamily: 'Golos UI, sans-serif' }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') { setForgeOpen(false); setForgeQuery(''); }
+                  if (e.key === 'Enter' && forgeResults && forgeResults.length > 0) {
+                    handleForgeSelect(forgeResults[0]!.id);
+                  }
+                }}
+              />
+              <kbd className="text-[9px] px-1.5 py-0.5 rounded" style={{ background: '#1E293B', color: '#64748B', fontFamily: 'monospace' }}>Ctrl+K</kbd>
+            </div>
+            {forgeResults && forgeResults.length > 0 && (
+              <div style={{ borderTop: '1px solid #1E293B', maxHeight: 260, overflow: 'auto' }}>
+                {forgeResults.map((n) => (
+                  <button
+                    key={n.id}
+                    type="button"
+                    onClick={() => handleForgeSelect(n.id)}
+                    className="w-full text-left px-3 py-2 flex items-center gap-3 hover:bg-white/5 transition-colors"
+                  >
+                    <span className="text-xs font-mono truncate" style={{ color: '#475569', maxWidth: 100 }}>{n.id}</span>
+                    <span className="text-sm truncate flex-1" style={{ color: '#E2E8F0', fontFamily: 'Golos UI, sans-serif' }}>{n.label}</span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded" style={{ background: '#1E293B', color: '#64748B' }}>
+                      {n.status === 'native_v2' ? 'v2' : n.status === 'hybrid_mock' ? 'mock' : n.status === 'infrastructure' ? 'infra' : n.status}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Шейдеры: градиентный ореол за канвасом */}
+      <div
+        className="absolute inset-0 pointer-events-none z-0"
+        style={{
+          background: 'radial-gradient(ellipse 60% 50% at 50% 45%, rgba(34,211,238,0.04) 0%, transparent 70%)',
+        }}
+      />
 
       {/* Канвас */}
       <div className="flex-1 relative min-h-0">

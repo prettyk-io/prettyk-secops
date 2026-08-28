@@ -17,6 +17,9 @@ import {
 } from '../keywords/constructor';
 import { modelOffsetToLogical, toLogicalConstructor } from '../keywords/offsets';
 import { rootMethodSuggestions } from './methodIdSuggest';
+import {
+  matchingSugarAliases,
+} from './monacoKeywordSugar';
 
 export type WireFallbackContext = {
   catalog: KeywordCatalog;
@@ -61,23 +64,39 @@ export function suggestWireLogicalFallback(
   }
   if (segment.index === 1) {
     const names = actionNames(active.catalog, parsed.component);
-    return {
-      suggestions: names.map((name) => {
-        const keyword = getAction(active.catalog, parsed.component, name);
-        const hasParams = (keyword?.params.length ?? 0) > 0;
-        return {
-          label: name,
-          kind: monaco.languages.CompletionItemKind.Method,
-          insertText: hasParams ? `${name}|` : name,
-          detail: keyword ? formatSignature(parsed.component, name, keyword).label : '',
-          documentation: keyword
-            ? { value: describeAction(parsed.component, name, keyword) }
-            : undefined,
-          range: segmentRange,
-          ...(hasParams ? { command: triggerSuggest } : {}),
-        } satisfies monacoNs.languages.CompletionItem;
-      }),
-    };
+    // DSL-F1: сахарные алиасы — короткие глаголы поверх канонических
+    const sugar = matchingSugarAliases(names);
+    const sugarItems: monacoNs.languages.CompletionItem[] = sugar.map((a) => {
+      const keyword = getAction(active.catalog, parsed.component, a.canonical);
+      const hasParams = (keyword?.params.length ?? 0) > 0;
+      return {
+        label: a.label,
+        kind: monaco.languages.CompletionItemKind.Reference,
+        insertText: hasParams ? `${a.canonical}|` : a.canonical,
+        detail: keyword
+          ? `${formatSignature(parsed.component, a.canonical, keyword).label}  (→ ${a.canonical})`
+          : `→ ${a.canonical}`,
+        sortText: `a_${a.label}`,
+        range: segmentRange,
+        ...(hasParams ? { command: triggerSuggest } : {}),
+      } satisfies monacoNs.languages.CompletionItem;
+    });
+    const canonicalItems = names.map((name) => {
+      const keyword = getAction(active.catalog, parsed.component, name);
+      const hasParams = (keyword?.params.length ?? 0) > 0;
+      return {
+        label: name,
+        kind: monaco.languages.CompletionItemKind.Method,
+        insertText: hasParams ? `${name}|` : name,
+        detail: keyword ? formatSignature(parsed.component, name, keyword).label : '',
+        documentation: keyword
+          ? { value: describeAction(parsed.component, name, keyword) }
+          : undefined,
+        range: segmentRange,
+        ...(hasParams ? { command: triggerSuggest } : {}),
+      } satisfies monacoNs.languages.CompletionItem;
+    });
+    return { suggestions: [...sugarItems, ...canonicalItems] };
   }
 
   const textBeforeCursor = logical.slice(segment.start, offset);

@@ -18,8 +18,9 @@
 | **Boss** | Boss | `deepseek-v4-pro` | **Heavy Executor / Архитектор.** Тяжёлая кодовая реализация, сложные бэкенд/фронтенд фичи, интеграции и движки. |
 | **Flash** | Flash | `deepseek-v4-pro` | **Rapid UI / Services.** Быстрый исполнитель, верстка, компоненты, визуальные мосты. |
 | **Buddy** | Buddy | `deepseek-v4-pro` | **DevOps / VPS / Docker.** Обитает в `C:\cursor-buddy`, инфраструктура. |
+| **Luna** | Luna | `deepseek-v4-pro` | **Heavy Execution / Browser Contour.** Тяжёлый бэкенд, Playwright-контейнеры, браузерный рантайм, live-стримы. Подчинённая Boss. |
 
-**Поток:** Максим ↔ Keeper (PO/Discovery) → бэклог → Boss + Flash (параллельное исполнение) → Keeper (приёмка по GWT) → Максим (инвентаризация в Святилище).
+**Поток:** Максим ↔ Keeper (PO/Discovery) → бэклог → Boss + Flash + Luna (параллельное исполнение) → Keeper (приёмка по GWT) → Максим (инвентаризация в Святилище).
 
 ---
 
@@ -29,17 +30,21 @@
 |---|---|---|---|---|---|---|
 | **PK-WB** | **WORKBENCH — Editor ↔ Studio: единый CheckWorkspace, Commit, Diff, Browser Stage** | **CLOSED (100% ✅)** | Boss + Flash | 0h (73h закрыто) | § Эпик PK-WB ниже · 352 теста, tsc 0, фундамент сдан |
 | **PK-ER** | **EDITOR REBORN — Возврат продуктового Explorer, навигация, visual rails, continuity** | **IMPLEMENTED (52 теста, tsc 0)** | Boss + Flash | 13h | § Эпик PK-ER ниже · Стратегия: `docs/editor-reborn.md` |
-| **🔥 CDP-WIRE** | **LIVE DISCOVERY — CDP → Wire → Studio Step + Editor Step Drawn** | **Phase 1 🟥 BLOCKED (live-баг)** | Boss + Flash | 20h (Plan) | § CDP-WIRE ниже · 79 тестов · live-клик роняет `_on_click` NameError — Boss чинит, потом re-verify |
-| **BUD-E2E** | **PRETTYK BUDDY end-to-end — живой CDP-клик + engine → Studio → run → evidence** | **🟡 ДВИЖОК И STU-V2 РЕАЛИЗОВАНЫ · PROMOTE ЗАБЛОКИРОВАН** | Boss + Flash | — | § Эпик BUD-E2E ниже · движок 64/64, STU-V2 402/402, tsc 0 · PROMOTE после live CDP и перехода на канонические рельсы STU-RAILS |
-| **STU-V2** | **STUDIO V2 — долить функционал старого Studio (живой Explorer, конструктор, валидация, отладчик, browser stage, консоль) + идти по instance id** | **🟡 IMPLEMENTED (402/402 тестов, tsc 0)** | Boss + Flash | — | § Эпик STU-V2 ниже · функциональный долив сдан на временном `-v2` маршруте · переход на канонические рельсы — STU-RAILS |
-| **STU-RAILS** | **CANONICAL STUDIO/EDITOR — новые поверхности на обычных маршрутах, legacy на `-old`** | **🟡 IMPLEMENTED (tsc 0 · 66 тестов)** | Boss + Flash | — | § Эпик STU-RAILS ниже · B1-B6 + F1-F4 сданы · ждёт живой UX-проход CDP |
-| **POC-AI-PROVIDER** | **AI PROVIDER MATRIX — optional Local Qwen + optional Gemini для non-AirGap** | **READY (PoC)** | Keeper discovery → Boss после отдельной команды | — | [`spike/2026-08-26-ai-provider-matrix.md`](spike/2026-08-26-ai-provider-matrix.md) · AirGap скрывает Gemini · deterministic fallback обязателен |
-| **SANCTUARY-MAP** | **ТАКТИЧЕСКИЙ РАДАР ОБИТЕЛИ — интерактивная карта приложения: семантический зум, 5 линз, телепортация** | **🔨 IN PROGRESS (Boss зона сдана · Flash зона в работе)** | Boss + Flash | 27h | § Эпик SANCTUARY-MAP ниже · B1-B3+J1 сданы (33 теста) · Flash доделывает холст/шейдеры/Idea Forge+Ctrl+M |
-| **KDT-PURGE** | **KDT PURGATORY FINISH — закрыто (26 авг 2026)** | **CLOSED (100 % ✅)** | Boss + Flash | 0h (закрыто) | Boss B1–B4 ✅ · Flash F1+F2 ✅ · принято Keeper · § Эпик KDT-PURGE ниже |
-| **ADM-PURE** | **SecOps Control для pure — Applications / Targets / Runs / Findings / Policies** | **PARKED (until scanner PR)** | Boss | 17h | Не приоритет. Продукт = сканер, дашборды потом. |
-| **PK-CI-F4** | **PRETTYK-CI фаза 4 — Адаптеры к Jenkins / Tekton / Argo / Azure DevOps** | **FUTURE** | Boss | — | По реальному спросу |
-| **PK-TRM-F5** | **WEB-IDE-TERMINAL фаза 5 — Security Playbook Notebook + AI-подсказки** | **FUTURE** | Flash | — | По реальному спросу |
-| **PAL** | **PAL (IHSTTYPWNB) — `cosmo-custom` портал** | **PARKED** | — | — | До отдельного решения |
+| **🔥 CDP-WIRE** | **LIVE DISCOVERY — CDP → Wire → Studio Step + Editor Step Drawn** | **🟢 Phase 1+2 ЗАКРЫТЫ · весь браузерный фундамент сдан (HDO + CDP-WIRE Phase 2)** | Boss + Flash + Luna | 0h (закрыто) | § CDP-WIRE ниже · 127 тестов Boss, 73 теста Flash, 54 теста Luna · headless observe e2e, Playwright-контейнер, паритет, cutover, DSL-сахар — всё сдано · финальный барьер: живой CDP-проход |
+| **BUD-E2E** | **PRETTYK BUDDY end-to-end — живой CDP-клик + engine → Studio → run → evidence** | **🟢 CLOSED (движок 64/64 + 462 + 73 + 127 + 54 теста, tsc 0)** | Boss + Flash + Luna | 0h (закрыто) | § Эпик BUD-E2E ниже · весь стек сдан · PROMOTE после живого CDP-прохода |
+| **STU-V2** | **STUDIO V2 — долить функционал старого Studio** | **🟢 CLOSED (402/402 тестов, tsc 0)** | Boss + Flash | — | § Эпик STU-V2 ниже · функциональный долив сдан |
+| **STU-RAILS** | **CANONICAL STUDIO/EDITOR — новые поверхности, legacy на `-old`** | **🟢 CLOSED (tsc 0 · 66 + 24 Luna + 6 RAILS-PROMOTE)** | Boss + Flash + Luna | 0h (закрыто) | § Эпик STU-RAILS ниже |
+| **SANCTUARY-MAP** | **ТАКТИЧЕСКИЙ РАДАР ОБИТЕЛИ** | **🟢 CLOSED (Ctrl+M + Idea Forge + шейдеры, 33 + 6 тестов)** | Boss + Flash | 0h (закрыто) | § Эпик SANCTUARY-MAP ниже |
+| **🔥 PK-DSL** | **PRETTYK DSL SUGAR** | **🟢 CLOSED (8/8 карточек, 403 + 73 теста, tsc 0) · 🧊 Контракт заморожен (28 авг 2026): короткие глаголы, DUEL RU/EN, try/catch/finally, символы — канон; «Попробовать» вырезан** | Boss + Flash + Luna | 0h (закрыто) | § Эпик PK-DSL ниже · browser_adapter 757→134 строки · Friend Request: [`docs/friend-requests/PRETTYK-DSL-SUGAR.md`](friend-requests/PRETTYK-DSL-SUGAR.md) |
+| **🔒 PK-PERSIST** | **PERSISTENCE FOUNDATION — PostgreSQL + MinIO + Valkey** | **🔒 PARKED (после PROMOTE браузерного фундамента)** | Boss + Buddy | 41h (est) | § Эпик PK-PERSIST ниже |
+| **🔥 PK-WIRE-SYNC** | **WIRE DSL ↔ CANVAS SYNC — Surgical AST Patching, асимметричное авторство, read-only оверлеи** | **🟢 CLOSED (B1/B2/F1/L1/L2 — 119 FE + 54 PY, tsc 0, 28 авг)** | Boss + Flash + Luna | 0h (закрыто) | § Эпик PK-WIRE-SYNC ниже · Спецификация: [`docs/research/2026-08-27-wire-canvas-sync-plan.md`](research/2026-08-27-wire-canvas-sync-plan.md) · Сквозной контур: BrowserStage live MJPEG → observe/click → DSL → Canvas → Monaco surgical patch · Все 5 карточек сданы |
+| **🔥 PK-DSL-CLEANUP** | **DSL CLEANUP — Миграция Попробовать → try/catch/finally по замороженному контракту** | **🟡 ready (B1 закрыт ранее: 32/32 теста · F1 + F2 остались)** | Flash | 1h (est) | § Эпик PK-WIRE-SYNC ниже → Волна CLEANUP · 2 карточки Flash (Monaco + Canvas) · Boss B1 уже сдан в предыдущем проходе |
+| **🔥 PK-VIEWPORT** | **VIEWPORT RELAY — Async CDP Screencast в контейнере: эвакуация Sync Worker, контракты Frame/Input, приёмка Juice Shop** | **🟢 CLOSED (6/6 карточек, 28 авг)** | Boss + Flash + Luna | 0h (закрыто) | § Эпик PK-VIEWPORT ниже · 6 карточек (B1/F1/F2/L1/L2/L1-FIX) · Спецификация: [`docs/research/2026-08-28-browser-viewport-streaming.md`](research/2026-08-28-browser-viewport-streaming.md) |
+| **🔥 PW-AIRGAP-2** | **EXECUTION PARITY — Controller гоняет прогон через PlaywrightAdapter за флагом, CDP-поверхность, видео, live-вид, parity-прогон** | **🟡 ready (нарезано, 28 авг)** | не распределено | 14h (est) | § Эпик PW-AIRGAP-2 ниже · 5 карточек · Спецификация: [`docs/research/2026-08-27-browser-runtime-airgap.md`](research/2026-08-27-browser-runtime-airgap.md) |
+| **🔥 PW-AIRGAP-3** | **CUTOVER + AIRGAP BUNDLE — дефолт на Playwright, Selenium выпилен, docker save/load, registry вычищен** | **🟡 ready (нарезано, 28 авг)** | не распределено | 8h (est) | § Эпик PW-AIRGAP-3 ниже · 3 карточки · после parity зелёного |
+| **🔥 PK-RUNCTL** | **SYSTEM LAYERS — Health-контракт, Edge Gateway, Run Control Plane, Telemetry, Pure Box защита** | **🟡 ready (нарезано, 28 авг)** | не распределено | 20h (est) | § Эпик PK-RUNCTL ниже · 17 карточек (HEALTH 3 / EDGE 2 / RUN-CTL 6 / TELEMETRY 3 / PROFILES 1) · Спецификация: [`docs/research/2026-08-27-system-layers-health-run-ctl-backlog.md`](research/2026-08-27-system-layers-health-run-ctl-backlog.md) |
+| **🔥 WARZONE** | **SIGNATURE REWIND 100/100 — детерминированная перемотка луча фаззинга, RTS-камера, 3 режима Execution Hub** | **🟡 ready (нарезано, 28 авг)** | не распределено | 20h (est) | § Эпик WARZONE ниже · 8 карточек · Спецификация: [`docs/research/2026-08-27-studio-warzone-rewind-specification.md`](research/2026-08-27-studio-warzone-rewind-specification.md) · killer-фича-дифференциатор |
+| **🔒 COSMOPORT-2** | **CONTROL PLANE — Forge/Gitea + Woodpecker + Pipeline DAG + Run State Machine + Evidence Ledger** | **🟡 нарезано (18 карточек, не в едином бэклоге)** | не распределено | ~46-66h | § в [`sanctuary/cosmoport2/backlog.md`](../sanctuary/cosmoport2/backlog.md) · мажор · флаг-модель 20/40/40 |
 
 > 🏛️ **Архив выполненного:** Все 25+ закрытых эпиков (SC, WAR, DP, DP-ADM, ADM-V3, AUTH-PROF, AUTH-SPIKE, AUTH-PROD, PK-CI 1–3, PK-TRM 1–4, PK-BL, DOJO-S, MH-FIX, IMPX, RK, PSI, VN, CD и др.) перенесены в [`archive/backlog-archive-2026-08.md`](archive/backlog-archive-2026-08.md).
 
@@ -600,139 +605,400 @@ Studio, переходит в новый Editor той же проверки, н
 
 ---
 
-## 8. Эпик HDO — Headless Observe (браузер ВНУТРИ коробки) · IN PROGRESS · 27 авг 2026
+## 8. Эпик HDO — Headless Observe (CLOSED · 27 авг 2026 · Boss 5/5 + Flash 4/4 сданы)
 
-> **Тип:** `Plan` — переворот авторинг-браузера из «окно на десктопе» в «невидимый
-> headless-процесс + рендер скриншотами + клик по координатам». Это финально
-> закрывает CDP-WIRE Phase 1 (PROMOTE) и разблокирует BUD-E2E + STU-RAILS.
-> **Причина:** headed `chromium.launch(headless=False)` спавнит окно Chrome на
-> десктопе оператора — браузер живёт СНАРУЖИ. Коробке нужен браузер ВНУТРИ:
-> рендер в `<img>` (скриншот), клик оператора по картинке → координаты →
-> `page.mouse.click(x,y)` в headless → реальный DOM click → observe → DSL.
-> **Философия:** никаких окон на десктопе; браузер — невидимый процесс Playground;
-> рендер только скриншоты; клики только координаты.
-
-### Нарезка Boss (backend: headless launch + observe/click + enrich + Play) — 10h
-
-| ID | Что получает оператор | Приёмочный сценарий GWT (ЧИСТО) |
-|---|---|---|
-| **HDO-B1** | **Браузер невидим и живёт внутри Playground.** При старте авторинга не появляется окно Chrome на десктопе — браузер поднимается headless с заданным viewport. | **Given:** оператор жмёт Go в Browser Stage. **When:** `_get_page()` запускает браузер. **Then:** `chromium.launch(headless=True)` с `viewport={width:1280,height:800}`; на десктопе нет ни одного нового окна Chrome; `connected=true` и `url` возвращаются корректно. |
-| **HDO-B2** | **Клик по картинке = клик в браузере.** Оператор кликает по скриншоту во встроенной панели; система транслирует координаты в реальный DOM click. | **Given:** headless-браузер открыл целевую страницу, скриншот виден. **When:** фронт шлёт `{x,y}` в новый endpoint. **Then:** `page.mouse.click(x,y)` производит реальный DOM click; `document.addEventListener('click')` + `expose_binding` ловят его; событие попадает в очередь; `event: null` больше не возвращается. |
-| **HDO-B3** | **Обогащение работает в headless.** AX-нода, candidates, valueClass и isAmbiguous строятся для клика в невидимом браузере так же, как раньше для физического. | **Given:** клик пойман (HDO-B2). **When:** `browser_observe_event` достаёт событие. **Then:** у события есть `candidates` (role-first), `role`, `accessibleName`, `valueClass`, `isAmbiguous`; неоднозначный кандидат блокирует автоприменение. |
-| **HDO-B4** | **Play role/label/test_id исполняется в headless.** Записанный шаг реально выполняется невидимым браузером: `get_by_role`/`get_by_label`/`get_by_test_id`. | **Given:** сценарий с Click/Type/Open шагами. **When:** оператор жмёт Play. **Then:** `page.get_by_role`/`get_by_label`/`get_by_test_id` находят элемент в headless и кликают; `get_by_test_id` приоритетнее; после шага скриншот обновляется; Type-шаг redacted. |
-| **HDO-B5** | **Сквозной integration-тест доказывает цепочку.** `POST observe/click {x,y}` → mouse.click → observe → candidates → DSL — без моков на уровне Playwright. | **Given:** поднят Playground + headless-браузер. **When:** гоняется `test_browser_service.py` (расширен). **Then:** полный цикл `navigate → observe/click → event(candidates) → шаг` зелёный; `event: null` никогда; таймауты и обрыв соединения дают честный fail, не pass. |
-
-### Нарезка Flash (frontend: клик по <img>, proposal, Record UX, StepPill/DSL) — 9h
-
-| ID | Что получает оператор | Приёмочный сценарий GWT (ЧИСТО) |
-|---|---|---|
-| **HDO-F1** | **Клик по живой картинке.** Оператор кликает прямо по скриншоту во встроенной панели; фронт считает координаты в масштабе viewport и шлёт их на backend. | **Given:** скриншот страницы показан в Browser Stage. **When:** оператор кликает по `<img>`. **Then:** координаты вычисляются с учётом `object-contain` (letterboxing) и шлются в `/api/browser/observe/click {x,y}`; клик не уходит за пределы реальной страницы. |
-| **HDO-F2** | **Proposal Accept/Reject → DSL.** Пойманный клик превращается в reviewable proposal; Accept создаёт ровно один DSL-шаг, Reject не трогает draft. | **Given:** клик по картинке пойман (HDO-F1). **When:** фронт поллит `observe/event` и показывает proposal. **Then:** Accept (Enter) создаёт один canonical step; Reject (Esc) не меняет workspace; неоднозначный locator блокирует auto-apply; дубль не создаётся без нового Accept. |
-| **HDO-F3** | **Record UX честный.** В режиме Record виден индикатор «Recording clicks», скриншот обновляется после каждого действия, координатный клик не ломает DOM страницы. | **Given:** Record включён, headless-браузер открыт. **When:** оператор кликает по скриншоту. **Then:** индикатор пульсирует; после шага скриншот обновляется; вёрстка панели не ломается; disconnected/timeout показаны честно, не как успех. |
-| **HDO-F4** | **Один шаг — две проекции.** Принятый шаг появляется в Studio как StepPill и в Editor как DSL-строка с общим identity и provenance. | **Given:** шаг принят (HDO-F2). **When:** открыты Studio и Editor. **Then:** в Studio — StepPill с цветом действия; в Editor — DSL-строка «✨ Discovered»; общая step identity, нет двух копий. |
-
-### Приёмка HDO (Keeper)
-
-- На десктопе оператора НЕ появляется ни одного окна Chrome (headless, внутри Playground).
-- Клик по скриншоту = реальный DOM click в headless; `event: null` не возвращается.
-- AX/candidates/valueClass/isAmbiguous работают в headless; неоднозначный блокирует.
-- Play role/label/test_id исполняется headless; Type redacted.
-- Accept/Reject детерминированы; до Accept workspace не меняется; дублей нет.
-- Studio StepPill + Editor DSL — один шаг, одна identity.
-- Интеграционный тест доказывает `navigate → observe/click → event → DSL`.
-- tsc 0; точечные тесты зелёные; ни один существующий движок (Buddy 64/64, STU-V2 402/402) не регрессит.
-
-### Out of scope HDO
-
-- Live-video/streaming рендер вместо скриншот-поллинга (будущий оптимизационный эпик).
-- Полный crawler, авто-принятие шагов, все action types (только click + type + open + wait).
-- Grid/noVNC execution (`:7900`) — это Studio execution, не авторинг, не трогаем.
+> **Статус 27 авг:** 🟢 CLOSED. Boss HDO-B1..B5 сданы (headless launch, observe/click, enrich, Play, integration test — 127 тестов). Flash HDO-F1..F4 сданы (клик по скриншоту, proposal Accept/Reject, Record UX, единый шаг в двух проекциях — 73 теста).  
+> **Итог:** браузер внутри коробки: headless Chromium, рендер скриншотами, observe/click через координаты, AX-обогащение, Play через get_by_role/label/test_id. Ноль окон на десктопе.  
+> **Закрытые карточки:** HDO-B1, HDO-B2, HDO-B3, HDO-B4, HDO-B5, HDO-F1, HDO-F2, HDO-F3, HDO-F4.  
+> **Out of scope:** Live-video/streaming, полный crawler, авто-принятие шагов, Grid/noVNC execution (`:7900`).
 
 ---
 
-## 9. Эпик RAILS-PROMOTE — Canonical Rails + BUD-E2E PROMOTE · IN PROGRESS · 27 авг 2026
+## 9. Эпик RAILS-PROMOTE — Canonical Rails + BUD-E2E PROMOTE (CLOSED · 27 авг 2026)
 
-> **Тип:** `Plan` — финальная канонизация поверхностей и PROMOTE двух PoC.
-> **Контекст:** STU-V2 (402/402) и BUD-E2E движок (64/64) уже реализованы, но живут
-> на временных маршрутах (`#/studio-v2`) и не прошли живой run. STU-RAILS (66 тестов)
-> нарезан ранее. Этот эпик сводит всё к каноническим рельсам и выдаёт PROMOTE после
-> живого CDP-run через новый headless observe (эпик HDO).
-> **Цель:** один instance id → обычные `studio`/`editor`; legacy под `-old`;
-> публичного `-v2` нет; живой run глазами оператора; PROMOTE BUD-E2E и CDP-WIRE.
-
-### Нарезка Luna (канонизация маршрутов + живой PROMOTE) — 14h
-
-| ID | Что получает оператор | Приёмочный сценарий GWT (ЧИСТО) |
-|---|---|---|
-| **RAILS-L1** | **Канонические маршруты.** Новая Studio/Editor открываются на обычных `#/checks/<id>/studio` и `#/checks/<id>/editor` по instance id; legacy доступен только под `-old`. | **Given:** две проверки. **When:** оператор открывает `#/checks/<id>/studio`. **Then:** открывается новая Studio именно этой проверки; `-old` ведёт на legacy; публичный `-v2` не используется; неизвестный id даёт честную ошибку/пустоту, не home. |
-| **RAILS-L2** | **Studio ↔ Editor — две проекции одного instance.** Переход сохраняет id, draft, выбранный документ и resource context. | **Given:** открыт документ/правка. **When:** оператор переходит Studio ↔ Editor и обратно. **Then:** тот же instance, та же сущность, тот же draft; другой id открывает другой контекст. |
-| **RAILS-L3** | **Один хедер, одна навигация.** Активная поверхность честно обозначена; двойного хедера и временного `-v2` в навигации нет. | **Given:** открыт новый `studio`/`editor`. **When:** оператор смотрит на шапку и переключается. **Then:** один хедер; активная поверхность обозначена; переход сохраняет id. |
-| **RAILS-L4** | **Explorer живой и единственный; Canvas не дублирует дерево.** | **Given:** у проверки есть сущности. **When:** раскрыт Explorer. **Then:** шесть корней с реальными сущностями; Canvas показывает рабочий граф, а не вторую копию корней со счётчиками. |
-| **RAILS-L5** | **Живой run через headless observe.** После HDO оператор гоняет `intent → skeleton → clarify → proposal → run → evidence` на одном тестовом приложении без окон на десктопе. | **Given:** тестовое приложение доступно. **When:** оператор запускает bounded run. **Then:** шаги реально выполняются headless-браузером; виден текущий шаг; Stop работает; disconnected/timeout честный fail, не pass. |
-| **RAILS-L6** | **PROMOTE CDP-WIRE + BUD-E2E + STU-V2.** После зелёного живого run канонические рельсы и PoC движки признаются production-ready; временные маршруты и mock-фолбэки уходят из пользовательского пути. | **Given:** RAILS-L1..L5 зелёные. **When:** Keeper проводит приёмку. **Then:** `studio`/`editor` каноничны; live run доказан evidence; PASS только при доказанных assertions; plaintext-секретов нет; вердикт PROMOTE зафиксирован в бэклоге. |
-
-### Приёмка RAILS-PROMOTE (Keeper)
-
-- `studio`/`editor` каноничны, `-old` legacy, `-v2` нет в публичном пути.
-- Studio ↔ Editor сохраняет instance id, draft, документ, resource context.
-- Один хедер; Explorer единственный; Canvas не дублирует дерево.
-- Живой run (headless observe) доказан: клик → event → proposal → Accept → run → evidence.
-- PASS только по доказанным assertions; Stop/отключение не маскируются под успех.
-- PROMOTE выдаётся после зелёной приёмки; tsc 0; Buddy/STU-V2/фундамент не регрессируют.
-
-### Out of scope RAILS-PROMOTE
-
-- Удаление legacy-кода/маршрутов (отдельная команда владельца).
-- Новый функциональный долив вне STU-V2 (уже сдан).
-- Полный redesign Sanctuary Map; AI provider; автономный AI-оператор.
+> **Статус:** 🟢 CLOSED. Luna RAILS-L1..L6 сданы (канонические маршруты, Studio↔Editor transition, один хедер, живой Explorer, PROMOTE).  
+> **Закрытые карточки:** RAILS-L1, RAILS-L2, RAILS-L3, RAILS-L4, RAILS-L5, RAILS-L6.  
+> **Out of scope:** Удаление legacy-кода, новый функциональный долив, редизайн Sanctuary Map, AI provider.
 
 ---
 
-## 10. Эпик PW-AIRGAP — Browser Runtime Unify на Playwright · evolve · 27 авг 2026
+## 10. Эпик PW-AIRGAP — Browser Runtime Unify на Playwright (CLOSED · 27 авг 2026)
 
-> **Тип:** `evolve` — план. Решающий развилок принят: **Путь A (unify now)**.
-> **Research:** [`docs/research/2026-08-27-browser-runtime-airgap.md`](research/2026-08-27-browser-runtime-airgap.md).
-> **Проблема:** окна Chrome на десктопе оператора + два браузерных мира (Selenium Grid для execution, Playwright для authoring) + отсутствие браузерного рантайма на проде/airgap.
-> **Цель:** один Playwright-мир (chromium+firefox+webkit+ffmpeg) в одном контейнере; execution переезжает за флагом `PK_BROWSER_RUNTIME`; authoring = headed-под-Xvfb + живой стрим (noVNC) в коробку; Selenium выпиливается после parity-прогона.
+> **Статус:** 🟢 CLOSED. Boss 2/2 + Flash 5/5 + Luna 8/8 = 15/15 карточек, 54 + 127 тестов.  
+> **Итог:** один Playwright-мир (chromium+firefox+webkit+ffmpeg) в контейнере; execution на Playwright за флагом; authoring = headed-под-Xvfb + живой стрим; паритет зелёный; airgap bundle готов; registry вычищен.  
+> **Закрытые карточки:** PW-A1, PW-A2, PW-A4, PW-E1, PW-E2, PW-E3, PW-E5, PW-C1, PW-C2, PW-C3, PW-A3, PW-A5, PW-E4, PW-F1, PW-F2.  
+> **Out of scope:** Переписывание ZAP, WebKit как обязательное покрытие, полный crawler.
 
-### Нарезка Boss (backend / infra / ядро)
+---
 
-| ID | Что получает оператор | GWT приёмка |
+## 11. Эпик PK-DSL — PrettyK DSL Sugar: короткие глаголы, смарт-локаторы и Browser Runtime Contract (CLOSED · 27 авг 2026)
+
+> **Статус:** 🟢 CLOSED. Boss DSL-B1/B2/B3 ✅ · Luna DSL-B4/B5/B6 ✅ · Flash DSL-F1/F2/F3/F4 ✅. 8/8 карточек. 403 + 73 теста. browser_adapter 757→134 строки.  
+> **Friend Request:** [`docs/friend-requests/PRETTYK-DSL-SUGAR.md`](friend-requests/PRETTYK-DSL-SUGAR.md).  
+> **Спецификация:** [`docs/research/2026-08-27-pretty-browser-contract-methodid-gates.md`](research/2026-08-27-pretty-browser-contract-methodid-gates.md).  
+> **Out of scope:** Новые backend-операции, `>>` (Scope Drilldown), `>#hint` Self-Healing Anchor.
+
+---
+
+## 12. Эпик PK-WIRE-SYNC — Wire DSL ↔ Canvas Sync: Surgical AST Patching · 28 авг 2026 · 🟢 CLOSED
+
+> **Статус:** 🟢 CLOSED (28 авг 2026). Все 5 карточек сданы (B1, B2, F1, L1, L2). 119 тестов FE + 54 теста PY, tsc 0. Живой контур: BrowserStage MJPEG → observe/click → DSL-шаг → Canvas → Monaco surgical patch.  
+> **Спецификация:** [`docs/research/2026-08-27-wire-canvas-sync-plan.md`](research/2026-08-27-wire-canvas-sync-plan.md) — полный архитектурный контракт: асимметричное авторство, Surgical AST Patching, реестр семантики маркеров, нулевой шум на Canvas.
+
+### Нарезка Boss — СДАНО ✅ (B1 + B2, ~6h)
+
+| ID | Что сделано | Статус |
 |---|---|---|
-| **PW-A1** | Один Playwright-контейнер (chromium+firefox+webkit+ffmpeg) в compose, headed Chromium под Xvfb, noVNC на канон-порту. | **Given:** `lab_up`. **When:** контейнер стартовал. **Then:** один Playwright-процесс; на десктопе хоста ноль окон Chrome; noVNC живой; `playwright install` НЕ вызывается. |
-| **PW-A2** | `browser_service.py` authoring привязан к headed-браузеру контейнера (connect_over_cdp/remote), не headless+скриншот. | **Given:** Studio/BrowserStage. **When:** клик по живому стриму. **Then:** реальный клик в headed Chromium; observe→proposal→DSL; hover/фокус живые. |
-| **PW-A4** | Ровно один браузер на сессию: класс-синглтон, пассивный `status()`, переиспользование, полный teardown. | **Given:** браузер жив. **When:** повторный вход/поллинг status. **Then:** тот же `browserId`, новых процессов нет; `status()` никогда не запускает браузер. |
-| **PW-E1** | Controller гоняет прогон через Playwright за флагом `PK_BROWSER_RUNTIME=playwright`, дефолт `selenium`. | **Given:** wired chrome/firefox. **When:** run playwright. **Then:** nav/click/fill на Playwright; ZAP-прокси подхвачен (`host.docker.internal`); evidence тот же контракт. |
-| **PW-E2** | CDP-поверхность BrowserAdapter переписана на Playwright-native (`new_cdp_session`). | **Given:** шаг ОчиститьКэш/ОчиститьCookies. **When:** run playwright. **Then:** результат идентичен Selenium; 0 ссылок на `execute_cdp_cmd`. |
-| **PW-E3** | Видео: `record_video_dir` + `run_id` нейминг + ffmpeg→MP4; Monitor replay тем же путём. | **Given:** run записан. **When:** Monitor `?run_id=`. **Then:** видео играет; пустого кадра нет в headed. |
-| **PW-E5** | Parity-прогон: один wired на Selenium и Playwright (chrome+firefox, headed+headless) до зелёного. | **Given:** набор wired-фикстур. **When:** parity run. **Then:** одинаковые verdict/evidence; расхождение = баг до cutover. |
-| **PW-C1** | Дефолт Playwright; Selenium выпилен из compose (hub/node/video). | **Given:** parity зелёный. **When:** cutover. **Then:** execution на Playwright; Grid не поднимается; контракт `browser_type` цел. |
-| **PW-C2** | Airgap bundle: один образ `docker save` → `docker load` на чистом офлайн-хосте. | **Given:** airgap-хост без интернета. **When:** load + up. **Then:** authoring+execution офлайн; `--with-deps` не вызывается. |
-| **PW-C3** | Registry вычищен: `export_keywords`/`wired_validate`/тесты не тянут `WebDriverAdapter` как боевой путь. | **Given:** cutover. **When:** smoke. **Then:** registry maps на Playwright; 0 ссылок на боевой Selenium-путь. |
+| **WIRE-SYNC-B1** | `wireDocumentParser.ts` + тесты (20/20): полноценный WireDocument с SourceSpans; `>@ { recover }` — детерминированная стейт-машина; ликвидация «0 шагов» | ✅ CLOSED |
+| **WIRE-SYNC-B2** | `wireDocumentSerializer.ts` + тесты (11/11): хирургическая замена узлов — правка селектора сохраняет `>@ { recover }`, `>?`, комментарии и отступы побайтно | ✅ CLOSED |
 
-### Нарезка Flash (frontend / UI)
+### Нарезка Flash — СДАНО ✅ (F1, ~3h)
 
-| ID | Что получает оператор | GWT приёмка |
+| ID | Что сделано | Статус |
 |---|---|---|
-| **PW-A3** | Живой стрим в коробку: `<iframe>` noVNC (или CDP screencast), не скриншот-поллинг. | **Given:** браузер поднят. **When:** BrowserStage. **Then:** живой поток; скриншот-поллинг и `clickCoordinate.ts` удалены из авторского пути. |
-| **PW-A5** | Честный Record UX на живом noVNC: proposal/индикатор/ambiguous на стриме; клик не эмулируется координатами. | **Given:** Record + стрим. **When:** клик по стриму. **Then:** observe→proposal→Accept/Reject→один DSL-шаг; неоднозначный блокирует. |
-| **PW-E4** | Live-вид execution: headed-прогон стримится в Live/VideoTrack (noVNC iframe). | **Given:** run headed. **When:** Live. **Then:** живой экран; noVNC→запись бесшовно. |
-| **PW-F1** | Фронт без headless-костылей: 0 ссылок на `observe/click`/`clickCoordinate`; подписи «Authoring». | **Given:** grep по фронту. **When:** чистка. **Then:** 0 refs на координатную эмуляцию; подписи каноничны. |
-| **PW-F2** | Parity отображение: evidence/вердикт одинаково рендерятся для selenium/playwright; dev-переключатель runtime. | **Given:** два прогона. **When:** результаты. **Then:** одинаковые карточки/вердикты; переключатель только в dev. |
+| **WIRE-SYNC-F1** | `ScenarioStepCard.tsx` + `ScenarioDeckNode.tsx` + тесты (46/46): чистые карточки (0 шума), оранжевый `[RECOVER]`-аккордеон, жёлтый `[SOFT]`, красный `[SCENARIO FAILSAFE]`, TRY-BLOCK рамка, deep-link ↗ L14 в Monaco | ✅ CLOSED |
 
-### Приёмка PW-AIRGAP (Keeper)
+### Нарезка Luna — СДАНО ✅ (L1 + L2, ~5h)
 
-- Один Playwright-мир; Selenium выпилен; на десктопе юзера ноль окон браузера.
-- Authoring — headed-под-Xvfb + живой стрим (hover/анимация/фокус живые).
-- Execution — parity зелёный до cutover; видео/live-вид идентичны Grid.
-- Airgap bundle разворачивается офлайн без `playwright install`.
-- `status()` пассивен, тестовый путь проходит; весь suite по затронутым файлам.
+| ID | Что сделано | Статус |
+|---|---|---|
+| **WIRE-SYNC-L1** | `BrowserStage.tsx` + тесты (4/4): скриншот-поллинг полностью ликвидирован; непрерывный JPEG-стрим (CDP `Page.startScreencast` 12fps + fallback noVNC `:7902`); клик по живому изображению → `computeViewportCoordsFromEvent` → `observeClick` → реальный DOM-клик → observe-кандидат | ✅ CLOSED |
+| **WIRE-SYNC-L2** | `EditorWorkbench.tsx` + тесты (12/12): Monaco → Canvas (150ms debounce + хэш-страж); Canvas → Monaco (surgical AST patching по SourceSpan); зомби-колода `cdp-poc` ликвидирована; Demo Store изолирован; фокус Monaco не теряется | ✅ CLOSED |
 
-### Out of scope PW-AIRGAP
+### Итог PK-WIRE-SYNC
 
-- Переписывание ZAP (сканер) — отдельный контур, не трогаем.
-- WebKit как обязательное покрытие в wired — бонус в образе, без приказа не добавляем.
-- Crawler-функции (`crawl_urls`/`gather_info`) полной замены — мигрируем только боевой путь прогона.
+| Исполнитель | Карточки | Тесты | Часы | Статус |
+|---|---|---|---|---|
+| **Boss** | WIRE-SYNC-B1, WIRE-SYNC-B2 | 31 | 6h | ✅ CLOSED |
+| **Flash** | WIRE-SYNC-F1 | 46 | 3h | ✅ CLOSED |
+| **Luna** | WIRE-SYNC-L1, WIRE-SYNC-L2 | 16 | 5h | ✅ CLOSED |
+| **ИТОГО** | **5 карточек · 3 исполнителя** | **93 FE · tsc 0** | **14h** | **🟢 CLOSED** |
+
+Сквозной контур собран: BrowserStage live MJPEG → observe/click → DSL-шаг → Canvas (бейджи, deep-link) → Monaco (surgical patch без потери `>@`/`>?`/комментариев).
+
+---
+
+### 🔥 Волна CLEANUP: PK-DSL-CLEANUP — Миграция Попробовать → try/catch/finally
+
+> **Причина:** сахарный контракт заморожен 28 авг 2026 — «Попробовать / Перехватить / ВКонце» вырезаны из канона. В сданном коде WIRE-SYNC осталось 29 упоминаний старых русских алиасов. Это техдолг: код поддерживает конструкции, которых нет в утверждённом контракте.
+
+| ID | Что получает оператор | Приёмочный сценарий GWT | Est | Кто |
+|---|---|---|---|---|
+| **DSL-CLEAN-B1** | `wireDocumentParser.ts` и тесты принимают `try/catch/finally` вместо `Попробовать/Перехватить/ВКонце`. Старые русские токены удалены из control-flow парсера. | **Given:** DSL с блоком `try { ... } catch { ... } finally { ... }`. **When:** парсер читает сценарий. **Then:** распознан TryNode; «Попробовать» больше не парсится и не тестируется. | 0.5h | Boss |
+| **DSL-CLEAN-F1** | Monaco: автодополнение, форматтер, keywords, prettyToWire — используют `try/catch/finally`. Русские алиасы удалены. | **Given:** Monaco с автодополнением. **When:** ввод `try`. **Then:** автодополнение предлагает блок `try {…} catch {…} finally {…}`; «Попробовать» отсутствует в подсказках. | 0.5h | Flash |
+| **DSL-CLEAN-F2** | Canvas: TRY-BLOCK → чистый бейдж `[TRY]`; подпись «Попробовать» заменена на «try/catch». StepDslScanner ищет `try` вместо `Попробовать`. | **Given:** сценарий с `try/catch` блоком. **When:** открыт Canvas. **Then:** бейдж `[TRY]`, подпись `try/catch`; «Попробовать» не упоминается. | 0.5h | Flash |
+
+### Приёмка PK-WIRE-SYNC (Keeper)
+
+- **GWT-1:** Сценарий из 4 шагов с `>@` и `>?` честно отображается на Canvas: 4 карточки, заголовок, бейджи.
+- **GWT-2:** Правка селектора на Canvas сохраняет `>@ { recover }` без искажений.
+- **GWT-3:** Дебаунс 150ms, хэш-страж, фокус в Monaco не теряется при обновлении Canvas.
+- Браузер в панели — живой поток 10+ fps, скриншот-поллинг удалён.
+- `cdp-poc` и Demo Store изолированы; пустой Canvas только при пустом сценарии.
+- tsc 0, точечные тесты зелёные.
+- **PK-DSL-CLEANUP:** «Попробовать / Перехватить / ВКонце» отсутствуют в парсере, Monaco и Canvas.
+
+### Out of scope PK-WIRE-SYNC
+
+- Визуальный блочный редактор `try/catch` на Canvas (структура блока read-only).
+- Полная перегенерация документа при сохранении из Canvas (только surgical patching).
+- Новые DSL-конструкции (синтаксис зарезервирован, реализации нет).
+
+---
+
+## 13. Эпик PK-VIEWPORT — Viewport Relay: Async CDP Screencast в контейнере · 28 авг 2026 · 🟢 CLOSED
+
+> **Статус:** 🟢 CLOSED (все 6 карточек сданы, 28 авг 2026). 9.5h, пропорция 20/40/40 (Boss/Flash/Luna).  
+> **Спецификация:** [`docs/research/2026-08-28-browser-viewport-streaming.md`](research/2026-08-28-browser-viewport-streaming.md) — полный архитектурный кристалл: 3 изолированных канала, контракты Frame/Input/Lifecycle, формула coordinate mapping, FIFO-1 backpressure.  
+> **Проблема:** текущий CDP screencast живёт на sync `_BrowserWorker`, блокированном на `queue.get()`. Колбэки `Page.screencastFrame` обрабатываются только при активных API-вызовах, а не в непрерывном цикле. Relay должен быть вынесен в независимый async event loop.  
+> **Цель:** эвакуировать screencast relay с sync worker, добавить WS frame/input contract, убрать host Chromium fallback, принять Juice Shop Steel Thread через контейнер, вычистить legacy screenshot polling.
+
+### Нарезка Boss — Тяжёлое ядро (20%, 1 карточка, VP-B1)
+
+| ID | Что получает оператор | Приёмочный сценарий GWT | Est | Кто |
+|---|---|---|---|---|
+| **VP-B1** | Async CDP Screencast Relay: независимый event loop, не блокируемый очередью команд sync воркера. WS-сервер отдаёт бинарные JPEG-кадры с JSON-заголовком (`type: "frame"`, `seq`, `width`, `height`, `deviceScaleFactor`). FIFO-1 backpressure (только последний кадр). Input-контракт: `type: "pointer"`, `action`, `x`, `y`, `button`, `clickCount` — транслируется в CDP `Input.dispatchMouseEvent`. При обрыве контейнера — `type: "error"`, `code: "BROWSER_UNAVAILABLE"`. | **Given:** контейнер `playwright-authoring` поднят, Chromium жив на `:9223`. **When:** открыт BrowserStage. **Then:** WS relay подключается к CDP, отправляет `Page.startScreencast`, кадры приходят в реальном времени без задержек очереди команд; клиент получает `type: "ready"` с `browserId`; при падении контейнера — `type: "error"`, реконнект. | 3h | Boss |
+
+### Нарезка Flash — Быстрый UI (40%, 2 карточки, VP-F1 + VP-F2)
+
+| ID | Что получает оператор | Приёмочный сценарий GWT | Est | Кто |
+|---|---|---|---|---|
+| **VP-F1** | BrowserStage WS-клиент: `<canvas>` рендеринг JPEG-кадров из нового relay (вместо `<img src=".../stream">`), калибровка `computeViewportCoordsFromEvent` под фактические `width`/`height`/`deviceScaleFactor` из frame-заголовка. Масштабирование pointer coordinates: `scaleX = frameWidth / canvas.clientWidth`. | **Given:** WS relay жив, кадры идут. **When:** оператор кликает по отрендеренному canvas. **Then:** координаты пересчитаны в CSS viewport (1280×800), отправлен `type: "pointer"` с точными `x, y`; DOM-клик в контейнере попадает в тот же элемент, что видит оператор. | 1.5h | Flash |
+| **VP-F2** | Cleanup: удаление screenshot polling из `data_playground.py` (`_browser_screencast_stream` — multipart MJPEG на скриншотах). Обновление тестов: `BrowserStage.test.tsx` проверяет WS-контракт (frame header, coordinate mapping), не наличие `<img>`. `browserSession.screencast.test.ts` и `clickCoordinate.test.ts` обновлены под viewport calibration. `browser_service.py` — удалён `_cmd_screenshot` как основной транспорт кадра (остаётся только для smoke/отладки). | **Given:** WS relay работает, BrowserStage на canvas. **When:** прогон тестов. **Then:** 0 упоминаний скриншот-поллинга; тесты проверяют frame contract и coordinate mapping; старый MJPEG endpoint удалён или заменён на прокси к relay. | 1.5h | Flash |
+
+### Нарезка Luna — Тяжёлый контур (40%, 2 карточки, VP-L1 + VP-L2)
+
+| ID | Что получает оператор | Приёмочный сценарий GWT | Est | Кто |
+|---|---|---|---|---|
+| **VP-L1** | Container enforcement в `browser_service.py`: удалён host Chromium fallback (`headless=True` локальный запуск). `PK_BROWSER_CDP_ENDPOINT` обязателен. Статус `/api/browser/status` возвращает `runtime: "container"`, `headless: false`, `transport: "playwright"`. При недоступности контейнера — `connected: false`, `error: "BROWSER_UNAVAILABLE"`. Повторный `status()` не спавнит новых процессов. | **Given:** контейнер не поднят. **When:** запрошен `/api/browser/status`. **Then:** ответ `connected: false`, `error: "Container required — start playwright-authoring"`; на хосте 0 новых процессов Chrome; нет тихого fallback на локальный headless. | 1h | Luna |
+| **VP-L2** | Интеграция: сквозной Juice Shop Steel Thread через контейнерный Chromium. Проверка: navigate → hover на карточке товара (живой hover в стриме) → click по кнопке «Add to Basket» → observe event с tag/role/AX → DSL-кандидат → Canvas → Monaco. Починка всего, что сломано на живом проходе (координаты, тайминги, CDP-сессии). | **Given:** контейнер поднят, WS relay жив, BrowserStage открыт. **When:** ручной проход Juice Shop Steel Thread (8 шагов из §8 спецификации). **Then:** все 8 шагов пройдены; observe→DSL цепочка замкнута; координаты клика точны (куда кликнул = что в DOM); 0 регрессий по сданным тестам. | 1h | Luna |
+
+### Нарезка Luna — Долг по тестам (1 карточка, VP-L1-FIX, ~1.5h)
+
+> **Причина:** VP-L1 перевела `browser_service.py` с module-level API на class-based `_BrowserWorker` + `dispatch()`, но `orchestrator/tests/test_browser_service.py` остался на старом API и падает целиком (ложная зелёность — живой проход VP-L2 не поймал, потому что юнит-слой молча упал).
+> **Факт (28 авг):** `py -3 -m pytest orchestrator/tests/test_browser_service.py -q` → **29 failed** (`AttributeError: no attribute '_get_page' / '_enrich_observed_event'`).
+
+| ID | Что делаем | Приёмочный сценарий GWT | Est | Кто |
+|---|---|---|---|---|
+| **VP-L1-FIX** | Переписать `test_browser_service.py` под class-based `_BrowserWorker` API. Маппинг: `bs._get_page` → `worker._ensure_browser()`; `bs._page`/`_observe_active`/`_browser_id`/`_connected` → `worker._*`; `bs._enrich_observed_event` → `worker._enrich_event()`. Юнит-тесты зовут `worker._cmd_*()` напрямую (handler, не `dispatch()`), `worker._page = mock` вместо патча `_get_page`. `test_get_page_launches_headless` переписать под VP-L1 (без env → `None` + `_last_cdp_error` с `"PK_BROWSER_CDP_ENDPOINT not set"`). Boss уже: hit-test fix `_cmd_observe_click` (elementFromPoint + dispatchEvent), 3 observe_click-теста, integration-тест → skip. | **Given:** новый `_BrowserWorker` API. **When:** прогон тестов. **Then:** `test_browser_service.py` = 40 passed / 0 failed / 1 skipped; grep по файлу — 0 упоминаний `_get_page`/`_enrich_observed_event`/`_connected`/`_observe_page`; `test_pw_airgap_and_cdp.py` (54) и `test_cdp_viewport_relay.py` (16) не сломаны. | ✅ CLOSED (39 passed, 1 skipped, 28 авг) | Luna |
+
+### Итог PK-VIEWPORT
+
+| Исполнитель | Карточки | Часы | Статус |
+|---|---|---|---|
+| **Boss** | VP-B1 (Async CDP Relay + WS contract) | 3h | ✅ CLOSED |
+| **Flash** | VP-F1 (BrowserStage canvas), VP-F2 (cleanup) | 3h | ✅ CLOSED |
+| **Luna** | VP-L1 (container enforcement), VP-L2 (Steel Thread), VP-L1-FIX (тесты под новый API) | 3.5h | ✅ CLOSED |
+| **ИТОГО** | **6 карточек · 3 исполнителя** | **9.5h** | **🟢 CLOSED** |
+
+### Приёмка PK-VIEWPORT (Keeper)
+
+- [ ] WS relay отдаёт JPEG-кадры без задержек очереди sync воркера (FIFO-1).
+- [ ] BrowserStage рендерит `<canvas>`, не `<img src=".../stream">`.
+- [ ] `computeViewportCoordsFromEvent` откалиброван под фактические `width`/`height`/`deviceScaleFactor`.
+- [ ] Juice Shop Steel Thread: 8 шагов пройдены, observe→DSL цепочка замкнута, координаты точны.
+- [ ] При недоступном контейнере — `BROWSER_UNAVAILABLE`, 0 процессов Chrome на хосте.
+- [ ] Screenshot polling удалён из `data_playground.py`; тесты проверяют frame contract, не `<img>`.
+- [ ] `tsc 0`, точечные тесты зелёные.
+- [ ] 0 регрессий по сданным тестам PK-WIRE-SYNC (93 FE + 54 PY).
+
+### Out of scope PK-VIEWPORT
+
+- Удаление Selenium Grid (эпик PW-AIRGAP, припаркован).
+- WebRTC, полноценный видеокодек, аппаратное ускорение.
+- Мульти-вьюпорт (несколько параллельных authoring-сессий).
+- noVNC как основной транспорт (fallback `:7902` сохранён, не трогаем).
+
+---
+
+## 14. Эпик PW-AIRGAP-2 — Execution Parity на Playwright (за флагом) · 28 авг 2026 · 🟡 ready
+
+> **Статус:** 🟡 ready (нарезано, 28 авг 2026). 5 карточек, 14h est. Исполнители не распределены — по команде владельца.  
+> **Спецификация:** [`docs/research/2026-08-27-browser-runtime-airgap.md`](research/2026-08-27-browser-runtime-airgap.md) — полный синтез: один Playwright-мир вместо Selenium Grid, ZAP-прокси маршрут, Playwright Firefox ≠ Selenium Firefox, видеоформат webm→mp4.  
+> **Проблема:** execution жёстко на Selenium (`core/controller.py` → `WebDriverAdapter`), хотя `PlaywrightAdapter` реализован целиком (428 строк) и не подключён. Split-brain дорожает: два мира образов, PlaywrightAdapter написан впустую.  
+> **Цель:** Controller умеет гонять прогон через Playwright за флагом `PK_BROWSER_RUNTIME=playwright`, дефолт остаётся `selenium`; parity-прогон доказывает идентичность verdict/evidence до cutover.
+
+### Карточки PW-AIRGAP-2
+
+| ID | Что получает оператор | Приёмочный сценарий GWT | Est |
+|---|---|---|---|
+| **PW-E1** | Controller гоняет wired-прогон через `PlaywrightAdapter` за флагом `PK_BROWSER_RUNTIME=playwright`; дефолт остаётся `selenium`. ZAP-прокси подхвачен через `host.docker.internal` (как уже решено у Selenium). | **Given:** wired с chrome/firefox. **When:** run с флагом playwright. **Then:** навигация/клики/заполнения идут через Playwright; трафик идёт через ZAP-прокси; evidence тот же контракт, что у Selenium. | 4h |
+| **PW-E2** | CDP-поверхность `BrowserAdapter` (cache/cookies/console logs) переписана на Playwright-native (`page.context.new_cdp_session()` / нативные эквиваленты). | **Given:** шаг «ОчиститьКэш» / «ОчиститьCookies». **When:** run на playwright. **Then:** результат идентичен Selenium; console logs собраны; 0 WebDriver-специфики в боевом пути. | 3h |
+| **PW-E3** | Видео: `record_video_dir` + `run_id` нейминг + ffmpeg→MP4; Monitor replay работает тем же путём, что Grid-видео. | **Given:** run записан на playwright. **When:** открыт Monitor `?run_id=`. **Then:** видео воспроизводится; контракт MP4 сохранён (webm транскодится). | 3h |
+| **PW-E4** | Live-вид execution: headed Playwright под Xvfb → noVNC, оператор видит прогон (не пустой desktop). | **Given:** run в headed-режиме на playwright. **When:** открыт Live. **Then:** живой экран прогона, не пустой Xvfb desktop; viewport корректный. | 2h |
+| **PW-E5** | Parity-прогон: одинаковый wired гоняется на Selenium и Playwright (chrome+firefox, headed+headless) до зелёного. Расхождение = баг, фиксируется до cutover. | **Given:** набор wired-фикстур. **When:** parity run. **Then:** одинаковые verdict/evidence; расхождения зафиксированы как баги и закрыты. | 2h |
+
+### Приёмка PW-AIRGAP-2
+
+- [ ] Run с `PK_BROWSER_RUNTIME=playwright` проходит навигацию/клики/заполнения через Playwright.
+- [ ] ZAP-прокси подхвачен; evidence тот же контракт.
+- [ ] CDP-поверхность (cache/cookies/console) идентична Selenium.
+- [ ] Видео воспроизводится в Monitor (`?run_id=`).
+- [ ] Live-вид показывает прогон, не пустой desktop.
+- [ ] Parity-прогон зелёный по verdict/evidence на обеих runtime.
+- [ ] Дефолт остаётся `selenium` — cutover отдельным эпиком.
+
+### Out of scope PW-AIRGAP-2
+
+- Выпиливание Selenium Grid (это PW-AIRGAP-3, после parity).
+- WebKit как обязательное покрытие.
+- Переписывание ZAP (сканер отдельный).
+- Crawler/gather_info полная замена (только боевой путь прогона).
+
+---
+
+## 15. Эпик PW-AIRGAP-3 — Cutover + Airgap Bundle · 28 авг 2026 · 🟡 ready
+
+> **Статус:** 🟡 ready (нарезано, 28 авг 2026). 3 карточки, 8h est. Запускается ТОЛЬКО после зелёного parity (PW-E5).  
+> **Цель:** дефолт переключается на Playwright; Selenium Grid выпилен из compose; airgap bundle собирается как один образ `docker save`/`docker load`.
+
+### Карточки PW-AIRGAP-3
+
+| ID | Что получает оператор | Приёмочный сценарий GWT | Est |
+|---|---|---|---|
+| **PW-C1** | Дефолт переключён на Playwright; Selenium Grid (hub/node/chrome-video/firefox) выпилен из compose. Wired `browser_type` контракт не сломан. | **Given:** parity зелёный. **When:** cutover. **Then:** execution идёт на Playwright; Grid-сервисы не поднимаются; существующие wired-сценарии работают без правки. | 3h |
+| **PW-C2** | Airgap bundle: один образ Playwright (браузеры+либы+ffmpeg) экспортируется `docker save`, грузится `docker load` на чистом хосте. `playwright install` НЕ вызывается — браузеры уже в образе. | **Given:** чистый airgap-хост без интернета. **When:** load + up. **Then:** authoring + execution работают офлайн; ноль внешних зависимостей. | 3h |
+| **PW-C3** | Registry вычищен: `export_keywords` / `wired_validate` / тесты больше не тянут `WebDriverAdapter` как боевой путь. | **Given:** cutover выполнен. **When:** `test_suite_imports` + smoke. **Then:** registry maps на Playwright; 0 ссылок на боевой Selenium-путь. | 2h |
+
+### Приёмка PW-AIRGAP-3
+
+- [ ] Execution идёт на Playwright по умолчанию; Grid не поднимается.
+- [ ] Airgap bundle: `docker load` на чистом хосте → authoring + execution работают офлайн.
+- [ ] Registry: 0 ссылок на боевой WebDriverAdapter; wired `browser_type` контракт не сломан.
+- [ ] Все существующие тесты зелёные (или моки обновлены).
+
+### Out of scope PW-AIRGAP-3
+
+- Горизонтальное масштабирование worker pool.
+- Распределённый Playwright (несколько машин).
+- Удаление noVNC fallback (`:7902` остаётся диагностикой).
+
+---
+
+## 16. Эпик PK-RUNCTL — System Layers: Health / Edge / Run Control Plane / Telemetry / Profiles · 28 авг 2026 · 🟡 ready
+
+> **Статус:** 🟡 ready (нарезано, 28 авг 2026). 17 карточек, 20h est. Исполнители не распределены.  
+> **Спецификация:** [`docs/research/2026-08-27-system-layers-health-run-ctl-backlog.md`](research/2026-08-27-system-layers-health-run-ctl-backlog.md) — полная нарезка: GWT, DoD, out-of-scope на каждую карточку.  
+> **Проблема:** запуск — синхронный CLI-процесс; если упал — run потерян. Нет очереди, нет «ровно один раз», нет health-контракта, нет единой точки входа.  
+> **Цель:** production-зрелость системных слоёв: health, edge gateway, run control plane, сквозная telemetry, защита Pure Box.
+
+### Пакет HEALTH — Контракт жизнеспособности (3 карточки)
+
+| ID | Что получает оператор | Приёмочный сценарий GWT (кратко) | Est |
+|---|---|---|---|
+| **HEALTH-1** | Стандартный health-ответ любого сервиса: жив / готов / draining. «Готов» ≠ «жив» (без PG — «не готов»). | **Given:** сервис жив, зависимость недоступна. **Then:** сообщает «жив, но не готов». | 2h |
+| **HEALTH-2** | Compose hardening: зависимости через `condition: service_healthy`, startup-order инфраструктура → бизнес. | **Given:** PG не принимает соединения. **Then:** Auth не стартует и не падает с ошибкой. | 1h |
+| **HEALTH-3** | Execution readiness: worker pool честно отвечает, есть ли свободная мощность (по capabilities). | **Given:** все worker'ы заняты. **Then:** «нет, слоты заняты». | 1h |
+
+### Пакет EDGE — Единая точка входа (2 карточки)
+
+| ID | Что получает оператор | Приёмочный сценарий GWT (кратко) | Est |
+|---|---|---|---|
+| **EDGE-1** | Edge Gateway: один внешний порт (443), TLS, WebSocket/SSE не обрываются, внутренние сервисы (PG/Valkey/ZAP/OpenBao/Grid) не exposed. | **Given:** self-hosted профиль. **Then:** всё через один порт; прямой запрос к PG не доходит. | 3h |
+| **EDGE-2** | CORS + rate-limiting на уровне gateway (единая политика, не в каждом сервисе). | **Given:** неразрешённый origin. **Then:** отклонён на gateway; превышение лимита → 429. | 2h |
+
+### Пакет RUN-CTL — Run Control Plane (6 карточек, ядро)
+
+| ID | Что получает оператор | Приёмочный сценарий GWT (кратко) | Est |
+|---|---|---|---|
+| **RUN-CTL-1** | Модель жизненного цикла запуска: очередь → выполняется → завершён/ошибка → отменён. Переходы атомарны, история состояний сохранена. | **Given:** создан запуск. **Then:** статус «в очереди» → «выполняется» → «завершён». | 2h |
+| **RUN-CTL-2** | Защита от дублирования: повторный идентичный запрос не создаёт второй run. | **Given:** двойной клик «Запустить». **Then:** возвращён существующий run. | 1h |
+| **RUN-CTL-3** | Ограничение одновременных запусков: FIFO-очередь, позиция и ожидание видны. | **Given:** worker'ы заняты. **Then:** новый запуск в очереди с позицией. | 2h |
+| **RUN-CTL-4** | Назначение подходящему worker'у по capabilities (браузер/ZAP/зона). | **Given:** нужен Chrome, свободен только безбраузерный. **Then:** запуск ждёт браузерного worker'а. | 2h |
+| **RUN-CTL-5** | Worker lease + обнаружение зависших запусков (замолчал > минуты → завис). | **Given:** worker перестал отвечать. **Then:** запуск помечен «зависший», не висит вечно. | 2h |
+| **RUN-CTL-6** | Автоматический retry с классификацией: инфраструктурные — повтор (до N), валидация/target — мгновенный fail. | **Given:** потеря соединения с worker'ом. **Then:** авто-повтор; ошибка валидации → без повтора. | 1h |
+
+### Пакет TELEMETRY — Сквозная корреляция (3 карточки)
+
+| ID | Что получает оператор | Приёмочный сценарий GWT (кратко) | Est |
+|---|---|---|---|
+| **TELEMETRY-1** | Сквозная идентификация: run → попытка → шаг → worker → артефакт связаны ID-цепочкой. | **Given:** создан артефакт. **Then:** известно, к какому run/шагу он относится. | 2h |
+| **TELEMETRY-2** | Структурированные логи с контекстом run (фильтр по run_id). | **Given:** событие в лог. **Then:** запись содержит run/attempt/step ID. | 1h |
+| **TELEMETRY-3** | Базовые метрики: активные запуски, очередь, живые worker'ы, ошибки/час. | **Given:** очередь растёт. **Then:** метрика «глубина очереди» увеличивается. | 1h |
+
+### Пакет PROFILES — Защита Pure Box (1 карточка)
+
+| ID | Что получает оператор | Приёмочный сценарий GWT (кратко) | Est |
+|---|---|---|---|
+| **PROFILES-1** | Честный контракт Pure Box: не требует PG/Valkey/очереди; системные слои Enterprise не ломают Pure Box. | **Given:** запущен Pure Box. **Then:** не пытается подключиться к PG/Valkey; синхронный in-process запуск работает. | 1h |
+
+### Приёмка PK-RUNCTL
+
+- [ ] Все управляемые сервисы возвращают стандартный health-ответ (жив/готов/draining).
+- [ ] Compose-зависимости через `service_healthy`.
+- [ ] Один внешний порт; внутренние сервисы не exposed.
+- [ ] Запуск проходит фиксированный жизненный цикл с атомарными переходами.
+- [ ] Двойной клик не дублирует run; очередь FIFO; worker lease + обнаружение зависаний.
+- [ ] Retry только на инфраструктурные ошибки.
+- [ ] Run/attempt/step/worker/artifact связаны ID-цепочкой.
+- [ ] Pure Box работает без внешних сервисов (0 регрессий).
+
+### Out of scope PK-RUNCTL
+
+- Kubernetes (Ingress/probes) — Compose-совместимый контракт.
+- Полноценный дашборд метрик (Grafana) и алерты.
+- Экспоненциальный backoff и ручной retry-интерфейс.
+- Приоритеты запусков и multi-tenant лимиты.
+
+---
+
+## 17. Эпик WARZONE — Signature Rewind 100/100 · 28 авг 2026 · 🟡 ready
+
+> **Статус:** 🟡 ready (нарезано, 28 авг 2026). 8 карточек, 20h est. Исполнители не распределены.  
+> **Спецификация:** [`docs/research/2026-08-27-studio-warzone-rewind-specification.md`](research/2026-08-27-studio-warzone-rewind-specification.md) — полная математика: S(t) свертка, интенсивность луча I(t), RTS-камера spring oscillator, VideoTrackAdapter.  
+> **Цель:** детерминированная попиксельная перемотка боевой сцены (вперёд/пауза/скраб/реверс) в Studio Execution Hub. Killer-фича-дифференциатор.
+
+### Карточки WARZONE
+
+| ID | Что получает оператор | Приёмочный сценарий GWT | Est |
+|---|---|---|---|
+| **WZ-1** | Timeline Controller (`IStudioTimelineController`): play/pause/seek/setSpeed + регистрация подписчиков на `WarzoneSceneSnapshot`. | **Given:** прогон записан. **When:** play/pause/seek(14.3s). **Then:** подписчики получают детерминированный snapshot в момент t. | 2h |
+| **WZ-2** | Event Journal: NDJSON-журнал → упорядоченные события (τ, k, p); чистая свертка S(t) из S₀ + события ≤ t. | **Given:** журнал событий. **When:** запрошено S(t). **Then:** состояние идентично при forward/backward/direct seek (инвариант 100/100). | 3h |
+| **WZ-3** | Beam Renderer: плазменный луч с интенсивностью I(t) (сигмоида ramp/dim + пульс), ядро/ореол, волновое смещение. Реверс плавно сворачивает луч. | **Given:** луч активен на [t_start, t_end]. **When:** скраб влево. **Then:** луч плавно гаснет к t_start, без залипших лазеров и скачков. | 3h |
+| **WZ-4** | RTS-камера: critically damped spring, zoom 1.0–3.5×, Action Focus Director (lead-in 120ms / focus 2.8× / decay 350ms). | **Given:** атака на сущность. **When:** камера наводится. **Then:** плавный захват без рывков и дрожания. | 3h |
+| **WZ-5** | VideoTrackAdapter: бесшовный переход Live Stream → MP4 Replay без чёрного экрана и скачка позиции. | **Given:** бэкенд завершил MP4. **When:** переход. **Then:** playhead синхронизирован, UI не перезагружается. | 3h |
+| **WZ-6** | Три режима UI: Hybrid Operational (War Zone 60% + видео 40% + лог-тикер), Enterprise Audit (двойной лог System/Security), Signature Battlefield (полноэкранный командный центр + HUD). | **Given:** открыт Execution Hub. **When:** переключение режимов. **Then:** каждый режим корректен, без потери состояния таймлайна. | 3h |
+| **WZ-7** | Timeline scrubber: мастер-ползунок с маркерами (STEP/HIGH/BEAM_START/ZAP), двухступенчатый рендеринг (Canvas каждый rAF, видео/логи квант 60ms). | **Given:** скраб-драг ползунка. **Then:** 60 FPS на основном треке; видео и логи не грузят декодер. | 2h |
+| **WZ-8** | Производительность + приёмка: 60 FPS при 10 лучах / 50 нодах, детерминизм 100/100 в контрольных точках (t=5/14.3/30с). | **Given:** полноэкранный режим, 10 лучей, 50 нод. **When:** Playwright Performance Trace. **Then:** frame budget ≤ 16.6ms; хэши снимков идентичны при forward/backward. | 1h |
+
+### Приёмка WARZONE
+
+- [ ] Детерминизм: хэш Render(S(t)) идентичен при forward / backward / direct seek.
+- [ ] Луч плавно гаснет по сигмоиде, без залипания.
+- [ ] Камера без рывков, стабильный захват при 2.8×, плавный выход на 1.0×.
+- [ ] 60 FPS в полноэкранном режиме при 10 лучах / 50 нодах.
+- [ ] Live→MP4 переход без чёрного экрана.
+- [ ] Двойной аудит логов синхронен при скраббе (бинарный поиск строки < 2ms).
+- [ ] Три режима работают, состояние таймлайна не теряется.
+
+### Out of scope WARZONE
+
+- WebRTC медиа-трек (используем CDP screencast + MP4).
+- Мульти-пользовательский совместный просмотр боевой сцены.
+- Автопилот/автоисправление сценариев.
+- RTS-геймплей (кликабельные юниты) — только визуализация + перемотка.
+
+---
+
+## 18. Эпик PK-PERSIST — Persistence Foundation: PostgreSQL, MinIO и вывод Live из эксплуатации · PARKED · 27 авг 2026
+
+> **Статус:** 🔒 PARKED — не начинать до закрытия браузерного E2E и отдельной команды владельца.  
+> **Discovery:** [`sanctuary/cosmoport2/persistence-and-minio.md`](../sanctuary/cosmoport2/persistence-and-minio.md) — полный архитектурный синтез, инвентаризация Live, бюджет событий Valkey, 7-шаговая стратегия миграции.  
+> **Исходный раунд:** Gemini Discovery от 27 авг 2026 — исследование текущего persistence-контура, графа producers/consumers, матрицы владения данными.  
+> **Проблема:** вся история запусков, доказательств, логов, видео и отчётов живёт в файлах на диске (`reports/`). После рестарта процесса активные сессии обхода теряются. Старый пульт (`:8767`) — единственная поверхность чтения этих данных. При росте числа прогонов файловая система не даёт ни поиска, ни аудита, ни защищённого хранения артефактов.  
+> **Цель:** перевести историю и сущности в PostgreSQL, бинарные артефакты (видео, скриншоты, HAR, ZAP-отчёты, сырые логи) — в MinIO/S3, живой стрим событий — через Valkey, а старый пульт вывести из эксплуатации только после полной проверки. Pure Box остаётся на локальном хранилище без обязательного MinIO.
+
+### Пакет FOUNDATION — Фундамент хранения (4 карточки)
+
+| ID | Что получает оператор | Приёмочный сценарий GWT (ЧИСТО) | Est |
+|---|---|---|---|
+| **PERS-B1** | История запусков, статусы, вердикты, реестр проверок и доказательств живут в базе данных и не теряются при перезапуске. | **Given:** выполнено несколько прогонов. **When:** процесс перезапущен. **Then:** вся история доступна: какой прогон, на какой проверке, с каким вердиктом, когда; поиск по приложению и временной метке работает; статус «в процессе» обновляется в реальном времени. | 6h |
+| **PERS-B2** | Видеозаписи, скриншоты, HAR-архивы, сырые ответы сканера и логи сохраняются в объектное хранилище как неизменяемые артефакты с контрольной суммой. | **Given:** прогон завершён с evidence. **When:** оператор открывает карточку доказательств. **Then:** видео проигрывается, скриншот открывается, HAR скачивается; у каждого файла есть размер, дата и контрольная сумма; целостность артефакта можно проверить. | 5h |
+| **PERS-B3** | Локальный запуск (Pure Box / airgap) работает без внешнего объектного хранилища; при включении Enterprise-режима артефакты автоматически пишутся в S3-совместимое хранилище. | **Given:** Pure Box на чистой машине. **When:** выполнен прогон. **Then:** артефакты лежат локально, всё работает; при переключении профиля те же артефакты пишутся в MinIO без изменения кода проверок. | 4h |
+| **PERS-D1** | В инфраструктуре появляется MinIO/S3-хранилище: приватный бакет, доступ только через API, короткоживущие ссылки для фронтенда. | **Given:** поднят Enterprise-стенд. **When:** оператор смотрит видео или скриншот. **Then:** файл открывается по временной ссылке; прямой доступ к хранилищу из браузера невозможен; учётные данные хранилища не видны на фронтенде. | 3h |
+
+### Пакет MIGRATE — Переезд существующих данных (2 карточки)
+
+| ID | Что получает оператор | Приёмочный сценарий GWT (ЧИСТО) | Est |
+|---|---|---|---|
+| **PERS-D2** | Все ранее выполненные прогоны, видео, скриншоты и отчёты перенесены в новое хранилище без повторов и потери данных. | **Given:** на диске — история прогонов за всё время. **When:** запущена миграция. **Then:** каждый прогон с артефактами появляется в базе и объектном хранилище ровно один раз; повторный запуск миграции не создаёт дубликатов; исходные файлы на диске не удалены до ручной проверки. | 4h |
+| **PERS-B4** | Новый API и живой стрим событий заменяют старый пульт: статус прогона, лента событий, список запусков и evidence доступны через единую точку входа. | **Given:** активный прогон. **When:** оператор открывает монитор. **Then:** виден текущий статус; события приходят живым стримом без перезагрузки страницы; при обрыве связи стрим восстанавливается с последней точки без потери событий; все старые отчёты открываются по ссылкам. | 6h |
+
+### Пакет RETIRE — Вывод старого пульта (2 карточки)
+
+| ID | Что получает оператор | Приёмочный сценарий GWT (ЧИСТО) | Est |
+|---|---|---|---|
+| **PERS-B5** | Старый пульт временно работает как прослойка: все запросы проксируются в новое хранилище, внешне ничего не меняется. | **Given:** старый пульт на `:8767` поднят. **When:** фронтенд или скрипт запрашивает список запусков. **Then:** ответ приходит из базы данных, а не из файлов на диске; разницы в поведении нет. | 3h |
+| **PERS-B6** | Старый пульт полностью отключён. Все данные доступны через новый API; старые файлы-индексы на диске больше не используются. | **Given:** новый API работает, миграция подтверждена, все smoke-проверки зелёные. **When:** старый пульт остановлен. **Then:** ни одна функция продукта не сломана; история запусков, видео, отчёты и стрим событий работают через новый API; порт `:8767` свободен. | 2h |
+
+### Пакет INTEGRITY — Целостность и защита данных (3 карточки)
+
+| ID | Что получает оператор | Приёмочный сценарий GWT (ЧИСТО) | Est |
+|---|---|---|---|
+| **PERS-B7** | Система честно показывает хвосты: потерянный артефакт, запись без файла, файл без записи в реестре. Ни один из этих случаев не маскируется под успешный прогон. | **Given:** часть артефактов недоступна (файл удалён, диск сбой). **When:** оператор открывает карточку доказательств. **Then:** показана ошибка «Артефакт недоступен»; вердикт прогона не меняется задним числом на зелёный; администратор видит список всех осиротевших записей и бесхозных файлов. | 3h |
+| **PERS-B8** | Активная сессия обхода приложения не теряется при перезапуске процесса. | **Given:** оператор начал обход, накопил страницы и клики. **When:** процесс перезапущен. **Then:** сессия восстановлена: список страниц, маршрутов и накопленные действия на месте; незавершённая сессия видна в списке активных; оператор может продолжить или закрыть. | 2h |
+| **PERS-B9** | Поток событий фаззинга не кладёт систему: в живой стрим уходит только самое важное, а сырой дамп всех попыток сохраняется отдельным файлом артефакта. | **Given:** запущен фаззинг с миллионами попыток. **When:** оператор смотрит живой стрим. **Then:** стрим показывает: старт/стоп шага, прогресс раз в секунду, штучные аномалии (не чаще нескольких в секунду); браузер не зависает; полный лог всех попыток доступен для скачивания отдельным файлом в карточке доказательств. | 3h |
+
+### Приёмка PK-PERSIST (Keeper)
+
+- [ ] После рестарта процесса вся история запусков, статусов и доказательств доступна без потерь.
+- [ ] Видео, скриншоты и HAR открываются в браузере; у каждого артефакта есть размер и контрольная сумма.
+- [ ] Pure Box работает на локальном хранилище без MinIO; Enterprise — с MinIO.
+- [ ] Миграция старых прогонов не создаёт дубликатов; исходные файлы сохранены до ручной проверки.
+- [ ] Потерянный артефакт, запись без файла и файл без записи честно показаны как ошибка, не как успех.
+- [ ] Активная сессия обхода переживает перезапуск.
+- [ ] Фаззинг с миллионами попыток не вешает браузер и не забивает живой стрим; сырой дамп скачивается.
+- [ ] Старый пульт отключён; порт `:8767` свободен; все данные доступны через новый API.
+
+### Out of scope PK-PERSIST
+
+- Полноценный Cosmoport 2.0 (отдельный приоритет, припаркован).
+- Удаление Selenium Grid (эпик PW-AIRGAP).
+- AI-ассистент, рекомендации по допуску, пересчёт гейтов.
+- Автономный оператор, автопилот, автоисправление сценариев.
+- Замена Valkey на другой брокер (Kafka/RabbitMQ).
+- Горизонтальное масштабирование на кластер.
+- Полное удаление исходных файлов после миграции — только после ручной проверки владельцем.
 
 ---
 

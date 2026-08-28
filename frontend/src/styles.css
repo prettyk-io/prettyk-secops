@@ -6723,4 +6723,18 @@ html[data-pk-button-style='wireframe'] .pk-header-download.ant-btn-primary {
   border-left: 2px solid rgba(168, 85, 247, 0.2) !important;
 }
 
+/* ── WIRE-SYNC-F1: deep-link кнопка на карточке шага — показ по hover строки ── */
+.pk-deck-step-row:hover .pk-step-deeplink {
+  opacity: 1 !important;
+}
+
+/* ── WIRE-SYNC-F1: анимация раскрытия RECOVER-аккордеона ── */
+@keyframes pk-recover-slide {
+  from { max-height: 0; opacity: 0; }
+  to { max-height: 400px; opacity: 1; }
+}
+.pk-recover-enter {
+  animation: pk-recover-slide 0.2s ease-out;
+}
+
 

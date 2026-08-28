@@ -3,7 +3,19 @@ export type ActionKind = typeof ACTION_KINDS[number];
 export const STRATEGY_KINDS = ["role","label","css","test_id","text","xpath"] as const;
 export type StrategyKind = typeof STRATEGY_KINDS[number];
 export type StepLedState = "queued"|"running"|"success"|"warning"|"failure"|"predicted";
-export interface ScenarioStepModel { id:string; action:ActionKind; strategy:StrategyKind; strategyValue:string; payload:string; continueOnError:boolean; led:StepLedState; debugResult?:"ok"|"fail"|null; }
+/** WIRE-SYNC-F1: метаданные DSL-блока для карточки шага. */
+export type StepBlockKind = 'recover' | 'soft' | 'try';
+export interface StepBlockMeta { kind: StepBlockKind; title?: string; }
+export interface ScenarioStepModel {
+  id:string; action:ActionKind; strategy:StrategyKind; strategyValue:string; payload:string;
+  continueOnError:boolean; led:StepLedState; debugResult?:"ok"|"fail"|null;
+  /** WIRE-SYNC-F1: номер строки в конструкторе (1-based), для deep-link в Monaco. */
+  dslLine?: number;
+  /** WIRE-SYNC-F1: бейджи DSL-блоков, вычисляется из конструктора. */
+  blockMeta?: StepBlockMeta[];
+  /** WIRE-SYNC-F1: шаги внутри recover-блока (>@ { }). null = не recover. */
+  recoverSteps?: ScenarioStepModel[];
+}
 export function emptyStep(id:string):ScenarioStepModel { return {id,action:"Open",strategy:"css",strategyValue:"",payload:"",continueOnError:false,led:"queued",debugResult:null}; }
 // Канонические цвета действия (CDP-WIRE POC-CDP-4):
 //   Click = циан (#22d3ee), Type = синий (#3b82f6), Wait = фиолетовый (#a855f7).

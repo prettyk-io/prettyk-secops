@@ -21,6 +21,7 @@
 | **noVNC Firefox** | 7901 | `services/docker-compose.yml` | `netstat -ano \| findstr :7901` |
 | **noVNC Authoring (Playwright)** | **7902** | `services/docker-compose.yml` → `playwright-authoring` | `curl http://127.0.0.1:7902/vnc.html` |
 | **CDP Authoring (Playwright)** | **9223** | `services/docker-compose.yml` → `playwright-authoring` (маппинг :9223→:9222) | `curl http://127.0.0.1:9223/json/version` |
+| **CDP Viewport Relay (WS screencast)** | **9224** | `orchestrator/browser/cdp_viewport_relay.py` → `PK_CDP_RELAY_WS_PORT` (default 9224) | `netstat -ano \| findstr :9224` |
 | **Juice Shop** | 3000 | `services/docker-compose.target.yml` | `curl http://127.0.0.1:3000/` |
 | **pk-api-lab** | 8090 | `services/docker-compose.api-lab.yml` | `curl http://127.0.0.1:8090/health` |
 | **DefectDojo** | 8081 | `services/docker-compose.defectdojo.yml` | `curl http://127.0.0.1:8081/` |

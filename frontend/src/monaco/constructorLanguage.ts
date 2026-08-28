@@ -32,6 +32,7 @@ import { createConstructorSignatureHelpProvider } from './constructorLanguageSig
 import { rootMethodSuggestions } from './methodIdSuggest';
 import { CONSTRUCTOR_LANGUAGE_ID, PRETTYK_LANGUAGE_ID } from './setup';
 import { suggestWireLogicalFallback as suggestWireLogicalFallbackImpl } from './wireCompletionFallback';
+import { registerSmartLocatorHover } from './MonacoHoverProvider';
 
 export const CONSTRUCTOR_MARKER_OWNER = 'pk-constructor';
 /** CodeLens / scroll к разделу pages в форме. */
@@ -269,6 +270,8 @@ type FeatureDisposables = {
   /** CodeLens 2.0: «Проверить конструктор» (ED-6). */
   validateCodeLens?: { dispose: () => void };
   prettykValidateCodeLens?: { dispose: () => void };
+  /** DSL-F2: Smart Locator Hover — подсветка в BrowserStage при наведении на селектор. */
+  smartLocatorHover?: { dispose: () => void };
 };
 
 const FEATURES_KEY = '__pkConstructorLanguageFeatures';
@@ -302,6 +305,7 @@ export function registerConstructorLanguageFeatures(monaco: typeof monacoNs): vo
   store.prettykCodeLens?.dispose();
   store.validateCodeLens?.dispose();
   store.prettykValidateCodeLens?.dispose();
+  store.smartLocatorHover?.dispose();
   store.completion = monaco.languages.registerCompletionItemProvider(
     CONSTRUCTOR_LANGUAGE_ID,
     createCompletionProvider(monaco),
@@ -334,6 +338,8 @@ export function registerConstructorLanguageFeatures(monaco: typeof monacoNs): vo
     PRETTYK_LANGUAGE_ID,
     validateLenses,
   );
+  // DSL-F2: Smart Locator Hover — наведение на селектор → подсветка в BrowserStage
+  store.smartLocatorHover = registerSmartLocatorHover(monaco, CONSTRUCTOR_LANGUAGE_ID);
 }
 
 /** Переносит диагностику в маркеры редактора (подчёркивание + всплывающая подсказка). */

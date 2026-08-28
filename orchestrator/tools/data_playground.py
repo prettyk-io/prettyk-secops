@@ -28,8 +28,10 @@ Vite проксирует /api → :8765.
 """
 from __future__ import annotations
 
+
 import json
 import sys
+
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -256,6 +258,7 @@ class Handler(BaseHTTPRequestHandler):
         if path in ("/", "/api/data/health", "/api/health"):
             self._json(200, {"ok": True, "service": "prettyk-editor-api"})
             return
+        # VP-F2: MJPEG stream removed — frames now delivered via WS relay
         if path == "/api/run/status":
             self._json(200, get_run_status())
             return
@@ -764,6 +767,7 @@ class Handler(BaseHTTPRequestHandler):
         self._json(200, browser_forward())
 
     def _post_browser_screenshot(self, body: dict) -> None:
+        # VP-F2: smoke-only. Main frame transport is now WS /api/browser/canvas.
         from browser.browser_service import browser_screenshot
         self._json(200, browser_screenshot())
 

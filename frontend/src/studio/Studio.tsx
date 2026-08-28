@@ -18,7 +18,6 @@ import Editor from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
 import { Canvas } from "./Canvas";
 import { BrowserPanel } from "./BrowserPanel";
-import { StudioExplorer } from "./StudioExplorer";
 import { updateCheck } from "../checks/checksStore";
 import { saveResourceContents, type ResourceContentsMap } from "./resourceContents";
 import { collectStudioNodes, findNodeByTabId, tabFromNode } from "./collectStudioNodes";
@@ -174,22 +173,6 @@ export function Studio({
       {/* Глобальный header (бренд + переключение Студия/Редактор) — в App.tsx.
           Здесь — только навигация canvas: Сущности / Сценарии. */}
       <div className="flex-1 flex overflow-hidden">
-        {/* ── RAILS-L4: Explorer — живое дерево 6 корней (единственная навигация по сущностям) ── */}
-        <div className="shrink-0 flex flex-col overflow-hidden" style={{ width: 280, borderRight: "1px solid #1e293b", background: "#0f172a" }}>
-          <div className="flex items-center h-9 shrink-0 px-3" style={{ borderBottom: "1px solid #1e293b" }}>
-            <span className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: "#64748b" }}>Explorer</span>
-          </div>
-          <div className="flex-1 overflow-auto">
-            <StudioExplorer
-              formData={formData}
-              onFormDataChange={handleFormDataChange}
-              resourceContents={resourceContents}
-              onResourceContentsChange={handleResourceContentsChange}
-              selectedTabId={selectedTabId}
-              onSelectTab={(tabId) => setSelectedTabId(tabId)}
-            />
-          </div>
-        </div>
         <div className="flex-1 flex flex-col overflow-hidden min-w-0" style={{ borderRight: "1px solid #1e293b" }}>
           <Canvas counts={{
             pages: tree.pages.length,
