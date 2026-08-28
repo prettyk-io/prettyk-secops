@@ -47,7 +47,7 @@ if ($LASTEXITCODE -ne 0) { Write-Host "  network may already exist (ok)" }
 
 # 5. Стартовать системный контур
 Write-Host "[install] start system services (base)"
-docker compose -f "$BundleRoot\compose\docker-compose.base.yml" up -d
+docker compose -f "$BundleRoot\compose\docker-compose.base.yml" up -d --no-build
 if ($LASTEXITCODE -ne 0) { throw "base compose failed" }
 
 Write-Host "=== install OK ==="

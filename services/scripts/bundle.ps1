@@ -5,7 +5,7 @@
 #
 # Формат бандла:
 #   prettyk-pure-vX.Y.Z-airgap.tar.gz
-#   ├── wired.json         # версии + sha256 + совместимость
+#   ├── manifest.json      # версии + sha256 + совместимость
 #   ├── images/               # OCI-образы (.tar)
 #   ├── compose/              # base.yml + session-template.yml
 #   ├── scripts/              # install.ps1 / install.sh / verify-bundle.sh
@@ -35,7 +35,7 @@ $Images = @(
 
 # External pull images.
 $PullImages = @(
-    @{ Name = "zaproxy/scanner-stable";          Tag = "2.17.0" },
+    @{ Name = "zaproxy/zap-stable";              Tag = "2.17.0" },
     @{ Name = "bkimminich/juice-shop";       Tag = "v20.1.1" }
 )
 
@@ -93,7 +93,7 @@ Copy-Item "$ServicesDir\scripts\install.ps1"        "$BundleWork\scripts\" -Forc
 Copy-Item "$ServicesDir\scripts\install.sh"         "$BundleWork\scripts\" -Force -ErrorAction SilentlyContinue
 Copy-Item "$ServicesDir\scripts\verify-bundle.sh"   "$BundleWork\scripts\" -Force -ErrorAction SilentlyContinue
 
-# 7. Сгенерировать wired.json
+# 7. Сгенерировать manifest.json
 $wired = @{
     bundle = "prettyk-pure"
     version = $Version
@@ -118,12 +118,12 @@ $wired = @{
         @{ file = "compose/session-template.yml"; role = "session" }
     )
 }
-$wired | ConvertTo-Json -Depth 4 | Set-Content -Path "$BundleWork\wired.json" -Encoding UTF8
+$wired | ConvertTo-Json -Depth 4 | Set-Content -Path "$BundleWork\manifest.json" -Encoding UTF8
 
 # 8. Вычислить checksums
 Push-Location $BundleWork
 try {
-    $checksums = Get-ChildItem -Recurse -File | Where-Object { $_.Name -ne "wired.json" } | ForEach-Object {
+    $checksums = Get-ChildItem -Recurse -File | Where-Object { $_.Name -ne "manifest.json" } | ForEach-Object {
         $hash = (Get-FileHash -Path $_.FullName -Algorithm SHA256).Hash.ToLower()
         $rel = $_.FullName.Substring($BundleWork.Length + 1).Replace('\', '/')
         "$hash  $rel"

@@ -65,9 +65,8 @@ export function BrowserStage({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const clickLockRef = useRef(false);
 
-  // ─ WS URL: канонический relay VP-B1 на ws://127.0.0.1:9224/api/browser/canvas
-  // ВАЖНО: не :8765 — это plain-HTTP Playground без WS-апгрейда.
-  const wsUrl = (() => {
+  // ─ WS URL: SOR-F1 — динамический relay endpoint из pk-control, fallback на хардкод
+  const wsUrl = cdpStatus?.canvasUrl || (() => {
     const explicit = import.meta.env.VITE_CDP_RELAY_WS || '';
     if (explicit) return explicit;
     const host = window.location.hostname === 'localhost'
@@ -214,6 +213,23 @@ export function BrowserStage({
           {liveCdp ? (cdpObserving ? '● REC' : 'live') : 'stopped'}
           {liveCdp && hasFrames && <span className="text-[7px] text-slate-500 ml-0.5">×{framesReceived.current ?? 0}</span>}
         </span>
+
+        {/* SOR-F2: индикатор здоровья сессии + Recreate Workspace */}
+        {liveCdp && cdpStatus?.sessionHealth && cdpStatus.sessionHealth !== 'ready' && (
+          <button
+            onClick={async () => { await fetch('/api/browser/recreate-workspace', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); getBrowserSession().getStatus(); }}
+            className="flex items-center gap-1 px-1.5 h-5 rounded text-[8px] font-semibold"
+            style={{
+              background: cdpStatus.sessionHealth === 'degraded' ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)',
+              color: cdpStatus.sessionHealth === 'degraded' ? '#ef4444' : '#f59e0b',
+              border: `1px solid ${cdpStatus.sessionHealth === 'degraded' ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)'}`,
+            }}
+            title={`Сессия: ${cdpStatus.sessionHealth}. Нажмите чтобы пересоздать workspace.`}
+          >
+            <Circle className={cn('size-1.5', cdpStatus.sessionHealth === 'degraded' ? 'fill-red-500 text-red-500' : 'fill-amber-500 text-amber-500')} />
+            Recreate
+          </button>
+        )}
 
         {embedded && onToggleFullscreen && (
           <button onClick={onToggleFullscreen} className="p-0.5 rounded hover:bg-white/5 text-slate-400" title={fullscreen ? 'Свернуть' : 'На весь экран'}>

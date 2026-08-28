@@ -21,6 +21,8 @@ from crawler.models import (
     CrawlerState,
     CrawlerTransition,
     NetworkDeltaEntry,
+    PersonaAccessRecord,
+    PersonaConfig,
     ReplayResult,
 )
 from crawler.spa_crawler import SPACrawler
@@ -45,6 +47,8 @@ __all__ = [
     "CrawlerRunResult",
     "NetworkDeltaEntry",
     "AwakenedEndpoint",
+    "PersonaConfig",
+    "PersonaAccessRecord",
     "ReplayResult",
     "compute_state_fingerprint",
     "extract_route",

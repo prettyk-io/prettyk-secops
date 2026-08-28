@@ -13,15 +13,11 @@
 #   8768 — llama-server (Qwen3-1.7B Q5_K_M, CPU inference)
 #   8769 — llama-server-reasoning (Qwen3-4B-Instruct Q5_K_M)
 #
-# Опционально (include — раскомментировать при старте):
-#   - docker-compose.sonarqube.yml
-#   - docker-compose.defectdojo.yml
+# Для lab-контура добавить вручную:
+#   docker compose -f services/docker-compose.sonarqube.yml up -d
+#   docker compose -f services/docker-compose.defectdojo.yml up -d
 #
 # Сеть: pk-net (external, общая с сессионными проектами и infra).
-
-include:
-  - docker-compose.sonarqube.yml
-  - docker-compose.defectdojo.yml
 
 services:
   allure-light-secops:

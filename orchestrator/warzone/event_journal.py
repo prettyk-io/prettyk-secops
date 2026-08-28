@@ -230,6 +230,7 @@ class EventJournal:
         "FINDING_ALERT": "FINDING_ALERT",
         "FINDING": "FINDING_ALERT",
         "scanner_ALERT": "FINDING_ALERT",
+        "SCANNER_ALERT": "FINDING_ALERT",
     }
 
     @classmethod

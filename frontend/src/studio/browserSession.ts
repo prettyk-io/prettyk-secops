@@ -39,6 +39,10 @@ export interface BrowserSessionStatus {
   streamUrl?: string | null;
   /** VP-L1: сообщение об ошибке при недоступном контейнере */
   error?: string | null;
+  /** SOR-F1: WS canvas URL из pk-control session endpoint (dynamic relay). */
+  canvasUrl?: string | null;
+  /** SOR-F2: здоровье сессии — ready / recovering / degraded. */
+  sessionHealth?: 'ready' | 'recovering' | 'degraded' | null;
 }
 
 /** Результат навигации. */

@@ -23,6 +23,10 @@ class CrawlerConfig:
     awaken: bool = True
     fuzz: bool = False
     max_replay_depth: int = 6
+    # CRAWL-9: multi-persona crawl
+    personas: List[PersonaConfig] = field(default_factory=list)
+    # CRAWL-9: max endpoint'ов на persona (0 = безлимитно)
+    max_endpoints_per_persona: int = 100
 
     def __post_init__(self):
         if not self.allowed_origins and self.target_url:
@@ -149,10 +153,18 @@ class CrawlerTransition:
 
 @dataclass
 class AwakenedEndpoint:
-    """Result of UI awakening on an orphaned form/field."""
+    """Result of UI awakening on an orphaned form/field.
+
+    Provenance lifecycle:
+      - ``"observed"`` — реальный сетевой запрос был перехвачен при fill+submit.
+      - ``"synthetic_candidate"`` — сабмит не дал сети; endpoint сконструирован из form_action.
+        Требует ручного review оператором перед handoff в фаззер.
+      - ``"operator_approved"`` — оператор подтвердил synthetic candidate;
+        при следующем handoff включается в фаззер наравне с observed.
+    """
     field_name: str
     page_url: str
-    provenance: str  # "observed" | "synthetic_candidate"
+    provenance: str  # "observed" | "synthetic_candidate" | "operator_approved"
     endpoint_url: str = ""
     method: str = "GET"
     request_payload: Dict[str, Any] = field(default_factory=dict)
@@ -183,6 +195,48 @@ class ReplayResult:
 
 
 @dataclass
+class PersonaConfig:
+    """CRAWL-9: конфигурация роли для multi-persona crawl.
+
+    Каждая persona получает изолированный BrowserContext и независимый граф состояний.
+    """
+    name: str                        # "anonymous" | "authenticated-user" | "admin"
+    auth_chain: List[str] = field(default_factory=list)  # цепочка MethodId для входа под ролью
+    headers: Dict[str, str] = field(default_factory=dict)  # дополнительные заголовки (Bearer и т.д.)
+    cookies: Dict[str, str] = field(default_factory=dict)  # предустановленные cookies
+    viewport: Optional[Dict[str, int]] = None  # {"width": 1920, "height": 1080} — если нужен особый
+
+    def persona_hash(self) -> str:
+        """Детерминированный короткий хеш роли для изоляции графов."""
+        import hashlib
+        payload = f"{self.name}|{'|'.join(sorted(self.auth_chain))}"
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:12]
+
+
+@dataclass
+class PersonaAccessRecord:
+    """CRAWL-9: запись попытки доступа persona к конкретному URL."""
+    persona_name: str
+    persona_hash: str
+    url: str
+    status: int                       # HTTP-статус
+    access_result: str                # "accessible" | "blocked" | "redirected"
+    redirected_to: str = ""           # куда ушёл редирект
+    note: str = ""
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "persona_name": self.persona_name,
+            "persona_hash": self.persona_hash,
+            "url": self.url,
+            "status": self.status,
+            "access_result": self.access_result,
+            "redirected_to": self.redirected_to,
+            "note": self.note,
+        }
+
+
+@dataclass
 class CrawlerRunResult:
     """Full execution summary of a crawler run."""
     session_id: str
@@ -196,6 +250,77 @@ class CrawlerRunResult:
     awakened_endpoints: List[AwakenedEndpoint] = field(default_factory=list)
     blocked_actions_count: int = 0
 
+    # ── CRAWL-7: Fuzzer handoff ──
+
+    _FUZZABLE_PROVENANCE = frozenset({"observed", "operator_approved"})
+
+    def fuzzable_endpoints(self) -> List[AwakenedEndpoint]:
+        """Endpoints, готовые к передаче в фаззер: observed + operator_approved."""
+        return [ep for ep in self.awakened_endpoints if ep.provenance in self._FUZZABLE_PROVENANCE]
+
+    def synthetic_candidates(self) -> List[AwakenedEndpoint]:
+        """Endpoints, ждущие operator_approved: только synthetic_candidate."""
+        return [ep for ep in self.awakened_endpoints if ep.provenance == "synthetic_candidate"]
+
+    def handoff_to_fuzzer(
+        self, count: int = 50, mode: str = "sniper"
+    ) -> Tuple[List[Any], int]:
+        """Передать fuzzable endpoints в CorpusFuzzer.
+
+        Каждый AwakenedEndpoint конвертируется в RequestTemplate,
+        затем прогоняется через ``CorpusFuzzer.generate_mutations(template, count, mode)``.
+
+        Фаззинг **не** запускается автоматически — возвращается плоский список мутаций.
+
+        Returns:
+            ``(mutations, endpoint_count)`` — список RequestTemplate-мутаций и
+            количество исходных endpoint'ов, переданных в фаззер.
+        """
+        from corpus.corpus_parser import RequestTemplate
+        from corpus.fuzzer import CorpusFuzzer
+
+        fuzzable = self.fuzzable_endpoints()
+        if not fuzzable:
+            return [], 0
+
+        fuzzer = CorpusFuzzer()
+        all_mutations: List[Any] = []
+        for ep in fuzzable:
+            template = self._endpoint_to_template(ep)
+            if template is None:
+                continue
+            mutations = fuzzer.generate_mutations(template, count=count, mode=mode)
+            all_mutations.extend(mutations)
+
+        return all_mutations, len(fuzzable)
+
+    @staticmethod
+    def _endpoint_to_template(ep: AwakenedEndpoint) -> Any | None:
+        """AwakenedEndpoint → RequestTemplate для фаззера."""
+        from corpus.corpus_parser import RequestTemplate
+        from urllib.parse import urlparse, parse_qsl
+
+        if not ep.endpoint_url:
+            return None
+
+        parsed = urlparse(ep.endpoint_url)
+        query_params = [
+            {"name": k, "value": v if isinstance(v, str) else str(v)}
+            for k, v in parse_qsl(parsed.query)
+        ]
+
+        body_fields: List[Dict[str, str]] = []
+        if ep.request_payload:
+            for k, v in ep.request_payload.items():
+                body_fields.append({"name": k, "value": v if isinstance(v, str) else str(v)})
+
+        return RequestTemplate(
+            method=ep.method,
+            url=ep.endpoint_url,
+            query_params=query_params,
+            body_fields=body_fields,
+        )
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "schema_version": 2,
@@ -207,6 +332,7 @@ class CrawlerRunResult:
             "awaken": {
                 "observed": [a.to_dict() for a in self.awakened_endpoints if a.provenance == "observed"],
                 "synthetic_candidates": [a.to_dict() for a in self.awakened_endpoints if a.provenance == "synthetic_candidate"],
+                "operator_approved": [a.to_dict() for a in self.awakened_endpoints if a.provenance == "operator_approved"],
             },
             "limits": {
                 "states": self.state_count,

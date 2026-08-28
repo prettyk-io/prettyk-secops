@@ -19,7 +19,7 @@
 services:
   # Scanner daemon (OWASP scanner) — изолированный инстанс на сессию.
   scanner:
-    image: zaproxy/scanner-stable:2.17.0
+    image: zaproxy/zap-stable:2.17.0
     # container_name — managed by ComposeProvider (no fixed name)
     restart: unless-stopped
     expose:

@@ -42,7 +42,7 @@ docker network create pk-net 2>/dev/null || echo "  network may already exist (o
 
 # 5. Стартовать системный контур
 echo "[install] start system services (base)"
-docker compose -f "$BUNDLE_ROOT/compose/docker-compose.base.yml" up -d
+docker compose -f "$BUNDLE_ROOT/compose/docker-compose.base.yml" up -d --no-build
 
 echo "=== install OK ==="
 echo "  Allure:    http://127.0.0.1:5050/"

@@ -5,7 +5,7 @@
 #
 # Изоляция:
 #   - отдельный Compose Project (имена контейнеров с префиксом проекта);
-#   - изолированная bridge-сеть (Docker создаёт <project>_default);
+#   - изолированная bridge-сеть (<project>_default — Compose создаёт автоматически);
 #   - нет фиксированных host-портов (сервисы доступны только внутри сети);
 #   - labels com.prettyk.* для идентификации после рестарта.
 #
@@ -117,8 +117,7 @@ class ComposeProvider(RuntimeProvider):
     async def check_bundle_health(
         self, session_id: str,
     ) -> Dict[ResourceType, bool]:
-        project = _project_name(session_id)
-        result: Dict[ResourceType, bool] = {}
+        result: Dict[ResourceType, bool] = {}  # noqa: no-unused-variable placeholder
 
         try:
             containers_raw = await self._docker(
