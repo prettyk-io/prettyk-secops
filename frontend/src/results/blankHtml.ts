@@ -374,7 +374,7 @@ ${body}
     </main>
     <footer class="doc-foot">
       ${escapeHtml(kindLabel)} · шаблон ${escapeHtml(vm.template_version)}
-      · идентификатор задания ${escapeHtml(vm.manifest_hash)}
+      · идентификатор задания ${escapeHtml(vm.wired_hash)}
       · ${escapeHtml(vm.generated_at)}
       · рекомендуемый срок хранения не менее 5 лет
     </footer>

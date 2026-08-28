@@ -1,8 +1,8 @@
 # Манифест PrettyK
 
-> Граница SoT (hub): [`canon/manifest-sot.md`](canon/manifest-sot.md) (**CANON**). Machine-контракт: Pydantic `orchestrator/models/manifest.py`. Legacy JSON Schema: [`manifest.json`](manifest.json).
+> Граница SoT (hub): [`canon/wired-sot.md`](canon/wired-sot.md) (**CANON**). Machine-контракт: Pydantic `orchestrator/models/wired.py`. Legacy JSON Schema: [`wired.json`](wired.json).
 
-Манифест — JSON-файл с параметрами окружения, правилами безопасности и сценариями. Его можно создать в Редакторе или собрать программно по JSON Schema [`manifest.json`](manifest.json).
+Манифест — JSON-файл с параметрами окружения, правилами безопасности и сценариями. Его можно создать в Редакторе или собрать программно по JSON Schema [`wired.json`](wired.json).
 
 ## Минимальная структура
 
@@ -12,7 +12,7 @@
     "assessment_purpose": "scheduled"
   },
   "infrastructure": {
-    "zap_mode": "demon",
+    "scanner_mode": "demon",
     "browser_type": "chrome"
   },
   "security_configuration": {
@@ -40,14 +40,14 @@
 }
 ```
 
-Для ручной работы в ZAP (`assessment_purpose: manual`) блоки security и suites могут отсутствовать. В остальных режимах они зависят от выбранной политики.
+Для ручной работы в scanner (`assessment_purpose: manual`) блоки security и suites могут отсутствовать. В остальных режимах они зависят от выбранной политики.
 
 ## Корневые разделы
 
 | Раздел | Назначение |
 |---|---|
 | `meta` | цель и владельцы проверки |
-| `infrastructure` | режим ZAP, браузер и тайм-ауты |
+| `infrastructure` | режим scanner, браузер и тайм-ауты |
 | `security_configuration` | разрешённая цель, дополнительные домены, политика и аутентификация |
 | `test_suites` | пользовательские сценарии для `custom_policy` |
 | `scanning_and_fuzzing_targets` | цели политики `scanner_fuzzing` |
@@ -55,7 +55,7 @@
 | `api_targets_scanning` | API-цели для `api_scanner` |
 | `gui_elements_scanning` | цели crawler-политики |
 
-`docs/manifest.json` — источник допустимых полей. Неизвестные поля отклоняются или удаляются при импорте legacy-файла, поэтому не храните в манифесте произвольные заметки.
+`docs/wired.json` — источник допустимых полей. Неизвестные поля отклоняются или удаляются при импорте legacy-файла, поэтому не храните в манифесте произвольные заметки.
 
 ## `meta`
 
@@ -73,9 +73,9 @@
 
 | Поле | Значения | Назначение |
 |---|---|---|
-| `zap_mode` | `demon`, `webswing` | daemon для автоматического прогона; Webswing для Desktop UI |
+| `scanner_mode` | `demon`, `webswing` | daemon для автоматического прогона; Webswing для Desktop UI |
 | `browser_type` | `chrome`, `chrome-headless`, `firefox`, `firefox-headless` | браузер-исполнитель |
-| `zap_work_timeout_min` | число | максимальное ожидание действий ZAP |
+| `scanner_work_timeout_min` | число | максимальное ожидание действий scanner |
 | `idle_timeout_min` | число | время ручной паузы |
 | `webswing_session_timeout_min` | число | тайм-аут Webswing |
 | `debug_mode` | bool, default `false` | режим отладки: пауза Live, all-failsafe, без idle/work kill; допуск VOID |
@@ -95,7 +95,7 @@ Remote- или local-WebDriver выбирается переменной `KDT_WE
 `test_suites` открывается для любого назначения кроме `manual` — без гейта по `scan_policy`. Ветки scanner/openapi/api/crawler из схемы убраны.
 
 > [!IMPORTANT]
-> `scan_policy` / Honest Contract: поле в JSON не запускает spider или active scan. ZAP-действия — явные шаги в сценариях.
+> `scan_policy` / Honest Contract: поле в JSON не запускает spider или active scan. scanner-действия — явные шаги в сценариях.
 
 ## `test_suites`
 
@@ -198,7 +198,7 @@ Studio синхронизирует его с названием папки. Б�
 
 `test_data_constructor` хранит технические источники и преобразования данных. Новые фаззинг-кампании создавайте в `fuzzers`; старый `module_type: "Фаззер"` поддерживается только при импорте существующих файлов.
 
-Модули API (IMP): `module_type` **`OpenAPI`** (`openapi_fields`), **`GraphQL`** (`graphql_fields`), **`gRPC`** (`grpc_fields` — proto pack + import roots). Галочка анкеты / `zap_import` сами по себе **не** запускают silent scan.
+Модули API (IMP): `module_type` **`OpenAPI`** (`openapi_fields`), **`GraphQL`** (`graphql_fields`), **`gRPC`** (`grpc_fields` — proto pack + import roots). Галочка анкеты / `scanner_import` сами по себе **не** запускают silent scan.
 
 ### Fuzzers
 
@@ -248,7 +248,7 @@ Studio синхронизирует его с названием папки. Б�
 
 ```powershell
 .\.venv\Scripts\python.exe orchestrator\main.py `
-  --manifest path\to\manifest.json `
+  --wired path\to\wired.json `
   --validate-only
 ```
 
@@ -265,7 +265,7 @@ Studio синхронизирует его с названием папки. Б�
 
 Машиночитаемые контракты:
 
-- [`manifest.json`](manifest.json) — JSON Schema;
+- [`wired.json`](wired.json) — JSON Schema;
 - [`run_summary.schema.json`](run_summary.schema.json) — итог прогона;
 - [`../frontend/src/generated/keywords.json`](../frontend/src/generated/keywords.json) — действия runtime;
 - [`../frontend/src/generated/method_ids.json`](../frontend/src/generated/method_ids.json) — команды PrettyK.

@@ -4,8 +4,8 @@ Auth bootstrap из security_configuration.
 
 Http (по умолчанию, PK_AUTH_BOOTSTRAP): Basic / Bearer / Cookie / API Key /
 Query Key → HttpAdapter.
-ZAP (явный шаг ПрименитьAuth или PK_ZAP_AUTH_BOOTSTRAP=1): context / Replacer /
-Authentication Helper — см. apply_zap_auth.
+scanner (явный шаг ПрименитьAuth или PK_SCANNER_AUTH_BOOTSTRAP=1): context / Replacer /
+Authentication Helper — см. apply_scanner_auth.
 
 AUTH-12: success check (URL/string) после apply; compose list для multi-auth later.
 """
@@ -34,10 +34,10 @@ _CALL_CHAIN = "Последовательность вызовов / SSO"
 SUPPORTED_HTTP = frozenset(
     {_BASIC, _BEARER, _API_COOKIE, _API_KEY, _QUERY_KEY, _WEB_COOKIE}
 )
-SUPPORTED_ZAP_HEADER = frozenset(
+SUPPORTED_scanner_HEADER = frozenset(
     {_BASIC, _BEARER, _API_COOKIE, _API_KEY, _QUERY_KEY, _WEB_COOKIE}
 )
-SUPPORTED_ZAP_BROWSER = frozenset({_SSO, _FORM, "Form-based", "form"})
+SUPPORTED_scanner_BROWSER = frozenset({_SSO, _FORM, "Form-based", "form"})
 
 AuthProfileSpec = Tuple[Optional[str], Optional[Dict[str, Any]]]
 
@@ -47,8 +47,8 @@ def _env_enabled() -> bool:
     return raw not in ("0", "false", "off", "no")
 
 
-def zap_auth_env_enabled() -> bool:
-    raw = (pk_env("ZAP_AUTH_BOOTSTRAP") or "0").strip().lower()
+def scanner_auth_env_enabled() -> bool:
+    raw = (pk_env("SCANNER_AUTH_BOOTSTRAP") or "0").strip().lower()
     return raw in ("1", "true", "on", "yes")
 
 
@@ -214,15 +214,15 @@ def apply_auth_bootstrap(
     auth_type: Optional[str],
     auth_details: Optional[Dict[str, Any]],
     http_adapter: Any,
-    zap_adapter: Any = None,
+    scanner_adapter: Any = None,
     run_success_check: bool = True,
 ) -> Dict[str, Any]:
     """
     Применить поддерживаемый auth_type к HttpAdapter.
-    zap_adapter намеренно не используется здесь — ZAP только через apply_zap_auth /
+    scanner_adapter намеренно не используется здесь — scanner только через apply_scanner_auth /
     MethodId ПрименитьAuth (Honest Contract).
     """
-    del zap_adapter
+    del scanner_adapter
     result: Dict[str, Any] = {
         "applied": False,
         "auth_type": auth_type or "",
@@ -242,7 +242,7 @@ def apply_auth_bootstrap(
         result["notes"].append(
             f"auth_type={kind!r} не в Http-bootstrap "
             "(Basic/Bearer/Cookie/API Key/Query Key) — "
-            "задайте auth шагами или ZAP ПрименитьAuth для browser/SSO; "
+            "задайте auth шагами или scanner ПрименитьAuth для browser/SSO; "
             "action-chain (browser MFA) — AUTH-13"
         )
         logger.info("Auth bootstrap skip unsupported type: %s", kind)
@@ -281,7 +281,7 @@ def _compose_skip_profile(kind: str) -> Optional[str]:
     if kind not in SUPPORTED_HTTP:
         return (
             f"{kind!r}: не static Http — skip "
-            "(form/action → ZAP ПрименитьAuth; MFA step-executor residual)"
+            "(form/action → scanner ПрименитьAuth; MFA step-executor residual)"
         )
     return None
 
@@ -290,7 +290,7 @@ def _compose_apply_one(
     kind: str,
     details: Dict[str, Any],
     http_adapter: Any,
-    zap_adapter: Any,
+    scanner_adapter: Any,
 ) -> Dict[str, Any]:
     per: Dict[str, Any] = {"auth_type": kind, "applied": False, "notes": []}
     skip = _compose_skip_profile(kind)
@@ -301,7 +301,7 @@ def _compose_apply_one(
         auth_type=kind,
         auth_details=details,
         http_adapter=http_adapter,
-        zap_adapter=zap_adapter,
+        scanner_adapter=scanner_adapter,
         run_success_check=False,
     )
     per["applied"] = bool(one.get("applied"))
@@ -314,7 +314,7 @@ def _compose_apply_one(
 def apply_auth_profile_list(
     profiles: Sequence[AuthProfileSpec],
     http_adapter: Any,
-    zap_adapter: Any = None,
+    scanner_adapter: Any = None,
 ) -> Dict[str, Any]:
     """Compose multi-auth: apply static profiles in order; one success check at end.
 
@@ -337,7 +337,7 @@ def apply_auth_profile_list(
     for auth_type, auth_details in profiles:
         kind = (auth_type or "").strip() or _NONE
         details = dict(auth_details or {})
-        per = _compose_apply_one(kind, details, http_adapter, zap_adapter)
+        per = _compose_apply_one(kind, details, http_adapter, scanner_adapter)
         result["notes"].extend(per["notes"])
         result["profiles"].append(per)
         if per["applied"]:
@@ -366,17 +366,17 @@ def apply_auth_profile_list(
     return result
 
 
-def apply_zap_auth(
+def apply_scanner_auth(
     *,
-    zap_adapter: Any,
+    scanner_adapter: Any,
     context_name: str,
     auth_type: Optional[str],
     auth_details: Optional[Dict[str, Any]] = None,
     base_url: str = "",
 ) -> Dict[str, Any]:
     """
-    Настроить ZAP context / Replacer / Auth Helper под auth_type манифеста.
-    Вызывается из ZapAdapter.apply_wired_auth (явный шаг).
+    Настроить scanner context / Replacer / Auth Helper под auth_type манифеста.
+    Вызывается из ScannerAdapter.apply_wired_auth (явный шаг).
     """
     result: Dict[str, Any] = {
         "applied": False,
@@ -386,31 +386,31 @@ def apply_zap_auth(
     }
     kind = (auth_type or "").strip() or _NONE
     if kind == _NONE or kind == "":
-        result["notes"].append("Без авторизации — ZAP auth noop")
+        result["notes"].append("Без авторизации — scanner auth noop")
         return result
 
     details = dict(auth_details or {})
     try:
-        _apply_zap_auth_kind(kind, zap_adapter, context_name, details, base_url, result)
+        _apply_scanner_auth_kind(kind, scanner_adapter, context_name, details, base_url, result)
         if result["applied"]:
             logger.info(
-                "ZAP auth applied: %s (%s)", kind, "; ".join(result["notes"])
+                "scanner auth applied: %s (%s)", kind, "; ".join(result["notes"])
             )
     except Exception as exc:
         result["error"] = str(exc)
         result["notes"].append(f"ошибка: {exc}")
-        logger.warning("ZAP auth failed: %s", exc)
+        logger.warning("scanner auth failed: %s", exc)
 
     return result
 
 
-def _zap_mark(result: Dict[str, Any], note: str, *, applied: bool = True) -> None:
+def _scanner_mark(result: Dict[str, Any], note: str, *, applied: bool = True) -> None:
     result["notes"].append(note)
     result["applied"] = applied
 
 
-def _zap_basic_kind(
-    zap_adapter: Any,
+def _scanner_basic_kind(
+    scanner_adapter: Any,
     context_name: str,
     details: Dict[str, Any],
     base_url: str,
@@ -420,37 +420,37 @@ def _zap_basic_kind(
     password = _detail(details, "Пароль", "password")
     if not login:
         raise ValueError("Базовая авторизация: пустой Логин")
-    _apply_zap_basic(zap_adapter, context_name, login, password, base_url, details)
-    _zap_mark(result, "ZAP: httpAuthentication + Forced User (или Replacer Basic)")
+    _apply_scanner_basic(scanner_adapter, context_name, login, password, base_url, details)
+    _scanner_mark(result, "scanner: httpAuthentication + Forced User (или Replacer Basic)")
 
 
-def _zap_bearer_kind(
-    zap_adapter: Any, details: Dict[str, Any], result: Dict[str, Any]
+def _scanner_bearer_kind(
+    scanner_adapter: Any, details: Dict[str, Any], result: Dict[str, Any]
 ) -> None:
     token = _detail(details, "Токен", "token", "bearer")
     if not token:
         raise ValueError("Bearer Token: пустой Токен")
-    zap_adapter.add_replacer_rule(
+    scanner_adapter.add_replacer_rule(
         "pk-auth-bearer", "REQ_HEADER", "Authorization", f"Bearer {token}", False
     )
-    _zap_mark(result, "ZAP Replacer: Authorization Bearer")
+    _scanner_mark(result, "scanner Replacer: Authorization Bearer")
 
 
-def _zap_api_cookie_kind(
-    zap_adapter: Any, details: Dict[str, Any], result: Dict[str, Any]
+def _scanner_api_cookie_kind(
+    scanner_adapter: Any, details: Dict[str, Any], result: Dict[str, Any]
 ) -> None:
     header = _detail(details, "Заголовок", "header")
     token = _detail(details, "Токен", "token", "value")
     if not header or not token:
         raise ValueError("API Cookie: нужны Заголовок и Токен")
-    zap_adapter.add_replacer_rule(
+    scanner_adapter.add_replacer_rule(
         f"pk-auth-header-{header}", "REQ_HEADER", header, token, False
     )
-    _zap_mark(result, f"ZAP Replacer: header {header}")
+    _scanner_mark(result, f"scanner Replacer: header {header}")
 
 
-def _zap_api_key_kind(
-    zap_adapter: Any, details: Dict[str, Any], result: Dict[str, Any]
+def _scanner_api_key_kind(
+    scanner_adapter: Any, details: Dict[str, Any], result: Dict[str, Any]
 ) -> None:
     place = _normalize_place(
         _detail(details, "Место", "place", "PLACE"), default="header"
@@ -462,97 +462,97 @@ def _zap_api_key_kind(
     if not name or not token:
         raise ValueError("API Key: нужны имя и Токен")
     if place == "query":
-        # Honest: ZAP query replacer not wired — Http bootstrap covers query.
-        _zap_mark(
+        # Honest: scanner query replacer not wired — Http bootstrap covers query.
+        _scanner_mark(
             result,
-            f"ZAP: Query Key {name!r} — нет Replacer query; "
-            "ключ на HttpAdapter (не врать ZAP applied)",
+            f"scanner: Query Key {name!r} — нет Replacer query; "
+            "ключ на HttpAdapter (не врать scanner applied)",
             applied=False,
         )
         return
     if place == "cookie":
-        zap_adapter.add_replacer_rule(
+        scanner_adapter.add_replacer_rule(
             f"pk-auth-apikey-cookie-{name}",
             "REQ_HEADER",
             "Cookie",
             f"{name}={token}",
             False,
         )
-        _zap_mark(result, f"ZAP Replacer: Cookie {name}=…")
+        _scanner_mark(result, f"scanner Replacer: Cookie {name}=…")
         return
-    zap_adapter.add_replacer_rule(
+    scanner_adapter.add_replacer_rule(
         f"pk-auth-apikey-{name}", "REQ_HEADER", name, token, False
     )
-    _zap_mark(result, f"ZAP Replacer: API Key header {name}")
+    _scanner_mark(result, f"scanner Replacer: API Key header {name}")
 
 
-def _zap_query_key_kind(details: Dict[str, Any], result: Dict[str, Any]) -> None:
+def _scanner_query_key_kind(details: Dict[str, Any], result: Dict[str, Any]) -> None:
     name = _detail(details, "Query-параметр", "query", "param", "name", "NAME")
     token = _detail(details, "Токен", "token", "value", "VALUE")
     if not name or not token:
         raise ValueError("Query Key: нужны Query-параметр и Токен")
-    _zap_mark(
+    _scanner_mark(
         result,
-        f"ZAP: Query Key {name!r} — нет Replacer query; "
-        "ключ на HttpAdapter (не врать ZAP applied)",
+        f"scanner: Query Key {name!r} — нет Replacer query; "
+        "ключ на HttpAdapter (не врать scanner applied)",
         applied=False,
     )
 
 
-def _zap_web_cookie_kind(
-    zap_adapter: Any, details: Dict[str, Any], result: Dict[str, Any]
+def _scanner_web_cookie_kind(
+    scanner_adapter: Any, details: Dict[str, Any], result: Dict[str, Any]
 ) -> None:
     cookie_raw = _detail(details, "Cookie", "cookie")
     if not cookie_raw:
         raise ValueError("На основе Cookie: пустое поле Cookie")
-    zap_adapter.add_replacer_rule(
+    scanner_adapter.add_replacer_rule(
         "pk-auth-cookie", "REQ_HEADER", "Cookie", cookie_raw, False
     )
-    _zap_mark(result, "ZAP Replacer: Cookie")
+    _scanner_mark(result, "scanner Replacer: Cookie")
 
 
-def _apply_zap_auth_kind(
+def _apply_scanner_auth_kind(
     kind: str,
-    zap_adapter: Any,
+    scanner_adapter: Any,
     context_name: str,
     details: Dict[str, Any],
     base_url: str,
     result: Dict[str, Any],
 ) -> None:
     if kind == _BASIC:
-        _zap_basic_kind(zap_adapter, context_name, details, base_url, result)
+        _scanner_basic_kind(scanner_adapter, context_name, details, base_url, result)
         return
     if kind == _BEARER:
-        _zap_bearer_kind(zap_adapter, details, result)
+        _scanner_bearer_kind(scanner_adapter, details, result)
         return
     if kind == _API_COOKIE:
-        _zap_api_cookie_kind(zap_adapter, details, result)
+        _scanner_api_cookie_kind(scanner_adapter, details, result)
         return
     if kind == _API_KEY:
-        _zap_api_key_kind(zap_adapter, details, result)
+        _scanner_api_key_kind(scanner_adapter, details, result)
         return
     if kind == _QUERY_KEY:
-        _zap_query_key_kind(details, result)
+        _scanner_query_key_kind(details, result)
         return
     if kind == _WEB_COOKIE:
-        _zap_web_cookie_kind(zap_adapter, details, result)
+        _scanner_web_cookie_kind(scanner_adapter, details, result)
         return
-    if kind in SUPPORTED_ZAP_BROWSER or "SSO" in kind or "форм" in kind.lower() or "Form" in kind:
-        note = _apply_zap_browser_auth(zap_adapter, context_name, details, base_url)
+    if kind in SUPPORTED_scanner_BROWSER or "SSO" in kind or "форм" in kind.lower() or "Form" in kind:
+        note = _apply_scanner_browser_auth(scanner_adapter, context_name, details, base_url)
         result["notes"].extend(note["notes"])
         result["applied"] = bool(note.get("applied"))
         if note.get("error"):
             result["error"] = note["error"]
         return
     result["notes"].append(
-        f"auth_type={kind!r}: нет ZAP-ветки — настройте Auth шагами "
+        f"auth_type={kind!r}: нет scanner-ветки — настройте Auth шагами "
         "(AuthКонтекста / ForcedUser / Replacer)"
     )
-    logger.info("ZAP auth skip unknown type: %s", kind)
+    logger.info("scanner auth skip unknown type: %s", kind)
 
 
-def _apply_zap_basic(
-    zap: Any,
+def _apply_scanner_basic(
+    scanner: Any,
     context_name: str,
     login: str,
     password: str,
@@ -574,7 +574,7 @@ def _apply_zap_basic(
         import base64
 
         token = base64.b64encode(f"{login}:{password}".encode("utf-8")).decode("ascii")
-        zap.add_replacer_rule(
+        scanner.add_replacer_rule(
             "pk-auth-basic",
             "REQ_HEADER",
             "Authorization",
@@ -585,17 +585,17 @@ def _apply_zap_basic(
 
     port = port or "80"
     try:
-        zap.set_http_authentication(context_name, host, realm, port)
-        user_id = zap.create_and_force_user(
+        scanner.set_http_authentication(context_name, host, realm, port)
+        user_id = scanner.create_and_force_user(
             context_name, login, login=login, password=password
         )
-        logger.info("ZAP Basic+ForcedUser user_id=%s", user_id)
+        logger.info("scanner Basic+ForcedUser user_id=%s", user_id)
     except Exception as exc:
         logger.warning("httpAuthentication failed (%s) — Replacer Basic", exc)
         import base64
 
         token = base64.b64encode(f"{login}:{password}".encode("utf-8")).decode("ascii")
-        zap.add_replacer_rule(
+        scanner.add_replacer_rule(
             "pk-auth-basic",
             "REQ_HEADER",
             "Authorization",
@@ -604,8 +604,8 @@ def _apply_zap_basic(
         )
 
 
-def _apply_zap_browser_auth(
-    zap: Any,
+def _apply_scanner_browser_auth(
+    scanner: Any,
     context_name: str,
     details: Dict[str, Any],
     base_url: str,
@@ -630,20 +630,20 @@ def _apply_zap_browser_auth(
     browser_id = _detail(details, "BrowserId", "browser_id", "browserId") or "firefox-headless"
     wait_s = _detail(details, "Ожидание", "login_page_wait", "loginPageWait") or "5"
     try:
-        zap.set_browser_based_auth(
+        scanner.set_browser_based_auth(
             context_name,
             login_url,
             browser_id=browser_id,
             login_page_wait=wait_s,
         )
         try:
-            zap.set_auth_verification_autodetect(context_name)
-            out["notes"].append("ZAP Auth Helper: verification=autodetect")
+            scanner.set_auth_verification_autodetect(context_name)
+            out["notes"].append("scanner Auth Helper: verification=autodetect")
         except Exception as ver_exc:
             out["notes"].append(f"verification skip: {ver_exc}")
         try:
-            zap.set_session_management_autodetect(context_name)
-            out["notes"].append("ZAP sessionManagement=autodetect")
+            scanner.set_session_management_autodetect(context_name)
+            out["notes"].append("scanner sessionManagement=autodetect")
         except Exception as sess_exc:
             out["notes"].append(f"session autodetect skip: {sess_exc}")
 
@@ -651,7 +651,7 @@ def _apply_zap_browser_auth(
         password = _detail(details, "Пароль", "password")
         if login and password:
             try:
-                zap.create_and_force_user(
+                scanner.create_and_force_user(
                     context_name, login, login=login, password=password
                 )
                 out["notes"].append("Forced User после browser auth")
@@ -659,7 +659,7 @@ def _apply_zap_browser_auth(
                 out["notes"].append(f"Forced User skip: {fu_exc}")
 
         out["applied"] = True
-        out["notes"].append(f"ZAP Auth Helper browser: {login_url}")
+        out["notes"].append(f"scanner Auth Helper browser: {login_url}")
     except Exception as exc:
         out["error"] = str(exc)
         out["notes"].append(

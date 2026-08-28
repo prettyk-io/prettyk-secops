@@ -413,10 +413,10 @@ def diary_human_title(text: str) -> str:
     if looks_like_wire(t):
         return ""
     if t.startswith(
-        ("zap|", "webdriver|", "core|", "data|", "browser|", "http|", "allure|")
+        ("scanner|", "scanner|", "webdriver|", "core|", "data|", "browser|", "http|", "allure|")
     ):
         return ""
-    if " ZAP " in t:
+    if " scanner " in t:
         return ""
     if is_language_script(t) and not language_script_is_single_action(t):
         return ""

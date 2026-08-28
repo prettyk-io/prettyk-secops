@@ -4,7 +4,7 @@
 > Архитектурные решения для следующей версии фронтенда, рождённые отказом от
 > RJSF / JSON Schema. На птичьих правах: тезисы канонизированы, код строится.
 > Реестр: [`INDEX.md`](INDEX.md). Связан: [`split-canon.md`](split-canon.md),
-> [`prettyk-core.md`](prettyk-core.md), [`manifest-sot.md`](manifest-sot.md).
+> [`prettyk-core.md`](prettyk-core.md), [`wired-sot.md`](wired-sot.md).
 
 ## 0. Стек — утверждён
 
@@ -32,18 +32,18 @@
 
 | # | Решение | Следствие отказа от RJSF |
 |---|---|---|
-| 1 | Прямой React-рендер: `manifest.json → маппер → React DOM` | Нет JSON Schema как прослойки |
-| 2 | `ManifestForm.tsx` — кастомный маппер manifest → UI | Нет RJSF `<Form>` |
+| 1 | Прямой React-рендер: `wired.json → маппер → React DOM` | Нет JSON Schema как прослойки |
+| 2 | `WiredForm.tsx` — кастомный маппер wired → UI | Нет RJSF `<Form>` |
 | 3 | `<ConstructorWidget />` — самостоятельный, не виджет | Один инстанс Monaco, не пересоздаётся |
 | 4 | Валидация конструктора — только через playground | Нет ajv-валидации кода |
-| 5 | Валидация manifest-полей — карманная (~30 строк) | Нет 22 файлов `schema/` |
-| 6 | Состояние формы — `useState<ManifestData>` | Нет RJSF `formData` |
+| 5 | Валидация wired-полей — карманная (~30 строк) | Нет 22 файлов `schema/` |
+| 6 | Состояние формы — `useState<WiredData>` | Нет RJSF `formData` |
 | 7 | Сохранение — прямой маппинг `state → JSON.stringify` | Нет `coerceFormValue`, `effectiveSchema` |
 | 8 | Ролевая модель — React-контекст / HOC | Нет мутации JSON Schema |
 | 9 | Секции/табы — свой layout | Нет `ObjectFieldTemplate` |
 | 10 | Data-модули — рендер как карточки | Нет `ArrayFieldTemplate` |
 | 11 | Шаги сценария — свой список + drag-and-drop | Нет RJSF-array |
-| 12 | Импорт/экспорт — без JSON Schema-валидации | Нет `validateManifest()` через ajv |
+| 12 | Импорт/экспорт — без JSON Schema-валидации | Нет `validateWired()` через ajv |
 | 13 | Библиотека компонентов — antd 5 | Утверждено; не MUI |
 | 14 | Темы — свой ThemeProvider | Не зависит от RJSF |
 
@@ -56,14 +56,14 @@ Root кода vnext = **`cosmo/`** (workspace из `MANTRA.md`).
 ```text
 cosmo/
   src/
-    manifest/           # manifest → UI маппер (решение #2)
-      ManifestForm.tsx  # корневая форма
-      ManifestSteps.tsx # список шагов сценария (решение #11)
-      ManifestMeta.tsx  # мета-поля (id, target, gate...)
-      ManifestDataModules.tsx  # data-модули (решение #10)
-      ManifestSave.tsx  # сохранение (решение #7)
+    wired/           # wired → UI маппер (решение #2)
+      WiredForm.tsx  # корневая форма
+      WiredSteps.tsx # список шагов сценария (решение #11)
+      WiredMeta.tsx  # мета-поля (id, target, gate...)
+      WiredDataModules.tsx  # data-модули (решение #10)
+      WiredSave.tsx  # сохранение (решение #7)
     validation/         # карманный валидатор (решение #5)
-      validateManifestFields.ts  # ~30 строк
+      validateWiredFields.ts  # ~30 строк
     roles/              # ролевая модель (решение #8)
       RoleGuard.tsx     # HOC
       RoleContext.tsx   # контекст
@@ -104,7 +104,7 @@ cosmo/
 - Не менять Monaco на CodeMirror.
 
 **Манифест.** JSON Schema больше не генератор формы (форма = прямой маппер, решение #1/#2).
-`docs/manifest.json` больше не «SoT как раньше»: форма не производится из JSON Schema, а рендерится
+`docs/wired.json` больше не «SoT как раньше»: форма не производится из JSON Schema, а рендерится
 прямым маппером из runtime-контракта. Правка манифеста — **по воле владельца**; любые поля/контракты,
 нужные vnext, агент вправе менять. Порядок смены поля: [`development.md`](../development.md).
 
@@ -147,7 +147,7 @@ Monaco больше не в чужом DOM — свой контейнер, св
 Оформление **уже OK**. To evolve (P3, nice to have):
 
 - Единые CSS-переменные с Admin/Editor.
-- Компактный виджет состояния всех сервисов (Grid, ZAP, Allure, Dojo) одной карточкой.
+- Компактный виджет состояния всех сервисов (Grid, scanner, Allure, Dojo) одной карточкой.
 - Стык с Admin NotifyPanel (health-алерты).
 
 ## 9. Allure / Dojo (pure канон)
@@ -168,9 +168,9 @@ Monaco больше не в чужом DOM — свой контейнер, св
 | Модуль | Файлы vnext | Legacy | Статус | Эпик |
 |---|---|---|---|---|
 | `editor/` | Monaco + constructor + setup + semantic tokens + navigation + signature + validation bridge | Monaco via @monaco-rjsf | ✅ | VN-ED-1…4 |
-| `keywords/` | catalog, KeywordsContext, keywordsFromManifest | As-is | ✅ | VN-ED-2 |
+| `keywords/` | catalog, KeywordsContext, keywordsFromWired | As-is | ✅ | VN-ED-2 |
 | `generated/` | Generated keywords/method-ids | Generated | ✅ | VN-ED-2 |
-| `manifest/` | ManifestForm (прямой маппер), ManifestSteps, поля, валидация, defaultManifest, types | form/ (25) + schema/ (22) | ✅ | VN-FORM-1…5 |
+| `wired/` | WiredForm (прямой маппер), WiredSteps, поля, валидация, defaultWired, types | form/ (25) + schema/ (22) | ✅ | VN-FORM-1…5 |
 | `studio/` | Полный цех: дерево, табы, формы модулей, фаззер, Monaco-табы | 161 файл | ✅ | VN-ST-1…10 |
 | `checks/` | types, store, hashRoute, closeGuard | 16 | ✅ | VN-WS-1…4 |
 | `app/` | SecurityContext, ValidationFlow, GotoPage | 24 | ✅ | VN-WS-5…7 |
@@ -206,7 +206,7 @@ Monaco больше не в чужом DOM — свой контейнер, св
 
 ### Что НЕ мигрирует (by design)
 
-- `form/` (25) + `schema/` (22) — заменены на `manifest/` (прямой маппер)
+- `form/` (25) + `schema/` (22) — заменены на `wired/` (прямой маппер)
 - RJSF / ajv / json-schema / json-schema-merge-allof — выпилены
 - `@monaco-rjsf` — заменён на голый `@monaco-editor/react`
 - react-router — не было и не будет

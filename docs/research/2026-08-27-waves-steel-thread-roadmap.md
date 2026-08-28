@@ -51,7 +51,7 @@
 
 ### 🎯 Волна 1: Сквозная струна (Steel Thread)
 **Цель:** Получить первый рабочий сквозной контур по честному контракту:
-`1 Domain → 1 App → Gitea Repo → Plan Compile → Batch (Build+Scan+Deploy) → Gate → SecOps Lab (:8767/ZAP) → Evidence Ledger`.
+`1 Domain → 1 App → Gitea Repo → Plan Compile → Batch (Build+Scan+Deploy) → Gate → SecOps Lab (:8767/scanner) → Evidence Ledger`.
 
 #### Состав Wave 1 (8 ключевых кирпичей):
 
@@ -61,13 +61,13 @@
 | **2** | `PLAN-COMPILER` (Core DAG) | Backend Core | Преобразование описания приложения и кирпичей (Bricks) в компилированный `PipelinePlan` с детерминированным `compiled_hash`. |
 | **3** | `BATCH-DAG-IDEMPOTENT` | Backend Core | Логика выполнения пачек (Batches: build, static_scan, deploy, dynamic_test) с пропуском неизменённых пачек по `inputs_hash`. |
 | **4** | `EXECUTION-ADAPTER` (Woodpecker META) | Backend / Adapter | Генерация `.woodpecker.yml`, вызов API/gRPC Woodpecker, стриминг сырых логов и статусов шагов. |
-| **5** | `CAPABILITY-BROKER` (SecOps Lab) | Backend / Infra | Управление изолированными сессиями защитных инструментов (порты, ZAP demon API `:8080`, Playwright CDP `:9222`, KDT Live `:8767`) с привязкой к `run_id`. |
+| **5** | `CAPABILITY-BROKER` (SecOps Lab) | Backend / Infra | Управление изолированными сессиями защитных инструментов (порты, scanner demon API `:8080`, Playwright CDP `:9222`, KDT Live `:8767`) с привязкой к `run_id`. |
 | **6** | `SECURITY-GATES` | Backend Core | Автоматический стоп-гейт (блокировка при наличии Critical/High уязвимостей) + ручной аппрув с подписью оператора. |
 | **7** | `RUN-CONTROL-PLANE` (Lite) | Backend / State Machine | PostgreSQL (хранилище состояний Run/Batch/Job) + Valkey/SSE (живой стриминг прогресса в UI). |
 | **8** | `EVIDENCE-CHAIN` (Ledger) | Backend Core | Неизменяемый журнал улик (хэш каждого шага, логи, артефакты, снапшоты) с полной цепочкой происхождения (provenance). |
 
 #### Критерии готовности (DoD) для Волны 1:
-1. Запуск через API/CLI одного приложения проходит стадии: сборка → сканирование → деплой на тестовый порт → вызов ZAP/Playwright в SecOps Lab.
+1. Запуск через API/CLI одного приложения проходит стадии: сборка → сканирование → деплой на тестовый порт → вызов scanner/Playwright в SecOps Lab.
 2. При обнаружении критической уязвимости пайплайн останавливается на гейте.
 3. Вся история выполнения и артефакты зафиксированы в `evidence_chain` с криптографическими хэшами.
 
@@ -102,7 +102,7 @@
 1. **`EXECUTION-ADAPTER-JENKINS`**:
    - Адаптер для запуска сборок в существующей корпоративной инфраструктуре Jenkins.
 2. **`FINDINGS-CORRELATION`**:
-   - Дедупликация и корреляция находок из разнородных сканеров (SAST SonarQube/Trivy/CodeScoring + DAST ZAP + Fuzzer).
+   - Дедупликация и корреляция находок из разнородных сканеров (SAST SonarQube/Trivy/CodeScoring + DAST scanner + Fuzzer).
 3. **`SIGNATURE-REWIND-INTEGRATION`**:
    - Интеграция таймлайна `EvidenceChain` с мастер-слайдером Studio для покадрового расследования атак и сбоев.
 
@@ -123,7 +123,7 @@
   3. `state_machine`: Стейт-машина `RunControlPlane` в PostgreSQL (таблицы runs, batches, gates, evidence).
   4. `adapters/forge`: Клиент `GiteaForgeAdapter` (создание репозитория, инициализация, хуки).
   5. `adapters/execution`: Клиент `WoodpeckerExecutionAdapter` (генерация YAML, запуск, сбор логов).
-  6. `broker/capability`: `SecurityCapabilityBroker` (аллокация портов и привязка к `run_id` для ZAP/Playwright).
+  6. `broker/capability`: `SecurityCapabilityBroker` (аллокация портов и привязка к `run_id` для scanner/Playwright).
 
 #### 2. Копипаста для Flash (Быстрый исполнитель / Contracts & Client)
 - **Фокус:** API эндпоинты, валидация, интеграционные тесты, CLI/SSE стриминг и типы фронтенда.

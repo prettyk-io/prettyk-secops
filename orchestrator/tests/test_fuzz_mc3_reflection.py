@@ -22,13 +22,13 @@ from core.fuzzing import (
 )
 
 
-class _EchoZap:
+class _Echoscanner:
     """Ответ всегда содержит payload из query q= — для reflection."""
 
     def __init__(self):
         self.calls = []
 
-    def zap_http_request(
+    def scanner_http_request(
         self, method, url, headers=None, body=None, follow_redirects=False
     ):
         self.calls.append({"url": url, "body": body})
@@ -75,8 +75,8 @@ def test_anomaly_reasons_appends_reflection():
 
 
 def test_campaign_flags_reflection_and_redacts(tmp_path):
-    zap = _EchoZap()
-    runner = FuzzCampaignRunner(zap)
+    scanner = _Echoscanner()
+    runner = FuzzCampaignRunner(scanner)
     marker = "<b>pk-reflect</b>"
     summary = runner.run(
         Campaign(

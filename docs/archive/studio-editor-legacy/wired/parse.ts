@@ -116,7 +116,7 @@ function extractModules(testSuites: Record<string, unknown>): EditorModules {
           schema_resource: asString(of.schema_resource) || undefined,
           schema_path: asString(of.schema_path) || undefined,
           auth_module_id: asString(of.auth_module_id) || undefined,
-          allow_zap_import: asBoolean(of.allow_zap_import, true),
+          allow_scanner_import: asBoolean(of.allow_scanner_import, true),
           operations_cache: of.operations_cache,
         });
         break;
@@ -130,8 +130,8 @@ function extractModules(testSuites: Record<string, unknown>): EditorModules {
           introspection_path: asString(gf.introspection_path) || undefined,
           endpoint_path: asString(gf.endpoint_path) || undefined,
           auth_module_id: asString(gf.auth_module_id) || undefined,
-          allow_zap_import: asBoolean(gf.allow_zap_import, true),
-          allow_zap_scan: asBoolean(gf.allow_zap_scan, true),
+          allow_scanner_import: asBoolean(gf.allow_scanner_import, true),
+          allow_scanner_scan: asBoolean(gf.allow_scanner_scan, true),
           operations_cache: gf.operations_cache,
         });
         break;
@@ -361,7 +361,7 @@ export function parseWired(json: unknown): WiredResult {
   const secRaw = asRecord(json.security_configuration);
 
   const meta: RegulationMeta = {
-    project_id: asString(metaRaw.project_id, 'owasp-zap-tests'),
+    project_id: asString(metaRaw.project_id, 'owasp-scanner-tests'),
     initiator_name: asString(metaRaw.initiator_name, ''),
     app_leader: asString(metaRaw.app_leader, ''),
     assessment_purpose: (asString(metaRaw.assessment_purpose, 'scheduled') as RegulationMeta['assessment_purpose']),
@@ -376,7 +376,7 @@ export function parseWired(json: unknown): WiredResult {
   const infrastructure: RegulationInfrastructure = {
     base_url_override: asString(infraRaw.base_url_override, 'http://runner01.dev.spaceport.ru:8080'),
     allowed_extra_domains: asString(infraRaw.allowed_extra_domains, ''),
-    zap_mode: (asString(infraRaw.zap_mode, 'demon') as RegulationInfrastructure['zap_mode']),
+    scanner_mode: (asString(infraRaw.scanner_mode, 'demon') as RegulationInfrastructure['scanner_mode']),
     browser_type: (asString(infraRaw.browser_type, 'chrome') as RegulationInfrastructure['browser_type']),
     debug_mode: asBoolean(infraRaw.debug_mode),
     webswing_session_timeout_min: infraRaw.webswing_session_timeout_min !== undefined ? asNumber(infraRaw.webswing_session_timeout_min, 60) : undefined,

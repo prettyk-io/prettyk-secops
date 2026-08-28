@@ -68,7 +68,7 @@
 | Скрипты на Groovy/Java | ✅ Факт | Документация Katalon Studio |
 | Есть on-prem / airgap опция | ⚠️ Гипотеза | Katalon Runtime Engine может работать локально; не проверено |
 | Нет consumer-agnostic DSL уровня PrettyK | ✅ Факт | Сценарии — Groovy/Java-скрипты, не переносимый декларативный контракт |
-| Нет DAST/ZAP/фаззера | ✅ Факт | Продукт позиционируется как functional test automation |
+| Нет DAST/scanner/фаззера | ✅ Факт | Продукт позиционируется как functional test automation |
 
 ---
 
@@ -78,7 +78,7 @@
 |---|---|
 | **Consumer-agnostic DSL (Type/Click/Open/Wait) на Playwright** | ✅ Факт. Ни у одного конкурента не обнаружен открытый переносимый контракт такого типа. Katalon использует Groovy/Java-скрипты. |
 | **Airgap / on-prem коробка** | ⚠️ Частично. PrettyK — точно airgap. У конкурентов on-prem опции возможны в enterprise-планах, но не подтверждены публично для всех. Требуется проверка enterprise-лицензий. |
-| **Security + Functional в одном DSL** | ✅ Факт. Ни aqua/Testim/ACCELQ (functional), ни ZAP/Burp (security) не дают единого DSL на оба домена. |
+| **Security + Functional в одном DSL** | ✅ Факт. Ни aqua/Testim/ACCELQ (functional), ни scanner/Burp (security) не дают единого DSL на оба домена. |
 | **Discovery Engine (автореверс форм без ручных локаторов)** | ⚠️ Гипотеза. В публичных материалах конкурентов не обнаружен. Требуется проверка. |
 | **Двухуровневая продуктовая линейка (Automation → SecOps wedge)** | ✅ Факт. Ни у кого нет стратегии «дешёвый automation-вход → дорогой security-апгрейд» на общем DSL. |
 | **QWEN внутри коробки (локальный AI)** | ✅ Факт. Конкуренты используют облачные AI-сервисы или не раскрывают модель. |

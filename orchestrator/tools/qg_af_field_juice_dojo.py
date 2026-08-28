@@ -1,5 +1,5 @@
 ﻿# -*- coding: utf-8 -*-
-"""QG-AF-9: Juice ZAP XML → live DefectDojo → admission gate (lab field)."""
+"""QG-AF-9: Juice scanner XML → live DefectDojo → admission gate (lab field)."""
 from __future__ import annotations
 
 import json

@@ -60,7 +60,7 @@ export function useDojoStats(
   );
 }
 
-/** Ручной/по запросу health ZAP/Dojo/Allure (+ Live). */
+/** Ручной/по запросу health scanner/Dojo/Allure (+ Live). */
 export function useStandHealth(pollMs = DEFAULT_POLL_MS): ServiceHealth[] {
   return usePolled(
     () => probeServiceHealth(),

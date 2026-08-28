@@ -10,7 +10,7 @@ import { matchPrettyAssign } from './textScan';
 const WIRE_COMPONENTS = new Set([
   'webdriver',
   'browser',
-  'zap',
+  'scanner',
   'http',
   'data',
   'core',
@@ -59,10 +59,6 @@ const RESERVED_LANGUAGE_WORDS = new Set([
   'ДляКаждого',
   'В',
   'Пока',
-  
-  
-  'Поймать',
-  'ВКонце',
   'Группа',
   'Прервать',
   'Продолжить',

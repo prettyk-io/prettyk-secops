@@ -71,3 +71,37 @@ def test_serve_video_range_206(tmp_path):
     assert status == 206
     assert body == b"2345"
     assert headers["Content-Range"] == "bytes 2-5/10"
+
+
+# ── PW-E3: конверт webm → {run_id}.mp4 находится Monitor'ом ──────────────────
+
+
+def test_find_video_for_run_exact_name(tmp_path, monkeypatch):
+    """PW-E3: convert_webm_to_mp4 пишет {run_id}.mp4 — Monitor находит его."""
+    monkeypatch.setattr(run_recording, "VIDEO_DIR", tmp_path)
+    (tmp_path / "abc123.mp4").write_bytes(b"\x00" * 10)
+    path = run_recording.find_video_for_run("abc123")
+    assert path is not None and path.name == "abc123.mp4"
+
+
+def test_find_video_for_run_exact_beats_prefix(tmp_path, monkeypatch):
+    """Точное имя ({run_id}.mp4) приоритетнее Grid-префикса ({run_id}_...)."""
+    import os
+
+    monkeypatch.setattr(run_recording, "VIDEO_DIR", tmp_path)
+    grid = tmp_path / "abc123_grid.mp4"
+    conv = tmp_path / "abc123.mp4"
+    grid.write_bytes(b"\x00" * 5)
+    conv.write_bytes(b"\x00" * 5)
+    os.utime(grid, (2000, 2000))  # Grid новее
+    os.utime(conv, (1000, 1000))  # конверт старше
+    path = run_recording.find_video_for_run("abc123")
+    # Точное имя — конверт PW-E3, несмотря на более старую дату
+    assert path is not None and path.name == "abc123.mp4"
+
+
+def test_find_video_for_run_no_fallback_exact(tmp_path, monkeypatch):
+    """Чужой {run_id}.mp4 не подменяет чужой run."""
+    monkeypatch.setattr(run_recording, "VIDEO_DIR", tmp_path)
+    (tmp_path / "other.mp4").write_bytes(b"\x00" * 10)
+    assert run_recording.find_video_for_run("abc123") is None

@@ -36,7 +36,7 @@ function stripIncludeRegexSuffix(pattern: string): string {
   return stripTrailingSlashes(s);
 }
 
-/** Allowlist + base_url как разрешённый origin (зеркало ZapAdapter._context_include_allowed). */
+/** Allowlist + base_url как разрешённый origin (зеркало scannerAdapter._context_include_allowed). */
 export function contextIncludeAllowed(
   urlPattern: string,
   allowedExtraDomains: string,

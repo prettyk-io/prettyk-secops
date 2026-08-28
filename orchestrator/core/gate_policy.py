@@ -10,7 +10,7 @@
 Env:
   PK_GATE_MAX_CRITICAL — max ACTIVE Critical (default 0); выше → fail_gate
   PK_GATE_MAX_HIGH — max ACTIVE High (default 0); выше → fail_gate
-  PK_GATE_SEVERITY — legacy ZAP floor (High|Medium|…); для сбора ZAP fallback
+  PK_GATE_SEVERITY — legacy scanner floor (High|Medium|…); для сбора scanner fallback
   PK_REQUIRE_ALLURE — 1 → нет/падение Allure влияет на exit (default 0)
   PK_REQUIRE_DEFECTDOJO — 1 → нет/падение Dojo import влияет на exit (default 0)
   PK_QUALITY_GATE — 0 выключает severity-gate
@@ -57,14 +57,14 @@ def normalize_severity(raw: str | None) -> str:
 
 
 def gate_severity_floor() -> str:
-    """Legacy ZAP floor (G-19): для сбора алертов fallback, не для max_* admission."""
+    """Legacy scanner floor (G-19): для сбора алертов fallback, не для max_* admission."""
     return normalize_severity(_env("PK_GATE_SEVERITY", "High"))
 
 
 def severities_at_or_above(floor: str | None = None) -> List[str]:
     floor_name = normalize_severity(floor or gate_severity_floor())
     if floor_name == "Critical":
-        return ["High"]  # ZAP UI: Critical обычно в High
+        return ["High"]  # scanner UI: Critical обычно в High
     try:
         idx = _SEVERITY_ORDER.index(floor_name)
     except ValueError:
@@ -147,8 +147,8 @@ def highest_severity(counts: Mapping[str, int]) -> Optional[str]:
     return None
 
 
-def counts_from_zap_live_summary(summary: Optional[Mapping[str, Any]]) -> Dict[str, int]:
-    """Map ZapAdapter.summarize_alerts_for_live tallies → admission counts."""
+def counts_from_scanner_live_summary(summary: Optional[Mapping[str, Any]]) -> Dict[str, int]:
+    """Map ScannerAdapter.summarize_alerts_for_live tallies → admission counts."""
     s = summary if isinstance(summary, Mapping) else {}
     return normalize_severity_counts(
         {
@@ -161,14 +161,14 @@ def counts_from_zap_live_summary(summary: Optional[Mapping[str, Any]]) -> Dict[s
     )
 
 
-def counts_from_zap_gate_summary(summary: Optional[Mapping[str, Any]]) -> Dict[str, int]:
+def counts_from_scanner_gate_summary(summary: Optional[Mapping[str, Any]]) -> Dict[str, int]:
     """
     Legacy _summarize_gate_alerts / summarize_high_alerts → counts.
     Without per-risk tallies, bucket total into the highest requested risk.
     """
     s = summary if isinstance(summary, Mapping) else {}
     if any(k in s for k in ("high_total", "medium_total", "low_total", "info_total")):
-        return counts_from_zap_live_summary(s)
+        return counts_from_scanner_live_summary(s)
     try:
         total = max(0, int(s.get("total") or 0))
     except (TypeError, ValueError):
@@ -196,7 +196,7 @@ def evaluate_admission_gate(
     source: str = "dojo",
 ) -> AdmissionResult:
     """
-    ИБ-допуск по severity counts (DefectDojo ACTIVE или ZAP fallback).
+    ИБ-допуск по severity counts (DefectDojo ACTIVE или scanner fallback).
 
     failed → exit 2 / fail_gate
     watch  → exit 0 / pass_watch (soft residual)
@@ -285,15 +285,15 @@ def report_requirement_failures(
         reasons.append("PK_REQUIRE_ALLURE=1, но Allure generate неуспешен или results пусты")
     if require_defectdojo() and dojo_ok is not True:
         reasons.append(
-            "PK_REQUIRE_DEFECTDOJO=1, но DefectDojo import неуспешен или нет ZAP XML"
+            "PK_REQUIRE_DEFECTDOJO=1, но DefectDojo import неуспешен или нет scanner XML"
         )
     return reasons
 
 
-def zap_api_key_from_env() -> str | None:
-    """Ключ для industrial ZAP (G-37). Lab disablekey → None ок."""
-    for name in ("PK_ZAP_API_KEY", "ZAP_API_KEY"):
-        val = _env(name)
-        if val:
-            return val
+def scanner_api_key_from_env() -> str | None:
+    """Ключ для industrial scanner (G-37). Lab disablekey → None ок."""
+    for name in ("PK_SCANNER_API_KEY", "SCANNER_API_KEY"):
+        val = os.environ.get(name, "")
+        if val.strip():
+            return val.strip()
     return None

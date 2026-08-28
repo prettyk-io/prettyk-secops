@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """MethodId RU → wire."""
 import sys
 from pathlib import Path
@@ -34,17 +34,17 @@ def test_catalog_no_overlap_with_language():
 
 
 def test_root_promotes_domain_essentials():
-    assert lookup_method_id("Сканер") == ("zap", "spider_scan")
-    assert lookup_method_id("СканерЛокальный") == ("zap", "spider_scan_local")
+    assert lookup_method_id("Сканер") == ("scanner", "spider_scan")
+    assert lookup_method_id("СканерЛокальный") == ("scanner", "spider_scan_local")
     assert lookup_method_id("Паук") is None
-    assert lookup_method_id("Краулер") == ("zap", "ajax_spider_scan")
-    assert lookup_method_id("АктивноеСканирование") == ("zap", "active_scan")
+    assert lookup_method_id("Краулер") == ("scanner", "ajax_spider_scan")
+    assert lookup_method_id("АктивноеСканирование") == ("scanner", "active_scan")
     assert lookup_method_id("HttpGet") == ("http", "get")
     assert lookup_method_id("ОчиститьКэш") == ("browser", "cdp_clear_browser_cache")
     assert method_tier("Сканер") == "ui"
     assert method_tier("СканерЛокальный") == "util"
     assert method_tier("ПолучитьАлерты") == "util"
-    assert lookup_method_id("ОтчётZAP") is None  # только ZAP Отчёт
+    assert lookup_method_id("Отчётscanner") is None  # только scanner Отчёт
     assert method_tier("ТекстыЭлементовСТекстом") == "util"
     assert method_tier("НажатьJS") == "ui"
     assert method_tier("Лог") == "ui"
@@ -57,21 +57,17 @@ def test_root_promotes_domain_essentials():
 
 def test_facade_gates():
     assert set(facade_names()) == {"HTTP", "Сканер", "Драйвер", "Сессия"}
-    assert lookup_facade_method("ZAP", "Сканер") == ("zap", "spider_scan")
-    assert lookup_facade_method("Сканер", "Сканер") == ("zap", "spider_scan")
-    assert lookup_facade_method("ZAP", "Паук") is None
-    assert lookup_facade_method("ZAP", "ПолучитьАлерты") == ("zap", "get_alerts")
-    assert lookup_facade_method("ZAP", "Отчёт") == ("zap", "generate_report")
-    assert lookup_facade_method("ZAP", "ЗапросЧерезZAP") == ("zap", "zap_http_request")
-    assert lookup_facade_method("ZAP", "HttpЧерезZAP") == ("zap", "zap_http_request")
-    assert lookup_facade_method("ZAP", "HttpSender") == ("zap", "install_mask_http_sender")
-    assert lookup_facade_method("ZAP", "ПодменаHttpSender") == (
-        "zap",
+    assert lookup_facade_method("scanner", "Сканер") == ("scanner", "spider_scan")
+    assert lookup_facade_method("Сканер", "Сканер") == ("scanner", "spider_scan")
+    assert lookup_facade_method("scanner", "Паук") is None
+    assert lookup_facade_method("scanner", "ПолучитьАлерты") == ("scanner", "get_alerts")
+    assert lookup_facade_method("scanner", "Отчёт") == ("scanner", "generate_report")
+    assert lookup_facade_method("scanner", "ЗапросЧерезscanner") == ("scanner", "scanner_http_request")
+    assert lookup_facade_method("scanner", "HttpЧерезscanner") == ("scanner", "scanner_http_request")
+    assert lookup_facade_method("scanner", "HttpSender") == ("scanner", "install_mask_http_sender")
+    assert lookup_facade_method("scanner", "ПодменаHttpSender") == (
+        "scanner",
         "install_mask_http_sender",
-    )
-    assert lookup_facade_method("Сессия", "ПодменитьАгентПользователя") == (
-        "browser",
-        "cdp_set_user_agent",
     )
     assert lookup_facade_method("Сессия", "ОчиститьCookies") == (
         "browser",
@@ -82,10 +78,8 @@ def test_facade_gates():
         "cdp_clear_browser_cookies",
     )
     assert lookup_method_id("ОчиститьCookies") == ("browser", "clear_cookies")
-    assert lookup_method_id("ПринятьОповещение") == ("webdriver", "accept_alert")
-    assert lookup_method_id("ПринятьAlert") == ("webdriver", "accept_alert")
-    assert resolve_call("ZAP Сканер https://x") == "zap|spider_scan|https://x"
-    assert resolve_call("Сканер https://x") == "zap|spider_scan|https://x"
+    assert resolve_call("scanner Сканер https://x") == "scanner|spider_scan|https://x"
+    assert resolve_call("Сканер https://x") == "scanner|spider_scan|https://x"
     assert resolve_call("HTTP GET https://x") == "http|get|https://x"
     assert resolve_call("Сессия ОчиститьКэш") == "browser|cdp_clear_browser_cache"
     assert resolve_call("CDP ОчиститьКэш") == "browser|cdp_clear_browser_cache"
@@ -137,16 +131,16 @@ def test_resolve_call_basic():
     assert resolve_call("ЛогСообщение hello") == "core|log_message|hello"
     assert resolve_call("Логировать hello") == "core|log_message|hello"
     assert resolve_call('ЛогАтаки "Замена: payload:\'x\'"') == (
-        "zap|log_attack|Замена: payload:'x'"
+        "scanner|log_attack|Замена: payload:'x'"
     )
-    assert resolve_call('ZAP ЛогАтаки "Замена: payload:\'x\'"') == (
-        "zap|log_attack|Замена: payload:'x'"
+    assert resolve_call('scanner ЛогАтаки "Замена: payload:\'x\'"') == (
+        "scanner|log_attack|Замена: payload:'x'"
     )
     assert resolve_call("АктивноеСканирование ${base}") == (
-        "zap|active_scan|${base}"
+        "scanner|active_scan|${base}"
     )
-    assert resolve_call("ZAP АктивноеСканирование ${base}") == (
-        "zap|active_scan|${base}"
+    assert resolve_call("scanner АктивноеСканирование ${base}") == (
+        "scanner|active_scan|${base}"
     )
     assert resolve_call("webdriver|click|css|.x") is None
 

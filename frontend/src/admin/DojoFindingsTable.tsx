@@ -243,8 +243,8 @@ export function DojoFindingsTable(): React.JSX.Element {
             </Button>
           );
           const aiS = ai.ai_severity?.toLowerCase() ?? '';
-          const zapS = r.severity.toLowerCase();
-          const mismatch = aiS && zapS && aiS !== zapS;
+          const scannerS = r.severity.toLowerCase();
+          const mismatch = aiS && scannerS && aiS !== scannerS;
           return (
             <Tooltip title={ai.ai_reasoning}>
               <Space size={2}>

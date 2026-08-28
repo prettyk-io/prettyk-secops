@@ -9,7 +9,7 @@
 #   gRPC 127.0.0.1:50051
 #   proto pack: services/pk-api-lab/proto_pack
 #
-# В Docker-сети (ZAP/браузер): http://pk-api-lab:8090
+# В Docker-сети (scanner/браузер): http://pk-api-lab:8090
 
 services:
   pk-api-lab:

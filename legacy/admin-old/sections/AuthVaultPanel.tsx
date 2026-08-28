@@ -193,7 +193,7 @@ export function AuthVaultPanel(): React.JSX.Element {
         {checkResult && (
           <ProCard title={`Результат проверки: ${checkResult.id}`} bordered>
             {checkResult.ok ? (
-              <Alert type="success" showIcon message="Auth flow успешен" description="Токен получен и проброшен в ZAP Replacer." />
+              <Alert type="success" showIcon message="Auth flow успешен" description="Токен получен и проброшен в scanner Replacer." />
             ) : (
               <Alert type="error" showIcon message="Auth flow провален" description={checkResult.error || 'Неизвестная ошибка'} />
             )}

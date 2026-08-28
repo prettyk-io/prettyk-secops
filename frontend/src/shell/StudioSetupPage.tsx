@@ -17,7 +17,7 @@ export interface StudioSetupPageProps {
   onLogout?: () => void;
   roleLabel?: string | null;
   initialTitle?: string;
-  initialManifest?: unknown;
+  initialWired?: unknown;
 }
 
 export function StudioSetupPage({
@@ -26,13 +26,13 @@ export function StudioSetupPage({
   onLogout,
   roleLabel = null,
   initialTitle = '',
-  initialManifest,
+  initialWired,
 }: StudioSetupPageProps): React.JSX.Element {
   const [checkTitle, setCheckTitle] = useState(initialTitle);
   const roleCaps = useMemo(() => capsForUser(readSession()), []);
 
   const [rawFormData, setRawFormData] = useState<unknown>(() => {
-    const base = initialManifest ?? defaultWired();
+    const base = initialWired ?? defaultWired();
     return clampFormDataForRoleCaps(base, roleCaps);
   });
 

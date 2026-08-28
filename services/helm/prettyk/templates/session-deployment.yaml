@@ -1,0 +1,29 @@
+# Session deployment template — используется pk-control для создания сессий.
+# Не применяется helm install напрямую; генерится провайдером через helm template.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.component }}-{{ .Values.sessionId | default "unknown" }}
+  labels:
+    {{- include "prettyk.session.labels" . | nindent 4 }}
+    com.prettyk.component: {{ .Values.component | quote }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      com.prettyk.session-id: {{ .Values.sessionId | default "unknown" }}
+      com.prettyk.component: {{ .Values.component | quote }}
+  template:
+    metadata:
+      labels:
+        com.prettyk.session-id: {{ .Values.sessionId | default "unknown" }}
+        com.prettyk.component: {{ .Values.component | quote }}
+        com.prettyk.generation: {{ .Values.generation | default "1" | quote }}
+    spec:
+      containers:
+        - name: {{ .Values.component }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          ports:
+            - containerPort: {{ .Values.containerPort | default 8080 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}

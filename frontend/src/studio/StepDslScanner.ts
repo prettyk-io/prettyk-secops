@@ -52,7 +52,7 @@ export function scanDeckDsl(steps: ScenarioStepModel[]): DeckDslMeta | null {
     const a = s.action; const sv = s.strategyValue; const p = s.payload;
     if (a === 'Open') return `Open ${p || 'about:blank'}`;
     if (a === 'Wait') return `Wait ${p || '1000'}`;
-    if (a === 'Spider') return 'SpiderScan';
+    if (a === 'Crawl') return 'crawl';
     if (a === 'ActiveScan') return 'ActiveScan';
     if (a === 'FuzzWave') return `FuzzWave ${p || 'corpus'}`;
     if (a === 'Let') return `Let ${sv || 'var'} = ${p || '""'}`;

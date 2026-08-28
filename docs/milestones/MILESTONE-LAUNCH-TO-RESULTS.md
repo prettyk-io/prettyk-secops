@@ -18,7 +18,7 @@
 finding, verdict или пакета от другого `check_id`. При параллельной или последовательной
 работе с десятками проверок («на выходе святилища толпа») данные изолированы на 100%.
 
-Канон входных данных — `docs/manifest.json`. Demo-seed, legacy migration,
+Канон входных данных — `docs/wired.json`. Demo-seed, legacy migration,
 `smoke`, `lab-stub` и очистка «на авось» в acceptance runtime не допускаются.
 
 ---

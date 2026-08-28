@@ -16,7 +16,7 @@ describe('BlankPayload / official DAST blanks (MD→HTML)', () => {
       assessment_purpose: 'scheduled',
     },
     Пароль: secret,
-    infrastructure: { zap_mode: 'demon', browser_type: 'chrome' },
+    infrastructure: { scanner_mode: 'demon', browser_type: 'chrome' },
     security_configuration: {
       base_url_override: 'http://juice.example:3000',
       allowed_extra_domains: 'auth.example',

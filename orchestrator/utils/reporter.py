@@ -4,11 +4,11 @@
 
 HTML Allure собирает сервис allure-light-secops. Здесь:
   • вложения в allure-results (wire `allure|…` — историческое имя компонента);
-  • те же операции записи отчёта сканера, что и у ZapAdapter.generate_report (дубль);
+  • те же операции записи отчёта сканера, что и у ScannerAdapter.generate_report (дубль);
   • trigger generate у allure-light-secops;
   • финал прогона: Allure + DefectDojo XML + run_summary.json (G-20).
 
-ZapAdapter.generate_report остаётся keyword'ом `zap|generate_report|…`.
+ScannerAdapter.generate_report остаётся keyword'ом `scanner|generate_report|…`.
 """
 from __future__ import annotations
 from utils.env_dual import pk_env
@@ -31,7 +31,7 @@ from utils.paths import (
     REPORTS_DIR,
     ensure_live_dir,
     find_artifact,
-    zap_report_path,
+    scanner_report_path,
 )
 
 LIVE_RUN_SUMMARY_PATH = LIVE_DIR / "run_summary.json"
@@ -60,7 +60,7 @@ def coerce_attach_flag(value) -> bool:
 
 
 class Reporter:
-    """Утилита вложений Allure + записи отчётов ZAP (по переданному ZapAdapter)."""
+    """Утилита вложений Allure + записи отчётов scanner (по переданному ScannerAdapter)."""
 
     ATTACHMENT_TYPES = {
         ".html": allure.attachment_type.HTML,
@@ -141,58 +141,58 @@ class Reporter:
         )
         return True
 
-    # --- ZAP reports (дубль ZapAdapter.generate_report) ---
+    # --- scanner reports (дубль ScannerAdapter.generate_report) ---
 
     def generate_report(
         self,
-        zap_adapter,
+        scanner_adapter,
         format="html",
-        output_file="zap_report.html",
+        output_file="scanner_report.html",
         attach_to_allure=False,
     ):
         """
-        Те же форматы/пути, что у ZapAdapter.generate_report.
-        zap_adapter — живой ZapAdapter (уже connected).
-        attach_to_allure по умолчанию false (как у ZapAdapter.generate_report).
+        Те же форматы/пути, что у ScannerAdapter.generate_report.
+        scanner_adapter — живой ScannerAdapter (уже connected).
+        attach_to_allure по умолчанию false (как у ScannerAdapter.generate_report).
         """
-        zap_adapter._ensure_connected()
+        scanner_adapter._ensure_connected()
         attach_to_allure = coerce_attach_flag(attach_to_allure)
 
-        output_path = zap_report_path(output_file)
+        output_path = scanner_report_path(output_file)
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        zap = zap_adapter._zap
+        scanner = scanner_adapter._scanner
         if format == "html":
-            report = zap.core.htmlreport()
+            report = scanner.core.htmlreport()
         elif format == "json":
-            report = zap.core.jsonreport()
+            report = scanner.core.jsonreport()
         elif format == "xml":
-            report = zap.core.xmlreport()
+            report = scanner.core.xmlreport()
         elif format == "md":
-            report = zap.core.mdreport()
+            report = scanner.core.mdreport()
         else:
             raise ValueError(f"Unsupported report format: {format}")
 
         output_path.write_text(report, encoding="utf-8")
 
         if attach_to_allure and format == "html":
-            attach_zap_html(report, name=output_path.name)
+            attach_scanner_html(report, name=output_path.name)
 
         return str(output_path)
 
 
-def attach_zap_html(report: str, name: str) -> bool:
-    """Прикрепить готовый HTML ZAP к текущему Allure-тесту/шагу."""
+def attach_scanner_html(report: str, name: str) -> bool:
+    """Прикрепить готовый HTML scanner к текущему Allure-тесту/шагу."""
     try:
         allure.attach(
             report,
             name=name,
             attachment_type=allure.attachment_type.HTML,
         )
-        logger.info("ZAP report attached to Allure: %s", name)
+        logger.info("scanner report attached to Allure: %s", name)
         return True
     except Exception as e:
-        logger.warning("Failed to attach ZAP report to Allure: %s", e)
+        logger.warning("Failed to attach scanner report to Allure: %s", e)
         return False
 
 
@@ -250,9 +250,9 @@ def build_run_summary(
     gate: str,
     scenarios: Optional[dict] = None,
     paths: Optional[dict] = None,
-    zap_mode: str = "demon",
-    zap_api_port: int = 8080,
-    zap_proxy_port: int = 8099,
+    scanner_mode: str = "demon",
+    scanner_api_port: int = 8080,
+    scanner_proxy_port: int = 8099,
     honest_contract_notes: Optional[list] = None,
 ) -> dict:
     """Сериализуемый итог прогона (G-20)."""
@@ -267,9 +267,9 @@ def build_run_summary(
             "skip": int(stats.get("skip", 0)),
         },
         "paths": dict(paths or {}),
-        "zap_mode": zap_mode,
-        "zap_api_port": int(zap_api_port),
-        "zap_proxy_port": int(zap_proxy_port),
+        "scanner_mode": scanner_mode,
+        "scanner_api_port": int(scanner_api_port),
+        "scanner_proxy_port": int(scanner_proxy_port),
         "honest_contract_notes": list(honest_contract_notes or []),
     }
 
@@ -331,7 +331,7 @@ def _summary_live_path() -> Optional[str]:
     return None
 
 
-def _summary_paths(controller, zap_xml_path: Optional[PathLike]) -> dict:
+def _summary_paths(controller, scanner_xml_path: Optional[PathLike]) -> dict:
     from utils.allure_project import resolve_allure_project_id, resolve_allure_results_dir
 
     paths = {
@@ -339,11 +339,11 @@ def _summary_paths(controller, zap_xml_path: Optional[PathLike]) -> dict:
         "allure_report": str(ALLURE_REPORT_DIR),
         "allure_project_id": resolve_allure_project_id(),
     }
-    zap_html = getattr(controller, "last_zap_report", None)
-    if zap_html:
-        paths["zap_html"] = str(zap_html)
-    if zap_xml_path:
-        paths["zap_xml"] = str(zap_xml_path)
+    scanner_html = getattr(controller, "last_scanner_report", None)
+    if scanner_html:
+        paths["scanner_html"] = str(scanner_html)
+    if scanner_xml_path:
+        paths["scanner_xml"] = str(scanner_xml_path)
     live_path = _summary_live_path()
     if live_path:
         paths["live"] = str(live_path)
@@ -375,17 +375,17 @@ def _merge_results_hooks_into_summary(payload: dict) -> None:
         hooks = diary_bus.get_results_hooks()
         dojo = hooks.get("dojo") if isinstance(hooks.get("dojo"), dict) else {}
         allure = hooks.get("allure") if isinstance(hooks.get("allure"), dict) else {}
-        zap = hooks.get("zap") if isinstance(hooks.get("zap"), dict) else {}
+        scanner = hooks.get("scanner") if isinstance(hooks.get("scanner"), dict) else {}
         if isinstance(dojo.get("stats"), dict):
             payload["dojo_stats"] = dojo["stats"]
         if isinstance(dojo.get("collapse"), dict):
             payload["finding_collapse"] = dojo["collapse"]
-        elif isinstance(zap.get("collapse"), dict):
-            payload["finding_collapse"] = zap["collapse"]
+        elif isinstance(scanner.get("collapse"), dict):
+            payload["finding_collapse"] = scanner["collapse"]
         if isinstance(dojo.get("executive"), dict):
             payload["executive"] = dojo["executive"]
-        elif isinstance(zap.get("executive"), dict):
-            payload["executive"] = zap["executive"]
+        elif isinstance(scanner.get("executive"), dict):
+            payload["executive"] = scanner["executive"]
         if isinstance(allure.get("summary"), dict):
             payload["allure_summary"] = allure["summary"]
         meta = diary_bus.get_meta()
@@ -399,7 +399,7 @@ def write_run_summary_from_controller(
     controller,
     *,
     exit_code: int,
-    zap_xml_path: Optional[PathLike] = None,
+    scanner_xml_path: Optional[PathLike] = None,
 ) -> Path:
     """Собрать и записать summary из Controller после gate / finalize."""
     gate, admission_void, debug_mode = _summary_gate_flags(controller, exit_code)
@@ -407,10 +407,10 @@ def write_run_summary_from_controller(
         exit_code=exit_code,
         gate=gate,
         scenarios=getattr(controller, "scenario_stats", None),
-        paths=_summary_paths(controller, zap_xml_path),
-        zap_mode=getattr(controller, "zap_mode", "demon") or "demon",
-        zap_api_port=int(getattr(controller, "zap_api_port", 8080)),
-        zap_proxy_port=int(getattr(controller, "zap_proxy_port", 8099)),
+        paths=_summary_paths(controller, scanner_xml_path),
+        scanner_mode=getattr(controller, "scanner_mode", "demon") or "demon",
+        scanner_api_port=int(getattr(controller, "scanner_api_port", 8080)),
+        scanner_proxy_port=int(getattr(controller, "scanner_proxy_port", 8099)),
         honest_contract_notes=getattr(controller, "honest_contract_notes", None),
     )
     if admission_void:
@@ -491,20 +491,20 @@ def _finalize_allure_block(
 
 
 def finalize_reports(
-    zap_report_path: Optional[PathLike] = None,
+    scanner_report_path: Optional[PathLike] = None,
     wired: Any = None,
 ) -> Dict[str, Any]:
-    """Базис конца прогона: allure-light-secops generate + DefectDojo import ZAP XML.
+    """Базис конца прогона: allure-light-secops generate + DefectDojo import scanner XML.
 
     Returns dict:
-      zap_xml: Path | None
+      scanner_xml: Path | None
       allure_ok: bool | None  (None = не пытались / пустые results)
       dojo_ok: bool | None
       evidence: CheckEvidenceRefs | None
     """
     from adapters.defectdojo_client import (
         resolve_dojo_gate_counts,
-        resolve_zap_xml_for_dojo,
+        resolve_scanner_xml_for_dojo,
         trigger_defectdojo_import_detailed,
     )
     from utils.allure_project import (
@@ -518,7 +518,7 @@ def finalize_reports(
     )
 
     status: Dict[str, Any] = {
-        "zap_xml": None,
+        "scanner_xml": None,
         "allure_ok": None,
         "dojo_ok": None,
         "dojo_skipped": False,
@@ -560,23 +560,23 @@ def finalize_reports(
             wired=wired,
         )
 
-        if zap_report_path is None:
-            logger.info("Wired produced no ZAP report path (last_zap_report)")
-        elif os.path.exists(str(zap_report_path)):
-            logger.info("ZAP report on disk: %s", zap_report_path)
+        if scanner_report_path is None:
+            logger.info("Wired produced no scanner report path (last_scanner_report)")
+        elif os.path.exists(str(scanner_report_path)):
+            logger.info("scanner report on disk: %s", scanner_report_path)
         else:
-            logger.warning("ZAP report path missing: %s", zap_report_path)
+            logger.warning("scanner report path missing: %s", scanner_report_path)
 
-        xml_path = resolve_zap_xml_for_dojo(zap_report_path)
-        status["zap_xml"] = xml_path
-        zap_summary: Optional[Dict[str, Any]] = None
+        xml_path = resolve_scanner_xml_for_dojo(scanner_report_path)
+        status["scanner_xml"] = xml_path
+        scanner_summary: Optional[Dict[str, Any]] = None
         if xml_path is not None:
             try:
-                from utils.zap_report_summary import summarize_zap_xml
+                from utils.scanner_report_summary import summarize_scanner_xml
 
-                zap_summary = summarize_zap_xml(xml_path)
-                status["zap_summary"] = {
-                    k: zap_summary.get(k)
+                scanner_summary = summarize_scanner_xml(xml_path)
+                status["scanner_summary"] = {
+                    k: scanner_summary.get(k)
                     for k in (
                         "ok",
                         "path",
@@ -589,12 +589,12 @@ def finalize_reports(
                         "error",
                     )
                 }
-                evidence["zap"] = zap_summary
+                evidence["scanner"] = scanner_summary
             except Exception as exc:
-                logger.debug("zap xml summary: %s", exc)
+                logger.debug("scanner xml summary: %s", exc)
 
         if xml_path is None:
-            logger.info("DefectDojo: нет ZAP XML в reports/scanner-results — import пропуск")
+            logger.info("DefectDojo: нет scanner XML в reports/scanner-results — import пропуск")
             status["dojo_ok"] = False
         else:
             dojo_result = trigger_defectdojo_import_detailed(
@@ -679,17 +679,17 @@ def finalize_reports(
                 status["dojo_ok"] = False
                 status["dojo_skipped"] = False
 
-        # RES-4/5 fallback: Dojo skip/fail → executive + collapse из ZAP XML
-        if not status.get("executive") and isinstance(zap_summary, dict) and zap_summary.get("ok"):
+        # RES-4/5 fallback: Dojo skip/fail → executive + collapse из scanner XML
+        if not status.get("executive") and isinstance(scanner_summary, dict) and scanner_summary.get("ok"):
             try:
                 from core.executive_conclusion import build_executive_conclusion
                 from utils import diary_bus as _diary
 
                 meta_now = _diary.get_meta()
-                z_counts = zap_summary.get("counts") if isinstance(zap_summary.get("counts"), dict) else {}
+                z_counts = scanner_summary.get("counts") if isinstance(scanner_summary.get("counts"), dict) else {}
                 z_collapse = (
-                    zap_summary.get("collapse")
-                    if isinstance(zap_summary.get("collapse"), dict)
+                    scanner_summary.get("collapse")
+                    if isinstance(scanner_summary.get("collapse"), dict)
                     else None
                 )
                 executive = build_executive_conclusion(
@@ -701,11 +701,11 @@ def finalize_reports(
                     ci_recommendations=meta_now.get("ci_recommendations")
                     if isinstance(meta_now.get("ci_recommendations"), list)
                     else None,
-                    source="zap_xml",
+                    source="scanner_xml",
                 ).as_dict()
                 status["executive"] = executive
-                if isinstance(evidence.get("zap"), dict):
-                    evidence["zap"] = {**evidence["zap"], "executive": executive}
+                if isinstance(evidence.get("scanner"), dict):
+                    evidence["scanner"] = {**evidence["scanner"], "executive": executive}
                 try:
                     _diary.set_meta(
                         executive_class=executive.get("executive_class"),
@@ -714,7 +714,7 @@ def finalize_reports(
                 except Exception:
                     pass
             except Exception as exc:
-                logger.debug("executive from zap: %s", exc)
+                logger.debug("executive from scanner: %s", exc)
 
         try:
             from utils.run_ui_summary import (
@@ -728,7 +728,7 @@ def finalize_reports(
             ui_summary = build_run_ui_summary(
                 allure=evidence.get("allure") if isinstance(evidence.get("allure"), dict) else None,
                 dojo=evidence.get("dojo") if isinstance(evidence.get("dojo"), dict) else None,
-                zap=zap_summary if isinstance(zap_summary, dict) else None,
+                scanner=scanner_summary if isinstance(scanner_summary, dict) else None,
                 executive=status.get("executive")
                 if isinstance(status.get("executive"), dict)
                 else None,
@@ -811,7 +811,7 @@ def finalize_reports(
                 check_id=check_id,
                 run_id=run_id or None,
                 run_dir=run_dir,
-                zap_xml=xml_path,
+                scanner_xml=xml_path,
                 allure_results_dir=results_dir,
                 allure_report_url=allure_e.get("report_url"),
                 dojo=evidence.get("dojo")
@@ -956,25 +956,25 @@ def _push_results_hooks(evidence: Dict[str, Any]) -> None:
     dojo_meta = evidence.get("dojo")
     if isinstance(dojo_meta, dict):
         _push_dojo_hook(notify_results_hook, evidence, dojo_meta, run_id=run_id)
-    zap_meta = evidence.get("zap")
-    if isinstance(zap_meta, dict) and zap_meta.get("ok"):
-        zap_url = (
-            pk_env("ZAP_API_URL") or "http://127.0.0.1:8080/"
+    scanner_meta = evidence.get("scanner")
+    if isinstance(scanner_meta, dict) and scanner_meta.get("ok"):
+        scanner_url = (
+            pk_env("SCANNER_API_URL") or "http://127.0.0.1:8080/"
         ).strip()
         _notify_hook_safe(
             notify_results_hook,
-            "zap",
-            zap_url,
+            "scanner",
+            scanner_url,
             check_id=evidence.get("check_id"),
             deploy_id=evidence.get("deploy_id"),
             run_id=run_id or None,
-            counts=zap_meta.get("counts"),
-            instance_counts=zap_meta.get("instance_counts"),
-            alert_count=zap_meta.get("alert_count"),
-            instance_count=zap_meta.get("instance_count"),
-            top_findings=zap_meta.get("top_findings"),
-            collapse=zap_meta.get("collapse"),
-            executive=zap_meta.get("executive"),
-            path=zap_meta.get("path"),
+            counts=scanner_meta.get("counts"),
+            instance_counts=scanner_meta.get("instance_counts"),
+            alert_count=scanner_meta.get("alert_count"),
+            instance_count=scanner_meta.get("instance_count"),
+            top_findings=scanner_meta.get("top_findings"),
+            collapse=scanner_meta.get("collapse"),
+            executive=scanner_meta.get("executive"),
+            path=scanner_meta.get("path"),
             status="ok",
         )

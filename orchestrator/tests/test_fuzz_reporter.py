@@ -135,7 +135,7 @@ def test_build_allure_categories():
 
 def test_merge_allure_categories_no_dupes():
     existing = [
-        {"name": "ZAP / security", "messageRegex": ".*", "matchedStatuses": ["failed"]}
+        {"name": "scanner / security", "messageRegex": ".*", "matchedStatuses": ["failed"]}
     ]
     findings = [
         anomaly_to_finding(FuzzAnomaly(kind="server_error", url="u", status=500))
@@ -143,7 +143,7 @@ def test_merge_allure_categories_no_dupes():
     merged = merge_allure_categories(existing, findings)
     names = [c["name"] for c in merged]
     assert len(names) == len(set(names))
-    assert "ZAP / security" in names
+    assert "scanner / security" in names
 
 
 def test_fuzz_findings_report_shape():

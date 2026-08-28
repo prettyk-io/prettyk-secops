@@ -191,7 +191,7 @@ def eval_script(script: str) -> dict[str, Any]:
                 return _run_data_wire(
                     wire, stream=stream, data=data, log=log, save_as=node.save_as or ""
                 )
-            # Без Selenium/ZAP: фиксируем wire, чтобы видеть RU→MethodId.
+            # Без Selenium/scanner: фиксируем wire, чтобы видеть RU→MethodId.
             safe_wire = stream.mask_for_log(wire)
             result = {"simulated": True, "wirek": safe_wire}
             if node.save_as:
@@ -255,7 +255,30 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         path = urlparse(self.path).path
-        if path in ("/", "/api/data/health", "/api/health"):
+        if path == "/api/health":
+            from infra.health import get_playground_health
+            self._json(200, get_playground_health().health().as_dict())
+            return
+        if path == "/api/health/live":
+            from infra.health import get_playground_health
+            self._json(200, get_playground_health().live().as_dict())
+            return
+        if path == "/api/health/ready":
+            from infra.health import get_playground_health
+            self._json(200, get_playground_health().ready().as_dict())
+            return
+        if path == "/api/metrics":
+            from infra.telemetry import get_metrics
+            self._json(200, get_metrics().snapshot())
+            return
+        if path == "/api/profile":
+            from infra.profiles import resolve_profile, is_pure_box
+            self._json(200, {
+                "profile": resolve_profile(),
+                "is_pure_box": is_pure_box(),
+            })
+            return
+        if path == "/api/ping":
             self._json(200, {"ok": True, "service": "prettyk-editor-api"})
             return
         # VP-F2: MJPEG stream removed — frames now delivered via WS relay
@@ -269,6 +292,15 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/checks":
             self._json(200, load_checks_registry())
             return
+        draft_id = self._match_draft_path(path)
+        if draft_id is not None:
+            from utils.draft_store import load_draft
+            payload = load_draft(draft_id)
+            if payload is None:
+                self._json(404, {"ok": False, "error": "draft not found"})
+                return
+            self._json(200, payload)
+            return
         self._json(404, {"ok": False, "error": "not found"})
 
     def _read_json_body(self) -> tuple[dict | None, str | None]:
@@ -281,6 +313,15 @@ class Handler(BaseHTTPRequestHandler):
             return None, "body must be an object"
         return body, None
 
+    @staticmethod
+    def _match_draft_path(path: str) -> str | None:
+        """PK-WB-S1: /api/checks/{checkId}/draft → checkId (или None)."""
+        parts = path.strip("/").split("/")
+        # ["api", "checks", "{id}", "draft"]
+        if len(parts) == 4 and parts[0] == "api" and parts[1] == "checks" and parts[3] == "draft":
+            return parts[2]
+        return None
+
     def do_PUT(self) -> None:
         path = urlparse(self.path).path
         body, err = self._read_json_body()
@@ -290,6 +331,26 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/checks":
             code, payload = save_checks_registry(body)
             self._json(code, payload)
+            return
+        draft_id = self._match_draft_path(path)
+        if draft_id is not None:
+            from utils.draft_store import save_draft
+            expected = int(self.headers.get("X-Draft-Revision") or 0)
+            code, payload = save_draft(draft_id, body, expected)
+            self._json(code, payload)
+            return
+        self._json(404, {"ok": False, "error": "not found"})
+
+    def do_DELETE(self) -> None:
+        path = urlparse(self.path).path
+        draft_id = self._match_draft_path(path)
+        if draft_id is not None:
+            from utils.draft_store import delete_draft
+            deleted = delete_draft(draft_id)
+            if not deleted:
+                self._json(404, {"ok": False, "error": "draft not found"})
+                return
+            self._json(200, {"ok": True, "deleted": True})
             return
         self._json(404, {"ok": False, "error": "not found"})
 
@@ -387,7 +448,7 @@ class Handler(BaseHTTPRequestHandler):
                     "operations": ops,
                     "notes": list(parsed.get("notes") or [])
                     + list(read_notes)
-                    + ["lab parse only — ZAP scan не запущен"],
+                    + ["lab parse only — scanner scan не запущен"],
                     "seed": seed_prettyk_comments(ops, limit=12),
                 },
             )
@@ -492,7 +553,7 @@ class Handler(BaseHTTPRequestHandler):
                     "files": parsed.get("files") or [],
                     "services": parsed.get("services") or [],
                     "notes": list(parsed.get("notes") or [])
-                    + ["lab pack inventory — ZAP scan не запущен"],
+                    + ["lab pack inventory — scanner scan не запущен"],
                 },
             )
         except GrpcParseError as exc:

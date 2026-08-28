@@ -2933,7 +2933,7 @@ function StudioWorkspaceInner({
             const root = formData as Record<string,unknown>;
             const infra = (root.infrastructure as Record<string,unknown> | undefined) ?? {};
             setGearInitialValues({
-              webswing: infra.zap_mode === 'webswing',
+              webswing: infra.scanner_mode === 'webswing',
               sessionTimeout: infra.webswing_session_timeout_min ?? 60,
               idleTimeout: infra.idle_timeout_min ?? 10,
             });
@@ -3098,7 +3098,7 @@ function StudioWorkspaceInner({
         onOk={() => {
           const next = JSON.parse(JSON.stringify(formData as Record<string, unknown>));
           const infra = (next.infrastructure ??= {}) as Record<string, unknown>;
-          infra.zap_mode = gearInitialValues.webswing ? 'webswing' : 'demon';
+          infra.scanner_mode = gearInitialValues.webswing ? 'webswing' : 'demon';
           infra.webswing_session_timeout_min = Number(gearInitialValues.sessionTimeout ?? 60);
           infra.idle_timeout_min = Number(gearInitialValues.idleTimeout ?? 10);
           onFormDataChange(next);

@@ -20,7 +20,7 @@
 - **Execution (Controller)** жёстко на Selenium: `core/controller.py:179` → `WebDriverAdapter(...)` + `BrowserAdapter(webdriver_adapter)`. Никакого Playwright в боевом пути прогона.
 - **`BrowserAdapter`** (745 строк) — Selenium CDP через `execute_cdp_cmd` (cache/cookies/console logs).
 - **`PlaywrightAdapter`** (428 строк) — написан ПОЛНОСТЬЮ (nav/click/fill/type/cookies/storage/screenshot/auth/headers/init-script), но **не подключён** к Controller. Docstring врёт «Registers as both webdriver and browser» — grep показывает, что Controller импортирует только `WebDriverAdapter`/`BrowserAdapter`.
-- **`automation_runner.py`** (consumer) — Playwright-only, но «no ZAP/Dojo/Allure» (стендалон).
+- **`automation_runner.py`** (consumer) — Playwright-only, но «no scanner/Dojo/Allure» (стендалон).
 - **`browser_service.py`** (authoring) — ad-hoc глобалы Playwright, headless + скриншот-костыль.
 - Registry привязан к Selenium: `wired_validate.py`, `export_keywords.py`, `locator_heal_runtime.py`, `gather_info.py`, `session_bridge.py`, `selene_bridge.py` → все на `WebDriverAdapter`.
 
@@ -56,7 +56,7 @@
 
 ### Нюансы, которые нельзя замалчивать
 
-1. **Прокси в ZAP.** Execution гонит трафик браузера через ZAP-прокси (`127.0.0.1:port`). В контейнере loopback = сам контейнер → тот же грабли, что уже решены в `webdriver_adapter._resolve_proxy` (`host.docker.internal`). Playwright-контейнеру нужен тот же маршрут.
+1. **Прокси в scanner.** Execution гонит трафик браузера через scanner-прокси (`127.0.0.1:port`). В контейнере loopback = сам контейнер → тот же грабли, что уже решены в `webdriver_adapter._resolve_proxy` (`host.docker.internal`). Playwright-контейнеру нужен тот же маршрут.
 2. **Playwright Firefox ≠ Selenium Firefox.** Playwright гоняет патченный Gecko (juggler-протокол). Для DAST покрытия это настоящий Gecko, но не бинарно тот же Firefox, что в Selenium. Для сканера риск низкий, для «браузерного покрытия» — стоит зафиксировать.
 3. **Видеоформат.** `record_video_dir` даёт webm, Monitor сейчас ждёт MP4 (`?run_id=` replay). `<video>` ест оба, но транскод через ffmpeg нужен для точного контракта.
 
@@ -72,9 +72,9 @@
   │   - observe→DSL → expose_binding + AX snapshot (Playwright-native)    │
   │   - video      → record_video_dir (+ ffmpeg → MP4 для Monitor)        │
   └───────────────────────────────────────────────────────────────────────┘
-        │  прокси → ZAP (host.docker.internal, как уже сделано у Selenium)
+        │  прокси → scanner (host.docker.internal, как уже сделано у Selenium)
         ▼
-  ZAP (отдельный контейнер, как сейчас) — сканер, браузер только водит.
+  scanner (отдельный контейнер, как сейчас) — сканер, браузер только водит.
 
 Юзер (airgap):
   - открывает веб-UI коробки в СВОЁМ браузере (он у него и так есть)
@@ -101,7 +101,7 @@
 
 | ID | Что получает оператор | GWT (приёмка) |
 |---|---|---|
-| **PW-E1** | Controller умеет гонять прогон через `PlaywrightAdapter` за флагом `PK_BROWSER_RUNTIME=playwright`, дефолт остаётся `selenium`. | **Given:** wired с chrome/firefox. **When:** run с флагом playwright. **Then:** навигация/клики/заполнения идут через Playwright; ZAP-прокси подхвачен; evidence тот же контракт. |
+| **PW-E1** | Controller умеет гонять прогон через `PlaywrightAdapter` за флагом `PK_BROWSER_RUNTIME=playwright`, дефолт остаётся `selenium`. | **Given:** wired с chrome/firefox. **When:** run с флагом playwright. **Then:** навигация/клики/заполнения идут через Playwright; scanner-прокси подхвачен; evidence тот же контракт. |
 | **PW-E2** | CDP-поверхность `BrowserAdapter` (cache/cookies/console logs) переписана на Playwright-native/`new_cdp_session`. | **Given:** шаг «ОчиститьКэш»/«ОчиститьCookies». **When:** run на playwright. **Then:** результат идентичен Selenium; консоль-логи собраны. |
 | **PW-E3** | Видео: `record_video_dir` + `run_id` нейминг + ffmpeg→MP4; Monitor replay работает. | **Given:** run записан. **When:** открыт Monitor `?run_id=`. **Then:** видео воспроизводится тем же путём, что и Grid-видео. |
 | **PW-E4** | Live-вид execution: headed под Xvfb → noVNC, оператор видит прогон. | **Given:** run в headed-режиме. **When:** открыт Live. **Then:** живой экран прогона, не пустой desktop. |
@@ -117,7 +117,7 @@
 
 ### Out of scope (явно)
 
-- Переписывание ZAP (сканер) — не трогаем, он отдельный.
+- Переписывание scanner (сканер) — не трогаем, он отдельный.
 - WebKit как обязательное браузерное покрытие — бонус в образе, в wired не добавляем без приказа.
 - Crawler-функции `crawl_urls`/`gather_info` на полную замену — мигрируем только то, что в боевом пути прогона.
 

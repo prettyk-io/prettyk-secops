@@ -1,5 +1,5 @@
 ﻿# -*- coding: utf-8 -*-
-"""zap-final.html — один раз на прогон, не на каждый сценарий."""
+"""scanner-final.html — один раз на прогон, не на каждый сценарий."""
 from __future__ import annotations
 
 import sys
@@ -44,10 +44,10 @@ def _stub_controller(monkeypatch, *, scenarios):
     monkeypatch.setattr("utils.allure_runtime.unbind_allure", lambda *_a, **_k: None)
 
     ctrl = Controller.__new__(Controller)
-    ctrl.last_zap_report = None
+    ctrl.last_scanner_report = None
     ctrl.wired = Wired(
         meta=Meta(assessment_purpose="scheduled"),
-        infrastructure=Infrastructure(zap_mode="demon", browser_type="chrome-headless"),
+        infrastructure=Infrastructure(scanner_mode="demon", browser_type="chrome-headless"),
         security_configuration=SecurityConfiguration(
             base_url_override="http://example.test",
             allowed_extra_domains="",
@@ -67,7 +67,7 @@ def _stub_controller(monkeypatch, *, scenarios):
     ctrl._idle_timer = None
     ctrl._idle_seconds = None
     ctrl._timeout_kill_reason = None
-    ctrl.adapters = {"data": DataAdapter(), "zap": MagicMock()}
+    ctrl.adapters = {"data": DataAdapter(), "scanner": MagicMock()}
     ctrl.action_factory = ActionFactory()
     ctrl.reporter = MagicMock()
     ctrl._diary = lambda *a, **k: None
@@ -84,7 +84,7 @@ def _stub_controller(monkeypatch, *, scenarios):
     return ctrl
 
 
-def test_zap_final_attached_once_for_two_scenarios(monkeypatch):
+def test_scanner_final_attached_once_for_two_scenarios(monkeypatch):
     scenarios = [
         Scenario(
             scenario_name="S1",
@@ -97,14 +97,14 @@ def test_zap_final_attached_once_for_two_scenarios(monkeypatch):
     ]
     ctrl = _stub_controller(monkeypatch, scenarios=scenarios)
     calls = {"n": 0}
-    ctrl._attach_final_zap_report = lambda: calls.__setitem__("n", calls["n"] + 1)
+    ctrl._attach_final_scanner_report = lambda: calls.__setitem__("n", calls["n"] + 1)
     ctrl._run_scenario = lambda sc: None
 
     ctrl.run()
     assert calls["n"] == 1
 
 
-def test_zap_final_still_once_when_scenario_fails(monkeypatch):
+def test_scanner_final_still_once_when_scenario_fails(monkeypatch):
     scenarios = [
         Scenario(
             scenario_name="S1",
@@ -117,7 +117,7 @@ def test_zap_final_still_once_when_scenario_fails(monkeypatch):
     ]
     ctrl = _stub_controller(monkeypatch, scenarios=scenarios)
     calls = {"n": 0}
-    ctrl._attach_final_zap_report = lambda: calls.__setitem__("n", calls["n"] + 1)
+    ctrl._attach_final_scanner_report = lambda: calls.__setitem__("n", calls["n"] + 1)
 
     def _boom(sc):
         if sc.scenario_name == "S1":
@@ -133,14 +133,14 @@ def test_zap_final_still_once_when_scenario_fails(monkeypatch):
     assert calls["n"] == 1
 
 
-def test_zap_final_reuses_Wired_html_report(tmp_path):
-    report = tmp_path / "wired-zap.html"
+def test_scanner_final_reuses_Wired_html_report(tmp_path):
+    report = tmp_path / "wired-scanner.html"
     report.write_text("<html>report</html>", encoding="utf-8")
-    zap = MagicMock()
+    scanner = MagicMock()
     ctrl = Controller.__new__(Controller)
     ctrl.wired = Wired(
         meta=Meta(assessment_purpose="scheduled"),
-        infrastructure=Infrastructure(zap_mode="demon", browser_type="chrome-headless"),
+        infrastructure=Infrastructure(scanner_mode="demon", browser_type="chrome-headless"),
         security_configuration=SecurityConfiguration(
             base_url_override="http://example.test",
             allowed_extra_domains="",
@@ -149,9 +149,9 @@ def test_zap_final_reuses_Wired_html_report(tmp_path):
         ),
         test_suites=TestSuites(scenarios=[]),
     )
-    ctrl.adapters = {"zap": zap}
-    ctrl.last_zap_report = str(report)
+    ctrl.adapters = {"scanner": scanner}
+    ctrl.last_scanner_report = str(report)
 
-    ctrl._attach_final_zap_report()
+    ctrl._attach_final_scanner_report()
 
-    zap.generate_report.assert_called()
+    scanner.generate_report.assert_called()

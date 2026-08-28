@@ -51,24 +51,24 @@ type PanelHookSlice = {
   collapse: Record<string, unknown> | undefined;
   hookExec: Record<string, unknown> | undefined;
   risksSource: string;
-  zap: Record<string, unknown> | undefined;
+  scanner: Record<string, unknown> | undefined;
 };
 
 function sliceHooks(hooks: ResultsHooksSnapshot | null): PanelHookSlice {
   const dojo = hooks?.dojo ? asRecord(hooks.dojo) : undefined;
-  const zap = hooks?.zap ? asRecord(hooks.zap) : undefined;
+  const scanner = hooks?.scanner ? asRecord(hooks.scanner) : undefined;
   let risksSource = '';
   if (dojo?.stats) {
     risksSource = 'dojo';
-  } else if (zap?.counts) {
-    risksSource = 'zap';
+  } else if (scanner?.counts) {
+    risksSource = 'scanner';
   }
   return {
-    statsRaw: asRecord(dojo?.stats) || asRecord(zap?.counts),
-    collapse: asRecord(dojo?.collapse) || asRecord(zap?.collapse),
-    hookExec: asRecord(dojo?.executive) || asRecord(zap?.executive),
+    statsRaw: asRecord(dojo?.stats) || asRecord(scanner?.counts),
+    collapse: asRecord(dojo?.collapse) || asRecord(scanner?.collapse),
+    hookExec: asRecord(dojo?.executive) || asRecord(scanner?.executive),
     risksSource,
-    zap,
+    scanner,
   };
 }
 
@@ -129,13 +129,13 @@ function resolvePanelExecutive(
 
 function topFindingsFromSlice(
   collapse: Record<string, unknown> | undefined,
-  zap: Record<string, unknown> | undefined,
+  scanner: Record<string, unknown> | undefined,
 ): unknown[] {
   if (Array.isArray(collapse?.top_findings)) {
     return collapse.top_findings;
   }
-  if (Array.isArray(zap?.top_findings)) {
-    return zap.top_findings;
+  if (Array.isArray(scanner?.top_findings)) {
+    return scanner.top_findings;
   }
   return [];
 }
@@ -144,7 +144,7 @@ export function ResultsSummaryPanel(props: {
   meta: LiveMetaSnapshot | null;
   hooks: ResultsHooksSnapshot | null;
 }): React.JSX.Element | null {
-  const { statsRaw, collapse, hookExec, risksSource, zap } = sliceHooks(props.hooks);
+  const { statsRaw, collapse, hookExec, risksSource, scanner } = sliceHooks(props.hooks);
   const [trend, setTrend] = useState<TrendPoint[]>([]);
   const [allureLine, setAllureLine] = useState('');
 
@@ -192,7 +192,7 @@ export function ResultsSummaryPanel(props: {
 
   const stats = statsFromRaw(statsRaw);
   const executive = resolvePanelExecutive(props.meta, statsRaw, collapse, hookExec);
-  const top = topFindingsFromSlice(collapse, zap);
+  const top = topFindingsFromSlice(collapse, scanner);
 
   return (
     <Card
@@ -228,7 +228,7 @@ export function ResultsSummaryPanel(props: {
         {stats ? (
           <div>
             <Typography.Text type="secondary" className="pk-results-summary-label">
-              {risksSource === 'zap' ? 'ZAP (alertitem)' : 'ACTIVE (Dojo)'}
+              {risksSource === 'scanner' ? 'scanner (alertitem)' : 'ACTIVE (Dojo)'}
             </Typography.Text>
             <SeverityBars stats={stats} />
           </div>

@@ -10,14 +10,14 @@
   2. **mask_secret** — маскирование Bearer/JWT/password в логах и JSON-отчётах.
   3. **OAuth2 / OIDC** — Authorization Code + PKCE, Client Credentials, Password Grant.
   4. **extract_session_tokens** — JWT/Bearer/JSESSIONID из JSON/headers/cookies.
-  5. **apply_to_zap_replacer** — правила ZAP Replacer REQ_HEADER для свежего токена.
+  5. **apply_to_scanner_replacer** — правила scanner Replacer REQ_HEADER для свежего токена.
   6. **AutoRefreshSession** — авто-продление: при 401/403 повторный pre-flight и retry.
   7. **Playwright headless** — browser auth с извлечением localStorage/cookies
      (опциональный import; без playwright в окружении — честный degrade).
   8. **mTLS** — загрузка PEM/PFX client certs для взаимной аутентификации.
 
 Все сетевые операции — через инъектируемый ``http_fn`` (requests-совместимый), чтобы
-тесты мокались без живого IdP. ZAP — через duck-typed adapter (``add_replacer_rule``).
+тесты мокались без живого IdP. scanner — через duck-typed adapter (``add_replacer_rule``).
 """
 from __future__ import annotations
 from utils.env_dual import pk_env
@@ -373,42 +373,42 @@ def execute_oauth2(
     return {"ok": bool(tokens.get("access_token")), "status": status, "tokens": tokens, "error": ""}
 
 
-# ───────────────────────── ZAP Replacer ─────────────────────────
+# ───────────────────────── scanner Replacer ─────────────────────────
 
 
-def apply_to_zap_replacer(
+def apply_to_scanner_replacer(
     tokens: Mapping[str, str],
-    zap_adapter: Any,
+    scanner_adapter: Any,
     *,
     context_name: str = "pk_ctx",
     header_name: str = "Authorization",
 ) -> Dict[str, str]:
-    """Конфигурирует ZAP Replacer: ``Authorization: Bearer <token>`` + Cookie при наличии."""
+    """Конфигурирует scanner Replacer: ``Authorization: Bearer <token>`` + Cookie при наличии."""
     applied: Dict[str, str] = {}
-    if zap_adapter is None or not hasattr(zap_adapter, "add_replacer_rule"):
-        logger.warning("zap_adapter без add_replacer_rule — Replacer пропущен")
+    if scanner_adapter is None or not hasattr(scanner_adapter, "add_replacer_rule"):
+        logger.warning("scanner_adapter без add_replacer_rule — Replacer пропущен")
         return applied
     token = tokens.get("access_token") or tokens.get("id_token") or tokens.get("token")
     if token:
         try:
-            zap_adapter.add_replacer_rule(
+            scanner_adapter.add_replacer_rule(
                 "pk-vault-bearer", "REQ_HEADER", header_name, f"Bearer {token}", False
             )
             applied["header"] = header_name
         except Exception as exc:  # noqa: BLE001
-            logger.error("ZAP replacer bearer: %s", exc)
+            logger.error("scanner replacer bearer: %s", exc)
     cookie_val = ""
     for k, v in tokens.items():
         if k.lower() in ("jsessionid", "session", "sessionid", "sid") or k.lower().startswith("cookie"):
             cookie_val = cookie_val + f"{k}={v}; " if not k.lower().startswith("cookie") else v
     if cookie_val:
         try:
-            zap_adapter.add_replacer_rule(
+            scanner_adapter.add_replacer_rule(
                 "pk-vault-cookie", "REQ_HEADER", "Cookie", cookie_val.strip(), False
             )
             applied["cookie"] = "Cookie"
         except Exception as exc:  # noqa: BLE001
-            logger.error("ZAP replacer cookie: %s", exc)
+            logger.error("scanner replacer cookie: %s", exc)
     return applied
 
 
@@ -654,7 +654,7 @@ def profile_ids() -> List[str]:
 
 
 def check_auth_flow(profile_id: str, *, http_fn: Optional[Callable[..., Any]] = None) -> Dict[str, Any]:
-    """Живой pre-flight прогон профиля → токены → ZAP Replacer (duck-typed zap=None).
+    """Живой pre-flight прогон профиля → токены → scanner Replacer (duck-typed scanner=None).
 
     Возвращает ``{ok, status, tokens:[masked], error}``. Сохраняет состояние профиля
     в ledger для Admin UI.
@@ -698,7 +698,7 @@ def check_auth_flow(profile_id: str, *, http_fn: Optional[Callable[..., Any]] = 
     }
 
 
-def apply_tokens_to_zap(tokens: Mapping[str, str], zap_adapter: Any) -> Dict[str, str]:
+def apply_tokens_to_scanner(tokens: Mapping[str, str], scanner_adapter: Any) -> Dict[str, str]:
     """Alias для дружественного имени (совместимость с friend-request §2.1)."""
-    return apply_to_zap_replacer(tokens, zap_adapter)
+    return apply_to_scanner_replacer(tokens, scanner_adapter)
 

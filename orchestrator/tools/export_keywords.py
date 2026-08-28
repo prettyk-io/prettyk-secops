@@ -9,7 +9,7 @@
 Состав компонентов повторяет `Controller._register_actions`:
     webdriver  -> WebDriverAdapter
     browser    -> BrowserAdapter
-    zap        -> ZapAdapter
+    scanner        -> ScannerAdapter
     http       -> HttpAdapter
     core       -> DataProcessor
     inspector  -> Inspector
@@ -34,6 +34,8 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+import libcst as cst
+
 SCRIPT_REL_PATH = "orchestrator/tools/export_keywords.py"
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -42,10 +44,11 @@ ADAPTERS_DIR = ORCHESTRATOR_DIR / "adapters"
 DEFAULT_OUTPUT = REPO_ROOT / "cosmo" / "src" / "generated" / "keywords.json"
 
 # component -> (путь от orchestrator/, имя класса)
+# PW-C3: webdriver + browser → PlaywrightAdapter (один мир, Selenium выпилен).
 COMPONENT_SOURCES: Dict[str, Tuple[str, str]] = {
-    "webdriver": ("adapters/webdriver_adapter.py", "WebDriverAdapter"),
-    "browser": ("adapters/browser_adapter.py", "BrowserAdapter"),
-    "zap": ("adapters/zap_adapter.py", "ZapAdapter"),
+    "webdriver": ("adapters/playwright_adapter.py", "PlaywrightAdapter"),
+    "browser": ("adapters/playwright_adapter.py", "PlaywrightAdapter"),
+    "scanner": ("adapters/scanner_adapter.py", "ScannerAdapter"),
     "http": ("adapters/http_adapter.py", "HttpAdapter"),
     "grpc": ("adapters/grpc_adapter.py", "GrpcAdapter"),
     "connector": ("adapters/connector_adapter.py", "ConnectorAdapter"),
@@ -72,13 +75,13 @@ KNOWN_STUB_ACTIONS = frozenset(
     }
 )
 
-# Dev-only (Максим): wire zap|… работает, MethodId/AC/банк — нет.
+# Dev-only (Максим): wire scanner|… работает, MethodId/AC/банк — нет.
 # shutdown_all — внутренний стоп по idle/work timeout из формы, не keyword.
 HIDDEN_FROM_KEYWORD_CATALOG = frozenset(
     {
-        "zap.start_webswing",
-        "zap.stop_daemon_start_webswing",
-        "zap.shutdown_all",
+        "scanner.start_webswing",
+        "scanner.stop_daemon_start_webswing",
+        "scanner.shutdown_all",
     }
 )
 
@@ -103,7 +106,8 @@ class ExportError(RuntimeError):
 
 def _parse_module(path: Path) -> ast.Module:
     try:
-        source = path.read_text(encoding="utf-8")
+        # utf-8-sig — срезает BOM (U+FEFF), который ast.parse не переносит.
+        source = path.read_text(encoding="utf-8-sig")
     except OSError as exc:
         raise ExportError(f"Не удалось прочитать {path}: {exc}") from exc
     try:
@@ -236,6 +240,128 @@ def _first_docstring_line(node: ast.FunctionDef) -> Optional[str]:
         if stripped:
             return stripped
     return None
+
+
+# ------------------------------------------------------------------ GRD-B1: wire_action
+# Генератор webdriver-секции _METHOD_ID из декораторов @wire_action на PlaywrightAdapter.
+
+METHOD_ID_PATH = ORCHESTRATOR_DIR / "core" / "method_id.py"
+
+
+def _extract_wire_actions(adapter_path: Path) -> Dict[str, str]:
+    """{ru_name: method_name} из @wire_action("…") декораторов в PlaywrightAdapter (AST, без импорта)."""
+    module = _parse_module(adapter_path)
+    actions: Dict[str, str] = {}
+    for node in module.body:
+        if not isinstance(node, ast.ClassDef) or node.name != "PlaywrightAdapter":
+            continue
+        for stmt in node.body:
+            if not isinstance(stmt, ast.FunctionDef):
+                continue
+            for dec in stmt.decorator_list:
+                if (
+                    isinstance(dec, ast.Call)
+                    and isinstance(dec.func, ast.Name)
+                    and dec.func.id == "wire_action"
+                    and dec.args
+                    and isinstance(dec.args[0], ast.Constant)
+                    and isinstance(dec.args[0].value, str)
+                ):
+                    actions[dec.args[0].value] = stmt.name
+    return actions
+
+
+def _gen_webdriver_elements(actions: Dict[str, str]) -> List[cst.DictElement]:
+    """Сгенерировать DictElement'ы вида "Открыть": ("webdriver", "open")."""
+    elements: List[cst.DictElement] = []
+    for ru_name in sorted(actions):
+        method = actions[ru_name]
+        el = cst.DictElement(
+            key=cst.SimpleString(f'"{ru_name}"'),
+            value=cst.Tuple(
+                [
+                    cst.Element(cst.SimpleString('"webdriver"')),
+                    cst.Element(cst.SimpleString(f'"{method}"')),
+                ]
+            ),
+        )
+        elements.append(el)
+    return elements
+
+
+class _RegenerateMethodId(cst.CSTTransformer):
+    """Удаляет webdriver-записи из _METHOD_ID (кроме gather_info) и вставляет сгенерированные."""
+
+    def __init__(self, gen_elements: List[cst.DictElement]):
+        self.gen_elements = gen_elements
+        self.removed = 0
+
+    def _is_webdriver(self, el: cst.DictElement) -> bool:
+        v = el.value
+        if not isinstance(v, cst.Tuple) or len(v.elements) < 2:
+            return False
+        first = v.elements[0].value
+        return isinstance(first, cst.SimpleString) and first.value in ('"webdriver"', "'webdriver'")
+
+    def _is_gather_info(self, el: cst.DictElement) -> bool:
+        v = el.value
+        if not isinstance(v, cst.Tuple) or len(v.elements) < 2:
+            return False
+        second = v.elements[1].value
+        return isinstance(second, cst.SimpleString) and second.value in ('"gather_info"', "'gather_info'")
+
+    def leave_AnnAssign(self, original_node, updated_node):
+        if not (isinstance(original_node.target, cst.Name) and original_node.target.value == "_METHOD_ID"):
+            return updated_node
+        value = updated_node.value
+        if not isinstance(value, cst.Dict):
+            return updated_node
+
+        kept: List[cst.DictElement] = []
+        for el in value.elements:
+            if self._is_webdriver(el) and not self._is_gather_info(el):
+                self.removed += 1
+                continue
+            kept.append(el)
+
+        new_elements = self.gen_elements + kept
+        return updated_node.with_changes(value=value.with_changes(elements=new_elements))
+
+
+def _regenerate_method_id(actions: Dict[str, str], *, apply: bool) -> int:
+    """Пересобрать webdriver-секцию _METHOD_ID. apply=False → dry-run."""
+    if not actions:
+        print("gen-method-id: @wire_action декораторы не найдены — нечего генерировать.")
+        return 2
+
+    src = METHOD_ID_PATH.read_text(encoding="utf-8-sig")
+    module = cst.parse_module(src)
+    gen_elements = _gen_webdriver_elements(actions)
+    transformer = _RegenerateMethodId(gen_elements)
+    updated = module.visit(transformer)
+
+    print(f"gen-method-id: @wire_action действий: {len(actions)}; удалено рукописных webdriver-записей: {transformer.removed}")
+    if not apply:
+        print("gen-method-id: [dry-run] файл НЕ изменён.")
+        return 0
+
+    new_source = updated.code
+    # py_compile-проверка ДО записи
+    import py_compile
+    import tempfile
+    with tempfile.NamedTemporaryFile("w", suffix=".py", encoding="utf-8", delete=False) as tmp:
+        tmp.write(new_source)
+        tmp_path = tmp.name
+    try:
+        py_compile.compile(tmp_path, doraise=True)
+    finally:
+        Path(tmp_path).unlink(missing_ok=True)
+
+    tmp_out = METHOD_ID_PATH.with_suffix(".py.tmp")
+    tmp_out.write_text(new_source, encoding="utf-8-sig")
+    tmp_out.replace(METHOD_ID_PATH)
+    print(f"gen-method-id: {METHOD_ID_PATH} пересобран (webdriver-секция сгенерирована).")
+    return 0
 
 
 # ---------------------------------------------------------------------- сборка
@@ -382,7 +508,22 @@ def main(argv: Optional[List[str]] = None) -> int:
         action="store_true",
         help="не писать файл, а проверить, что он совпадает с исходниками (код возврата 1 при расхождении)",
     )
+    parser.add_argument(
+        "--gen-method-id",
+        action="store_true",
+        help="GRD-B1: пересобрать webdriver-секцию _METHOD_ID в method_id.py из @wire_action декораторов",
+    )
+    parser.add_argument(
+        "--apply",
+        action="store_true",
+        help="вместе с --gen-method-id: записать изменения (без него — dry-run)",
+    )
     args = parser.parse_args(argv)
+
+    if args.gen_method_id:
+        adapter_path = ORCHESTRATOR_DIR / "adapters" / "playwright_adapter.py"
+        actions = _extract_wire_actions(adapter_path)
+        return _regenerate_method_id(actions, apply=args.apply)
 
     try:
         catalog = build_catalog()

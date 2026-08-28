@@ -4,7 +4,7 @@
 # From repo root:
 #   .\orchestrator\tools\h2_field_pipeline.ps1 -Stage all
 #   .\orchestrator\tools\h2_field_pipeline.ps1 -Stage validate
-#   .\orchestrator\tools\h2_field_pipeline.ps1 -Stage run -Manifest path\to\from-editor.json
+#   .\orchestrator\tools\h2_field_pipeline.ps1 -Stage run -Wired path\to\from-editor.json
 #   .\orchestrator\tools\h2_field_pipeline.ps1 -Stage p10
 #
 # Codes: 0 = step ok; 2 on Stage run = quality gate (normal for High); other = pipeline fail.
@@ -70,17 +70,17 @@ function Invoke-Prep {
     Write-Host "tip=$sha"
     Write-Host "RunDir=$RunDir"
     Write-Host "Wired=$Wired"
-    @{ tip = $sha; run_dir = "$RunDir"; manifest = "$Wired"; started = (Get-Date).ToString("o") } |
+    @{ tip = $sha; run_dir = "$RunDir"; wired = "$Wired"; started = (Get-Date).ToString("o") } |
         ConvertTo-Json |
         Set-Content -Encoding utf8 (Join-Path $RunDir "pipeline_meta.json")
 }
 
 function Invoke-Up {
-    Write-Step "up: Grid + Allure + ZAP demon + Juice"
+    Write-Step "up: Grid + Allure + scanner demon + Juice"
     docker compose -f (Join-Path $Root "services\docker-compose.yml") up -d
     if ($LASTEXITCODE -ne 0) { throw "compose.yml up failed" }
-    docker compose -f (Join-Path $Root "services\docker-compose.zap.yml") up -d
-    if ($LASTEXITCODE -ne 0) { throw "compose.zap up failed" }
+    docker compose -f (Join-Path $Root "services\docker-compose.scanner.yml") up -d
+    if ($LASTEXITCODE -ne 0) { throw "compose.scanner up failed" }
     docker compose -f (Join-Path $Root "services\docker-compose.target.yml") up -d
     if ($LASTEXITCODE -ne 0) { throw "compose.target up failed" }
 }
@@ -99,11 +99,11 @@ function Test-Http([string]$Url, [string]$Name, [switch]$Quiet) {
 }
 
 function Invoke-Health {
-    Write-Step "health: Grid / Allure / ZAP / Juice (up to ~90s)"
+    Write-Step "health: Grid / Allure / scanner / Juice (up to ~90s)"
     $checks = @(
         @{ Url = "http://127.0.0.1:4444/status"; Name = "Grid" },
         @{ Url = "http://127.0.0.1:5050/health"; Name = "allure3-secops" },
-        @{ Url = "http://127.0.0.1:8080/JSON/core/view/version/"; Name = "ZAP API" },
+        @{ Url = "http://127.0.0.1:8080/JSON/core/view/version/"; Name = "scanner API" },
         @{ Url = "http://127.0.0.1:3000/"; Name = "Juice Shop" }
     )
     $deadline = (Get-Date).AddSeconds(90)
@@ -179,13 +179,13 @@ function Invoke-Assert {
             throw "P-09: process exit ($procExit) != run_summary.exit_code ($($json.exit_code))"
         }
     }
-    Write-Host "gate=$($json.gate)  exit_code=$($json.exit_code)  zap_mode=$($json.zap_mode)"
+    Write-Host "gate=$($json.gate)  exit_code=$($json.exit_code)  scanner_mode=$($json.scanner_mode)"
     if (Test-Path $Schema) {
         Write-Host "schema ref: $Schema"
     }
-    $zapDir = Join-Path $Root "reports\scanner-results"
-    if (Test-Path $zapDir) {
-        $n = @(Get-ChildItem $zapDir -File -ErrorAction SilentlyContinue).Count
+    $scannerDir = Join-Path $Root "reports\scanner-results"
+    if (Test-Path $scannerDir) {
+        $n = @(Get-ChildItem $scannerDir -File -ErrorAction SilentlyContinue).Count
         Write-Host "reports/scanner-results files: $n"
     } else {
         Write-Host "warn: no reports/scanner-results" -ForegroundColor Yellow
@@ -196,12 +196,12 @@ function Invoke-Assert {
 function Invoke-P10 {
     Write-Step "P-10: Webswing up + idle wired (hold)"
     Assert-Py
-    $up = Join-Path $Root "services\zap-webswing-up.ps1"
+    $up = Join-Path $Root "services\scanner-webswing-up.ps1"
     if (-not (Test-Path $up)) { throw "missing $up" }
     & powershell -NoProfile -ExecutionPolicy Bypass -File $up
-    if ($LASTEXITCODE -ne 0) { throw "zap-webswing-up failed" }
+    if ($LASTEXITCODE -ne 0) { throw "scanner-webswing-up failed" }
     if (-not (Test-Path $IdleWired)) { throw "missing $IdleWired" }
-    Write-Host "idle run (empty scenarios -> hold). Stop with Ctrl+C or manifest timeout."
+    Write-Host "idle run (empty scenarios -> hold). Stop with Ctrl+C or wired timeout."
     Write-Host "wired: $IdleWired"
     $env:PK_RUN_DIR = $RunDir
     & $Py $Main --wired $IdleWired
@@ -230,7 +230,7 @@ function Invoke-Journal {
         "| Tip SHA | $sha |",
         "| FE URL | http://127.0.0.1:5173 |",
         "| Playground health | |",
-        "| Manifest | $Wired |",
+        "| Wired | $Wired |",
         "| RunDir | $RunDir |",
         "| validate-only | |",
         "| E1..E6 | |",

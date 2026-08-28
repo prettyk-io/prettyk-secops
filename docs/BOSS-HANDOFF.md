@@ -17,7 +17,7 @@
 prettyk-dev/
 ├── cosmo/                   ← WORKSPACE. КОД ЗДЕСЬ (в корне!)
 ├── orchestrator/            ← БЭКЕНД (solid AF) + tools/*.ps1
-├── services/                ← docker-compose (Grid/Allure/ZAP/Juice/Dojo/Sonar)
+├── services/                ← docker-compose (Grid/Allure/scanner/Juice/Dojo/Sonar)
 ├── reports/                 ← артефакты прогона
 ├── .venv/                   ← python-окружение бэкенда
 ├── pure/                    ← CANON BASE доки
@@ -52,7 +52,7 @@ prettyk-dev/
 ## Что есть сейчас (факты)
 
 ### Код
-- `cosmo/src/` — 17 модулей: `admin`, `api`, `app`, `checks`, `editor`, `form`, `generated`, `keywords`, `manifest`, `results`, `roles`, `shell`, `storage`, `studio`, `test`, `theme`, `utils`
+- `cosmo/src/` — 17 модулей: `admin`, `api`, `app`, `checks`, `editor`, `form`, `generated`, `keywords`, `wired`, `results`, `roles`, `shell`, `storage`, `studio`, `test`, `theme`, `utils`
 - `tsc --noEmit` → **0 ошибок**
 - `vite build` → **зелёный** (последний: 14 авг 16:02)
 - E2E: `e2e/vnext-smoke.spec.ts` — **17/17 зелёный**
@@ -64,7 +64,7 @@ prettyk-dev/
 - **BE** (`prettyk-dev-backend`): 105 issues (104 smell, 1 bug), **89 CRITICAL** — все `python:S3776` cognitive complexity. Максим сказал «wontfix на критикалы мы никогда не будем вешать» — это твой эпик на разбор.
 
 ### Docker / стенд
-- Docker-образы lab-контура снесены (пересоздание VM). SonarQube жив, lab (`selenium/ZAP/juice/dojo`) — нет.
+- Docker-образы lab-контура снесены (пересоздание VM). SonarQube жив, lab (`selenium/scanner/juice/dojo`) — нет.
 - `lab_up.ps1` потянет образы заново при первом запуске.
 
 ---
@@ -75,11 +75,11 @@ prettyk-dev/
 
 | ID | Что | Заметка |
 |---|---|---|
-| **PSI-1** | Стенд: `lab_up.ps1` → Grid + allure + ZAP + Juice healthy | Образы перетянутся |
+| **PSI-1** | Стенд: `lab_up.ps1` → Grid + allure + scanner + Juice healthy | Образы перетянутся |
 | **PSI-2** | Редактор: `cosmo` dev + E2E smoke 17/17 | Уже зелёный, пробеги свежее |
 | **PSI-3** | Оркестратор: `main.py --validate-only` на тестовом манифесте | legacy/orchestrator |
-| **PSI-4** | Прогон: manifest → Controller.run() → ZAP → allure → run_summary.json | Полный цикл |
-| **PSI-5** | Dojo: import ZAP XML → findings → dedup → FP marking | legacy/adapters/defectdojo_client.py |
+| **PSI-4** | Прогон: wired → Controller.run() → scanner → allure → run_summary.json | Полный цикл |
+| **PSI-5** | Dojo: import scanner XML → findings → dedup → FP marking | legacy/adapters/defectdojo_client.py |
 | **PSI-6** | Gate: High порог + admission filter (min_confidence + waivers) | admission_filter.py |
 | **PSI-7** | Live: idle → прогон → ленты → журнал | legacy/utils/live_server.py |
 | **PSI-8** | Бандл: `vite build` (уже зелёный) + `package_vps.py` (по команде Максима) | Сборка без команды — запрещена |

@@ -7,7 +7,7 @@ import { useScenarioDeckStore } from "./ScenarioDeckStore";
 import { useWarRoomTelemetry } from "./useWarRoomTelemetry";
 import { FuzzerStrikeOverlay } from "./FuzzerStrikeOverlay";
 import type { ActionKind, ScenarioStepModel, StrategyKind } from "./scenarioStepModel";
-import { Zap, X, ShieldCheck, ShieldAlert } from "lucide-react";
+import { scanner, X, ShieldCheck, ShieldAlert } from "lucide-react";
 
 const nodeTypes = { scenarioDeck: ScenarioDeckNode };
 
@@ -21,11 +21,11 @@ function initDemoStore(){
     {id:"s4",action:"Type" as ActionKind,strategy:"css" as StrategyKind,strategyValue:"#password",payload:"$password_ref",continueOnError:false,led:"queued",debugResult:null},
     {id:"s5",action:"Click" as ActionKind,strategy:"role" as StrategyKind,strategyValue:"button Log in",payload:"",continueOnError:false,led:"queued",debugResult:null},
     {id:"s6",action:"Wait" as ActionKind,strategy:"css" as StrategyKind,strategyValue:"",payload:"2000",continueOnError:false,led:"queued",debugResult:null},
-    {id:"s7",action:"Spider" as ActionKind,strategy:"css" as StrategyKind,strategyValue:"",payload:"",continueOnError:false,led:"queued",debugResult:null},
+    {id:"s7",action:"Crawl" as ActionKind,strategy:"css" as StrategyKind,strategyValue:"",payload:"",continueOnError:false,led:"queued",debugResult:null},
     {id:"s8",action:"FuzzWave" as ActionKind,strategy:"css" as StrategyKind,strategyValue:"",payload:"xss_corpus",continueOnError:false,led:"queued",debugResult:null},
     {id:"s9",action:"ActiveScan" as ActionKind,strategy:"css" as StrategyKind,strategyValue:"",payload:"",continueOnError:false,led:"queued",debugResult:null},
   ];
-  setDecks([{id:"deck-1",title:"Juice Shop — Auth & Scan",description:"Логин, spider, фаззинг, активное сканирование",continueOnError:true,steps:demoSteps,collapsed:false}]);
+  setDecks([{id:"deck-1",title:"Juice Shop — Auth & Scan",description:"Логин, crawl, фаззинг, активное сканирование",continueOnError:true,steps:demoSteps,collapsed:false}]);
 }
 
 function buildDeckNodes():Node[]{return useScenarioDeckStore.getState().decks.map((deck,i)=>({id:deck.id,type:"scenarioDeck",position:{x:60,y:20+i*620},data:{deckId:deck.id,title:deck.title,description:deck.description,stepCount:deck.steps.length} satisfies ScenarioDeckNodeData,draggable:true}));}
@@ -36,7 +36,7 @@ function SynthesisBar(){
   const isDone=runPhase==="passed"||runPhase==="failed";const isRunning=runPhase==="warming"||runPhase==="executing"||runPhase==="synthesizing";
   return <div className="flex items-center justify-between px-4 py-2 shrink-0" style={{background:isDone?(runPhase==="passed"?"rgba(34,197,94,0.08)":"rgba(239,68,68,0.08)"):"rgba(56,189,248,0.06)",borderBottom:"1px solid #1e293b"}}>
     <div className="flex items-center gap-2">
-      {isRunning&&<><Zap className="size-4" style={{color:"#38bdf8"}}/><span className="text-xs font-semibold" style={{color:"#38bdf8"}}>WAR ROOM</span></>}
+      {isRunning&&<><scanner className="size-4" style={{color:"#38bdf8"}}/><span className="text-xs font-semibold" style={{color:"#38bdf8"}}>WAR ROOM</span></>}
       {runPhase==="passed"&&<><ShieldCheck className="size-4" style={{color:"#22c55e"}}/><span className="text-xs font-semibold" style={{color:"#22c55e"}}>VERDICT: PASSED</span></>}
       {runPhase==="failed"&&<><ShieldAlert className="size-4" style={{color:"#ef4444"}}/><span className="text-xs font-semibold" style={{color:"#ef4444"}}>VERDICT: FAILED</span></>}
     </div>
@@ -73,7 +73,7 @@ export function ScenarioFlow(){
       {warRoom&&<FuzzerStrikeOverlay/>}
     </div>
     {!warRoom&&<div className="absolute bottom-4 right-4 z-20">
-      <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all" style={{background:"linear-gradient(135deg, #0ea5e9, #7c3aed)",color:"#fff",boxShadow:"0 0 20px rgba(14,165,233,0.3)"}} onClick={activateWarRoom}><Zap className="size-4"/>WAR ROOM</button>
+      <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all" style={{background:"linear-gradient(135deg, #0ea5e9, #7c3aed)",color:"#fff",boxShadow:"0 0 20px rgba(14,165,233,0.3)"}} onClick={activateWarRoom}><scanner className="size-4"/>WAR ROOM</button>
     </div>}
   </div></ReactFlowProvider>;
 }

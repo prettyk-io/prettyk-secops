@@ -35,7 +35,7 @@ export function adaptiveSpeed(latencyMs: number): string {
 /** Map edge status to photon color. */
 export function photonColor(kind: string): string {
   switch (kind) {
-    case 'spider': return '#00F0FF';
+    case 'crawl': return '#00F0FF';
     case 'active_scan': return '#A855F7';
     case 'fuzzing': return '#F59E0B';
     case 'success': return '#10B981';

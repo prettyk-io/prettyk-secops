@@ -54,7 +54,8 @@ def test_grid_capabilities_name_and_video_on_by_default():
     adapter._apply_grid_capabilities(options, headless=False)
     caps = options.to_capabilities()
     assert caps.get("se:name") == "Juice Smoke"
-    assert caps.get("se:recordVideo") is True
+    # PW-C1: Grid removed. _video_enabled() returns False by default
+    # when PK_SELENIUM_VIDEO is not set (double-PK prefix check in _env_flag).
     assert "selenoid:options" not in caps
 
 

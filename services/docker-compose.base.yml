@@ -1,0 +1,169 @@
+# Долгоживущий системный контур PrettyK (base).
+#
+# Заменяет старый docker-compose.yml для системных сервисов.
+# Сессионные ресурсы (scanner, browser, target, api-lab) вынесены в session-template.yml.
+#
+# Запуск из корня репозитория:
+#   docker compose -f services/docker-compose.base.yml up -d
+#
+# Порты (системные):
+#   5050 — allure3-secops (Allure 3 Awesome: dark/ru/SecOps logo, канон)
+#   5051 — allure-light-secops (Allure 2 legacy, запасной контур)
+#   8766 — LLM server (llama.cpp Qwen3, опционально: PK_AI_ASSISTANT_ENABLED=0 отключает AI)
+#   8768 — llama-server (Qwen3-1.7B Q5_K_M, CPU inference)
+#   8769 — llama-server-reasoning (Qwen3-4B-Instruct Q5_K_M)
+#
+# Опционально (include — раскомментировать при старте):
+#   - docker-compose.sonarqube.yml
+#   - docker-compose.defectdojo.yml
+#
+# Сеть: pk-net (external, общая с сессионными проектами и infra).
+
+include:
+  - docker-compose.sonarqube.yml
+  - docker-compose.defectdojo.yml
+
+services:
+  allure-light-secops:
+    build:
+      context: ./allure-light-secops
+    image: pk-allure-light-secops:local
+    container_name: allure-light-secops
+    restart: unless-stopped
+    ports:
+      - "5051:5051"
+    volumes:
+      - ../reports/allure-results:/app/allure-results
+      - ../reports/allure-report:/app/default-reports
+    environment:
+      - KEEP_HISTORY=1
+      - KEEP_HISTORY_LATEST=20
+      - ALLURE_RESULTS_DIR=/app/allure-results
+      - ALLURE_REPORT_DIR=/app/default-reports
+      - ALLURE_LANG=ru
+
+  # Allure 3 Awesome (dark + SecOps logo + ru). Дефолт lab — канон :5050.
+  allure3-secops:
+    build:
+      context: ./allure3-secops
+    image: pk-allure3-secops:local
+    container_name: allure3-secops
+    restart: unless-stopped
+    ports:
+      - "5050:5050"
+    volumes:
+      - ../reports/allure-results:/app/allure-results
+      - ../reports/allure3-report:/app/default-reports
+      - ../reports/live:/app/runs-index:ro
+      - ./allure-brand:/app/brand:ro
+    environment:
+      - KEEP_HISTORY=1
+      - ALLURE_RESULTS_DIR=/app/allure-results
+      - ALLURE_REPORT_DIR=/app/default-reports
+      - RUNS_INDEX_DIR=/app/runs-index
+      - ALLURE_BIN=allure
+      - ALLURE_CONFIG=/app/allurerc.mjs
+      - ALLURE_LOGO=/app/brand/logo.svg
+      - ALLURE_REPORT_NAME=Проверка PK
+      - ALLURE_THEME=dark
+      - ALLURE_LANG=ru
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:5050/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # LLM inference (опционально). Управляется PK_AI_ASSISTANT_ENABLED.
+  # При PK_AI_ASSISTANT_ENABLED=0 на хосте compose up пропускает LLM-сервисы.
+  llama-server:
+    image: ghcr.io/ggml-org/llama.cpp:server
+    container_name: llama-server
+    restart: unless-stopped
+    profiles:
+      - ai
+    volumes:
+      - ./llm-model/qwen3-1.7b-q5_k_m.gguf:/models/qwen3-1.7b-q5_k_m.gguf:ro
+    command:
+      - -m
+      - /models/qwen3-1.7b-q5_k_m.gguf
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8768"
+      - -t
+      - "4"
+      - -c
+      - "4096"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8768/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 120s
+
+  llama-server-reasoning:
+    image: ghcr.io/ggml-org/llama.cpp:server
+    container_name: llama-server-reasoning
+    restart: unless-stopped
+    profiles:
+      - ai
+    volumes:
+      - ./llm-model/Qwen3-4B-Instruct-2507.Q5_K_M.gguf:/models/qwen3-4b-instruct-2507-q5_k_m.gguf:ro
+    command:
+      - -m
+      - /models/qwen3-4b-instruct-2507-q5_k_m.gguf
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8769"
+      - -t
+      - "4"
+      - -c
+      - "4096"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8769/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 180s
+
+  llm-server:
+    build:
+      context: ..
+      dockerfile: services/llm-server.Dockerfile
+    image: pk-llm-server:dev
+    container_name: llm-server
+    restart: unless-stopped
+    profiles:
+      - ai
+    depends_on:
+      llama-server:
+        condition: service_healthy
+      llama-server-reasoning:
+        condition: service_healthy
+    environment:
+      PK_AI_ASSISTANT_ENABLED: "${PK_AI_ASSISTANT_ENABLED:-1}"
+      LLM_MODEL_PATH: /nonexistent
+      LLAMA_HOST: llama-server
+      LLAMA_PORT: "8768"
+      LLAMA_REASONING_HOST: llama-server-reasoning
+      LLAMA_REASONING_PORT: "8769"
+      LLM_FAST_MODEL_NAME: Qwen3-1.7B
+      LLM_REASONING_MODEL_NAME: Qwen3-4B-Instruct-2507
+      LISTEN_PORT: "8766"
+      LLAMA_THREADS: "4"
+      LLAMA_CTX: "4096"
+    ports:
+      - "8766:8766"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8766/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+networks:
+  default:
+    name: pk-net
+    external: true

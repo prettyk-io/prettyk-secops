@@ -135,7 +135,7 @@ prettyk-pure (коробка — общий каталог)
   ├── brick-sast-kcs
   ├── brick-deploy-stage
   ├── brick-deploy-prod
-  ├── brick-dast-zap
+  ├── brick-dast-scanner
   ├── brick-autotest-playwright
   └── brick-gate-severity-threshold
 
@@ -144,7 +144,7 @@ cosmo-custom (пак — переопределения под конкретн�
   │     ├── brick-deploy-stage     (переопределение: специфичный раннер)
   │     └── brick-gate-cbr-policy  (новый: политика ЦБ)
   └── domain:retail-payments/
-        └── brick-dast-zap         (переопределение: кастомный контекст)
+        └── brick-dast-scanner         (переопределение: кастомный контекст)
 ```
 
 **Правила разрешения кирпичей:**
@@ -266,7 +266,7 @@ Deploy Batch (stage/test)
 Gate: Deploy Readiness      ← автоматический: URLs живы? health checks зелёные?
   │
   ▼
-Dynamic Test Batch          ← DAST (ZAP) + Autotests (Playwright) + Fuzzer
+Dynamic Test Batch          ← DAST (scanner) + Autotests (Playwright) + Fuzzer
   │
   ▼
 Gate: Dynamic Severity      ← автоматический/ручной: findings DAST + autotests
@@ -396,7 +396,7 @@ DomainRBAC = {
                           ▼
                   ┌───────────────┐
                   │ Dynamic Test  │
-                  │ Batch         │  ← DAST (ZAP) + Autotests (Playwright) + Fuzzer
+                  │ Batch         │  ← DAST (scanner) + Autotests (Playwright) + Fuzzer
                   │ (all deploys) │
                   └───────┬───────┘
                           │
@@ -501,7 +501,7 @@ interface ExecutionAdapter {
 ```text
 interface SecurityCapabilityBroker {
   // Запуск security-specific раннеров
-  startZAPDemon(run_id: string): ZAPSession
+  startscannerDemon(run_id: string): scannerSession
   startPlaywrightCDP(run_id: string): CDPSession
   startFuzzer(run_id: string, dictionaries: DictRef[]): FuzzerSession
 
@@ -513,7 +513,7 @@ interface SecurityCapabilityBroker {
 }
 ```
 
-Security-раннеры (ZAP, Playwright CDP, Fuzzer) не запускаются через generic ExecutionAdapter. Они требуют:
+Security-раннеры (scanner, Playwright CDP, Fuzzer) не запускаются через generic ExecutionAdapter. Они требуют:
 
 - Изоляции (сетевой, файловой).
 - Привязки к `run_id` (для evidence chain).
@@ -535,7 +535,7 @@ Run
                           ├── hash: sha256
                           └── provenance: {
                                 run_id, batch_id, job_id, step_id,
-                                capability: "zap-demon" | "playwright-cdp" | "fuzzer" | ...
+                                capability: "scanner-demon" | "playwright-cdp" | "fuzzer" | ...
                               }
 ```
 
@@ -561,7 +561,7 @@ Run
 | Security Gate | **Нет** (сейчас — логика в коде) | Сущность + durable storage |
 | ForgeAdapter (multi-instance) | **Нет** | Интерфейс + Gitea implementation |
 | ExecutionAdapter | **Нет** | Интерфейс + Woodpecker implementation |
-| SecurityCapabilityBroker | Частично (ZAP/Playwright/Fuzzer есть) | Формализовать контракт |
+| SecurityCapabilityBroker | Частично (scanner/Playwright/Fuzzer есть) | Формализовать контракт |
 | Evidence Chain | Частично (Monitor пишет) | Иммутабельный ledger |
 | Domain RBAC | Частично (FE-only, 5 ролей) | Бэкенд + scope команд |
 | Run Control Plane | **Нет** | Durable Run/Batch/Gate state machine |

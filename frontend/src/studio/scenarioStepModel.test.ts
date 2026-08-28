@@ -27,8 +27,8 @@ describe('stepToDSL — pill → DSL', () => {
     expect(stepToDSL({ id: '1', action: 'Type', strategy: 'css', strategyValue: '#input', payload: 'hello', continueOnError: false, led: 'queued' })).toBe('Type css "#input" hello');
   });
 
-  it('Spider → "SpiderScan"', () => {
-    expect(stepToDSL({ id: '1', action: 'Spider', strategy: 'css', strategyValue: '', payload: '', continueOnError: false, led: 'queued' })).toBe('SpiderScan');
+  it('Crawl → "crawl"', () => {
+    expect(stepToDSL({ id: '1', action: 'Crawl', strategy: 'css', strategyValue: '', payload: '', continueOnError: false, led: 'queued' })).toBe('crawl');
   });
 
   it('ActiveScan → "ActiveScan"', () => {

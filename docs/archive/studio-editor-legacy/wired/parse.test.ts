@@ -9,7 +9,7 @@ import { parseWired } from './parse';
 describe('parseWired', () => {
   const legacySample = {
     meta: {
-      project_id: 'owasp-zap-tests',
+      project_id: 'owasp-scanner-tests',
       initiator_name: 'someone@dev',
       app_leader: 'itlead@dev',
       assessment_purpose: 'scheduled',
@@ -19,7 +19,7 @@ describe('parseWired', () => {
     infrastructure: {
       base_url_override: 'http://runner01.dev.spaceport.ru:8080',
       allowed_extra_domains: 'rkn.gov.ru',
-      zap_mode: 'demon',
+      scanner_mode: 'demon',
       browser_type: 'chrome',
       debug_mode: false,
     },
@@ -88,7 +88,7 @@ describe('parseWired', () => {
           openapi_fields: {
             schema_mode: 'resource',
             schema_resource: 'my-spec',
-            allow_zap_import: true,
+            allow_scanner_import: true,
             auth_module_id: 'auth-1',
           },
         },
@@ -98,7 +98,7 @@ describe('parseWired', () => {
           graphql_fields: {
             schema_mode: 'introspection',
             endpoint_path: '/graphql',
-            allow_zap_scan: true,
+            allow_scanner_scan: true,
           },
         },
         {
@@ -152,7 +152,7 @@ describe('parseWired', () => {
     expect(r.ok).toBe(true);
     if (!r.ok) throw new Error('unreachable');
     const m = r.wired.regulation.meta;
-    expect(m.project_id).toBe('owasp-zap-tests');
+    expect(m.project_id).toBe('owasp-scanner-tests');
     expect(m.assessment_purpose).toBe('scheduled');
     expect(m.generate_act).toBe(false);
     expect(m.scheduled_info).toBe('Плановая');
@@ -165,7 +165,7 @@ describe('parseWired', () => {
     if (!r.ok) throw new Error('unreachable');
     const infra = r.wired.regulation.infrastructure;
     expect(infra.base_url_override).toBe('http://runner01.dev.spaceport.ru:8080');
-    expect(infra.zap_mode).toBe('demon');
+    expect(infra.scanner_mode).toBe('demon');
     expect(infra.browser_type).toBe('chrome');
     expect(infra.debug_mode).toBe(false);
     expect(infra.allowed_extra_domains).toBe('rkn.gov.ru');
@@ -244,7 +244,7 @@ describe('parseWired', () => {
 
     expect(graphql.length).toBe(1);
     expect(graphql[0]!.schema_mode).toBe('introspection');
-    expect(graphql[0]!.allow_zap_scan).toBe(true);
+    expect(graphql[0]!.allow_scanner_scan).toBe(true);
 
     expect(grpc.length).toBe(1);
     expect(grpc[0]!.proto_resource).toBe('proto-pack');
@@ -294,8 +294,8 @@ describe('parseWired', () => {
     const r = parseWired({});
     expect(r.ok).toBe(true);
     if (!r.ok) throw new Error('unreachable');
-    expect(r.wired.regulation.meta.project_id).toBe('owasp-zap-tests');
-    expect(r.wired.regulation.infrastructure.zap_mode).toBe('demon');
+    expect(r.wired.regulation.meta.project_id).toBe('owasp-scanner-tests');
+    expect(r.wired.regulation.infrastructure.scanner_mode).toBe('demon');
     expect(r.wired.editor.imports).toEqual([]);
     expect(r.wired.editor.pages).toEqual([]);
     expect(r.wired.editor.scenarios).toEqual([]);

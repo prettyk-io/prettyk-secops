@@ -2,14 +2,14 @@
 from core.controller import Controller
 from core.gate_policy import (
     AdmissionPolicy,
-    counts_from_zap_gate_summary,
+    counts_from_scanner_gate_summary,
     evaluate_admission_gate,
     gate_severity_floor,
     normalize_severity,
     normalize_severity_counts,
     report_requirement_failures,
     severities_at_or_above,
-    zap_api_key_from_env,
+    scanner_api_key_from_env,
 )
 
 
@@ -46,14 +46,14 @@ def test_report_requirements(monkeypatch):
     assert any("DEFECTDOJO" in x for x in fails)
 
 
-def test_zap_api_key_from_env(monkeypatch):
-    monkeypatch.delenv("PK_ZAP_API_KEY", raising=False)
-    monkeypatch.delenv("ZAP_API_KEY", raising=False)
-    assert zap_api_key_from_env() is None
-    monkeypatch.setenv("ZAP_API_KEY", "secret")
-    assert zap_api_key_from_env() == "secret"
-    monkeypatch.setenv("PK_ZAP_API_KEY", "prefer")
-    assert zap_api_key_from_env() == "prefer"
+def test_scanner_api_key_from_env(monkeypatch):
+    monkeypatch.delenv("PK_SCANNER_API_KEY", raising=False)
+    monkeypatch.delenv("SCANNER_API_KEY", raising=False)
+    assert scanner_api_key_from_env() is None
+    monkeypatch.setenv("SCANNER_API_KEY", "secret")
+    assert scanner_api_key_from_env() == "secret"
+    monkeypatch.setenv("PK_SCANNER_API_KEY", "prefer")
+    assert scanner_api_key_from_env() == "prefer"
 
 
 def test_evaluate_admission_high_fails():
@@ -95,14 +95,14 @@ def test_evaluate_admission_disabled():
     result = evaluate_admission_gate(
         {"high": 9},
         AdmissionPolicy(max_critical=0, max_high=0, enabled=False),
-        source="zap",
+        source="scanner",
     )
     assert result.failed is False
     assert result.summary.get("disabled") is True
 
 
-def test_counts_from_zap_gate_summary_buckets_total():
-    counts = counts_from_zap_gate_summary(
+def test_counts_from_scanner_gate_summary_buckets_total():
+    counts = counts_from_scanner_gate_summary(
         {"total": 3, "unique": 2, "risks": ["High"], "lines": []}
     )
     assert normalize_severity_counts(counts)["high"] == 3
@@ -119,7 +119,7 @@ def test_quality_gate_uses_admission_counts(monkeypatch):
             }
 
     ctrl = object.__new__(Controller)
-    ctrl.adapters = {"zap": Z()}
+    ctrl.adapters = {"scanner": Z()}
     ctrl.quality_gate_failed = False
     ctrl.quality_gate_summary = None
     ctrl.admission_risk_hints = {}
@@ -130,7 +130,7 @@ def test_quality_gate_uses_admission_counts(monkeypatch):
     assert ctrl.evaluate_quality_gate() is True
     assert ctrl.quality_gate_failed is True
     assert ctrl.quality_gate_summary.get("counts", {}).get("high") == 2
-    assert ctrl.admission_risk_hints.get("source") == "zap"
+    assert ctrl.admission_risk_hints.get("source") == "scanner"
 
 
 def test_quality_gate_explicit_dojo_counts(monkeypatch):

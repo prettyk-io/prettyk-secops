@@ -105,7 +105,7 @@ def test_controller_page_call_ambient_and_payload():
     ctrl.page_resolver = PageResolver(PAGES)
     ctrl.adapters = {"data": data}
     ctrl._wired_problems = []
-    ctrl.last_zap_report = None
+    ctrl.last_scanner_report = None
     factory = ActionFactory()
     factory.register("data", "let", data.let)
     ctrl.action_factory = factory

@@ -11,13 +11,13 @@
 ```mermaid
 flowchart LR
   Ent[fuzzers_entity] --> Form[FuzzerForm]
-  Form --> SoT[manifest_fuzzers]
+  Form --> SoT[wired_fuzzers]
   Pack[corpus_auto_or_intent] --> Runner[SuiteFuzzerRunner]
-  Hist[ZAP_History] -->|opt_in| Obs[observed_keys]
+  Hist[scanner_History] -->|opt_in| Obs[observed_keys]
   Obs --> Runner
   PK[ФаззингВолна_id] --> Runner
   SoT --> Runner
-  Runner --> ZapHttp[zap_http_request]
+  Runner --> scannerHttp[scanner_http_request]
 ```
 
 | Слой | Факт |
@@ -26,7 +26,7 @@ flowchart LR
 | Authoring | Studio Fuzzer: targets, corpus, `algorithm`, policy, session_replay |
 | Корпус | KDT pack `intent_*`; `corpus=auto` / пусто → resolve по location |
 | Targets | Явные в entity; опционально merge observed keys из History (runtime opt-in) |
-| Запуск | PrettyK `ФаззингВолна <fuzzer_id>` → Python runner → ZAP Daemon HTTP |
+| Запуск | PrettyK `ФаззингВолна <fuzzer_id>` → Python runner → scanner Daemon HTTP |
 | Маски | `{MASK}` / `{MASK_n}`; TAB в корпусе → слоты |
 | Session | History Cookie/Authorization; иначе `session_missing` / `session_lost` |
 | Лимиты lab | `max_requests` ≤ 25, RPS ≤ 1 |
@@ -59,15 +59,15 @@ flowchart LR
 
 Path / cookie / header harvest, guess runtime, schema fuzz — QUEUE / evolve, не этот slice.
 
-## 5. Роль ZAP
+## 5. Роль scanner
 
-Волна ходит в цель через **ZAP Daemon** (прокси / History / HTTP API).  
-**ФаззингВолна** — runner + pack + policy KDT, не имитация Desktop Fuzzer и не обещание «ZAP Active Scan умнее нашего контура».  
-Пассивный скан и прочие опции ZAP — соседние рычаги lab; их наличие ≠ мозг этой волны. Сравнивать режимы и knobs — норма; ставка продукта волны — самописный контур.
+Волна ходит в цель через **scanner Daemon** (прокси / History / HTTP API).  
+**ФаззингВолна** — runner + pack + policy KDT, не имитация Desktop Fuzzer и не обещание «scanner Active Scan умнее нашего контура».  
+Пассивный скан и прочие опции scanner — соседние рычаги lab; их наличие ≠ мозг этой волны. Сравнивать режимы и knobs — норма; ставка продукта волны — самописный контур.
 
 ## 6. Честность
 
-1. Runtime anomalies — по коду (`zap_alert`, `reflection`, `*_outlier`, …); narrative vs имена — не раздувать.  
+1. Runtime anomalies — по коду (`scanner_alert`, `reflection`, `*_outlier`, …); narrative vs имена — не раздувать.  
 2. Slot в схеме ≠ «банк принял corpus».  
-3. Не имитировать ZAP Desktop Fuzzer API.  
+3. Не имитировать scanner Desktop Fuzzer API.  
 4. Не врать «готово» про guess, path/cookie harvest, SecLists в репо.

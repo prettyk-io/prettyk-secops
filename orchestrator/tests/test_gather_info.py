@@ -1,5 +1,5 @@
 ﻿# -*- coding: utf-8 -*-
-"""Gather harden: modes / caps / wall (fake WD/ZAP). S3."""
+"""Gather harden: modes / caps / wall (fake WD/scanner). S3."""
 from __future__ import annotations
 
 from utils.gather_info import (
@@ -23,7 +23,7 @@ class _FakeWd:
         self.opened.append(url)
 
 
-class _FakeZap:
+class _Fakescanner:
     def __init__(self):
         self.bursts = []
         self.stop_all = 0
@@ -47,10 +47,10 @@ def test_run_gather_info_after_default(monkeypatch):
     monkeypatch.delenv("PK_GATHER_MODE", raising=False)
     monkeypatch.delenv("PK_GATHER_BURST_SEC", raising=False)
     wd = _FakeWd()
-    zap = _FakeZap()
+    scanner = _Fakescanner()
     summary = run_gather_info(
         wd,
-        zap,
+        scanner,
         ["/#/login", "/#/register"],
         settle_sec=0,
         spider_sec=30,
@@ -61,17 +61,17 @@ def test_run_gather_info_after_default(monkeypatch):
     assert summary["bursts"] == 1  # one spider after browse
     assert summary["pscan_ok"] is True
     assert len(wd.opened) == 2
-    assert zap.bursts == [wd.opened[0]]
-    assert zap.enable_all == 1
+    assert scanner.bursts == [wd.opened[0]]
+    assert scanner.enable_all == 1
 
 
 def test_run_gather_info_interleaved(monkeypatch):
     monkeypatch.delenv("PK_GATHER_BURST_SEC", raising=False)
     wd = _FakeWd()
-    zap = _FakeZap()
+    scanner = _Fakescanner()
     summary = run_gather_info(
         wd,
-        zap,
+        scanner,
         ["/#/login", "/#/register"],
         burst_sec=5,
         settle_sec=0,
@@ -80,16 +80,16 @@ def test_run_gather_info_interleaved(monkeypatch):
     )
     assert summary["mode"] == "interleaved"
     assert summary["bursts"] == 2
-    assert zap.bursts == wd.opened
+    assert scanner.bursts == wd.opened
 
 
 def test_max_urls_cap(monkeypatch):
     monkeypatch.delenv("PK_GATHER_MAX_URLS", raising=False)
     wd = _FakeWd()
-    zap = _FakeZap()
+    scanner = _Fakescanner()
     summary = run_gather_info(
         wd,
-        zap,
+        scanner,
         ["http://a/1", "http://a/2", "http://a/3"],
         settle_sec=0,
         max_urls=2,
@@ -121,10 +121,10 @@ def test_resolve_gather_mode_aliases(monkeypatch):
 def test_empty_urls_no_spider(monkeypatch):
     monkeypatch.delenv("PK_GATHER_MODE", raising=False)
     wd = _FakeWd()
-    zap = _FakeZap()
+    scanner = _Fakescanner()
     summary = run_gather_info(
         wd,
-        zap,
+        scanner,
         [],
         settle_sec=0,
         pscan_timeout_sec=5,
@@ -133,17 +133,17 @@ def test_empty_urls_no_spider(monkeypatch):
     assert summary["bursts"] == 0
     assert summary["wall_hit"] is False
     assert summary["pscan_ok"] is False
-    assert zap.bursts == []
+    assert scanner.bursts == []
     assert wd.opened == []
 
 
 def test_blank_lines_only_no_silent_success(monkeypatch):
     monkeypatch.delenv("PK_GATHER_MODE", raising=False)
     wd = _FakeWd()
-    zap = _FakeZap()
+    scanner = _Fakescanner()
     summary = run_gather_info(
         wd,
-        zap,
+        scanner,
         ["", "  ", "\t"],
         settle_sec=0,
         pscan_timeout_sec=5,
@@ -151,15 +151,15 @@ def test_blank_lines_only_no_silent_success(monkeypatch):
     assert summary["urls"] == 0
     assert summary["bursts"] == 0
     assert summary["pscan_ok"] is False
-    assert zap.bursts == []
+    assert scanner.bursts == []
 
 
 def test_relative_url_without_base_raises(monkeypatch):
     monkeypatch.delenv("PK_GATHER_MODE", raising=False)
     wd = _FakeWd(base_url="")
-    zap = _FakeZap()
+    scanner = _Fakescanner()
     try:
-        run_gather_info(wd, zap, ["/#/login"], settle_sec=0, pscan_timeout_sec=5)
+        run_gather_info(wd, scanner, ["/#/login"], settle_sec=0, pscan_timeout_sec=5)
         raise AssertionError("expected ValueError")
     except ValueError as exc:
         assert "base_url_override" in str(exc)
@@ -168,11 +168,11 @@ def test_relative_url_without_base_raises(monkeypatch):
 def test_pscan_false_reflected_in_summary(monkeypatch):
     monkeypatch.delenv("PK_GATHER_MODE", raising=False)
     wd = _FakeWd()
-    zap = _FakeZap()
-    zap.passive_scan_wait_seconds = lambda timeout_seconds=60: False  # noqa: ARG005
+    scanner = _Fakescanner()
+    scanner.passive_scan_wait_seconds = lambda timeout_seconds=60: False  # noqa: ARG005
     summary = run_gather_info(
         wd,
-        zap,
+        scanner,
         ["http://a/1"],
         settle_sec=0,
         spider_sec=10,
@@ -197,10 +197,10 @@ def test_diary_and_meta_after(monkeypatch):
     monkeypatch.setattr("utils.diary_bus.publish", fake_publish)
     monkeypatch.setattr("utils.diary_bus.set_meta", fake_set_meta)
     wd = _FakeWd()
-    zap = _FakeZap()
+    scanner = _Fakescanner()
     summary = run_gather_info(
         wd,
-        zap,
+        scanner,
         ["http://a/1"],
         settle_sec=0,
         spider_sec=10,
@@ -228,10 +228,10 @@ def test_diary_and_meta_interleaved(monkeypatch):
     monkeypatch.setattr("utils.diary_bus.publish", fake_publish)
     monkeypatch.setattr("utils.diary_bus.set_meta", fake_set_meta)
     wd = _FakeWd()
-    zap = _FakeZap()
+    scanner = _Fakescanner()
     summary = run_gather_info(
         wd,
-        zap,
+        scanner,
         ["http://a/1", "http://a/2"],
         settle_sec=0,
         burst_sec=5,
@@ -248,7 +248,7 @@ def test_wall_sec_stops_before_after_spider(monkeypatch):
     """wall_hit mid-browse → no BrowseThenSpider burst."""
     monkeypatch.delenv("PK_GATHER_MODE", raising=False)
     wd = _FakeWd()
-    zap = _FakeZap()
+    scanner = _Fakescanner()
     # t0=0; first URL check=1 (< wall); second URL check=100 (≥ wall)
     clock = {"t": 0.0}
 
@@ -265,7 +265,7 @@ def test_wall_sec_stops_before_after_spider(monkeypatch):
     monkeypatch.setattr(_FakeWd, "_navigate", navigate_and_advance)
     summary = run_gather_info(
         wd,
-        zap,
+        scanner,
         ["http://a/1", "http://a/2", "http://a/3"],
         settle_sec=0,
         wall_sec=10,
@@ -276,7 +276,7 @@ def test_wall_sec_stops_before_after_spider(monkeypatch):
     assert summary["wall_hit"] is True
     assert summary["urls"] == 1
     assert summary["bursts"] == 0
-    assert zap.bursts == []
+    assert scanner.bursts == []
 
 
 def test_after_uses_spider_sec_env(monkeypatch):

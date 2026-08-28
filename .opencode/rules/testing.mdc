@@ -18,7 +18,7 @@ alwaysApply: true
 ## 3. Слои
 1. **Unit** — parse, MethodId, schema, language, factories.
 2. **Component / API** — playground validate/eval, RJSF behaviour.
-3. **Integration** (Docker / ZAP / Juice) — только по запросу.
+3. **Integration** (Docker / scanner / Juice) — только по запросу.
 
 Стек: orchestrator → `pytest`; frontend → `vitest`.
 

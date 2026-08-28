@@ -1,6 +1,6 @@
 ﻿# -*- coding: utf-8 -*-
 """
-RES-4: сводка для Results UI (Allure + ZAP + Dojo) + тренд severity.
+RES-4: сводка для Results UI (Allure + scanner + Dojo) + тренд severity.
 
 Пишется в reports/live/run_ui_summary.json и severity_trend.ndjson.
 """
@@ -30,19 +30,19 @@ def _risks(raw: Any) -> Dict[str, int]:
     return out
 
 
-def _pick_collapse(dojo: Dict[str, Any], zap: Dict[str, Any]) -> Any:
+def _pick_collapse(dojo: Dict[str, Any], scanner: Dict[str, Any]) -> Any:
     if isinstance(dojo.get("collapse"), dict):
         return dojo.get("collapse")
-    if isinstance(zap.get("collapse"), dict):
-        return zap.get("collapse")
+    if isinstance(scanner.get("collapse"), dict):
+        return scanner.get("collapse")
     return None
 
 
-def _pick_top_findings(collapse: Any, zap: Dict[str, Any]) -> list:
+def _pick_top_findings(collapse: Any, scanner: Dict[str, Any]) -> list:
     if isinstance(collapse, dict) and isinstance(collapse.get("top_findings"), list):
         return collapse["top_findings"]
-    if isinstance(zap.get("top_findings"), list):
-        return zap["top_findings"]
+    if isinstance(scanner.get("top_findings"), list):
+        return scanner["top_findings"]
     return []
 
 
@@ -59,33 +59,33 @@ def _allure_block(allure: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _primary_risks(
-    dojo_stats: Dict[str, int], zap_counts: Dict[str, int]
+    dojo_stats: Dict[str, int], scanner_counts: Dict[str, int]
 ) -> tuple[Dict[str, int], str]:
     if any(dojo_stats.values()):
         return dojo_stats, "dojo"
-    if any(zap_counts.values()):
-        return zap_counts, "zap"
-    return zap_counts, "none"
+    if any(scanner_counts.values()):
+        return scanner_counts, "scanner"
+    return scanner_counts, "none"
 
 
 def build_run_ui_summary(
     *,
     allure: Optional[Dict[str, Any]] = None,
     dojo: Optional[Dict[str, Any]] = None,
-    zap: Optional[Dict[str, Any]] = None,
+    scanner: Optional[Dict[str, Any]] = None,
     executive: Optional[Dict[str, Any]] = None,
     run_id: str = "",
 ) -> Dict[str, Any]:
     allure = allure if isinstance(allure, dict) else {}
     dojo = dojo if isinstance(dojo, dict) else {}
-    zap = zap if isinstance(zap, dict) else {}
+    scanner = scanner if isinstance(scanner, dict) else {}
     executive = executive if isinstance(executive, dict) else {}
 
     dojo_stats = _risks(dojo.get("stats"))
-    zap_counts = _risks(zap.get("counts"))
-    primary, source = _primary_risks(dojo_stats, zap_counts)
-    collapse = _pick_collapse(dojo, zap)
-    top = _pick_top_findings(collapse, zap)
+    scanner_counts = _risks(scanner.get("counts"))
+    primary, source = _primary_risks(dojo_stats, scanner_counts)
+    collapse = _pick_collapse(dojo, scanner)
+    top = _pick_top_findings(collapse, scanner)
 
     return {
         "kind": "pk_run_ui_summary",
@@ -95,10 +95,10 @@ def build_run_ui_summary(
         "risks": primary,
         "risks_source": source,
         "dojo_stats": dojo_stats,
-        "zap_counts": zap_counts,
-        "zap_instance_counts": _risks(zap.get("instance_counts")),
-        "zap_alert_count": int(zap.get("alert_count") or 0),
-        "zap_instance_count": int(zap.get("instance_count") or 0),
+        "scanner_counts": scanner_counts,
+        "scanner_instance_counts": _risks(scanner.get("instance_counts")),
+        "scanner_alert_count": int(scanner.get("alert_count") or 0),
+        "scanner_instance_count": int(scanner.get("instance_count") or 0),
         "allure": _allure_block(allure),
         "executive_class": _executive_class(executive, dojo),
         "top_findings": top[:20] if isinstance(top, list) else [],

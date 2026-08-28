@@ -37,7 +37,7 @@ Form (AUTH-14) — Selenium + full locators (не id-only как PT)::
     # success_url=... / success_string=...
     # live: PK_AUTH_FORM_BROWSER=1
 
-Action / MFA (factor-2 after password, ZAP-style TOTP field)::
+Action / MFA (factor-2 after password, scanner-style TOTP field)::
 
     auth=action
     login_url=https://app/login
@@ -308,7 +308,7 @@ def _details_compose(profile: AuthProfile) -> Dict[str, Any]:
 
 
 def _details_chain(profile: AuthProfile) -> Dict[str, Any]:
-    # Legacy-совместимый снимок для ZAP helper / отладки — не SoT.
+    # Legacy-совместимый снимок для scanner helper / отладки — не SoT.
     return {
         "Последовательность вызовов": [
             {
@@ -1112,9 +1112,9 @@ def apply_auth_form(
     profile: AuthProfile,
     webdriver_adapter: Any,
     http_adapter: Any = None,
-    zap_adapter: Any = None,
+    scanner_adapter: Any = None,
 ) -> Dict[str, Any]:
-    """AUTH-14: Selenium form login — full locator strategies; cookies → Http/ZAP.
+    """AUTH-14: Selenium form login — full locator strategies; cookies → Http/scanner.
 
     Live только при ``PK_AUTH_FORM_BROWSER=1``.
     """
@@ -1178,10 +1178,10 @@ def apply_auth_form(
         return result
 
     harvest = _harvest_browser_session(
-        webdriver_adapter, http_adapter, zap_adapter, result["notes"]
+        webdriver_adapter, http_adapter, scanner_adapter, result["notes"]
     )
     result["cookies_http"] = harvest.get("http", 0)
-    result["cookies_zap"] = harvest.get("zap", 0)
+    result["cookies_scanner"] = harvest.get("scanner", 0)
 
     details, success_url, success_string = _success_gates_from_profile(profile)
     if not _apply_browser_success_check(
@@ -1277,9 +1277,9 @@ def _harvest_cookies_to_http(wd: Any, http_adapter: Any) -> int:
     return n
 
 
-def _harvest_cookies_to_zap(wd: Any, zap_adapter: Any) -> int:
+def _harvest_cookies_to_scanner(wd: Any, scanner_adapter: Any) -> int:
     """Один Replacer REQ_HEADER Cookie=… для spider/scan той же сессии."""
-    if zap_adapter is None or not hasattr(zap_adapter, "add_replacer_rule"):
+    if scanner_adapter is None or not hasattr(scanner_adapter, "add_replacer_rule"):
         return 0
     parts: List[str] = []
     for cookie in _browser_cookie_list(wd):
@@ -1292,7 +1292,7 @@ def _harvest_cookies_to_zap(wd: Any, zap_adapter: Any) -> int:
         return 0
     header = "; ".join(parts)
     try:
-        zap_adapter.add_replacer_rule(
+        scanner_adapter.add_replacer_rule(
             "pk-auth-browser-cookie",
             "REQ_HEADER",
             "Cookie",
@@ -1300,7 +1300,7 @@ def _harvest_cookies_to_zap(wd: Any, zap_adapter: Any) -> int:
             False,
         )
     except Exception as exc:  # noqa: BLE001
-        logger.info("ZAP cookie replacer skip: %s", exc)
+        logger.info("scanner cookie replacer skip: %s", exc)
         return 0
     return len(parts)
 
@@ -1308,16 +1308,16 @@ def _harvest_cookies_to_zap(wd: Any, zap_adapter: Any) -> int:
 def _harvest_browser_session(
     wd: Any,
     http_adapter: Any,
-    zap_adapter: Any = None,
+    scanner_adapter: Any = None,
     notes: Optional[List[str]] = None,
 ) -> Dict[str, int]:
     http_n = _harvest_cookies_to_http(wd, http_adapter)
-    zap_n = _harvest_cookies_to_zap(wd, zap_adapter)
+    scanner_n = _harvest_cookies_to_scanner(wd, scanner_adapter)
     bag = notes if notes is not None else []
     bag.append(f"cookies→Http: {http_n}")
-    if zap_adapter is not None:
-        bag.append(f"cookies→ZAP Replacer: {zap_n}")
-    return {"http": http_n, "zap": zap_n}
+    if scanner_adapter is not None:
+        bag.append(f"cookies→scanner Replacer: {scanner_n}")
+    return {"http": http_n, "scanner": scanner_n}
 
 
 def _webdriver_page_text(wd: Any) -> str:
@@ -1332,7 +1332,7 @@ def _webdriver_page_text(wd: Any) -> str:
 
 
 def collect_otp_digit_locators(values: Dict[str, str]) -> List[Tuple[str, str]]:
-    """otp_locator_1…otp_locator_8 — по одному символу кода (боль ZAP multi-field)."""
+    """otp_locator_1…otp_locator_8 — по одному символу кода (боль scanner multi-field)."""
     out: List[Tuple[str, str]] = []
     for i in range(1, 9):
         raw = (
@@ -1467,7 +1467,7 @@ def generate_totp_code(
     digits: int = 6,
     for_time: Optional[float] = None,
 ) -> str:
-    """RFC 6238 TOTP (SHA-1) — как ZAP TOTP_FIELD / authenticator apps."""
+    """RFC 6238 TOTP (SHA-1) — как scanner TOTP_FIELD / authenticator apps."""
     import base64
     import hashlib
     import hmac
@@ -1488,7 +1488,7 @@ def generate_totp_code(
         dig = 6
     counter = int((for_time if for_time is not None else time.time()) // per)
     msg = struct.pack(">Q", counter)
-    # RFC 6238 default HMAC-SHA-1 (interop with Google Authenticator / ZAP TOTP_FIELD).
+    # RFC 6238 default HMAC-SHA-1 (interop with Google Authenticator / scanner TOTP_FIELD).
     digest = hmac.new(key, msg, hashlib.sha1).digest()  # NOSONAR python:S4790
     offset = digest[-1] & 0x0F
     code_int = struct.unpack(">I", digest[offset : offset + 4])[0] & 0x7FFFFFFF
@@ -1551,9 +1551,9 @@ def apply_auth_action(
     profile: AuthProfile,
     webdriver_adapter: Any,
     http_adapter: Any = None,
-    zap_adapter: Any = None,
+    scanner_adapter: Any = None,
 ) -> Dict[str, Any]:
-    """Password factor + MFA (TOTP/SMS code) in browser — cookies → Http/ZAP."""
+    """Password factor + MFA (TOTP/SMS code) in browser — cookies → Http/scanner."""
     result: Dict[str, Any] = {
         "applied": False,
         "auth_type": profile.bootstrap_auth_type(),
@@ -1619,10 +1619,10 @@ def apply_auth_action(
         return result
 
     harvest = _harvest_browser_session(
-        webdriver_adapter, http_adapter, zap_adapter, result["notes"]
+        webdriver_adapter, http_adapter, scanner_adapter, result["notes"]
     )
     result["cookies_http"] = harvest.get("http", 0)
-    result["cookies_zap"] = harvest.get("zap", 0)
+    result["cookies_scanner"] = harvest.get("scanner", 0)
 
     details, success_url, success_string = _success_gates_from_profile(profile)
     if not _apply_browser_success_check(
@@ -1651,7 +1651,7 @@ def _apply_one_compose_profile(
     profile: AuthProfile,
     *,
     http_adapter: Any,
-    zap_adapter: Any,
+    scanner_adapter: Any,
     webdriver_adapter: Any,
 ) -> Tuple[Dict[str, Any], Optional[Dict[str, Any]]]:
     """Returns (per-result, optional success-details for later gate)."""
@@ -1669,12 +1669,12 @@ def _apply_one_compose_profile(
         _copy_apply_result(apply_auth_chain(profile, http_adapter), per)
     elif profile.kind == "form":
         _copy_apply_result(
-            apply_auth_form(profile, webdriver_adapter, http_adapter, zap_adapter),
+            apply_auth_form(profile, webdriver_adapter, http_adapter, scanner_adapter),
             per,
         )
     elif profile.kind == "action":
         _copy_apply_result(
-            apply_auth_action(profile, webdriver_adapter, http_adapter, zap_adapter),
+            apply_auth_action(profile, webdriver_adapter, http_adapter, scanner_adapter),
             per,
         )
     elif profile.kind in _STATIC_KINDS:
@@ -1716,7 +1716,7 @@ def _compose_gate_details(
 def apply_auth_profiles(
     profiles: Sequence[AuthProfile],
     http_adapter: Any,
-    zap_adapter: Any = None,
+    scanner_adapter: Any = None,
     webdriver_adapter: Any = None,
 ) -> Dict[str, Any]:
     """Compose: static + call-chain + form + MFA action; one success gate."""
@@ -1739,7 +1739,7 @@ def apply_auth_profiles(
         per, success_details = _apply_one_compose_profile(
             profile,
             http_adapter=http_adapter,
-            zap_adapter=zap_adapter,
+            scanner_adapter=scanner_adapter,
             webdriver_adapter=webdriver_adapter,
         )
         if success_details is not None:

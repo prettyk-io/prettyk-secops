@@ -11,7 +11,7 @@
 
 После закрытия VNEXT остались две честные дыры до канона:
 
-**1. Секреты утекают plaintext (P0 Security).** `downloadManifest`, `exportResults` и `storage/draft` писали пароли/токены как есть — без редкации. Это дыра безопасности при любом экспорте или сохранении черновика.
+**1. Секреты утекают plaintext (P0 Security).** `downloadWired`, `exportResults` и `storage/draft` писали пароли/токены как есть — без редкации. Это дыра безопасности при любом экспорте или сохранении черновика.
 
 **2. WireK Preview в Studio.** В Studio не было переключателя PrettyK ↔ WireK — оператор не видел машинный формат шагов. Для отладки и верификации это критично.
 
@@ -25,9 +25,9 @@
 
 | ID | Компонент | Файлы | Что сделано |
 |---|---|---|---|
-| **VN-POL-F1** | Redact Secrets | `cosmo/src/form/redactSecrets.ts` | `isSecretFieldKey`, `redactManifestSecrets`, `redactSecretsForDraft`, `redactSecretAssignmentLines`, `tryRedactSecretAssignmentAt`, `redactManifestForPreview`. Константы `REDACT_PLACEHOLDER`/`DRAFT_SECRET_PLACEHOLDER`. |
-| **VN-POL-F2** | Подключение redact | `manifestIO.ts`, `exportResults.ts`, `storage/draft.ts` | `downloadManifest` → `redactManifestSecrets`; `exportResults` → `redactManifestSecrets`; `saveStudioDraft` → `redactSecretsForDraft`. |
-| **VN-POL-F3** | Blank Letterhead | `cosmo/src/results/blankLetterhead.ts` | `defaultBlankOrg` + `manifestContentHash` (FNV-1a). Врезан в подвал `BlankPanel.blankHtml`. |
+| **VN-POL-F1** | Redact Secrets | `cosmo/src/form/redactSecrets.ts` | `isSecretFieldKey`, `redactWiredSecrets`, `redactSecretsForDraft`, `redactSecretAssignmentLines`, `tryRedactSecretAssignmentAt`, `redactWiredForPreview`. Константы `REDACT_PLACEHOLDER`/`DRAFT_SECRET_PLACEHOLDER`. |
+| **VN-POL-F2** | Подключение redact | `wiredIO.ts`, `exportResults.ts`, `storage/draft.ts` | `downloadWired` → `redactWiredSecrets`; `exportResults` → `redactWiredSecrets`; `saveStudioDraft` → `redactSecretsForDraft`. |
+| **VN-POL-F3** | Blank Letterhead | `cosmo/src/results/blankLetterhead.ts` | `defaultBlankOrg` + `wiredContentHash` (FNV-1a). Врезан в подвал `BlankPanel.blankHtml`. |
 | **VN-POL-R1** | WireK Preview | `cosmo/src/studio/studioWorkspaceWirePreview.ts` | `buildWirePreviewText()`: ресурс → `''`, фаззер → `JSON.stringify`, коннектор → `JSON.stringify`, иначе `prettyToWire(text)` → `redactWireSecretLines`. |
 | **VN-POL-R2** | Переключатель PrettyK ↔ WireK | `cosmo/src/studio/StudioModeSegmented.tsx`, `StudioWirekPreviewPane.tsx`, `StudioWorkspace.tsx` | Ant Design `Segmented` в тулбаре Monaco-табов. WireK preview — read-only `<pre>` под редактором (display-only, не мутирует `formData`). |
 
@@ -65,8 +65,8 @@
 
 ## 4. Стены и ограничения
 
-- **Redact Secrets** — чистая логика, без RJSF/`schema`/`formData`. `exportManifestPayload` legacy не тащили (flatten не нужен).
+- **Redact Secrets** — чистая логика, без RJSF/`schema`/`formData`. `exportWiredPayload` legacy не тащили (flatten не нужен).
 - **WireK preview** — display-only, не мутирует state. Вкладки ресурсов/фаззеров — без переключателя.
 - **Preset Bar** — использует `cosmoportLadderMock.ts` (заглушка для интеграции Cosmo, не коробочный функционал).
-- `docs/manifest.json` не менялся.
+- `docs/wired.json` не менялся.
 - Стили: тёмная тема, скругления 5–6px, JetBrains Mono для WireK preview.

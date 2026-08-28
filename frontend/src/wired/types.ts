@@ -8,7 +8,7 @@
 
 export type AssessmentPurpose = 'scheduled' | 'pre_release' | 'emergency' | 'manual';
 
-export type ZapMode = 'demon' | 'webswing';
+export type scannerMode = 'demon' | 'webswing';
 
 export type BrowserType = 'chrome' | 'chrome-headless' | 'firefox' | 'firefox-headless';
 
@@ -53,13 +53,13 @@ export interface RegulationInfrastructure {
   base_url_override: string;
   allowed_extra_domains: string;
   blocked_urls_list?: string[];
-  zap_mode: ZapMode;
+  scanner_mode: scannerMode;
   browser_type: BrowserType;
   debug_mode: boolean;
   /** manual → только Webswing */
   webswing_session_timeout_min?: number;
   idle_timeout_min?: number;
-  /** emergency → доп. порт ZAP */
+  /** emergency → доп. порт scanner */
   additional_local_server_port?: number;
 }
 
@@ -181,7 +181,7 @@ export interface OpenApiModule {
   schema_resource?: string;
   schema_path?: string;
   auth_module_id?: string;
-  allow_zap_import: boolean;
+  allow_scanner_import: boolean;
   operations_cache?: unknown;
 }
 
@@ -192,8 +192,8 @@ export interface GraphqlModule {
   introspection_path?: string;
   endpoint_path?: string;
   auth_module_id?: string;
-  allow_zap_import: boolean;
-  allow_zap_scan: boolean;
+  allow_scanner_import: boolean;
+  allow_scanner_scan: boolean;
   operations_cache?: unknown;
 }
 

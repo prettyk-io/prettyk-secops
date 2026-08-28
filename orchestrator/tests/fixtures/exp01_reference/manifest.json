@@ -6,7 +6,7 @@
     "assessment_purpose": "emergency",
     "generate_act": false,
     "emergency_reason": "Daddy, chill!",
-    "release_domain": "deploydomain-builddomain-owasp-zap-tests",
+    "release_domain": "deploydomain-builddomain-owasp-scanner-tests",
     "compliance_requirements": "",
     "release_manager": "ss7rel-manager@dev.spaceport.ru Космопорт Релиз-Менеджер",
     "app_type": "web"
@@ -14,11 +14,11 @@
   "infrastructure": {
     "base_url_override": "http://juice-shop:3000",
     "allowed_extra_domains": "https://rkn.gov.ru|auth.dev.spaceport.ru|*.internal.bank|google.com",
-    "zap_mode": "demon",
+    "scanner_mode": "demon",
     "browser_type": "chrome-headless",
     "debug_mode": true,
     "additional_local_server_port": 8085,
-    "zap_work_timeout_min": 60,
+    "scanner_work_timeout_min": 60,
     "webswing_session_timeout_min": 60,
     "idle_timeout_min": 10,
     "start_with_webswing": false,

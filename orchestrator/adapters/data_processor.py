@@ -528,7 +528,7 @@ class DataProcessor:
             publish(
                 "LOG",
                 f"ЛогПеременную | core|log_variable|{name}|{value}",
-                channel="zap",
+                channel="scanner",
             )
         except Exception:
             pass
@@ -579,10 +579,10 @@ class DataProcessor:
 
 def add_custom_payload(self, name, payload_list_or_file):
     """
-    Загружает кастомный словарь в ZAP.
+    Загружает кастомный словарь в scanner.
 
     Args:
-        name (str): Имя словаря (для идентификации в ZAP).
+        name (str): Имя словаря (для идентификации в scanner).
         payload_list_or_file (list | str): Либо список строк, либо путь к файлу
                                            (каждая строка — один payload).
 
@@ -590,8 +590,8 @@ def add_custom_payload(self, name, payload_list_or_file):
         bool: True при успехе.
 
     Пример:
-        zap.add_custom_payload("sql_injection", ["' OR 1=1 --", "' UNION SELECT ..."])
-        zap.add_custom_payload("xss", "/path/to/xss_payloads.txt")
+        scanner.add_custom_payload("sql_injection", ["' OR 1=1 --", "' UNION SELECT ..."])
+        scanner.add_custom_payload("xss", "/path/to/xss_payloads.txt")
     """
     self._ensure_connected()
     if isinstance(payload_list_or_file, list):
@@ -599,7 +599,7 @@ def add_custom_payload(self, name, payload_list_or_file):
     else:
         with open(payload_list_or_file, 'r', encoding='utf-8') as f:
             payloads = [line.strip() for line in f if line.strip()]
-    self._zap.custompayloads.load_payloads(name, payloads)
+    self._scanner.custompayloads.load_payloads(name, payloads)
     logger.info(f"Loaded {len(payloads)} payloads as '{name}'")
     return True
 
@@ -611,7 +611,7 @@ def get_payloads(self):
         list: Список словарей (каждый словарь — {'name': ..., 'payloads': [...]})
     """
     self._ensure_connected()
-    return self._zap.custompayloads.get_payloads()
+    return self._scanner.custompayloads.get_payloads()
 
 def remove_payload(self, name):
     """
@@ -621,7 +621,7 @@ def remove_payload(self, name):
         name (str): Имя словаря.
     """
     self._ensure_connected()
-    self._zap.custompayloads.remove_payload(name)
+    self._scanner.custompayloads.remove_payload(name)
 
 
 # ========== OAST (OUT-OF-BAND) ==========
@@ -631,17 +631,17 @@ def remove_payload(self, name):
 
 def start_oast_server(self):
     """
-    Запускает встроенный OAST-сервер ZAP.
-    После запуска ZAP будет перехватывать внешние запросы от приложения.
+    Запускает встроенный OAST-сервер scanner.
+    После запуска scanner будет перехватывать внешние запросы от приложения.
     """
     self._ensure_connected()
-    self._zap.oast.start()
+    self._scanner.oast.start()
     logger.info("OAST server started")
 
 def stop_oast_server(self):
     """Останавливает OAST-сервер."""
     self._ensure_connected()
-    self._zap.oast.stop()
+    self._scanner.oast.stop()
     logger.info("OAST server stopped")
 
 def get_oast_alerts(self):
@@ -653,7 +653,7 @@ def get_oast_alerts(self):
         list: Список алертов OAST.
     """
     self._ensure_connected()
-    return self._zap.oast.get_alerts()
+    return self._scanner.oast.get_alerts()
 
 # ========== GRPC ==========
 # Позволяет импортировать .proto файлы и сканировать gRPC-сервисы.
@@ -670,7 +670,7 @@ def import_grpc_proto(self, proto_file_or_dir):
         bool: True при успехе.
     """
     self._ensure_connected()
-    self._zap.grpc.import_proto(proto_file_or_dir)
+    self._scanner.grpc.import_proto(proto_file_or_dir)
     logger.info(f"Imported gRPC proto: {proto_file_or_dir}")
     return True
 
@@ -684,7 +684,7 @@ def scan_grpc(self, context_name=None):
     self._ensure_connected()
     context = context_name or self.context_name
     if context:
-        self._zap.grpc.scan(context)
+        self._scanner.grpc.scan(context)
     else:
-        self._zap.grpc.scan()
+        self._scanner.grpc.scan()
     logger.info("gRPC scan started")

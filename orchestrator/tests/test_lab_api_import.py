@@ -60,11 +60,11 @@ def test_lab_grpc_parse_and_unary_bolvan(monkeypatch):
 
 def test_unary_methodid_and_adapter(monkeypatch):
     monkeypatch.delenv("PK_GRPC_UNARY", raising=False)
-    from adapters.zap_adapter import ZapAdapter
+    from adapters.scanner_adapter import ScannerAdapter
     from core.method_id import lookup_method_id
 
-    assert lookup_method_id("ВызовgRPC") == ("zap", "unary_grpc_call")
-    zap = ZapAdapter.__new__(ZapAdapter)
-    out = json.loads(zap.unary_grpc_call("localhost:1", "Svc/M", "{}"))
+    assert lookup_method_id("ВызовgRPC") == ("grpc", "unary_call")
+    scanner = ScannerAdapter.__new__(ScannerAdapter)
+    out = json.loads(scanner.unary_grpc_call("localhost:1", "Svc/M", "{}"))
     assert out["ok"] is True
     assert out["skipped"] is True

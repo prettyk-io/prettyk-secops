@@ -1,0 +1,26 @@
+=== PrettyK Pure Helm Chart ===
+
+Version: {{ .Chart.Version }}
+App:     {{ .Chart.AppVersion }}
+
+1. Установить системный контур:
+
+    helm upgrade --install prettyk ./helm/prettyk \
+      --namespace prettyk-system \
+      --create-namespace
+
+2. Проверить статус:
+
+    kubectl get pods -n prettyk-system
+    kubectl get networkpolicy -n prettyk-system
+
+3. Сессия создаётся pk-control через RuntimeProvider (KubernetesProvider).
+   Ручной запуск сессии (для теста):
+
+    helm template session ./helm/prettyk \
+      --set sessionId=dev-session \
+      --set component=scanner \
+      --set image.repository=zaproxy/scanner-stable \
+      --set image.tag=2.17.0 \
+      --set containerPort=8080 \
+      | kubectl apply -f -

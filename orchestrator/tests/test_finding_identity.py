@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """W1 acceptance: finding-v1 fingerprint identity."""
 import pytest
 from models.finding import CanonicalFinding, FINGERPRINT_VERSION
@@ -27,32 +27,32 @@ class TestNormalizePath:
 
 class TestFingerprint:
     def test_same_input_same_fingerprint(self):
-        a = compute_fingerprint("zap", "10035", "10035-1", "GET", "/api/search", "q")
-        b = compute_fingerprint("zap", "10035", "10035-1", "GET", "/api/search", "q")
+        a = compute_fingerprint("scanner", "10035", "10035-1", "GET", "/api/search", "q")
+        b = compute_fingerprint("scanner", "10035", "10035-1", "GET", "/api/search", "q")
         assert a == b
         assert a.startswith(f"finding:{FINGERPRINT_VERSION}:")
         assert len(a) > 30
 
     def test_different_plugin_different_fingerprint(self):
-        a = compute_fingerprint("zap", "10035", "10035-1", "GET", "/api/search", "q")
-        b = compute_fingerprint("zap", "40018", "40018", "GET", "/api/search", "q")
+        a = compute_fingerprint("scanner", "10035", "10035-1", "GET", "/api/search", "q")
+        b = compute_fingerprint("scanner", "40018", "40018", "GET", "/api/search", "q")
         assert a != b
 
     def test_normalized_path_affects_fingerprint(self):
         raw_a = normalize_path("http://x/api/1")
         raw_b = normalize_path("http://x/api/2")
-        a = compute_fingerprint("zap", "10035", "10035-1", "GET", raw_a, "q")
-        b = compute_fingerprint("zap", "10035", "10035-1", "GET", raw_b, "q")
+        a = compute_fingerprint("scanner", "10035", "10035-1", "GET", raw_a, "q")
+        b = compute_fingerprint("scanner", "10035", "10035-1", "GET", raw_b, "q")
         assert a == b  # both normalize to /api/{id}
 
     def test_different_method_different_fingerprint(self):
-        a = compute_fingerprint("zap", "10035", "10035-1", "GET", "/x", "")
-        b = compute_fingerprint("zap", "10035", "10035-1", "POST", "/x", "")
+        a = compute_fingerprint("scanner", "10035", "10035-1", "GET", "/x", "")
+        b = compute_fingerprint("scanner", "10035", "10035-1", "POST", "/x", "")
         assert a != b
 
 
 class TestBuildCanonical:
-    def test_from_zap_alert_with_instance(self):
+    def test_from_scanner_alert_with_instance(self):
         alert = {
             "name": "SQL Injection",
             "pluginid": "40018",

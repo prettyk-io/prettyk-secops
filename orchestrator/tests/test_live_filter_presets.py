@@ -35,7 +35,7 @@ def test_live_html_has_presets_and_results_link():
     # kind-chips статически в разметке, пресеты — динамически через JS (presetChipsEl)
     assert 'id="focusKindChips"' in html
     assert 'id="diaryKindChips"' in html
-    assert 'id="zapKindChips"' in html
+    assert 'id="scannerKindChips"' in html
     assert "passesFilterPreset" in html
     # MH-1: Allure/WireK убраны из хедера.
     assert 'data-testid="live-link-allure"' not in html

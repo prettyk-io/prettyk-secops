@@ -35,7 +35,7 @@ export type RoleCapsViolation =
   | { code: 'scan_url_override'; from: string }
   | { code: 'project_outside_catalog'; from: string }
   | { code: 'debug_mode_muted' }
-  | { code: 'zap_mode_muted'; from: string };
+  | { code: 'scanner_mode_muted'; from: string };
 
 export type RoleCapsClampResult = {
   formData: unknown;
@@ -123,10 +123,10 @@ export function auditAndClampFormDataForRoleCaps(
       changed = true;
     }
     if (!caps.canSelectWebswing) {
-      const zap = typeof infra.zap_mode === 'string' ? infra.zap_mode : '';
-      if (zap && zap !== 'demon') {
-        violations.push({ code: 'zap_mode_muted', from: zap });
-        infra.zap_mode = 'demon';
+      const scanner = typeof infra.scanner_mode === 'string' ? infra.scanner_mode : '';
+      if (scanner && scanner !== 'demon') {
+        violations.push({ code: 'scanner_mode_muted', from: scanner });
+        infra.scanner_mode = 'demon';
         changed = true;
       }
     }
@@ -176,8 +176,8 @@ export function formatRoleCapsThreat(
       urlRelated = true;
     } else if (v.code === 'debug_mode_muted') {
       bits.push('режим отладки');
-    } else if (v.code === 'zap_mode_muted') {
-      bits.push('режим ZAP Webswing');
+    } else if (v.code === 'scanner_mode_muted') {
+      bits.push('режим scanner Webswing');
     }
   }
   const role = caps.displayName || 'роль';

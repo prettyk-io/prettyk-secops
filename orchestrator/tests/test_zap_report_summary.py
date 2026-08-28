@@ -3,10 +3,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from utils.zap_report_summary import summarize_zap_xml
+from utils.scanner_report_summary import summarize_scanner_xml
 
 _SAMPLE_XML = """<?xml version="1.0"?>
-<OWASPZAPReport version="2.14.0" generated="Mon, 10 Aug 2026 12:00:00">
+<OWASPscannerReport version="2.14.0" generated="Mon, 10 Aug 2026 12:00:00">
   <site name="http://127.0.0.1:3000" host="127.0.0.1" port="3000" ssl="false">
     <alerts>
       <alertitem>
@@ -48,14 +48,14 @@ _SAMPLE_XML = """<?xml version="1.0"?>
       </alertitem>
     </alerts>
   </site>
-</OWASPZAPReport>
+</OWASPscannerReport>
 """
 
 
-def test_summarize_zap_xml_counts_and_collapse(tmp_path: Path):
-    xml = tmp_path / "zap.xml"
+def test_summarize_scanner_xml_counts_and_collapse(tmp_path: Path):
+    xml = tmp_path / "scanner.xml"
     xml.write_text(_SAMPLE_XML, encoding="utf-8")
-    out = summarize_zap_xml(xml)
+    out = summarize_scanner_xml(xml)
     assert out["ok"] is True
     assert out["sites"] == 1
     assert out["alert_count"] == 2
@@ -74,7 +74,7 @@ def test_summarize_zap_xml_counts_and_collapse(tmp_path: Path):
     assert len(systemic) >= 1
 
 
-def test_summarize_zap_xml_missing(tmp_path: Path):
-    out = summarize_zap_xml(tmp_path / "nope.xml")
+def test_summarize_scanner_xml_missing(tmp_path: Path):
+    out = summarize_scanner_xml(tmp_path / "nope.xml")
     assert out["ok"] is False
     assert out["error"] == "missing"

@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """MethodId / ворота / wire справа от Пусть: результат шага → переменная."""
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ from core.pretty_data import pretty_line_to_wire
     "line,wire,save_as",
     [
         ("Пусть ${c} = Сессия КоличествоCookies", "browser|get_cookies_count", "c"),
-        ("Пусть ${a} = ZAP ПолучитьАлерты", "zap|get_alerts", "a"),
+        ("Пусть ${a} = scanner ПолучитьАлерты", "scanner|get_alerts", "a"),
         (
             "Пусть ${t} = ПолучитьТекст css #email",
             "webdriver|get_text|css|#email",

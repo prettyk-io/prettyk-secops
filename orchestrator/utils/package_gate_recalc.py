@@ -20,18 +20,18 @@ def package_recalc_enabled() -> bool:
 
 
 def resolve_hooks_counts(hooks: Mapping[str, Any]) -> Tuple[Dict[str, int], str]:
-    """ACTIVE counts из hooks: Dojo stats → ZAP counts."""
+    """ACTIVE counts из hooks: Dojo stats → scanner counts."""
     dojo = hooks.get("dojo") if isinstance(hooks.get("dojo"), dict) else {}
     stats = dojo.get("stats") if isinstance(dojo.get("stats"), dict) else {}
     norm = normalize_severity_counts(stats)
     if any(norm.values()):
         src = str(dojo.get("counts_source") or "dojo_stats").strip() or "dojo_stats"
         return norm, src
-    zap = hooks.get("zap") if isinstance(hooks.get("zap"), dict) else {}
-    zcounts = zap.get("counts") if isinstance(zap.get("counts"), dict) else {}
+    scanner = hooks.get("scanner") if isinstance(hooks.get("scanner"), dict) else {}
+    zcounts = scanner.get("counts") if isinstance(scanner.get("counts"), dict) else {}
     znorm = normalize_severity_counts(zcounts)
     if any(znorm.values()):
-        return znorm, "zap"
+        return znorm, "scanner"
     return normalize_severity_counts({}), ""
 
 
@@ -71,12 +71,12 @@ def _resolve_recalc_counts(
     if source and any(counts.values()):
         return counts, source, None
     dojo = hooks.get("dojo") if isinstance(hooks.get("dojo"), dict) else {}
-    zap = hooks.get("zap") if isinstance(hooks.get("zap"), dict) else {}
-    has_hook = bool(dojo.get("stats") is not None or zap.get("counts") is not None)
+    scanner = hooks.get("scanner") if isinstance(hooks.get("scanner"), dict) else {}
+    has_hook = bool(dojo.get("stats") is not None or scanner.get("counts") is not None)
     if not has_hook:
         return None, "", "no_counts"
     if not source:
-        source = str(dojo.get("counts_source") or ("dojo_stats" if dojo else "zap"))
+        source = str(dojo.get("counts_source") or ("dojo_stats" if dojo else "scanner"))
     return counts, source, None
 
 

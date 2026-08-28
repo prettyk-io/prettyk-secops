@@ -4,7 +4,7 @@
 
 import { exportWiredPayload } from '../utils/exportWired';
 import { redactWiredForPreview } from '../utils/redact';
-import { defaultBlankOrg, manifestContentHash } from './blankLetterhead';
+import { defaultBlankOrg, wiredContentHash } from './blankLetterhead';
 import { buildExplorerTree } from './explorerTree';
 import {
   BLANK_TEMPLATE_VERSION,
@@ -23,7 +23,7 @@ export function buildBlankPayload(input: {
   const authoring = exportWiredPayload(input.formData, 'authoring');
   const form_snapshot = redactWiredForPreview(authoring);
   const explorer_tree = buildExplorerTree(input.formData);
-  const manifest_hash = manifestContentHash(form_snapshot);
+  const wired_hash = wiredContentHash(form_snapshot);
 
   return {
     kind: input.kind,
@@ -33,6 +33,6 @@ export function buildBlankPayload(input: {
     explorer_tree,
     run: input.run,
     generated_at: new Date().toISOString(),
-    manifest_hash,
+    wired_hash,
   };
 }

@@ -67,5 +67,5 @@
 - Cluster bomb ограничен 50 000 запросов (safety valve).
 - Маркерный режим (`§payload§` / `{MASK}`) не расширен на pitchfork/cluster_bomb (только sniper).
 - Payload Sets в UI — текстовые поля (не файловые загрузчики).
-- `docs/manifest.json` не менялся.
+- `docs/wired.json` не менялся.
 - Стили: тёмная тема, скругления 5–6px, JetBrains Mono для кода.

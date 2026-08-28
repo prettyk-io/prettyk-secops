@@ -99,7 +99,7 @@ export const CONSTRUCTOR_EDITOR_OPTIONS: editor.IStandaloneEditorConstructionOpt
   lineHeight: CONSTRUCTOR_LINE_HEIGHT,
   // semanticHighlighting выключен: slice1-провайдер (Секрет/Пусть/MethodId root)
   // перекрывал monarch pk.* токены дефолтным цветом без semanticTokenColors —
-  // методы теряли цвет. Monarch красит всё сам (pk.keyword/method.zap/method.selenium).
+  // методы теряли цвет. Monarch красит всё сам (pk.keyword/method.scanner/method.selenium).
   ...({ 'semanticHighlighting.enabled': false } as editor.IStandaloneEditorConstructionOptions),
 };
 

@@ -15,7 +15,7 @@ function makePipeline(): PipelineDefinition {
     requiredCapabilities: ['checks:create', 'fuzzer:execute'],
     steps: [
       { id: 'disc', component: { name: 'Browser Discovery', version: '1.4.0' } },
-      { id: 'scan', component: { name: 'ZAP Active Scan', version: '2.15.0' }, inputs: { target_url: 'https://juice-shop.prettyk.io', auth_ref: 'secret:auth' } },
+      { id: 'scan', component: { name: 'scanner Active Scan', version: '2.15.0' }, inputs: { target_url: 'https://juice-shop.prettyk.io', auth_ref: 'secret:auth' } },
       { id: 'gate', component: { name: 'Quality Gate', version: '3.1.0' } },
     ],
     edges: [
@@ -26,12 +26,12 @@ function makePipeline(): PipelineDefinition {
 }
 
 function completeRun(engine: ReturnType<typeof createRunEngine>) {
-  const run = engine.createRun({ pipeline: makePipeline(), actor: 'admin-sec', toolVersions: { zap: '2.15.0' } });
+  const run = engine.createRun({ pipeline: makePipeline(), actor: 'admin-sec', toolVersions: { scanner: '2.15.0' } });
   engine.transition(run.id, 'submit');
   engine.transition(run.id, 'approve');
   engine.transition(run.id, 'acquire');
   engine.recordFinding(run.id, 'fp:sql-injection', {}, { severity: 'CRITICAL', stepId: 'scan' });
-  engine.recordEvidence(run.id, 'evd:zap-report', { report: 'zap.xml' }, { checksum: checksumOf('zap-report') });
+  engine.recordEvidence(run.id, 'evd:scanner-report', { report: 'scanner.xml' }, { checksum: checksumOf('scanner-report') });
   engine.transition(run.id, 'complete');
   return run.id;
 }
@@ -52,7 +52,7 @@ describe('Proof-Carrying Run (PK-CI-10)', () => {
     expect(proof!.intent).toBe('OWASP check of juice-shop');
     expect(proof!.scope).toContain('juice-shop.prettyk.io');
     expect(proof!.policy.version).toBe('2');
-    expect(proof!.toolVersions.zap).toBe('2.15.0');
+    expect(proof!.toolVersions.scanner).toBe('2.15.0');
     expect(proof!.findings.length).toBe(1);
     expect(proof!.findings[0]!.severity).toBe('CRITICAL');
     expect(proof!.artifacts.length).toBe(1);
@@ -95,7 +95,7 @@ describe('Reproduce (PK-CI-11)', () => {
     expect(result!.pipeline.steps.some(s => s.component.name === 'Quality Gate')).toBe(true);
     expect(result!.pipeline.steps.some(s => s.component.name === 'Evidence Pack')).toBe(true);
     expect(result!.findingKey).toBe('fp:sql-injection');
-    expect(result!.toolVersions.zap).toBe('2.15.0');
+    expect(result!.toolVersions.scanner).toBe('2.15.0');
     expect(result!.rationale.length).toBeGreaterThan(0);
   });
 

@@ -3,11 +3,11 @@ import { compareLocaleStrings, sortStringsAsc } from './sortStrings';
 
 describe('sortStringsAsc / compareLocaleStrings', () => {
   it('sorts ASCII identifiers stably (S2871)', () => {
-    expect(sortStringsAsc(['zap', 'allure', 'http', 'browser'])).toEqual([
+    expect(sortStringsAsc(['scanner', 'allure', 'http', 'browser'])).toEqual([
       'allure',
       'browser',
       'http',
-      'zap',
+      'scanner',
     ]);
   });
 

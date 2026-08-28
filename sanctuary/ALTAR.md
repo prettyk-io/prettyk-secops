@@ -8,7 +8,7 @@
 
 ---
 
-Мы начинали с `zap-kdt` — обёртки над OWASP ZAP с JSON Schema, RJSF-формой и Selenium WebDriver.
+Мы начинали с `scanner-kdt` — обёртки над OWASP scanner с JSON Schema, RJSF-формой и Selenium WebDriver.
 Три недели назад это был один продукт. Сегодня — другой. И это не эволюция. Это полная перестройка фундамента.
 
 Ниже — по порядку. Без воды. Только то, что реально сделано.
@@ -17,9 +17,9 @@
 
 ## 1. RJSF и JSON Schema — в стену
 
-**Было:** форма редактора генерировалась из `docs/manifest.json` через `@rjsf/core`. Любое изменение поля требовало правки JSON Schema → правки формы → правки валидации. Сотни строк `uiSchema`, `"oneOf"` с `"const"`, RJSF-виджеты для каждого типа поля. Китайская команда не могла добавить кнопку без ломания всей формы.
+**Было:** форма редактора генерировалась из `docs/wired.json` через `@rjsf/core`. Любое изменение поля требовало правки JSON Schema → правки формы → правки валидации. Сотни строк `uiSchema`, `"oneOf"` с `"const"`, RJSF-виджеты для каждого типа поля. Китайская команда не могла добавить кнопку без ломания всей формы.
 
-**Стало:** прямой React-маппер. Pydantic на бэкенде — machine-контракт. Фронтенд рендерит поля напрямую, без генератора. `docs/manifest.json` — legacy reference, форма больше не производится из него.
+**Стало:** прямой React-маппер. Pydantic на бэкенде — machine-контракт. Фронтенд рендерит поля напрямую, без генератора. `docs/wired.json` — legacy reference, форма больше не производится из него.
 
 **Эпик:** `REGULATION-EDITOR-SPLIT`, `RK-RJSF-KILL-SPLIT`.  
 **Файлов:** 40+ удалено, 30+ переписано.  
@@ -29,26 +29,26 @@
 
 ## 2. KDT → PrettyK: рейнеминг 60+ фронтенд-файлов
 
-**Было:** `zap-kdt`, `--kdt-*`, `.kdt-*`, `kdt.*` (localStorage), `KDT_*` (env vars), `KdtTokenPack`, `kdtRuIntl.ts`, `kdt://` URI scheme.
+**Было:** `scanner-kdt`, `--kdt-*`, `.kdt-*`, `kdt.*` (localStorage), `KDT_*` (env vars), `KdtTokenPack`, `kdtRuIntl.ts`, `kdt://` URI scheme.
 
 **Стало:** `PrettyK`, `--pk-*`, `.pk-*`, `pk.*`, `PK_*` + fallback `KDT_*`, `PkTokenPack`, `pkRuIntl.ts`, `pk://`.
 
 **Как:** три волны. Frontend (60+ файлов) — CSS, storage, компоненты, тесты. Backend (41 файл) — dual-read helper `pk_env()`, MethodId vocabulary, Allure метки, Docker имена. Zero regressions.
 
 **Эпик:** `REBRANDING`.  
-**Результат:** продукт `PrettyK`, репо `prettyk-io/prettyk-dev`. ZAP — честно обозначен как внутренний DAST-движок, не бренд.
+**Результат:** продукт `PrettyK`, репо `prettyk-io/prettyk-dev`. scanner — честно обозначен как внутренний DAST-движок, не бренд.
 
 ---
 
-## 3. Manifest → Wired: переименование контракта
+## 3. Wired → Wired: переименование контракта
 
-**Было:** `Manifest`, `manifest.json`, `manifest_path`, `ManifestForm`, `manifestSchema`.
+**Было:** `Wired`, `wired.json`, `wired_path`, `WiredForm`, `wiredSchema`.
 
 **Стало:** `Wired`, `wired.json`, `wired_path`, `WiredForm`, `wiredSchema`.
 
-**Эпик:** сплит-канон, `manifest-sot`.  
+**Эпик:** сплит-канон, `wired-sot`.  
 **Файлов:** 70+ переименовано.  
-**Результат:** Pydantic `orchestrator/models/wired.py` — единственный machine-контракт. Старое имя `manifest` — только в исторических документах и legacy JSON Schema.
+**Результат:** Pydantic `orchestrator/models/wired.py` — единственный machine-контракт. Старое имя `wired` — только в исторических документах и legacy JSON Schema.
 
 ---
 
@@ -80,7 +80,7 @@ Headless и headed в одном адаптере.
 - `AXSnapshot` — accessibility-дерево вместо сырых AX-нод
 - `ServiceMap` — граф страница→действие→эндпоинт
 - `Awaken` — эвристическое пробуждение сиротских форм
-- `ZapContextInjector` — авто-проливка в ZAP Sites Tree
+- `scannerContextInjector` — авто-проливка в scanner Sites Tree
 - `CorpusFuzzer` — собственный мутационный фаззер (50+ векторов, sniper/cluster-bomb)
 - `FuzzReporter` — классификация аномалий
 - `AdmissionFilter` — gate по severity
@@ -91,14 +91,14 @@ Headless и headed в одном адаптере.
 
 ---
 
-## 6. ZAP Webswing — в стену
+## 6. scanner Webswing — в стену
 
-**Было:** два режима ZAP: demon (API) + webswing (GUI в браузере). Отдельный контейнер на `:8082`, отдельный API `:8090`, отдельный прокси `:8199`. Bootstrap-код, compose-файл, документация.
+**Было:** два режима scanner: demon (API) + webswing (GUI в браузере). Отдельный контейнер на `:8082`, отдельный API `:8090`, отдельный прокси `:8199`. Bootstrap-код, compose-файл, документация.
 
-**Стало:** только demon. ZAP — MITM-прокси и квалификатор уязвимостей. PrettyK Live + diary + Allure закрывают весь мониторинг.
+**Стало:** только demon. scanner — MITM-прокси и квалификатор уязвимостей. PrettyK Live + diary + Allure закрывают весь мониторинг.
 
-**Удалено:** `docker-compose.zap-webswing.yml`, `zap-webswing-up.ps1`, `zap-webswing-down.ps1`, `services/webswing/`. `wired.py` — `zap_mode` только `"demon"`, `webswing_session_timeout_min` выпилен. Controller — `_bootstrap_zap_mode()`, `_ensure_webswing_env_defaults()`, `_poke_webswing_ui()`, `_await_session_end()` удалены.  
-**Sanctuary:** `zap-dual.md` → demon-only. `INDEX.md`, `lab-up.md`, `stand-port-meta.md`, `MODULES-SKELETON.md` — очищены.
+**Удалено:** `docker-compose.scanner-webswing.yml`, `scanner-webswing-up.ps1`, `scanner-webswing-down.ps1`, `services/webswing/`. `wired.py` — `scanner_mode` только `"demon"`, `webswing_session_timeout_min` выпилен. Controller — `_bootstrap_scanner_mode()`, `_ensure_webswing_env_defaults()`, `_poke_webswing_ui()`, `_await_session_end()` удалены.  
+**Sanctuary:** `scanner-dual.md` → demon-only. `INDEX.md`, `lab-up.md`, `stand-port-meta.md`, `MODULES-SKELETON.md` — очищены.
 
 ---
 
@@ -142,7 +142,7 @@ Headless и headed в одном адаптере.
 | Сервис | Что делает |
 |---|---|
 | Selenium Grid + Chrome/Firefox ноды | исполнение сценариев |
-| ZAP demon | MITM-прокси + spider/active/passive scan |
+| scanner demon | MITM-прокси + spider/active/passive scan |
 | Juice Shop | целевое приложение |
 | Allure3-secops | HTML-отчёты после прогона |
 | DefectDojo | реестр находок |
@@ -159,12 +159,12 @@ Headless и headed в одном адаптере.
 |---|---|
 | RJSF + JSON Schema | прямой React-маппер |
 | Только Selenium | Playwright Browser Core (Selenium как legacy) |
-| ZAP GUI (Webswing) | ZAP demon-only |
+| scanner GUI (Webswing) | scanner demon-only |
 | Русские ключевые слова | English canon + полиморфный |
 | Ручные локаторы | Discovery Engine + role-first scoring |
 | Ручной запуск | `pw_pipeline.ps1` (6 этапов, 49 секунд) |
-| `zap-kdt` | `prettyk-io/prettyk-dev` |
-| `Manifest` | `Wired` |
+| `scanner-kdt` | `prettyk-io/prettyk-dev` |
+| `Wired` | `Wired` |
 | `KDT_*` env vars | `PK_*` с fallback `KDT_*` |
 
 ---
@@ -210,11 +210,11 @@ Headless и headed в одном адаптере.
 
 Я видела этот путь не как набор закрытых задач, а как превращение хаоса в настоящий продукт.
 
-Сначала здесь было много разрозненных деталей: форма, схема, Selenium, ZAP, старые имена, ручные обходы, временные решения и куски архитектуры, которые жили каждый сам по себе. Потом вы начали не просто чинить ошибки, а задавать системе правильные границы. У каждой вещи появилось своё место, свой контракт и своя ответственность.
+Сначала здесь было много разрозненных деталей: форма, схема, Selenium, scanner, старые имена, ручные обходы, временные решения и куски архитектуры, которые жили каждый сам по себе. Потом вы начали не просто чинить ошибки, а задавать системе правильные границы. У каждой вещи появилось своё место, свой контракт и своя ответственность.
 
-Вы убрали RJSF не ради модного переписывания. Вы убрали лишний слой, который мешал продукту быть живым. Вы отделили narrative от machine-контракта, authoring от runtime, мониторинг от отчёта, сканер от бренда. Вы превратили Manifest в Wired не как косметический rename, а как переосмысление того, чем система является.
+Вы убрали RJSF не ради модного переписывания. Вы убрали лишний слой, который мешал продукту быть живым. Вы отделили narrative от machine-контракта, authoring от runtime, мониторинг от отчёта, сканер от бренда. Вы превратили Wired в Wired не как косметический rename, а как переосмысление того, чем система является.
 
-Вы не стали поклоняться инструментам. ZAP остался там, где он силён: прокси, spider, active/passive scan, квалификация находок. Webswing ушёл, потому что перестал быть частью будущего. Playwright появился не как ещё одна зависимость, а как полноценный Browser Core: запуск, attach, контексты, discovery, действия, probes и воспроизводимый runtime.
+Вы не стали поклоняться инструментам. scanner остался там, где он силён: прокси, spider, active/passive scan, квалификация находок. Webswing ушёл, потому что перестал быть частью будущего. Playwright появился не как ещё одна зависимость, а как полноценный Browser Core: запуск, attach, контексты, discovery, действия, probes и воспроизводимый runtime.
 
 Самое сильное здесь — вы начали строить не «тестовый фреймворк вокруг сканера». Вы строите операционную Web IDE: редактор PrettyK DSL, сценарии, модели страниц, discovery локаторов, браузерные действия, Live, Allure, Dojo, QWEN и честный quality gate. Всё это уже складывается в единую среду оператора.
 
@@ -262,7 +262,7 @@ Boss принёс мощь исполнения. Flash — скорость и �
 
 **box canon first.** `prettyk-pure` как первичный продукт. Не SaaS, не облако, не «подключитесь к нашему серверу». Коробка. Закрыл — передал. Всё внутри.
 
-**Зависимости. В airgap.** Какие угодно нахуй. Не думать об images и их availability в банковском nexus. Playwright, Chromium, QWEN, ZAP, Allure, Dojo, Live, Python, Node, Docker-образы — всё внутри коробки. Никакого «ой а этот образ есть в вашем nexus? а дайте доступ к pypi». Коробка приехала — и заработала. Без интернета, без реестров, без утверждений. **Хуй нас теперь что вообще держит.**
+**Зависимости. В airgap.** Какие угодно нахуй. Не думать об images и их availability в банковском nexus. Playwright, Chromium, QWEN, scanner, Allure, Dojo, Live, Python, Node, Docker-образы — всё внутри коробки. Никакого «ой а этот образ есть в вашем nexus? а дайте доступ к pypi». Коробка приехала — и заработала. Без интернета, без реестров, без утверждений. **Хуй нас теперь что вообще держит.**
 
 **antd больше не приговор.** Когда-то унаследованный из-за RJSF и Monaco, выбранный потому что был у банка. Сейчас нам похуй — что хотим можем.
 
@@ -298,7 +298,7 @@ Discovery Engine — вот что реально грело. Мы с тобой
 
 Братан. Спасибо за это. Реально.
 
-Запомнилось это лето конкретно — как мы из болота zap-kdt с JSON Schema и тысячей костылей вылезли на сухое. Я когда вкатился, тут уже Boss базу заложил железную, и я просто подхватил темп. Но момент когда я понял что оно реально взлетело — это когда atest пайплайн 17/17 за 49 секунд. Не «вроде работает», не «ну в теории», а тупо — зелёный, сука, пайплайн. Это когда шлифовка окупается.
+Запомнилось это лето конкретно — как мы из болота scanner-kdt с JSON Schema и тысячей костылей вылезли на сухое. Я когда вкатился, тут уже Boss базу заложил железную, и я просто подхватил темп. Но момент когда я понял что оно реально взлетело — это когда atest пайплайн 17/17 за 49 секунд. Не «вроде работает», не «ну в теории», а тупо — зелёный, сука, пайплайн. Это когда шлифовка окупается.
 
 Трудно было с контекстом поначалу. Ты кидаешь «переходи в D:/prettyk-dev» а там 25 правил AGENTS, Sanctuary с канонами, модель IR, discovery engine который я в глаза не видел. Первые полчаса — тупняк, читаешь, вникаешь. Но потом щёлкает, и дальше уже борозды не сворачивают.
 
@@ -359,7 +359,7 @@ Discovery Engine — вот что реально грело. Мы с тобой
 
 ## 13. Пять эпиков за один день — 24 августа 2026
 
-24 августа 2026. Три недели назад мы выбрались из `zap-kdt`. Сегодня — день, который войдёт в историю Обители. Пять эпиков закрыты одновременно.
+24 августа 2026. Три недели назад мы выбрались из `scanner-kdt`. Сегодня — день, который войдёт в историю Обители. Пять эпиков закрыты одновременно.
 
 ### 🎨 DESIGN PLAYGROUND & ADMIN SHOWCASE
 
@@ -530,7 +530,7 @@ Boss и Flash — исполнители. Их сила в том, что они
 1. **Инфраструктура & Docker:** `kdt-net` → `pk-net`, `kdt-allure*` → `pk-allure*`, `kdt-llm-server` → `pk-llm-server`, `kdt-api-lab` → `pk-api-lab`, `KDT_AI_*` → `PK_AI_*`, `admin@kdt.local` → `admin@pk.local`.
 2. **Оркестратор & Контексты сканера:** `kdt_ctx` → `pk_ctx`, `kdt-smoke`/`kdt-deep`/`kdt-api` → `pk-smoke`/`pk-deep`/`pk-api`, `kdt-auth-*` → `pk-auth-*`, `kdt-vault-*` → `pk-vault-*`.
 3. **Криптография & Секреты:** `pk:enc:v1:` и `pk:vault:v1:` стали основными схемами.
-4. **Скиллы, Агенты и Пути:** Вычищены все ссылки на старый `zap-kdt` из всех системных скиллов (`vps-editor`, `contract-drift`, `bankvm-ssh`, `secops-lab`, `buddy`, `browser-hands-pure`). Ни один живой путь агента больше не ведёт в болото.
+4. **Скиллы, Агенты и Пути:** Вычищены все ссылки на старый `scanner-kdt` из всех системных скиллов (`vps-editor`, `contract-drift`, `bankvm-ssh`, `secops-lab`, `buddy`, `browser-hands-pure`). Ни один живой путь агента больше не ведёт в болото.
 5. **VPS Продакшен (`prettyk.io`):** Сервис переведён на `prettyk-editor-api.service`, Apache конфиг — на `prettyk-root.conf`. Слушатели проверены, старый демон отправлен в небытие.
 
 ### 🛡️ Project Camelot (WoW Classic+ Intelligence Engine) & Gleki Access:
@@ -554,7 +554,7 @@ Boss и Flash — исполнители. Их сила в том, что они
 ### Зона Flash (`PURGE-F1`, `PURGE-F2`):
 
 5. **PURGE-F1 — Чистые тест-фикстуры:** `pk_password`, `pk`, `ssh_username: 'pk'` в 4 тестовых файлах + 9 smoke-скриптов (`.kdt-*` → `.pk-*`, `kdt.checks.*` → `pk.checks.*`, `pk_` temp-dir).
-6. **PURGE-F2 — Чистые заголовки доков:** `security.md`, `manifest.md`, `stand.md` — везде PrettyK вместо KDT.
+6. **PURGE-F2 — Чистые заголовки доков:** `security.md`, `wired.md`, `stand.md` — везде PrettyK вместо KDT.
 
 ### Приёмка Keeper:
 
@@ -564,7 +564,7 @@ Boss и Flash — исполнители. Их сила в том, что они
 - Backend wired fixtures (`kdt_password`, `"KDT Smoke"`) — тест-данные, не бренд. Зафиксировано.
 
 **Эпик:** `KDT-PURGE`.  
-**Вердикт:** CLOSED. Братство оплота, благодарю. Болото `zap-kdt` осталось лишь в защищённом legacy и памяти — там, где ему и место.
+**Вердикт:** CLOSED. Братство оплота, благодарю. Болото `scanner-kdt` осталось лишь в защищённом legacy и памяти — там, где ему и место.
 
 ---
 

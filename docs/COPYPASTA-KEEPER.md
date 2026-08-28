@@ -105,7 +105,7 @@
 
 **SynthesisBar** (компонент внутри ScenarioFlow, строка над React Flow):
 - Если `warRoom === true` в store: показать бар
-- Иконка Zap (циан) + «WAR ROOM» жирный шрифт
+- Иконка scanner (циан) + «WAR ROOM» жирный шрифт
 - Кнопка ✕ закрытия справа
 - При `runPhase === 'passed'`: ShieldCheck (зелёный) + «VERDICT: PASSED» + кнопка «Результаты →»
 - При `runPhase === 'failed'`: ShieldAlert (красный) + «VERDICT: FAILED»

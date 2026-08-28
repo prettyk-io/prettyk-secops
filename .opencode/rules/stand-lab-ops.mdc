@@ -26,9 +26,9 @@ PrettyK Live
 http://127.0.0.1:8767/
 Editor
 http://localhost:5173/
-ZAP Webswing
-http://127.0.0.1:8082/zap
-ZAP demon API
+scanner Webswing
+http://127.0.0.1:8082/scanner
+scanner demon API
 http://127.0.0.1:8080/
 ```
 
@@ -44,8 +44,8 @@ http://127.0.0.1:8080/
 .\orchestrator\tools\lab_up.ps1
 ```
 
-- Обязательный контур: Grid + **allure3-secops** + ZAP **demon** + Juice + Editor/playground + Live idle.
-- **Webswing не дефолт** — только `zap_mode=webswing` или явная просьба. URL в пультах всё равно давать (down — пометить).
+- Обязательный контур: Grid + **allure3-secops** + scanner **demon** + Juice + Editor/playground + Live idle.
+- **Webswing не дефолт** — только `scanner_mode=webswing` или явная просьба. URL в пультах всё равно давать (down — пометить).
 - Juice `-Target juice` — только по явной просьбе, не во время прогона.
 - Live clean: diary + meta + **results_hooks.json**; idle-процесс не убивать.
 

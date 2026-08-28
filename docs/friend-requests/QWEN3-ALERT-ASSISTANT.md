@@ -4,7 +4,7 @@
 
 ## Тезис
 
-Локальная модель Qwen3-1.7B (Apache 2.0) в Docker-контейнере, развёрнутая на KDT Live `:8766` или соседнем порту. Анализирует ZAP-алерты: классификация severity, отсев false positive, сравнение HTTP-ответов, приоритизация находок. Не заменяет детекшн-движок ZAP — работает как ассистент аналитика поверх.
+Локальная модель Qwen3-1.7B (Apache 2.0) в Docker-контейнере, развёрнутая на KDT Live `:8766` или соседнем порту. Анализирует scanner-алерты: классификация severity, отсев false positive, сравнение HTTP-ответов, приоритизация находок. Не заменяет детекшн-движок scanner — работает как ассистент аналитика поверх.
 
 ## Почему Qwen3-1.7B
 
@@ -20,7 +20,7 @@
 ## Архитектура
 
 ```
-ZAP alert (JSON) → Qwen3-1.7B (llama.cpp :8766) → KDT Live → Results/Dojo
+scanner alert (JSON) → Qwen3-1.7B (llama.cpp :8766) → KDT Live → Results/Dojo
                                                          ↓
                                                    Аналитик видит:
                                                    - severity classification
@@ -35,7 +35,7 @@ ZAP alert (JSON) → Qwen3-1.7B (llama.cpp :8766) → KDT Live → Results/Dojo
 
 ## Что делает
 
-### Given: ZAP-алерт с uncertain confidence
+### Given: scanner-алерт с uncertain confidence
 **When:** алерт поступает в KDT Live.
 **Then:** модель анализирует его и выдаёт:
 - Классификацию severity (low/medium/high/critical)
@@ -61,7 +61,7 @@ ZAP alert (JSON) → Qwen3-1.7B (llama.cpp :8766) → KDT Live → Results/Dojo
 
 ### Этап 1: Smoke-тест (Boss, 30 мин)
 - Установить ollama, скачать `qwen3:1.7b`
-- Прогнать 20 реальных ZAP-алертов через модель
+- Прогнать 20 реальных scanner-алертов через модель
 - Замерить латенси, оценить качество
 
 **DoD:** модель отвечает на русском, классифицирует severity, даёт осмысленные ответы.
@@ -75,7 +75,7 @@ ZAP alert (JSON) → Qwen3-1.7B (llama.cpp :8766) → KDT Live → Results/Dojo
 
 ### Этап 3: Интеграция с KDT Live (Flash, 2 часа)
 - Добавить endpoints в `live_server.py`:
-  - `POST /api/ai/classify` → принимает ZAP-алерт, возвращает классификацию
+  - `POST /api/ai/classify` → принимает scanner-алерт, возвращает классификацию
   - `POST /api/ai/diff` → принимает два ответа, возвращает diff-анализ
   - `POST /api/ai/prioritize` → принимает список алертов, возвращает приоритизированный
 - Проксирование запросов к llama-server `:8766`
@@ -85,7 +85,7 @@ ZAP alert (JSON) → Qwen3-1.7B (llama.cpp :8766) → KDT Live → Results/Dojo
 
 ### Этап 4: UI-отображение (Flash, 2 часа)
 - В Results/Dojo — рядом с каждым алертом показывать:
-  - AI severity classification (если отличается от ZAP — подсветить)
+  - AI severity classification (если отличается от scanner — подсветить)
   - FP confidence badge (зелёный/жёлтый/красный)
   - Кнопка «AI Diff» → модалка с diff-анализом
 - В Results summary — AI-приоритизация списка находок
@@ -95,7 +95,7 @@ ZAP alert (JSON) → Qwen3-1.7B (llama.cpp :8766) → KDT Live → Results/Dojo
 ## Out of scope
 
 - Fine-tune модели (нужен датасет 500-1000 размеченных алертов — позже)
-- Замена ZAP-детекшена моделью — модель ТОЛЬКО ассистент, не source of truth
+- Замена scanner-детекшена моделью — модель ТОЛЬКО ассистент, не source of truth
 - GPU-инференс (CPU достаточно для 1.7B)
 - Сертификация модели для ЦБ (позже, перед внедрением)
 

@@ -28,7 +28,7 @@
 | `collectAdminRuns.ts` | Сбор и агрегация прогонов по программе/деплою | Dashboard / SecOps Control — Run history |
 | `deriveProgramKpi.ts` | Вычисление KPI: severity, coverage, pass/fail, тренды | Dashboard — KPI-карточки |
 | `applyDojoProgram.ts` | Маппинг DefectDojo-программы на деплои | SecOps Control — Dojo Sync |
-| `syncEvidenceFromLive.ts` | Синхронизация evidence (скриншоты, логи, ZAP-отчёты) из Live | Control Panel — Evidence sync |
+| `syncEvidenceFromLive.ts` | Синхронизация evidence (скриншоты, логи, scanner-отчёты) из Live | Control Panel — Evidence sync |
 | `notifyRules.ts` | Правила оповещений: conditions, channels, throttling | SecOps Control — Notifications |
 
 ### Гейты
@@ -45,7 +45,7 @@
 | Файл | Назначение | Куда в новой админке |
 |---|---|---|
 | `evidenceRegistry.ts` | Центральный реестр evidence-пакетов | Контрол Panel / SecOps — Evidence |
-| `evidenceTypes.ts` | Типы evidence (ZAP, Allure, Dojo, screenshot, log) | Общие типы |
+| `evidenceTypes.ts` | Типы evidence (scanner, Allure, Dojo, screenshot, log) | Общие типы |
 | `pickPrimaryEvidencePack.ts` | Выбор основного evidence-пакета для показа | Dashboard — карточки результатов |
 | `evidence/evidenceTypes.ts` | Типы evidence (дубликат? проверить) | Возможно, заменить на основной |
 
@@ -65,7 +65,7 @@
 | `loadLiveProgramKpi.ts` | Загрузка KPI программы из Live API | Dashboard |
 | `mergeLiveAdminRuns.ts` | Слияние прогонов из Live и Admin | Dashboard / Run history |
 | `bulkLinkChecks.ts` | Массовая проверка валидности ссылок на evidence | Control Panel — Health checks |
-| `connectorProbe.ts` | Проба доступности коннекторов (ZAP, Dojo, Allure) | Control Panel — Health checks |
+| `connectorProbe.ts` | Проба доступности коннекторов (scanner, Dojo, Allure) | Control Panel — Health checks |
 | `liveFetchHeaders.ts` | Заголовки для Live API-запросов | Общий API-слой |
 | `retentionPolicySerialize.ts` | Сериализация retention-политик | Control Panel — Retention |
 | `waiverExpiry.ts` | Логика истечения waiver/исключений | SecOps Control — Policies |
@@ -141,7 +141,7 @@
 | `sections/ProgramOverview.tsx` | Обзор программы проверок | Dashboard / SecOps Control |
 | `sections/PoliciesPanel.tsx` | Секция политик | SecOps Control — Policies |
 | `sections/NotifyPanel.tsx` | Секция оповещений | SecOps Control — Notifications |
-| `sections/IntegrationsPanel.tsx` | Интеграции (ZAP, Dojo, Allure) | Control Panel — Integrations |
+| `sections/IntegrationsPanel.tsx` | Интеграции (scanner, Dojo, Allure) | Control Panel — Integrations |
 | `sections/IntegrationEvidence.tsx` | Evidence интеграций | Control Panel |
 | `sections/EvidencePanel.tsx` | Секция evidence | Dashboard |
 | `sections/EvidenceCharts.tsx` | Графики evidence | Dashboard |

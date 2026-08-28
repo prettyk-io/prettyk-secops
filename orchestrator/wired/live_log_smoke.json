@@ -2,12 +2,12 @@
   "meta": {
     "assessment_purpose": "manual",
     "app_type": "web",
-    "emergency_reason": "Live diary/zap routing smoke (seconds, no Juice)"
+    "emergency_reason": "Live diary/scanner routing smoke (seconds, no Juice)"
   },
   "infrastructure": {
-    "zap_mode": "demon",
+    "scanner_mode": "demon",
     "browser_type": "chrome-headless",
-    "zap_work_timeout_min": 10,
+    "scanner_work_timeout_min": 10,
     "idle_timeout_min": 5
   },
   "security_configuration": {
@@ -30,8 +30,8 @@
             "constructor": "Открыть about:blank\nЖдатьПростойСети 0.5 1\nНажать css body"
           },
           {
-            "description": "ZAP log_attack → zap channel only",
-            "constructor": "ЛогАтаки \"marker zap LOG $tag\""
+            "description": "scanner log_attack → scanner channel only",
+            "constructor": "ЛогАтаки \"marker scanner LOG $tag\""
           }
         ]
       }

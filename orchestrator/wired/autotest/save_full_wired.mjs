@@ -28,7 +28,7 @@ const wired = check.wired;
 
 // Modify for autotest
 wired.infrastructure.browser_type = 'chrome-headless';
-wired.infrastructure.zap_work_timeout_min = 60;
+wired.infrastructure.scanner_work_timeout_min = 60;
 wired.infrastructure.idle_timeout_min = 30;
 wired.meta.project_id = 'autotest-js-20260822';
 wired.meta.assessment_purpose = 'emergency';

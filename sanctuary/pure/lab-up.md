@@ -2,7 +2,7 @@
 
 > **CANON** — hub topic. Slice: **11 августа 2026** (CULT-4).  
 > PUBLIC команды: [`../stand.md`](../stand.md) · шпаргалка: [`../operator-cheatsheet.md`](../operator-cheatsheet.md).  
-> Roles: [`runtime-shell.md`](runtime-shell.md). ZAP: [`zap-dual.md`](zap-dual.md). Bounds: [`security-lab.md`](security-lab.md).  
+> Roles: [`runtime-shell.md`](runtime-shell.md). scanner: [`scanner-dual.md`](scanner-dual.md). Bounds: [`security-lab.md`](security-lab.md).  
 > Реестр: [`INDEX.md`](INDEX.md). Skill: global **`prettyk-lab`**.
 
 ## 1. Обязательное vs opt-in
@@ -11,7 +11,7 @@
 flowchart TB
   LabUp[lab_up.ps1] --> Grid[Selenium_Grid]
   LabUp --> Allure[allure3_secops]
-  LabUp --> Demon[ZAP_demon]
+  LabUp --> Demon[scanner_demon]
   LabUp --> Juice[Juice_Shop]
   LabUp --> UI[Editor_plus_playground]
   LabUp --> Live[KDT_Live_idle]
@@ -22,7 +22,7 @@ flowchart TB
 |---|---|
 | Grid + ноды | Webswing (отдельный up) |
 | allure3-secops (канон) | DefectDojo — только `-IncludeDefectDojo` |
-| ZAP **demon** | prod / VPS |
+| scanner **demon** | prod / VPS |
 | Juice Shop | чистка Juice mid-run без просьбы |
 | Editor + playground + Live idle | — |
 
@@ -34,7 +34,7 @@ flowchart TB
 | DefectDojo | `http://127.0.0.1:8081/` | только если `-IncludeDefectDojo` |
 | PrettyK Live | `http://127.0.0.1:8767/` | `/api/meta` |
 | Editor | `http://localhost:5173/` | HTML shell (не белый экран) |
-| ZAP demon API | `http://127.0.0.1:8080/` | `/JSON/core/view/version/` |
+| scanner demon API | `http://127.0.0.1:8080/` | `/JSON/core/view/version/` |
 
 ## 3. Тезисы ops
 

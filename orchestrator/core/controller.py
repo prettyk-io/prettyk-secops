@@ -25,7 +25,7 @@ from core.language_engine import LanguageEngine
 from core.page_resolver import PageResolver
 from adapters.webdriver_adapter import WebDriverAdapter
 from adapters.browser_adapter import BrowserAdapter
-from adapters.zap_adapter import ZapAdapter
+from adapters.scanner_adapter import ScannerAdapter
 from adapters.grpc_adapter import GrpcAdapter
 from adapters.http_adapter import HttpAdapter
 from utils.reporter import Reporter
@@ -48,13 +48,28 @@ _NON_KEYWORD_METHODS = frozenset({
 
 logger = logging.getLogger("controller")
 
-# Порты ZAP задаёт инфраструктура раннера, не манифест.
+
+def resolve_browser_runtime() -> str:
+    """PW-E1/PW-C1: выбор браузерного рантайма. Дефолт — playwright (после cutover).
+
+    ``PK_BROWSER_RUNTIME=playwright`` (или пусто) → ``"playwright"`` (PlaywrightAdapter),
+    ``PK_BROWSER_RUNTIME=selenium`` → ``"selenium"`` (WebDriverAdapter, legacy Grid).
+
+    Одна точка правды: и `_init_adapters`, и тесты читают отсюда —
+    никакого двойного префикса (``pk_env`` сам добавляет ``PK_``).
+    Возвращает только канонические ``playwright``/``selenium``.
+    """
+    raw = (pk_env("BROWSER_RUNTIME") or "playwright").strip().lower()
+    return raw if raw in ("playwright", "selenium") else "playwright"
+
+
+# Порты scanner задаёт инфраструктура раннера, не манифест.
 # Main 8080 — для zapv2 (официальный клиент ходит через этот слушатель).
 # Browser proxy 8099 — доп. Local Server (Network API addLocalServer), чтобы
 # MITM-трафик браузера не делил сокет с API-клиентом. Demon-only (webswing removed 2026-08-22).
 # https://www.zaproxy.org/docs/desktop/addons/network/options/localservers/
-DEFAULT_ZAP_PORT = 8080
-DEFAULT_ZAP_BROWSER_PROXY_PORT = 8099
+DEFAULT_scanner_PORT = 8080
+DEFAULT_scanner_BROWSER_PROXY_PORT = 8099
 
 
 class Controller:
@@ -64,7 +79,7 @@ class Controller:
         wired_path: Optional[str] = None,
         secret_seeds: Optional[List[str]] = None,
     ):
-        self.last_zap_report = None
+        self.last_scanner_report = None
         self.wired = wired
         # Каталог манифеста — база для test_suites.imports[].path
         self.wired_path = (
@@ -79,7 +94,7 @@ class Controller:
         self.page_resolver = None
         self.adapters: Dict[str, Any] = {}
         # Проблемы валидации конструкторов: копим при старте, светим при падении.
-        self._manifest_problems: List[str] = []
+        self._wired_problems: List[str] = []
         # Quality / admission gate: заполняется evaluate_quality_gate().
         self.quality_gate_failed = False
         self.quality_gate_summary: Dict[str, Any] | None = None
@@ -96,9 +111,9 @@ class Controller:
         }
         self.scenario_outcomes: List[Dict[str, Any]] = []
         self.suites_complete: bool = False
-        self.zap_mode: str = (self.wired.infrastructure.zap_mode or "demon").strip()
-        self.zap_api_port: int = DEFAULT_ZAP_PORT
-        self.zap_proxy_port: int = DEFAULT_ZAP_BROWSER_PROXY_PORT
+        self.scanner_mode: str = (self.wired.infrastructure.scanner_mode or "demon").strip()
+        self.scanner_api_port: int = DEFAULT_scanner_PORT
+        self.scanner_proxy_port: int = DEFAULT_scanner_BROWSER_PROXY_PORT
         self._work_timer: Optional[threading.Timer] = None
         self._idle_timer: Optional[threading.Timer] = None
         self._idle_seconds: Optional[float] = None
@@ -125,48 +140,38 @@ class Controller:
             raise ValueError(f"{name} must be an integer, got: {raw!r}") from exc
 
     def _init_adapters(self):
-        # 1) ZapAdapter на main-порту → 2) поднять browser Local Server → 3) WebDriver.
+        # 1) ScannerAdapter на main-порту → 2) поднять browser Local Server → 3) браузер.
         # Remote: WebDriverAdapter._resolve_proxy подменит loopback на host.docker.internal.
-        # Webswing concurrent: UI :8082, API :8090, proxy :8199 — daemon :8080/:8099.
-        mode = (self.wired.infrastructure.zap_mode or "demon").strip()
-        self.zap_mode = mode
-        default_zap_port = (
-            DEFAULT_WEBSWING_API_PORT if mode == "webswing" else DEFAULT_ZAP_PORT
-        )
-        zap_port = self._env_port("PK_ZAP_PORT", default_zap_port)
-        default_browser_proxy = (
-            DEFAULT_WEBSWING_PROXY_PORT
-            if mode == "webswing"
-            else DEFAULT_ZAP_BROWSER_PROXY_PORT
-        )
+        # Demon-only (webswing выпилен): API :8080, browser proxy :8099.
+        self.scanner_mode = "demon"
+        scanner_port = self._env_port("PK_SCANNER_PORT", DEFAULT_scanner_PORT)
         browser_proxy_port = self._env_port(
-            "PK_ZAP_BROWSER_PROXY_PORT", default_browser_proxy
+            "PK_SCANNER_BROWSER_PROXY_PORT", DEFAULT_scanner_BROWSER_PROXY_PORT
         )
-        self.zap_api_port = zap_port
-        self.zap_proxy_port = browser_proxy_port
+        self.scanner_api_port = scanner_port
+        self.scanner_proxy_port = browser_proxy_port
 
         # 127.0.0.1, не localhost: на Windows localhost часто резолвится в ::1,
         # а Docker publish слушает IPv4 — zapv2 ловит ConnectionReset.
-        from core.gate_policy import zap_api_key_from_env
+        from core.gate_policy import scanner_api_key_from_env
 
         base_url = self.wired.scan_base_url()
         allowed_extra = self.wired.scan_allowed_extra_domains()
 
-        self.adapters["zap"] = ZapAdapter(
+        self.adapters["scanner"] = ScannerAdapter(
             host="127.0.0.1",
-            port=zap_port,
-            api_key=zap_api_key_from_env(),
+            port=scanner_port,
+            api_key=scanner_api_key_from_env(),
             base_url=base_url,
             allowed_extra_domains=allowed_extra,
         )
-        # Webswing: сначала команда старта (env/defaults), потом API/local servers.
-        self._bootstrap_zap_mode()
-        if browser_proxy_port != zap_port:
+        # scanner local server (browser proxy) — demon уже поднят стендом.
+        if browser_proxy_port != scanner_port:
             logger.info(
-                "Ensuring ZAP browser Local Server on 127.0.0.1:%s (api+proxy)",
+                "Ensuring scanner browser Local Server on 127.0.0.1:%s (api+proxy)",
                 browser_proxy_port,
             )
-            self._ensure_zap_local_server(browser_proxy_port)
+            self._ensure_scanner_local_server(browser_proxy_port)
         proxy = f"127.0.0.1:{browser_proxy_port}"
 
         browser_type = self.wired.infrastructure.browser_type
@@ -178,13 +183,21 @@ class Controller:
             headless = False
 
         # ── PW-E1: Playwright или Selenium за флагом PK_BROWSER_RUNTIME ──
-        runtime = (pk_env("PK_BROWSER_RUNTIME") or "selenium").strip().lower()
+        runtime = resolve_browser_runtime()
 
         if runtime == "playwright":
             # Браузер через Playwright (chromium/firefox/webkit).
-            # ZAP-прокси: loopback 127.0.0.1 → host.docker.internal в контейнере.
+            # scanner-прокси: loopback 127.0.0.1 → host.docker.internal в контейнере.
             from adapters.playwright_adapter import PlaywrightAdapter
 
+            # PW-E4: live-вид execution — headed браузер живёт в контейнере
+            # (headed под Xvfb → noVNC), а НЕ окном на десктопе оператора.
+            # PK_BROWSER_CDP_ENDPOINT → connect_over_cdp к контейнеру.
+            # Без endpoint — локальный launch (headless в норме; headed только dev).
+            # pk_env сам добавляет префикс PK_ — передаём голое имя без префикса.
+            cdp_endpoint = (
+                (pk_env("BROWSER_CDP_ENDPOINT") or "").strip() or None
+            )
             playwright_adapter = PlaywrightAdapter(
                 None,
                 browser=browser,
@@ -193,6 +206,7 @@ class Controller:
                 session_name=self._session_name(),
                 base_url=base_url,
                 allowed_extra_domains=allowed_extra,
+                cdp_endpoint=cdp_endpoint,
             )
             # PW-E3: запись видео при headless=False (headed execution)
             if not headless:
@@ -219,8 +233,8 @@ class Controller:
             self.reporter = Reporter(webdriver_adapter)
 
         logger.info(
-            "ZAP API on 127.0.0.1:%s, browser proxy on %s",
-            zap_port,
+            "scanner API on 127.0.0.1:%s, browser proxy on %s",
+            scanner_port,
             proxy,
         )
         self.adapters["http"] = HttpAdapter()
@@ -228,7 +242,7 @@ class Controller:
         from adapters.connector_adapter import ConnectorAdapter
 
         self.adapters["connector"] = ConnectorAdapter()
-        # OA/GQL/gRPC seed traffic → ZAP site tree via browser proxy
+        # OA/GQL/gRPC seed traffic → scanner site tree via browser proxy
         try:
             self.adapters["http"].set_proxy(f"http://{proxy}")
         except Exception as exc:  # noqa: BLE001
@@ -240,9 +254,9 @@ class Controller:
         mdir = (
             os.path.dirname(self.wired_path) if self.wired_path else None
         )
-        zap_ad = self.adapters.get("zap")
-        if zap_ad is not None and hasattr(zap_ad, "bind_run_wired"):
-            zap_ad.bind_run_wired(self.wired, mdir)
+        scanner_ad = (self.adapters.get("scanner") or self.adapters.get("scanner"))
+        if scanner_ad is not None and hasattr(scanner_ad, "bind_run_wired"):
+            scanner_ad.bind_run_wired(self.wired, mdir)
         if hasattr(self.adapters["http"], "bind_run_wired"):
             self.adapters["http"].bind_run_wired(self.wired)
         if hasattr(self.adapters["grpc"], "bind_run_wired"):
@@ -254,19 +268,19 @@ class Controller:
 
         self.adapters["fuzz"] = FuzzAdapter(
             self.wired,
-            self.adapters["zap"],
+            self.adapters["scanner"],
             browser=self.adapters.get("browser"),
         )
 
     def _apply_infrastructure(self):
         """
-        Шаг 2 жизненного цикла: доп. порт ZAP + таймауты из формы (конфиг на старте).
+        Шаг 2 жизненного цикла: доп. порт scanner + таймауты из формы (конфиг на старте).
         work = длительность сессии / таймер демона; idle = бездействие → shutdown_all.
         """
         port = self.wired.infrastructure.additional_local_server_port
         if port is not None:
             browser_proxy_port = self._env_port(
-                "PK_ZAP_BROWSER_PROXY_PORT", DEFAULT_ZAP_BROWSER_PROXY_PORT
+                "PK_SCANNER_BROWSER_PROXY_PORT", DEFAULT_scanner_BROWSER_PROXY_PORT
             )
             if int(port) == browser_proxy_port:
                 logger.info(
@@ -275,110 +289,19 @@ class Controller:
                 )
             else:
                 logger.info(
-                    "Wired requests additional ZAP local server on port %s (api+proxy)",
+                    "Wired requests additional scanner local server on port %s (api+proxy)",
                     port,
                 )
-                self.adapters["zap"].add_local_server(port=port)
+                self.adapters["scanner"].add_local_server(port=port)
 
         self._apply_session_timeouts()
 
-    @staticmethod
-    def _repo_services_dir() -> str:
-        # orchestrator/core/controller.py → repo/services
-        return os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "services")
-        )
-
-    def _ensure_webswing_env_defaults(self) -> None:
-        """Канон стенда: daemon + Webswing одновременно (разные хост-порты)."""
-        services = self._repo_services_dir()
-        up = os.path.join(services, "zap-webswing-up.ps1")
-        down = os.path.join(services, "zap-webswing-down.ps1")
-        compose_ws = os.path.join(services, "docker-compose.zap-webswing.yml")
-        if os.name == "nt":
-            start = f'powershell -NoProfile -ExecutionPolicy Bypass -File "{up}"'
-            stop_ws = f'powershell -NoProfile -ExecutionPolicy Bypass -File "{down}"'
-        else:
-            start = f'docker compose -f "{compose_ws}" up -d'
-            stop_ws = f'docker compose -f "{compose_ws}" down'
-        os.environ.setdefault("PK_ZAP_START_WEBSWING_CMD", start)
-        # Пусто = не гасить daemon (concurrent). Exclusive: задать stop compose zap.
-        os.environ.setdefault("PK_ZAP_STOP_DAEMON_CMD", "")
-        os.environ.setdefault("PK_ZAP_STOP_WEBSWING_CMD", stop_ws)
-        os.environ.setdefault("PK_WEBSWING_UI_URL", "http://127.0.0.1:8082/zap")
-
-    def _bootstrap_zap_mode(self) -> None:
-        """
-        zap_mode=webswing → поднять Webswing (daemon не гасим по умолчанию).
-        demon — noop (демон уже поднят стендом).
-        """
-        mode = (self.wired.infrastructure.zap_mode or "demon").strip()
-        if mode != "webswing":
-            return
-        zap = self.adapters.get("zap")
-        if zap is None:
-            return
-        self._ensure_webswing_env_defaults()
-        stop_cmd = (pk_env("ZAP_STOP_DAEMON_CMD") or "").strip()
-        start_cmd = (pk_env("ZAP_START_WEBSWING_CMD") or "").strip()
-        if not start_cmd:
-            logger.warning(
-                "zap_mode=webswing, но PK_ZAP_START_WEBSWING_CMD не задан — "
-                "ожидаем уже запущенный ZAP на порту API"
-            )
-            return
-        try:
-            if stop_cmd:
-                logger.info("Webswing bootstrap: stop daemon → start Webswing")
-                zap.stop_daemon_start_webswing()
-            else:
-                logger.info("Webswing bootstrap: start Webswing (daemon stays up)")
-                zap.start_webswing()
-        except WiredError as exc:
-            logger.error("Webswing bootstrap failed: %s", exc)
-            raise
-        # Webswing иногда поднимает ZAP только после визита UI.
-        self._poke_webswing_ui()
-        self._wait_zap_api_ready(timeout_sec=120.0)
-
-    def _poke_webswing_ui(self) -> None:
-        """http://127.0.0.1:8082/zap — прогрев Webswing (concurrent UI port)."""
-        import urllib.request
-
-        url = (pk_env("WEBSWING_UI_URL") or "http://127.0.0.1:8082/zap").strip()
-        try:
-            urllib.request.urlopen(url, timeout=10)
-            logger.info("Webswing UI poked: %s", url)
-        except Exception as exc:
-            logger.warning("Webswing UI poke %s: %s (ждём API дальше)", url, exc)
-
-    def _wait_zap_api_ready(self, timeout_sec: float = 90.0) -> None:
-        """Ждём, пока zapv2 ответит version после смены процесса."""
-        zap = self.adapters.get("zap")
-        if zap is None:
-            return
-        deadline = time.time() + float(timeout_sec)
-        last_err = None
-        while time.time() < deadline:
-            try:
-                zap._zap = None
-                zap._connected = False
-                zap._ensure_connected()
-                logger.info("ZAP API ready after mode bootstrap")
-                return
-            except Exception as exc:
-                last_err = exc
-                time.sleep(2.0)
-        raise WiredError(
-            f"ZAP API не поднялся за {timeout_sec:.0f}s после Webswing bootstrap: {last_err}"
-        )
-
-    def _ensure_zap_local_server(self, port: int) -> None:
-        zap = self.adapters["zap"]
+    def _ensure_scanner_local_server(self, port: int) -> None:
+        scanner = self.adapters["scanner"]
         last_err = None
         for attempt in range(1, 16):
             try:
-                zap.add_local_server(port=port)
+                scanner.add_local_server(port=port)
                 return
             except Exception as exc:
                 last_err = exc
@@ -387,7 +310,7 @@ class Controller:
                 )
                 time.sleep(2.0)
         raise WiredError(
-            f"Не удалось добавить ZAP local server :{port}: {last_err}"
+            f"Не удалось добавить scanner local server :{port}: {last_err}"
         )
 
     def _apply_session_timeouts(self) -> None:
@@ -422,7 +345,7 @@ class Controller:
 
     def _should_hold_gui_session(self) -> bool:
         """Держать процесс до idle/work kill — ручной Webswing без авто-сценариев."""
-        mode = (self.wired.infrastructure.zap_mode or "").strip()
+        mode = (self.wired.infrastructure.scanner_mode or "").strip()
         if mode != "webswing":
             return False
         raw = (pk_env("WEBSWING_HOLD") or "1").strip().lower()
@@ -482,24 +405,24 @@ class Controller:
 
     def _on_work_timeout(self) -> None:
         logger.error(
-            "Таймаут работы ZAP истёк — гасим demon/webswing/ZAP (shutdown_all)"
+            "Таймаут работы scanner истёк — гасим demon/webswing/scanner (shutdown_all)"
         )
-        self._kill_zap_for_timeout("work")
+        self._kill_scanner_for_timeout("work")
 
     def _on_idle_timeout(self) -> None:
         logger.error(
-            "Таймаут бездействия истёк — гасим demon/webswing/ZAP (shutdown_all)"
+            "Таймаут бездействия истёк — гасим demon/webswing/scanner (shutdown_all)"
         )
-        self._kill_zap_for_timeout("idle")
+        self._kill_scanner_for_timeout("idle")
 
-    def _kill_zap_for_timeout(self, reason: str) -> None:
+    def _kill_scanner_for_timeout(self, reason: str) -> None:
         self._timeout_kill_reason = reason
         self._cancel_session_timeouts()
-        zap = self.adapters.get("zap")
-        if zap is None:
+        scanner = (self.adapters.get("scanner") or self.adapters.get("scanner"))
+        if scanner is None:
             return
         try:
-            zap.shutdown_all()
+            scanner.shutdown_all()
         except Exception as e:
             logger.warning("shutdown_all after %s timeout failed: %s", reason, e)
 
@@ -551,13 +474,13 @@ class Controller:
             )
             return None
         wd = self.adapters.get("webdriver")
-        zap = self.adapters.get("zap")
+        scanner = (self.adapters.get("scanner") or self.adapters.get("scanner"))
         if len(ids) > 1 or len(profiles) > 1:
             self._store_auth_bootstrap(
                 apply_auth_profiles(
                     profiles,
                     self.adapters["http"],
-                    zap_adapter=zap,
+                    scanner_adapter=scanner,
                     webdriver_adapter=wd,
                 ),
                 mod_notes,
@@ -575,12 +498,12 @@ class Controller:
             return None
         if profile.kind == "form":
             self._store_auth_bootstrap(
-                apply_auth_form(profile, wd, self.adapters["http"], zap), mod_notes
+                apply_auth_form(profile, wd, self.adapters["http"], scanner), mod_notes
             )
             return None
         if profile.kind == "action":
             self._store_auth_bootstrap(
-                apply_auth_action(profile, wd, self.adapters["http"], zap), mod_notes
+                apply_auth_action(profile, wd, self.adapters["http"], scanner), mod_notes
             )
             return None
         return profile.bootstrap_auth_type(), profile.bootstrap_auth_details()
@@ -602,7 +525,7 @@ class Controller:
                         page_profile,
                         self.adapters.get("webdriver"),
                         self.adapters["http"],
-                        self.adapters.get("zap"),
+                        (self.adapters.get("scanner") or self.adapters.get("scanner")),
                     )
                 )
                 return True
@@ -614,14 +537,14 @@ class Controller:
                         sso_profile,
                         self.adapters.get("webdriver"),
                         self.adapters["http"],
-                        self.adapters.get("zap"),
+                        (self.adapters.get("scanner") or self.adapters.get("scanner")),
                     )
                 )
                 return True
         return False
 
     def _apply_auth_bootstrap(self) -> None:
-        """Http bootstrap сразу; ZAP — только PK_ZAP_AUTH_BOOTSTRAP после context."""
+        """Http bootstrap сразу; scanner — только PK_SCANNER_AUTH_BOOTSTRAP после context."""
         from core.auth_bootstrap import apply_auth_bootstrap
 
         sec = self.wired.security_configuration
@@ -682,7 +605,7 @@ class Controller:
                 "; ".join(mod_notes),
             )
 
-    def _enrich_apply_manifest_auth_params(self, params: dict, sec) -> None:
+    def _enrich_apply_wired_auth_params(self, params: dict, sec) -> None:
         import json
 
         from core.auth_module import resolve_active_auth_profiles
@@ -706,32 +629,34 @@ class Controller:
         if not (params.get("base_url") or "").strip():
             params["base_url"] = self.wired.scan_base_url()
 
-    def _enrich_zap_manifest_params(self, action: str, params: dict) -> None:
+    def _enrich_scanner_wired_params(self, action: str, params: dict) -> None:
         """Дополнить ПрименитьAuth / СгенерироватьПлан из security_configuration."""
         sec = self.wired.security_configuration
         if sec is None:
             return
-        if action == "apply_manifest_auth":
-            self._enrich_apply_manifest_auth_params(params, sec)
+        if action == "apply_wired_auth":
+            self._enrich_apply_wired_auth_params(params, sec)
             return
         if action == "generate_automation_plan":
             if not (params.get("base_url") or "").strip():
                 params["base_url"] = self.wired.scan_base_url()
             if not (params.get("scan_policy") or "").strip():
                 params["scan_policy"] = sec.scan_policy or "custom_policy"
-            if not (params.get("manifest_json") or "").strip():
-                params["manifest_json"] = self.wired.model_dump_json()
+            if not (params.get("wired_json") or "").strip():
+                params["wired_json"] = self.wired.model_dump_json()
 
-    def _maybe_zap_auth_after_context(self, context_name: str) -> None:
-        """PK_ZAP_AUTH_BOOTSTRAP=1 → ПрименитьAuth после НовыйКонтекст."""
-        from core.auth_bootstrap import zap_auth_env_enabled
+    _enrich_scanner_wired_params = _enrich_scanner_wired_params
 
-        if not zap_auth_env_enabled():
+    def _maybe_scanner_auth_after_context(self, context_name: str) -> None:
+        """PK_SCANNER_AUTH_BOOTSTRAP=1 → ПрименитьAuth после НовыйКонтекст."""
+        from core.auth_bootstrap import scanner_auth_env_enabled
+
+        if not scanner_auth_env_enabled():
             return
         if not context_name:
             return
-        zap = self.adapters.get("zap")
-        if zap is None:
+        scanner = (self.adapters.get("scanner") or self.adapters.get("scanner"))
+        if scanner is None:
             return
         sec = self.wired.security_configuration
         if sec is None:
@@ -745,23 +670,27 @@ class Controller:
                 "base_url": self.wired.scan_base_url(),
                 "module_id": (getattr(sec, "active_auth_module", None) or "").strip(),
             }
-            self._enrich_zap_manifest_params("apply_manifest_auth", params)
-            result = zap.apply_manifest_auth(
-                context_name,
-                auth_type=params.get("auth_type") or "",
-                auth_details_json=params.get("auth_details_json") or "{}",
-                base_url=params.get("base_url") or self.wired.scan_base_url(),
-                module_id=params.get("module_id") or "",
-                auth_applications_json=params.get("auth_applications_json") or "",
-                auth_resolve_notes_json=params.get("auth_resolve_notes_json") or "",
-            )
+            self._enrich_scanner_wired_params("apply_wired_auth", params)
+            auth_fn = getattr(scanner, "apply_wired_auth", None)
+            if auth_fn is not None:
+                result = auth_fn(
+                    context_name,
+                    auth_type=params.get("auth_type") or "",
+                    auth_details_json=params.get("auth_details_json") or "{}",
+                    base_url=params.get("base_url") or self.wired.scan_base_url(),
+                    module_id=params.get("module_id") or "",
+                    auth_applications_json=params.get("auth_applications_json") or "",
+                    auth_resolve_notes_json=params.get("auth_resolve_notes_json") or "",
+                )
+            else:
+                result = {"applied": False, "error": "No apply_wired_auth method on scanner adapter"}
             logger.info(
-                "PK_ZAP_AUTH_BOOTSTRAP after context %s: %s",
+                "PK_SCANNER_AUTH_BOOTSTRAP after context %s: %s",
                 context_name,
                 result,
             )
         except Exception as exc:
-            logger.warning("PK_ZAP_AUTH_BOOTSTRAP failed: %s", exc)
+            logger.warning("PK_SCANNER_AUTH_BOOTSTRAP failed: %s", exc)
 
     def _declarative_auth_note(self, auth: str) -> str:
         applied = bool(
@@ -769,12 +698,12 @@ class Controller:
         )
         if applied:
             return (
-                f"auth_type={auth!r} (Http bootstrap; ZAP — "
-                "ZAP ПрименитьAuth или PK_ZAP_AUTH_BOOTSTRAP=1)"
+                f"auth_type={auth!r} (Http bootstrap; scanner — "
+                "scanner ПрименитьAuth или PK_SCANNER_AUTH_BOOTSTRAP=1)"
             )
         return (
             f"auth_type={auth!r} (Http bootstrap не применён; "
-            "ZAP — ZAP ПрименитьAuth)"
+            "scanner — scanner ПрименитьAuth)"
         )
 
     def _declarative_security_notes(self) -> List[str]:
@@ -784,7 +713,7 @@ class Controller:
             return notes
         notes.append(
             f"scan_policy={sec.scan_policy!r} "
-            "(нет авто spider/active; явный AF: ZAP СгенерироватьПлан / ZAP План)"
+            "(нет авто spider/active; явный AF: scanner СгенерироватьПлан / scanner План)"
         )
         if self._base_url_override():
             notes.append("base_url_override → ${base_url} в stream (авто-Открыть нет)")
@@ -793,7 +722,7 @@ class Controller:
         if domains:
             notes.append(
                 "allowed_extra_domains (нет авто include; "
-                "явный шаг: ZAP ПрименитьДомены <ctx> <csv>)"
+                "явный шаг: scanner ПрименитьДомены <ctx> <csv>)"
             )
         auth = (sec.auth_type or "").strip()
         if auth and auth != "Без авторизации":
@@ -809,9 +738,9 @@ class Controller:
                 f"imports ({len(suites.imports)}): data_file/har/proto_pack → stream; "
                 f"scenario_json пока ошибка"
             )
-        if self.wired.infrastructure.zap_mode == "webswing":
+        if self.wired.infrastructure.scanner_mode == "webswing":
             notes.append(
-                "zap_mode=webswing (bootstrap via PK_ZAP_START_WEBSWING_CMD; "
+                "scanner_mode=webswing (bootstrap via PK_SCANNER_START_WEBSWING_CMD; "
                 "hold до idle/work; PK_WEBSWING_HOLD=0 — без hold)"
             )
         self.honest_contract_notes = notes
@@ -819,7 +748,7 @@ class Controller:
             logger.info("Honest Contract — без полного авто-исполнения: %s", "; ".join(notes))
 
     def _quality_gate_alert_error_mode(self) -> str:
-        """closed (default) | open — поведение при ошибке чтения алертов / нет ZAP."""
+        """closed (default) | open — поведение при ошибке чтения алертов / нет scanner."""
         raw = (pk_env("QUALITY_GATE_ON_ALERT_ERROR") or "closed").strip().lower()
         if raw in ("open", "fail_open", "fail-open"):
             return "open"
@@ -832,43 +761,43 @@ class Controller:
         quality_gate_failed всегда False: ось исполнения, не fail_gate.
         """
         mode = self._quality_gate_alert_error_mode()
-        self.quality_gate_summary = {"error": reason, "fail_mode": mode, "source": "zap"}
+        self.quality_gate_summary = {"error": reason, "fail_mode": mode, "source": "scanner"}
         self.admission_risk_hints = {}
         self.admission_recommendations = []
         self.quality_gate_failed = False
         if mode == "open":
             logger.warning(
-                "Quality gate: не удалось прочитать алерты ZAP (%s) — fail-open",
+                "Quality gate: не удалось прочитать алерты scanner (%s) — fail-open",
                 reason,
             )
             return
         logger.error(
-            "Quality gate: не удалось прочитать алерты ZAP (%s) — fail-closed (evidence)",
+            "Quality gate: не удалось прочитать алерты scanner (%s) — fail-closed (evidence)",
             reason,
         )
 
-    def collect_zap_severity_counts(self) -> Dict[str, int]:
-        """ZAP tallies → admission counts (fallback when Dojo off)."""
+    def collect_scanner_severity_counts(self) -> Dict[str, int]:
+        """scanner tallies → admission counts (fallback when Dojo off)."""
         from core.gate_policy import (
-            counts_from_zap_gate_summary,
-            counts_from_zap_live_summary,
+            counts_from_scanner_gate_summary,
+            counts_from_scanner_live_summary,
             normalize_severity_counts,
         )
 
-        zap = self.adapters.get("zap")
-        if zap is None:
-            raise RuntimeError("zap adapter missing")
-        live_sum = getattr(zap, "summarize_alerts_for_live", None)
+        scanner = (self.adapters.get("scanner") or self.adapters.get("scanner"))
+        if scanner is None:
+            raise RuntimeError("scanner adapter missing")
+        live_sum = getattr(scanner, "summarize_alerts_for_live", None)
         if callable(live_sum):
-            return counts_from_zap_live_summary(live_sum())
+            return counts_from_scanner_live_summary(live_sum())
         from core.gate_policy import severities_at_or_above
 
         risks = tuple(severities_at_or_above())
-        summarize = getattr(zap, "_summarize_gate_alerts", None)
+        summarize = getattr(scanner, "_summarize_gate_alerts", None)
         if callable(summarize):
-            return counts_from_zap_gate_summary(summarize(risks=risks, limit=30))
-        high = zap.summarize_high_alerts(limit=30)
-        return counts_from_zap_gate_summary(high) or normalize_severity_counts({})
+            return counts_from_scanner_gate_summary(summarize(risks=risks, limit=30))
+        high = scanner.summarize_high_alerts(limit=30)
+        return counts_from_scanner_gate_summary(high) or normalize_severity_counts({})
 
     def apply_admission_result(self, result) -> bool:
         """Persist AdmissionResult on controller. True → gate не пройден."""
@@ -882,12 +811,12 @@ class Controller:
         self,
         counts: Optional[Dict[str, Any]] = None,
         *,
-        source: str = "zap",
+        source: str = "scanner",
         policy: Any = None,
     ) -> bool:
         """
         Dual-axis ИБ-gate: severity counts vs PK_GATE_MAX_CRITICAL/HIGH.
-        counts=None → собрать с ZAP (fallback / unit-тесты).
+        counts=None → собрать с scanner (fallback / unit-тесты).
         Отключение: PK_QUALITY_GATE=0.
         Нет адаптера / ошибка чтения — fail-closed (summary.error), escape:
         PK_QUALITY_GATE_ON_ALERT_ERROR=open.
@@ -908,11 +837,11 @@ class Controller:
             return self.apply_admission_result(result)
 
         resolved = counts
-        src = (source or "zap").strip() or "zap"
+        src = (source or "scanner").strip() or "scanner"
         if resolved is None:
             try:
-                resolved = self.collect_zap_severity_counts()
-                src = "zap"
+                resolved = self.collect_scanner_severity_counts()
+                src = "scanner"
             except Exception as exc:
                 self._fail_quality_gate_on_alert_error(str(exc))
                 return False
@@ -962,7 +891,7 @@ class Controller:
         adapters = {
             "webdriver": self.adapters["webdriver"],
             "browser": self.adapters["browser"],
-            "zap": self.adapters["zap"],
+            "scanner": self.adapters["scanner"],
             "http": self.adapters["http"],
             "grpc": self.adapters["grpc"],
             "connector": self.adapters["connector"],
@@ -990,7 +919,7 @@ class Controller:
             for method_name in methods:
                 method = getattr(obj, method_name)
                 self.action_factory.register(component, method_name, method)
-        # СборИнформации: WD navigate + ZapWorkStream (оба адаптера)
+        # СборИнформации: WD navigate + scannerWorkStream (оба адаптера)
         self.action_factory.register("webdriver", "gather_info", self._kw_gather_info)
         # CD-6: zero-touch discovery pipeline keyword
         self.action_factory.register("core", "discovery_pipeline", self._kw_discovery_pipeline)
@@ -1007,7 +936,7 @@ class Controller:
 
         return run_discovery_pipeline(
             self.adapters.get("webdriver"),
-            self.adapters.get("zap"),
+            (self.adapters.get("scanner") or self.adapters.get("scanner")),
             url=url,
             context_name=context_name,
             run_active_scan=run_active_scan,
@@ -1030,7 +959,7 @@ class Controller:
 
         return run_gather_info(
             self.adapters["webdriver"],
-            self.adapters["zap"],
+            self.adapters["scanner"],
             source,
             burst_sec=burst_sec,
             settle_sec=settle_sec,
@@ -1041,7 +970,7 @@ class Controller:
             spider_sec=spider_sec,
         )
 
-    def _seed_manifest_stream(self) -> None:
+    def _seed_wired_stream(self) -> None:
         """
         Поля формы → имена в DataStream (без побочных действий).
         base_url_override → ${base_url}; авто-Открыть по-прежнему нет.
@@ -1145,7 +1074,7 @@ class Controller:
                 logger.debug("PrettyK Live ci/status (running) skipped: %s", ci_e)
         except Exception as e:
             logger.debug("PrettyK Live start skipped: %s", e)
-        self._seed_manifest_stream()
+        self._seed_wired_stream()
         self._log_declarative_gap()
         if not self.wired.test_suites:
             logger.warning("No test_suites found. Nothing to execute.")
@@ -1153,12 +1082,12 @@ class Controller:
             self._await_session_end()
             return
         # Не fail-fast: копим весь фарш, ведём до живого косяка, весь список — в teardown/лог.
-        self._manifest_problems = self.collect_wired_problems()
-        if self._manifest_problems:
+        self._wired_problems = self.collect_wired_problems()
+        if self._wired_problems:
             logger.warning(
                 "В манифесте %s проблем валидации — прогон продолжаем; "
                 "полный список уйдёт в лог на teardown (и при падении сценария)",
-                len(self._manifest_problems),
+                len(self._wired_problems),
             )
         pages = self.wired.test_suites.pages or {}
         self.page_resolver = PageResolver(pages)
@@ -1175,8 +1104,8 @@ class Controller:
                 self.suites_complete = self.scenario_stats["skip"] == 0
                 logger.info("Controller finished")
         finally:
-            # Один zap-final на весь прогон (успех или падение), не на каждый сценарий.
-            self._attach_final_zap_report()
+            # Один scanner-final на весь прогон (успех или падение), не на каждый сценарий.
+            self._attach_final_scanner_report()
             # Ручной Webswing: держим процесс до idle/work (сценарии могли быть пусты).
             self._await_session_end()
 
@@ -1257,7 +1186,7 @@ class Controller:
         Безопасен для симуляции (адаптер без драйвера) и для повторного вызова.
         """
         try:
-            self._teardown_dump_manifest_problems()
+            self._teardown_dump_wired_problems()
         except Exception as e:
             logger.debug("wired problems teardown dump skipped: %s", e)
         self._cancel_session_timeouts()
@@ -1302,18 +1231,18 @@ class Controller:
         except Exception as e:
             logger.debug("PrettyK Live run_ended notify skipped: %s", e)
 
-    def _teardown_dump_manifest_problems(self) -> None:
+    def _teardown_dump_wired_problems(self) -> None:
         """
         Весь фарш валидации в ERROR-лог на teardown.
         Не Selenium dry-run: заранее собранный список «что ещё наебнулось бы».
         """
-        if not self._manifest_problems:
+        if not self._wired_problems:
             return
-        n = len(self._manifest_problems)
+        n = len(self._wired_problems)
         body = (
             f"TEARDOWN: в манифесте {n} проблем валидации "
             f"(не abort'или заранее — вот весь список):\n"
-            + "\n".join(self._manifest_problems)
+            + "\n".join(self._wired_problems)
         )
         logger.error(body)
         try:
@@ -1496,7 +1425,7 @@ class Controller:
             test_result.stop = now()
             # Упали по любой причине — всё равно светим оставшиеся косяки манифеста:
             # чинить удобнее списком, а не «ещё один прогон — ещё одна опечатка».
-            self._report_manifest_problems(context=f"Сценарий упал: {e}")
+            self._report_wired_problems(context=f"Сценарий упал: {e}")
             logger.exception(f"Scenario failed: {e}")
             raise
         finally:
@@ -1535,7 +1464,7 @@ class Controller:
             try:
                 from utils.diary_bus import publish
 
-                channel = "zap" if category == "ZAP" else "diary"
+                channel = "scanner" if category == "scanner" else "diary"
                 publish(category.upper(), title, channel=channel)
             except Exception:
                 pass
@@ -1547,15 +1476,15 @@ class Controller:
             title=title,
         )
 
-    def _attach_final_zap_report(self):
+    def _attach_final_scanner_report(self):
         """
-        Один финальный HTML ZAP на весь прогон — после всех сценариев или при падении.
+        Один финальный HTML scanner на весь прогон — после всех сценариев или при падении.
 
-        Отдельный Allure-тест «ZAP final report», чтобы вложение не дублировалось
+        Отдельный Allure-тест «scanner final report», чтобы вложение не дублировалось
         в каждом сценарии. Никогда не бросает — иначе teardown подменит ошибку прогона.
         """
-        zap = self.adapters.get("zap")
-        if zap is None:
+        scanner = (self.adapters.get("scanner") or self.adapters.get("scanner"))
+        if scanner is None:
             return
 
         from allure_commons.model2 import TestResult, Status, Label
@@ -1568,30 +1497,30 @@ class Controller:
         purpose = getattr(getattr(self.wired, "meta", None), "assessment_purpose", None) or "PK"
         test_result = TestResult(
             uuid=test_uuid,
-            name="ZAP final report",
-            fullName="ZAP final report",
+            name="scanner final report",
+            fullName="scanner final report",
             start=now(),
             labels=[
-                Label(name="suite", value="ZAP"),
+                Label(name="suite", value="scanner"),
                 Label(name="feature", value=purpose),
             ],
         )
         reporter.schedule_test(test_uuid, test_result)
         try:
-            report_path = zap.generate_report(format="html", output_file="zap-final.html")
-            self.last_zap_report = str(report_path)
+            report_path = scanner.generate_report(format="html", output_file="scanner-final.html")
+            self.last_scanner_report = str(report_path)
             test_result.status = Status.PASSED
             test_result.stop = now()
-            logger.info("Final ZAP report attached once: %s", report_path)
+            logger.info("Final scanner report attached once: %s", report_path)
         except Exception as e:
             test_result.status = Status.BROKEN
             test_result.stop = now()
-            logger.warning("Failed to build final ZAP report: %s", e)
+            logger.warning("Failed to build final scanner report: %s", e)
         finally:
             try:
                 reporter.close_test(test_uuid)
             except Exception as e:
-                logger.debug("close_test for ZAP final report: %s", e)
+                logger.debug("close_test for scanner final report: %s", e)
             unbind_allure(listener, file_logger)
 
     _DATA_EXPORT_MODULE_TYPES = frozenset({"Модуль работы с данными"})
@@ -1943,11 +1872,11 @@ class Controller:
         name = (context_name or "").strip()
         if not name:
             return
-        zap = self.adapters.get("zap")
-        if zap is None:
+        scanner = (self.adapters.get("scanner") or self.adapters.get("scanner"))
+        if scanner is None:
             return
-        include = getattr(zap, "set_context_include", None)
-        to_rx = getattr(zap, "domains_csv_to_include_regexes", None)
+        include = getattr(scanner, "set_context_include", None)
+        to_rx = getattr(scanner, "domains_csv_to_include_regexes", None)
         if not callable(include) or not callable(to_rx):
             return
 
@@ -1967,10 +1896,10 @@ class Controller:
             total += _apply_csv(base, "base_url")
         total += self._include_stream_url_lists(stream=stream, apply_csv=_apply_csv)
 
-        # PURE: blocklisted URLs — set_context_exclude в ZAP
+        # PURE: blocklisted URLs — set_context_exclude в scanner
         blocked = getattr(getattr(self.wired, "infrastructure", None), "blocked_urls_list", None)
         if blocked and isinstance(blocked, list) and len(blocked) > 0:
-            exclude = getattr(zap, "set_context_exclude", None)
+            exclude = getattr(scanner, "set_context_exclude", None)
             if callable(exclude):
                 for url in blocked:
                     url_str = str(url).strip()
@@ -2308,7 +2237,7 @@ class Controller:
                     f"{step_name}/recover[{idx}]",
                     soft=False,
                 )
-        except WiredError as recover_manifest:
+        except WiredError as recover_wired:
             return self._soft_or_raise(
                 soft, recover_Wired, "Recover WiredError but failsafe/debug"
             )
@@ -2323,7 +2252,7 @@ class Controller:
             return self._run_leaf_attempts(
                 leaf.constructor, step, stream, scenario, step_name, soft=False
             )
-        except WiredError as retry_manifest:
+        except WiredError as retry_wired:
             return self._soft_or_raise(
                 soft, retry_Wired, "Retry WiredError but failsafe/debug"
             )
@@ -2346,7 +2275,7 @@ class Controller:
         try:
             leaf = LanguageEngine.parse_leaf(raw_with_markers)
         except WiredError as e:
-            raise self._enrich_manifest_error(e, step=step, scenario=scenario) from e
+            raise self._enrich_wired_error(e, step=step, scenario=scenario) from e
 
         step = self._bind_leaf_save_as(leaf, step)
         from core.debug_run import wired_debug_mode
@@ -2378,9 +2307,9 @@ class Controller:
                 if hint and heal_label_scope is not None:
                     stack.enter_context(heal_label_scope(hint))
                 return _run_primary()
-        except WiredError as manifest_exc:
+        except WiredError as wired_exc:
             return self._soft_or_raise(
-                soft, manifest_exc, "Step WiredError but failsafe/debug"
+                soft, wired_exc, "Step WiredError but failsafe/debug"
             )
         except Exception as primary_exc:
             if leaf.recover_constructors:
@@ -2404,11 +2333,11 @@ class Controller:
         for key, val in params.items():
             if isinstance(val, str):
                 params[key] = stream.resolve_arg(val)
-        if component == "zap" and action in (
-            "apply_manifest_auth",
+        if component == "scanner" and action in (
+            "apply_wired_auth",
             "generate_automation_plan",
         ):
-            self._enrich_zap_manifest_params(action, params)
+            self._enrich_scanner_wired_params(action, params)
         return component, action, params
 
     def _diary_leaf_preamble(
@@ -2423,7 +2352,7 @@ class Controller:
         raw_constructor: str,
         stream: DataStream,
     ) -> None:
-        if component == "zap" and action == "log_attack":
+        if component == "scanner" and action == "log_attack":
             return
         if component == "core" and action == "log_message":
             # В дневник — уже resolve_arg + mask, не сырой `$var` из constructor.
@@ -2470,13 +2399,13 @@ class Controller:
     def _publish_leaf_result(
         self, component: str, action: str, params: dict, result, stream: DataStream
     ) -> None:
-        if component == "zap":
+        if component == "scanner":
             if action == "log_attack":
                 self._publish_log_attack_live(params, stream=stream)
             else:
-                self._publish_zap_live(action, params, result)
-            if action in self._ZAP_ALERT_FLUSH_ACTIONS:
-                self._diary_zap_alerts()
+                self._publish_scanner_live(action, params, result)
+            if action in self._scanner_ALERT_FLUSH_ACTIONS:
+                self._diary_scanner_alerts()
         elif component == "fuzz":
             self._publish_fuzz_live(result)
 
@@ -2490,13 +2419,13 @@ class Controller:
         step: ActionStep,
         stream: DataStream,
     ) -> None:
-        if component == "zap" and action == "generate_report" and result:
-            self.last_zap_report = str(result)
-            logger.info(f"ZAP report saved to: {self.last_zap_report}")
-        if component == "zap" and action == "create_context":
+        if component == "scanner" and action == "generate_report" and result:
+            self.last_scanner_report = str(result)
+            logger.info(f"scanner report saved to: {self.last_scanner_report}")
+        if component == "scanner" and action == "create_context":
             ctx_name = params.get("context_name") or ""
             self._include_url_lists_in_context(ctx_name, stream)
-            self._maybe_zap_auth_after_context(ctx_name)
+            self._maybe_scanner_auth_after_context(ctx_name)
         # console.log → нижнее окно Live (не INFO оркестратора).
         self._flush_browser_console_to_live()
         if step.save_as:
@@ -2518,7 +2447,7 @@ class Controller:
     ) -> None:
         if getattr(self, "_timeout_kill_reason", None):
             raise WiredError(
-                f"ZAP уже остановлен по таймауту ({self._timeout_kill_reason})"
+                f"scanner уже остановлен по таймауту ({self._timeout_kill_reason})"
             )
         self.touch_activity()
         logger.debug("Executing step: %s", stream.mask_for_log(constructor))
@@ -2560,8 +2489,8 @@ class Controller:
             method_id=call_name,
             constructor=constructor,
         ):
-            if component == "zap":
-                self._publish_zap_scan_started(action)
+            if component == "scanner":
+                self._publish_scanner_scan_started(action)
             result = self.action_factory.execute(component, action, params, stream)
             self._publish_leaf_result(component, action, params, result, stream)
         logger.info("Step executed: %s", call_name)
@@ -2635,7 +2564,7 @@ class Controller:
                 return True
             except WiredError as e:
                 self._diary("ERROR", step_name, str(e), stream=stream)
-                raise self._enrich_manifest_error(e, step=step, scenario=scenario) from e
+                raise self._enrich_wired_error(e, step=step, scenario=scenario) from e
             except Exception as e:
                 outcome = self._leaf_attempt_failure(
                     exc=e,
@@ -2701,13 +2630,13 @@ class Controller:
         return True
 
     def _should_publish_live_step(self, step, call_name: str, title: str) -> bool:
-        """Gate Live diary STEP: user-flow + milestones; skip wait/plumbing/zap noise."""
+        """Gate Live diary STEP: user-flow + milestones; skip wait/plumbing/scanner noise."""
         component, action = self._parse_diary_call_name(call_name)
         if (component, action) in self._LIVE_SKIP_PLUMBING:
             return False
         if action.startswith("wait_"):
             return False
-        if component == "zap":
+        if component == "scanner":
             return False
         if component == "webdriver" and action == "gather_info":
             return True
@@ -2784,10 +2713,10 @@ class Controller:
                     pass
 
     def _diary_high_alerts(self) -> None:
-        """Совместимость: то же, что _diary_zap_alerts (High + Medium)."""
-        self._diary_zap_alerts()
+        """Совместимость: то же, что _diary_scanner_alerts (High + Medium)."""
+        self._diary_scanner_alerts()
 
-    _ZAP_ALERT_FLUSH_ACTIONS = frozenset(
+    _scanner_ALERT_FLUSH_ACTIONS = frozenset(
         {
             "active_scan",
             "passive_scan_wait",
@@ -2841,16 +2770,16 @@ class Controller:
             return pretty
         return call_name
 
-    def _publish_zap_live(self, action: str, params: dict, result=None) -> None:
-        """Завершение ZAP-операции — trace-step и событие правой ZAP-ленты."""
-        if action not in self._ZAP_ALERT_FLUSH_ACTIONS:
+    def _publish_scanner_live(self, action: str, params: dict, result=None) -> None:
+        """Завершение scanner-операции — trace-step и событие правой scanner-ленты."""
+        if action not in self._scanner_ALERT_FLUSH_ACTIONS:
             return
-        text = self._format_zap_live_text(action, params or {}, result)
+        text = self._format_scanner_live_text(action, params or {}, result)
         if not text:
             return
-        self._record_zap_trace_event(text, kind="scan_result")
+        self._record_scanner_trace_event(text, kind="scan_result")
 
-    def _publish_zap_scan_started(self, action: str) -> None:
+    def _publish_scanner_scan_started(self, action: str) -> None:
         """Старт скана рядом с его completion в Live и ExecutionTrace."""
         titles = {
             "spider_scan": "Spider started",
@@ -2868,11 +2797,11 @@ class Controller:
         }
         title = titles.get(action)
         if title:
-            self._record_zap_trace_event(title, kind="scan_started")
+            self._record_scanner_trace_event(title, kind="scan_started")
 
-    def _record_zap_trace_event(self, text: str, *, kind: str) -> None:
-        """Событие ZAP — шаг, а не текстовое вложение Allure."""
-        self._emit_trace_event(text, kind=kind, category="ZAP")
+    def _record_scanner_trace_event(self, text: str, *, kind: str) -> None:
+        """Событие scanner — шаг, а не текстовое вложение Allure."""
+        self._emit_trace_event(text, kind=kind, category="scanner")
 
     def _emit_trace_event(
         self,
@@ -2927,7 +2856,7 @@ class Controller:
     def _publish_log_attack_live(
         self, params: dict, *, stream: DataStream | None = None
     ) -> None:
-        """Лог атаки: channel=zap, kind=LOG, без STEP в diary."""
+        """Лог атаки: channel=scanner, kind=LOG, без STEP в diary."""
         message = str((params or {}).get("message") or "").strip()
         if not message:
             return
@@ -2936,37 +2865,32 @@ class Controller:
         try:
             from utils.diary_bus import publish
 
-            publish("LOG", f"ЛогАтаки | {message}", channel="zap")
+            publish("LOG", f"ЛогАтаки | {message}", channel="scanner")
         except Exception:
             pass
 
-    def _zap_live_scan_timeout(self, action: str, params: dict):
+    def _scanner_live_scan_timeout(self, action: str, params: dict):
         """
         Wire кладёт `АктивноеСканирование juice_ctx 2` как
         url=juice_ctx, context_name=2, timeout_minutes=None — сдвиг внутри адаптера.
         Live должен показывать тот же timeout, что реально ждёт сканер (минуты).
         """
-        zap = self.adapters.get("zap")
-        if zap is None:
+        scanner = (self.adapters.get("scanner") or self.adapters.get("scanner"))
+        if scanner is None:
             return params.get("timeout_minutes")
         url = params.get("url")
         ctx = params.get("context_name")
         timeout = params.get("timeout_minutes")
         if action == "active_scan":
-            _, _, timeout = zap._normalize_active_scan_args(url, ctx, timeout)
-            return zap._as_timeout_minutes(
-                timeout, getattr(zap, "active_scan_timeout", 30)
+            _, _, timeout = scanner._normalize_active_scan_args(url, ctx, timeout)
+            return scanner._as_timeout_minutes(
+                timeout, getattr(scanner, "active_scan_timeout", 30)
             )
-        if action in (
-            "spider_scan",
-            "spider_scan_spa",
-            "spider_scan_deep",
-            "spider_scan_local",
-        ):
-            _, _, timeout, _ = zap._normalize_spider_scan_args(
+        if action == "crawl":
+            _, _, timeout, _ = scanner._normalize_spider_scan_args(
                 url, ctx, timeout, params.get("logout_avoidance")
             )
-            return zap._as_timeout_minutes(timeout, getattr(zap, "spider_timeout", 5))
+            return scanner._as_timeout_minutes(timeout, getattr(scanner, "crawl_timeout", 5))
         if action == "passive_scan_wait":
             if timeout in (None, ""):
                 return 5
@@ -2977,13 +2901,13 @@ class Controller:
         return timeout
 
     @staticmethod
-    def _zap_live_count(result) -> int:
+    def _scanner_live_count(result) -> int:
         try:
             return max(0, int(result))
         except (TypeError, ValueError):
             return 0
 
-    _ZAP_LIVE_SPIDER = frozenset(
+    _scanner_LIVE_SPIDERS = frozenset(
         {
             "spider_scan",
             "spider_scan_spa",
@@ -2991,7 +2915,7 @@ class Controller:
             "spider_scan_local",
         }
     )
-    _ZAP_LIVE_AJAX = frozenset(
+    _scanner_LIVE_AJAX = frozenset(
         {
             "ajax_spider_scan",
             "ajax_spider_scan_shallow",
@@ -3000,10 +2924,10 @@ class Controller:
         }
     )
 
-    def _format_zap_live_text(self, action: str, params: dict, result=None) -> str:
-        zap = self.adapters.get("zap")
-        ctx = params.get("context_name") or getattr(zap, "context_name", None) or ""
-        special = self._format_zap_live_special(action, params, result, ctx)
+    def _format_scanner_live_text(self, action: str, params: dict, result=None) -> str:
+        scanner = (self.adapters.get("scanner") or self.adapters.get("scanner"))
+        ctx = params.get("context_name") or getattr(scanner, "context_name", None) or ""
+        special = self._format_scanner_live_special(action, params, result, ctx)
         if special is not None:
             return special
         bits = [action]
@@ -3013,7 +2937,7 @@ class Controller:
         return " ".join(bits)
 
     @staticmethod
-    def _zap_live_create_context_line(params: dict) -> str:
+    def _scanner_live_create_context_line(params: dict) -> str:
         name = params.get("context_name") or ""
         desc = (params.get("description") or "").strip()
         if desc:
@@ -3021,29 +2945,29 @@ class Controller:
         return f"Создать контекст {name}".strip() if name else "create_context"
 
     @staticmethod
-    def _zap_live_ctx_regex_line(verb: str, params: dict, ctx: str) -> str:
+    def _scanner_live_ctx_regex_line(verb: str, params: dict, ctx: str) -> str:
         return (
             f"{verb} {params.get('context_name') or ctx} {params.get('regex') or ''}"
         ).strip()
 
-    def _zap_live_scan_result_line(self, action: str, result) -> str | None:
-        if action in self._ZAP_LIVE_SPIDER:
-            return f"Spider found {self._zap_live_count(result)} URLs"
-        if action in self._ZAP_LIVE_AJAX:
-            return f"AJAX Spider found {self._zap_live_count(result)} URLs"
+    def _scanner_live_scan_result_line(self, action: str, result) -> str | None:
+        if action in self._scanner_LIVE_SPIDERS:
+            return f"Spider found {self._scanner_live_count(result)} URLs"
+        if action in self._scanner_LIVE_AJAX:
+            return f"AJAX Spider found {self._scanner_live_count(result)} URLs"
         if action == "client_spider_scan":
-            return f"Client Spider found {self._zap_live_count(result)} URLs"
+            return f"Client Spider found {self._scanner_live_count(result)} URLs"
         if action == "passive_scan_wait":
             return "Passive scan completed" if result else "Passive scan timed out"
         if action == "active_scan":
             return (
                 f"Active scan completed — found "
-                f"{self._zap_live_count(result)} vulnerabilities"
+                f"{self._scanner_live_count(result)} vulnerabilities"
             )
         return None
 
     @staticmethod
-    def _zap_live_filter_line(action: str, params: dict, ctx: str) -> str | None:
+    def _scanner_live_filter_line(action: str, params: dict, ctx: str) -> str | None:
         if action == "add_alert_filter":
             return (
                 f"alert_filter {params.get('context_name') or ctx} "
@@ -3061,53 +2985,53 @@ class Controller:
             ).strip()
         return None
 
-    def _format_zap_live_special(
+    def _format_scanner_live_special(
         self, action: str, params: dict, result, ctx: str
     ) -> str | None:
         if action == "create_context":
-            return self._zap_live_create_context_line(params)
+            return self._scanner_live_create_context_line(params)
         if action == "set_context_include":
-            return self._zap_live_ctx_regex_line("set_context_include", params, ctx)
+            return self._scanner_live_ctx_regex_line("set_context_include", params, ctx)
         if action == "set_context_exclude":
-            return self._zap_live_ctx_regex_line("set_context_exclude", params, ctx)
+            return self._scanner_live_ctx_regex_line("set_context_exclude", params, ctx)
         if action == "apply_allowed_domains":
             return (
                 f"apply_domains {params.get('context_name') or ctx} "
                 f"{params.get('domains_csv') or ''}"
             ).strip()
-        scan_line = self._zap_live_scan_result_line(action, result)
+        scan_line = self._scanner_live_scan_result_line(action, result)
         if scan_line is not None:
             return scan_line
         if action == "generate_report":
             name = params.get("output_file") or params.get("format") or "report"
             return f"generate_report {name}"
-        return self._zap_live_filter_line(action, params, ctx)
+        return self._scanner_live_filter_line(action, params, ctx)
 
-    def _diary_zap_alerts(self) -> None:
-        """Только High → Live channel=zap (формат строки не трогаем)."""
-        zap = self.adapters.get("zap")
-        if zap is None:
+    def _diary_scanner_alerts(self) -> None:
+        """Только High → Live channel=scanner (формат строки не трогаем)."""
+        scanner = (self.adapters.get("scanner") or self.adapters.get("scanner"))
+        if scanner is None:
             return
         try:
-            summary = zap.summarize_alerts_for_live(risks=("High",))
+            summary = scanner.summarize_alerts_for_live(risks=("High",))
         except Exception as e:
-            self._diary("ERROR", f"Не удалось прочитать алерты ZAP: {e}")
+            self._diary("ERROR", f"Не удалось прочитать алерты scanner: {e}")
             return
-        if not hasattr(self, "_live_zap_alert_keys"):
-            self._live_zap_alert_keys = set()
+        if not hasattr(self, "_live_scanner_alert_keys"):
+            self._live_scanner_alert_keys = set()
         for item in summary["items"]:
             kind = item["kind"]
             line = item["line"]
-            if self._is_zap_tally_noise(line):
+            if self._is_scanner_tally_noise(line):
                 continue
             key = (kind, line)
-            if key in self._live_zap_alert_keys:
+            if key in self._live_scanner_alert_keys:
                 continue
-            self._live_zap_alert_keys.add(key)
-            self._record_zap_trace_event(line, kind=str(kind or "alert").lower())
+            self._live_scanner_alert_keys.add(key)
+            self._record_scanner_trace_event(line, kind=str(kind or "alert").lower())
 
     @staticmethod
-    def _is_zap_tally_noise(text: str) -> bool:
+    def _is_scanner_tally_noise(text: str) -> bool:
         """Отсекает строки-сводки вроде «всего=1 уникальных=1» / «high=1/1 medium=…»."""
         t = (text or "").strip().lower()
         if not t:
@@ -3140,7 +3064,7 @@ class Controller:
         else:
             label = "console.log"
         try:
-            publish("CONSOLE", f"{label} | {message}", channel="zap")
+            publish("CONSOLE", f"{label} | {message}", channel="scanner")
         except Exception:
             pass
 
@@ -3237,7 +3161,7 @@ class Controller:
     def collect_wired_problems(self) -> List[str]:
         """
         Собирает все проблемы валидации конструкторов, не останавливаясь на первой.
-        Реализация — core.manifest_validate (также --validate-only без адаптеров).
+        Реализация — core.wired_validate (также --validate-only без адаптеров).
         """
         from core.wired_validate import collect_wired_problems as _collect
 
@@ -3249,31 +3173,31 @@ class Controller:
 
         return step_label(scenario, step)
 
-    def _enrich_manifest_error(
+    def _enrich_wired_error(
         self, error: WiredError, step=None, scenario=None
     ) -> WiredError:
         """Текущий косяк + весь список проблем манифеста в одном сообщении."""
         label = self._step_label(scenario, step)
         current = f"  {label}: {error}"
-        others = [p for p in self._manifest_problems if p != current]
+        others = [p for p in self._wired_problems if p != current]
         lines = [f"Сломанный шаг {label}: {error}"]
         if others:
             lines.append("Другие проблемы валидации в манифесте:")
             lines.extend(others)
-        elif self._manifest_problems:
+        elif self._wired_problems:
             # Список уже содержит текущий шаг — показываем его как полный отчёт.
-            lines = ["Манифест содержит некорректные шаги:", *self._manifest_problems]
+            lines = ["Манифест содержит некорректные шаги:", *self._wired_problems]
         message = "\n".join(lines)
-        self._report_manifest_problems(context=message, already_formatted=True)
+        self._report_wired_problems(context=message, already_formatted=True)
         return WiredError(message)
 
-    def _report_manifest_problems(self, context: str, already_formatted: bool = False) -> None:
+    def _report_wired_problems(self, context: str, already_formatted: bool = False) -> None:
         """Печатает и аттачит в Allure накопленные косяки валидации (если есть)."""
-        if not self._manifest_problems and not already_formatted:
+        if not self._wired_problems and not already_formatted:
             return
         body = context if already_formatted else (
             f"{context}\n\nПроблемы валидации манифеста:\n"
-            + "\n".join(self._manifest_problems)
+            + "\n".join(self._wired_problems)
         )
         if not already_formatted:
             logger.error(body)
@@ -3303,7 +3227,7 @@ class Controller:
     - Listener нужен: без него allure.step/attach не попадают в result.json.
     - Каждый шаг сценария — `with allure.step(step_name)`; аттачи внутри шага.
     - В консоль логируется человекочитаемое имя шага (step_name).
-    - Сохраняет имя последнего ZAP-отчёта в `last_zap_report`.
+    - Сохраняет имя последнего scanner-отчёта в `last_scanner_report`.
     - `shutdown()` закрывает сессию браузера (шаг 5 жизненного цикла) и вызывается
       из `finally` точки входа; ошибки завершения только логируются.
 

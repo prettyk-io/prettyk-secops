@@ -20,7 +20,7 @@ Valkey — только кэш, очереди и pub/sub. Никогда не �
 |---|---|---|---|
 | **PostgreSQL 16** | `prettyk-db` | users, sessions, profiles, capabilities, api_keys, audit_log, checks, runs, findings, policies, targets | Primary |
 | **Valkey 8** | `prettyk-cache` | сессии (Better Auth secondary storage), rate limiting, pub/sub telemetry, job queue | Cache only |
-| **Диск / S3** | `reports/` | Allure-результаты, ZAP-отчёты, видео, скриншоты, логи | Artifacts |
+| **Диск / S3** | `reports/` | Allure-результаты, scanner-отчёты, видео, скриншоты, логи | Artifacts |
 
 ### Порты (добавить в stand-port-meta при развёртывании)
 

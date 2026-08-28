@@ -79,7 +79,7 @@ def _header_map(headers: Any) -> Dict[str, str]:
 
 def extract_auth_from_har(har_path: Path) -> Dict[str, Any]:
     """
-    First Authorization Bearer or Cookie from HAR → apply_zap_auth shape.
+    First Authorization Bearer or Cookie from HAR → apply_scanner_auth shape.
     Never put raw token into returned notes.
     """
     result: Dict[str, Any] = {
@@ -174,11 +174,11 @@ def write_investigate_evidence(
     return dest
 
 
-def purge_stale_auth_replacer(zap: Any) -> List[str]:
+def purge_stale_auth_replacer(scanner: Any) -> List[str]:
     """Remove Replacer rules whose description starts with pk-auth*."""
     notes: List[str] = []
     try:
-        rules = zap.list_replacer_rules() or []
+        rules = scanner.list_replacer_rules() or []
     except Exception as exc:
         notes.append(f"purge_list_fail: {exc}")
         return notes
@@ -193,7 +193,7 @@ def purge_stale_auth_replacer(zap: Any) -> List[str]:
         if not any(desc.startswith(p) for p in _REPLACER_PREFIXES):
             continue
         try:
-            zap.remove_replacer_rule(rule_id)
+            scanner.remove_replacer_rule(rule_id)
             removed += 1
         except Exception as exc:
             notes.append(f"purge_rule_fail {desc}: {exc}")

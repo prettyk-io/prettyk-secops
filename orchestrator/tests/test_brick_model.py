@@ -33,7 +33,7 @@ class TestPipelineBrick:
         b = PipelineBrick(
             id="b2", name="DAST Scan", type="dast",
             source="owner/app",
-            definition=BrickDefinition(image="owasp/zap2docker-stable:latest"),
+            definition=BrickDefinition(image="owasp/scanner2docker-stable:latest"),
             depends_on=["b1"],
         )
         assert b.depends_on == ["b1"]

@@ -10,15 +10,15 @@
 ```mermaid
 flowchart LR
   Op[operator_CI] --> Orch[orchestrator_host]
-  Orch --> Zap[ZAP_MITM]
+  Orch --> scanner[scanner_MITM]
   Orch --> Grid[browser_farm]
-  Zap --> Target[target_system]
+  scanner --> Target[target_system]
   Grid --> Target
   Target -.->|untrusted| Orch
 ```
 
 Доверенные: оператор/CI, проверенный манифест, хост оркестратора, секреты env, выделенный Docker, закреплённые образы.  
-Недоверенные: цель и ответы, данные ZAP, внешние манифесты, lab credentials, отчёты до классификации.
+Недоверенные: цель и ответы, данные scanner, внешние манифесты, lab credentials, отчёты до классификации.
 
 Lab compose — **демо**, не hardened prod.
 
@@ -26,12 +26,12 @@ Lab compose — **демо**, не hardened prod.
 
 | Зона | Lab факт | Нельзя |
 |---|---|---|
-| ZAP API | часто `api.disablekey` + широкий addrs | публиковать `:8080` / proxy / Webswing наружу |
+| scanner API | часто `api.disablekey` + широкий addrs | публиковать `:8080` / proxy / Webswing наружу |
 | Grid / noVNC | `:4444`, `:7900`/`:7901` | общая сеть; **docker.sock в ферму** |
-| MITM | `acceptInsecureCerts` | ставить CA ZAP в corp trust / гонять личные секреты |
+| MITM | `acceptInsecureCerts` | ставить CA scanner в corp trust / гонять личные секреты |
 | Dojo lab | admin/admin, HTTP, `latest` | реестр реальных findings банка |
 | Playground | `127.0.0.1:8765`, CORS `*` | слушать `0.0.0.0` без auth |
-| Домены | `allowed_extra_domains` декларация | считать ACL сети ZAP |
+| Домены | `allowed_extra_domains` декларация | считать ACL сети scanner |
 | Artifacts | soft hold + package plaintext gate | обещать WORM / DLP банку |
 
 ## 3. Секреты (слои)
@@ -50,5 +50,5 @@ Juice / цели — локально или выделенная lab-сеть. 
 
 ## 5. Industrial
 
-Профиль `docker-compose.zap.industrial.yml` (API key, addrs) — **не** lab-default и не «мы уже prod».  
+Профиль `docker-compose.scanner.industrial.yml` (API key, addrs) — **не** lab-default и не «мы уже prod».  
 Полный текст границ — [`../security.md`](../security.md).

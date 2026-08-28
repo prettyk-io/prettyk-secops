@@ -1,5 +1,5 @@
 /**
- * Bidirectional bridge: formData (legacy manifest) ↔ Editor Monaco DSL text.
+ * Bidirectional bridge: formData (legacy wired) ↔ Editor Monaco DSL text.
  *
  * Used by EditorWorkbench to read/write constructor text at JSON pointer paths,
  * eliminating the separate local `code` state. Both Studio and Editor surfaces

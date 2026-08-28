@@ -5,7 +5,7 @@
   1. Capture (DOM + Network через DiscoveryCorpus)
   2. Parse (извлечение FormFields + RequestTemplates)
   3. ServiceMap (маппинг страниц, форм и эндпоинтов)
-  4. Context & Sites Tree injection (CD-5 zap_context)
+  4. Context & Sites Tree injection (CD-5 scanner_context)
   5. Active Scan / Passive Scan с поддержкой повторных итераций (repeat depth).
 """
 from __future__ import annotations
@@ -16,14 +16,14 @@ from typing import Any, Dict, List, Optional
 from corpus.corpus_parser import parse_corpus
 from corpus.discovery_capture import DiscoveryCorpus, capture_current
 from corpus.service_map import build_service_map
-from corpus.zap_context import inject_corpus_into_zap
+from corpus.scanner_context import inject_corpus_into_scanner
 
 logger = logging.getLogger("orchestrator")
 
 
 def run_discovery_pipeline(
     webdriver_adapter: Any,
-    zap_adapter: Any,
+    scanner_adapter: Any,
     *,
     url: Optional[str] = None,
     context_name: Optional[str] = None,
@@ -56,16 +56,16 @@ def run_discovery_pipeline(
             except Exception:
                 current_url = ""
 
-    if not current_url and zap_adapter is not None:
-        current_url = getattr(zap_adapter, "base_url", "") or ""
+    if not current_url and scanner_adapter is not None:
+        current_url = getattr(scanner_adapter, "base_url", "") or ""
 
     # 1. Захват корпуса
     try:
         corpus = capture_current(
             webdriver_adapter,
-            zap_adapter,
+            scanner_adapter,
             url=current_url or "http://127.0.0.1",
-            base=getattr(zap_adapter, "base_url", "") or "",
+            base=getattr(scanner_adapter, "base_url", "") or "",
         )
         result["corpus_pages"] = len(corpus.pages)
         result["corpus_network"] = len(corpus.network)
@@ -99,10 +99,10 @@ def run_discovery_pipeline(
         logger.warning("CD Pipeline: map warning: %s", exc)
         s_map = None
 
-    # 4. Внедрение в ZAP Context & Sites Tree
+    # 4. Внедрение в scanner Context & Sites Tree
     try:
-        inject_stats = inject_corpus_into_zap(
-            zap_adapter,
+        inject_stats = inject_corpus_into_scanner(
+            scanner_adapter,
             templates,
             context_name=context_name,
             send_to_sites_tree=True,
@@ -116,15 +116,15 @@ def run_discovery_pipeline(
         result["error"] = str(exc)
 
     # 5. Опциональный Active Scan
-    if run_active_scan and zap_adapter:
+    if run_active_scan and scanner_adapter:
         target_url = active_scan_target
-        if not target_url and getattr(zap_adapter, "base_url", None):
-            target_url = zap_adapter.base_url
+        if not target_url and getattr(scanner_adapter, "base_url", None):
+            target_url = scanner_adapter.base_url
 
-        if target_url and hasattr(zap_adapter, "active_scan"):
+        if target_url and hasattr(scanner_adapter, "active_scan"):
             try:
                 logger.info("CD Pipeline: starting active scan on %s", target_url)
-                scan_res = zap_adapter.active_scan(target_url, context_name=context_name)
+                scan_res = scanner_adapter.active_scan(target_url, context_name=context_name)
                 result["scan_status"] = "completed"
                 result["scan_details"] = scan_res
                 result["stages"].append("active_scan")

@@ -10,9 +10,9 @@ import { defaultWired, resetToDefault } from './io';
 describe('defaultWired', () => {
   it('возвращает коробочный манифест secops-lab-pure', () => {
     const m = defaultWired();
-    expect(m.regulation.meta.project_id).toBe('owasp-zap-tests');
+    expect(m.regulation.meta.project_id).toBe('owasp-scanner-tests');
     expect(m.regulation.meta.assessment_purpose).toBe('scheduled');
-    expect(m.regulation.infrastructure.zap_mode).toBe('demon');
+    expect(m.regulation.infrastructure.scanner_mode).toBe('demon');
     expect(m.regulation.infrastructure.browser_type).toBe('chrome');
     expect(m.regulation.security_configuration.scan_policy).toBe('custom_policy');
     expect(m.regulation.security_configuration.auth_type).toBe('Без авторизации');
@@ -41,6 +41,6 @@ describe('resetToDefault', () => {
     const a = resetToDefault();
     a.regulation.meta.project_id = 'mutated';
     const b = resetToDefault();
-    expect(b.regulation.meta.project_id).toBe('owasp-zap-tests');
+    expect(b.regulation.meta.project_id).toBe('owasp-scanner-tests');
   });
 });

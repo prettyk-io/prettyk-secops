@@ -13,7 +13,7 @@ function buildId(seq: number, ts: number): string {
 let _globalSeq = 0;
 
 function classifyChannel(kind: string): 'system' | 'security' {
-  if (kind === 'ZAP' || kind === 'HIGH' || kind === 'FUZZ' || kind === 'GATE') return 'security';
+  if (kind === 'scanner' || kind === 'HIGH' || kind === 'FUZZ' || kind === 'GATE') return 'security';
   return 'system';
 }
 

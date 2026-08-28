@@ -1,5 +1,5 @@
 /**
- * ВключитьВКонтекст / zap|set_context_include (S3776).
+ * ВключитьВКонтекст / scanner|set_context_include (S3776).
  */
 import { ALLOWED_URL_DENY_MSG, isAbsoluteHttpUrl } from './allowedUrls';
 import { matchKeywordPrefix, splitFirstToken } from './textScan';
@@ -19,7 +19,7 @@ type Push = (
 ) => void;
 
 export function contextIncludePattern(trimmed: string): string | undefined {
-  if (trimmed.startsWith('zap|set_context_include|')) {
+  if (trimmed.startsWith('scanner|set_context_include|')) {
     const parts = trimmed.split('|');
     return (parts[3] ?? '').trim() || undefined;
   }

@@ -13,10 +13,10 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from adapters.zap_adapter import ZapAdapter
+from adapters.scanner_adapter import ScannerAdapter
 from core.errors import WiredError
 from core.fuzzing import SuiteFuzzerRunner, live_projection_titles
-from core.gate_policy import zap_api_key_from_env
+from core.gate_policy import scanner_api_key_from_env
 from utils.diary_bus import publish, set_meta
 
 BASE_URL = "http://juice-shop:3000"
@@ -41,7 +41,7 @@ def _policy(max_requests: int) -> SimpleNamespace:
     )
 
 
-def _manifest(mode: str, max_requests: int) -> SimpleNamespace:
+def _make_wired(mode: str, max_requests: int) -> SimpleNamespace:
     fuzzer = SimpleNamespace(
         id=f"juice_df12_{mode}",
         label=f"DF-12 {mode}",
@@ -78,11 +78,11 @@ def main() -> int:
         default="all",
     )
     parser.add_argument("--max-requests", type=int, default=4)
-    parser.add_argument("--zap-host", default=pk_env("ZAP_HOST", "127.0.0.1"))
+    parser.add_argument("--scanner-host", default=pk_env("SCANNER_HOST", "127.0.0.1"))
     parser.add_argument(
-        "--zap-port",
+        "--scanner-port",
         type=int,
-        default=int(pk_env("ZAP_PORT", "8080")),
+        default=int(pk_env("SCANNER_PORT", "8080")),
     )
     parser.add_argument("--no-live", action="store_true")
     args = parser.parse_args()
@@ -92,10 +92,10 @@ def main() -> int:
         if args.mode == "all"
         else [args.mode]
     )
-    zap = ZapAdapter(
-        host=args.zap_host,
-        port=args.zap_port,
-        api_key=zap_api_key_from_env(),
+    scanner = ScannerAdapter(
+        host=args.scanner_host,
+        port=args.scanner_port,
+        api_key=scanner_api_key_from_env(),
         base_url=BASE_URL,
     )
 
@@ -103,7 +103,7 @@ def main() -> int:
         fuzzer_id = f"juice_df12_{mode}"
         try:
             summary = SuiteFuzzerRunner(
-                _manifest(mode, args.max_requests), zap, _EmptyStream()
+                _make_wired(mode, args.max_requests), scanner, _EmptyStream()
             ).run(fuzzer_id)
         except WiredError as exc:
             raise SystemExit(f"{mode}: {exc}") from exc

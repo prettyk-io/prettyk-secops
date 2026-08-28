@@ -90,7 +90,7 @@ class Meta(BaseModel):
     assessment_purpose: Literal["scheduled", "pre_release", "emergency", "manual"] = Field(
         ..., title="Назначение проверки"
     )
-    project_id: Optional[str] = Field("owasp-zap-tests", title="Приложения участвующие в проверке:")
+    project_id: Optional[str] = Field("owasp-scanner-tests", title="Приложения участвующие в проверке:")
     initiator_name: Optional[str] = Field(
         "ss7developer@dev.spaceport.ru Космопорт Разработчик",
         title="Инициатор проверки:",
@@ -137,12 +137,12 @@ class Infrastructure(BaseModel):
     allowed_extra_domains: str = Field(
         "", title="Дополнительные разрешенные URL",
     )
-    # PURE (2026-08-21): URLs to explicitly exclude from ZAP context via set_context_exclude.
+    # PURE (2026-08-21): URLs to explicitly exclude from scanner context via set_context_exclude.
     blocked_urls_list: list[str] = Field(
         default_factory=list,
         title="Заблокированные URL",
     )
-    zap_mode: Literal["demon"] = Field("demon", title="Режим работы ZAP")
+    scanner_mode: Literal["demon"] = Field("demon", title="Режим работы сканера")
     browser_type: Literal["chrome", "chrome-headless", "firefox", "firefox-headless"] = Field(
         "chrome", title="Браузер-исполнитель"
     )
@@ -150,10 +150,10 @@ class Infrastructure(BaseModel):
         None,
         ge=1024,
         le=65535,
-        title="Дополнительный порт ZAP (API + Proxy)",
+        title="Дополнительный порт scanner (API + Proxy)",
     )
-    zap_work_timeout_min: Optional[int] = Field(
-        60, ge=10, le=180, title="Таймаут работы ZAP (от 10 до 180 минут)"
+    scanner_work_timeout_min: Optional[int] = Field(
+        60, ge=10, le=180, title="Таймаут работы scanner (от 10 до 180 минут)"
 )
     idle_timeout_min: Optional[int] = Field(
         10, ge=5, le=30, title="Таймаут бездействия (от 5 до 30 минут)"
@@ -169,8 +169,8 @@ class Infrastructure(BaseModel):
     )
 
     def session_timeout_min(self) -> int:
-        """Сколько живёт прогон — всегда zap_work_timeout."""
-        daemon = self.zap_work_timeout_min
+        """Сколько живёт прогон — всегда scanner_work_timeout."""
+        daemon = self.scanner_work_timeout_min
         if daemon is not None:
             return int(daemon)
         return 60
@@ -189,7 +189,7 @@ class SecurityConfiguration(BaseModel):
         "openapi_schema",
         "api_scanner",
         "scanner_crawler",
-    ] = Field(..., title="Политика сканирования ZAP")
+    ] = Field(..., title="Политика сканирования scanner")
     auth_type: str = Field("Без авторизации", title="Тип авторизации")
     auth_details: Dict[str, Any] = Field(default_factory=dict, title="Детали авторизации")
     active_auth_module: Optional[str] = Field(
@@ -519,7 +519,7 @@ class OpenApiFields(BaseModel):
         "/openapi.json", title="Относительный путь схемы"
     )
     auth_module_id: Optional[str] = Field("", title="Модуль Авторизация (id)")
-    zap_import: bool = Field(False, title="Импорт в ZAP (opt-in)")
+    scanner_import: bool = Field(False, title="Импорт в scanner (opt-in)")
     last_inventory: List[Dict[str, Any]] = Field(
         default_factory=list, title="Кэш операций (authoring)"
     )
@@ -541,8 +541,8 @@ class GraphqlFields(BaseModel):
         "/graphql", title="Относительный путь GraphQL endpoint"
     )
     auth_module_id: Optional[str] = Field("", title="Модуль Авторизация (id)")
-    zap_import: bool = Field(False, title="Импорт в ZAP (opt-in)")
-    zap_scan: bool = Field(False, title="Скан GraphQL в ZAP (opt-in)")
+    scanner_import: bool = Field(False, title="Импорт в scanner (opt-in)")
+    scanner_scan: bool = Field(False, title="Скан GraphQL в scanner (opt-in)")
     last_inventory: List[Dict[str, Any]] = Field(
         default_factory=list, title="Кэш операций (authoring)"
     )
@@ -566,7 +566,7 @@ class ChainFields(BaseModel):
     model_config = StrictModel
 
     har_as: Optional[str] = Field("", title="imports.as для .har")
-    sequence_name: Optional[str] = Field("", title="Имя ZAP sequence")
+    sequence_name: Optional[str] = Field("", title="Имя scanner sequence")
     source_har: Optional[str] = Field("", title="Исходный HAR (authoring)")
     template_har: Optional[str] = Field("", title="HAR с {{slot}}")
     steps: List[Dict[str, Any]] = Field(default_factory=list, title="Шаги (кэш)")
@@ -940,13 +940,6 @@ class Wired(BaseModel):
         if purpose != "manual" and v is None:
             raise ValueError("security_configuration is required unless assessment_purpose=manual")
         return v
-
-    @model_validator(mode="after")
-    def _manual_forces_webswing(self) -> "Manifest":
-        """Форма при manual прячет zap_mode; runtime = Webswing + idle/work hold."""
-        if self.meta.assessment_purpose == "manual":
-            self.infrastructure.zap_mode = "webswing"
-        return self
 
     def scan_base_url(self) -> str:
         infra = self.infrastructure

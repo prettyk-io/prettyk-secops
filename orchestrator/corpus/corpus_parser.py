@@ -5,7 +5,7 @@
 из Network — URL-параметры (query), body-поля XHR. Выход:
   - ``FormField`` — DOM-инпут (для пробуждения через клик/сабмит);
   - ``RequestTemplate`` — HTTP-шаблон (method/url/query/body) как кандидат для
-    эвристического пробуждения (CD-4) и контекста ZAP (CD-5).
+    эвристического пробуждения (CD-4) и контекста scanner (CD-5).
 
 Чистые функции, без мутации входных структур. bs4 парсит через встроенный
 ``html.parser`` (без lxml/html5lib — они не в окружении).
@@ -88,7 +88,7 @@ class FormField:
 
 @dataclass
 class RequestTemplate:
-    """HTTP-шаблон из Network: параметры для пробуждения/контекста ZAP."""
+    """HTTP-шаблон из Network: параметры для пробуждения/контекста scanner."""
 
     method: str
     url: str

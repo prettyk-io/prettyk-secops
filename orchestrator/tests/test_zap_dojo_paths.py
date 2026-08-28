@@ -1,39 +1,39 @@
 ﻿# -*- coding: utf-8 -*-
-"""Пути zap-results и выбор XML для Dojo."""
+"""Пути scanner-results и выбор XML для Dojo."""
 
 from pathlib import Path
 
-from adapters.defectdojo_client import resolve_zap_xml_for_dojo
+from adapters.defectdojo_client import resolve_scanner_xml_for_dojo
 from utils import paths as paths_mod
 
 
-def test_artifact_path_zap_results(tmp_path, monkeypatch):
+def test_artifact_path_scanner_results(tmp_path, monkeypatch):
     monkeypatch.setenv("PK_REPORTS_DIR", str(tmp_path))
     # reload dirs from env
     import importlib
 
     importlib.reload(paths_mod)
-    p = paths_mod.artifact_path("reports/zap-results/juice.xml")
-    assert p == tmp_path / "zap-results" / "juice.xml"
-    p2 = paths_mod.artifact_path("zap-results/juice.xml")
-    assert p2 == tmp_path / "zap-results" / "juice.xml"
-    # голое имя → allure-results (скриншоты), не zap
+    p = paths_mod.artifact_path("reports/scanner-results/juice.xml")
+    assert p == paths_mod.scanner_RESULTS_DIR / "juice.xml"
+    p2 = paths_mod.artifact_path("scanner-results/juice.xml")
+    assert p2 == paths_mod.scanner_RESULTS_DIR / "juice.xml"
+    # голое имя → allure-results (скриншоты), не scanner
     assert paths_mod.artifact_path("shot.png") == tmp_path / "allure-results" / "shot.png"
 
 
-def test_zap_report_path_bare_name(tmp_path, monkeypatch):
+def test_scanner_report_path_bare_name(tmp_path, monkeypatch):
     monkeypatch.setenv("PK_REPORTS_DIR", str(tmp_path))
     import importlib
 
     importlib.reload(paths_mod)
-    assert paths_mod.zap_report_path("juice_dojo.xml") == tmp_path / "zap-results" / "juice_dojo.xml"
-    assert paths_mod.zap_report_path("zap-results/x.xml") == tmp_path / "zap-results" / "x.xml"
+    assert paths_mod.scanner_report_path("juice_dojo.xml") == paths_mod.scanner_RESULTS_DIR / "juice_dojo.xml"
+    assert paths_mod.scanner_report_path("scanner-results/x.xml") == paths_mod.scanner_RESULTS_DIR / "x.xml"
     assert (
-        paths_mod.zap_report_path("reports/zap-results/x.xml") == tmp_path / "zap-results" / "x.xml"
+        paths_mod.scanner_report_path("reports/scanner-results/x.xml") == paths_mod.scanner_RESULTS_DIR / "x.xml"
     )
 
 
-def test_resolve_zap_xml_prefers_explicit(tmp_path, monkeypatch):
+def test_resolve_scanner_xml_prefers_explicit(tmp_path, monkeypatch):
     monkeypatch.setenv("PK_REPORTS_DIR", str(tmp_path))
     import importlib
 
@@ -42,11 +42,11 @@ def test_resolve_zap_xml_prefers_explicit(tmp_path, monkeypatch):
 
     importlib.reload(dd)
 
-    zap = tmp_path / "zap-results"
-    zap.mkdir()
-    older = zap / "old.xml"
-    newer = zap / "new.xml"
+    scanner = paths_mod.scanner_RESULTS_DIR
+    scanner.mkdir(parents=True, exist_ok=True)
+    older = scanner / "old.xml"
+    newer = scanner / "new.xml"
     older.write_text("<x/>", encoding="utf-8")
     newer.write_text("<y/>", encoding="utf-8")
-    assert dd.resolve_zap_xml_for_dojo(str(older)) == older
-    assert dd.resolve_zap_xml_for_dojo(None) == newer
+    assert dd.resolve_scanner_xml_for_dojo(str(older)) == older
+    assert dd.resolve_scanner_xml_for_dojo(None) == newer

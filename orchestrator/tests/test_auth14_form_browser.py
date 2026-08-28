@@ -84,7 +84,7 @@ class FakeHttp:
         return {"status": 200, "text": "Logout", "body": "Logout"}
 
 
-class FakeZap:
+class Fakescanner:
     def __init__(self):
         self.rules = []
 
@@ -147,7 +147,7 @@ def test_form_live_mock(monkeypatch):
     assert ("sid", "abc", "app.lab") in http.cookies
 
 
-def test_form_cookies_to_zap_replacer(monkeypatch):
+def test_form_cookies_to_scanner_replacer(monkeypatch):
     monkeypatch.setenv("PK_AUTH_FORM_BROWSER", "1")
     profile = parse_auth_module(FORM_TEXT)
     wd = FakeWd()
@@ -156,14 +156,14 @@ def test_form_cookies_to_zap_replacer(monkeypatch):
         {"name": "csrf", "value": "tok", "domain": "app.lab"},
     ]
     http = FakeHttp()
-    zap = FakeZap()
-    out = apply_auth_form(profile, wd, http, zap)
+    scanner = Fakescanner()
+    out = apply_auth_form(profile, wd, http, scanner)
     assert out["applied"] is True
     assert out["cookies_http"] == 2
-    assert out["cookies_zap"] == 2
-    assert any("cookies→ZAP Replacer: 2" in n for n in out["notes"])
-    assert len(zap.rules) == 1
-    desc, match_type, match_string, replacement, _ = zap.rules[0]
+    assert out["cookies_scanner"] == 2
+    assert any("cookies→scanner Replacer: 2" in n for n in out["notes"])
+    assert len(scanner.rules) == 1
+    desc, match_type, match_string, replacement, _ = scanner.rules[0]
     assert desc == "pk-auth-browser-cookie"
     assert match_type == "REQ_HEADER"
     assert match_string == "Cookie"
@@ -221,10 +221,10 @@ def test_controller_form_wire(monkeypatch):
     )
     ctrl = object.__new__(Controller)
     ctrl.wired = man
-    zap = FakeZap()
-    ctrl.adapters = {"http": FakeHttp(), "webdriver": FakeWd(), "zap": zap}
+    scanner = Fakescanner()
+    ctrl.adapters = {"http": FakeHttp(), "webdriver": FakeWd(), "scanner": scanner}
     ctrl.auth_bootstrap_result = None
     ctrl._apply_auth_bootstrap()
     assert ctrl.auth_bootstrap_result["applied"] is True
-    assert ctrl.auth_bootstrap_result.get("cookies_zap") == 1
-    assert zap.rules and zap.rules[0][2] == "Cookie"
+    assert ctrl.auth_bootstrap_result.get("cookies_scanner") == 1
+    assert scanner.rules and scanner.rules[0][2] == "Cookie"

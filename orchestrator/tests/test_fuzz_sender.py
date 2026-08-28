@@ -1,5 +1,5 @@
-﻿# -*- coding: utf-8 -*-
-"""Alpha fuzz: генерация httpsender + MethodId wire (без live ZAP)."""
+# -*- coding: utf-8 -*-
+"""Alpha fuzz: генерация httpsender + MethodId wire (без live scanner)."""
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -12,7 +12,7 @@ if str(ROOT) not in sys.path:
 
 from core.fuzz_sender import DEFAULT_VAR_KEY, render_mask_httpsender
 from core.method_id import lookup_facade_method, resolve_call
-from adapters.zap_adapter import ZapAdapter
+from adapters.scanner_adapter import ScannerAdapter
 
 
 def test_render_mask_httpsender_contains_mask_and_var():
@@ -37,41 +37,41 @@ def test_render_rejects_empty_mask():
 
 
 def test_method_ids_mask_path():
-    assert lookup_facade_method("ZAP", "HttpSender") == (
-        "zap",
+    assert lookup_facade_method("scanner", "HttpSender") == (
+        "scanner",
         "install_mask_http_sender",
     )
-    assert lookup_facade_method("ZAP", "ПодменаHttpSender") == (
-        "zap",
+    assert lookup_facade_method("scanner", "ПодменаHttpSender") == (
+        "scanner",
         "install_mask_http_sender",
     )
-    assert lookup_facade_method("ZAP", "ПейлоадПодмены") == (
-        "zap",
+    assert lookup_facade_method("scanner", "ПейлоадПодмены") == (
+        "scanner",
         "set_fuzz_payload",
     )
-    assert lookup_facade_method("ZAP", "УдалитьHttpSender") == (
-        "zap",
+    assert lookup_facade_method("scanner", "УдалитьHttpSender") == (
+        "scanner",
         "remove_http_sender_script",
     )
     assert (
-        resolve_call('ZAP HttpSender fuzz_mask "§FUZZ§"')
-        == "zap|install_mask_http_sender|fuzz_mask|§FUZZ§"
+        resolve_call('scanner HttpSender fuzz_mask "§FUZZ§"')
+        == "scanner|install_mask_http_sender|fuzz_mask|§FUZZ§"
     )
     assert (
-        resolve_call('ZAP ПодменаHttpSender fuzz_mask "§FUZZ§"')
-        == "zap|install_mask_http_sender|fuzz_mask|§FUZZ§"
+        resolve_call('scanner ПодменаHttpSender fuzz_mask "§FUZZ§"')
+        == "scanner|install_mask_http_sender|fuzz_mask|§FUZZ§"
     )
     assert (
-        resolve_call('ZAP ПейлоадПодмены "<script>"')
-        == "zap|set_fuzz_payload|<script>"
+        resolve_call('scanner ПейлоадПодмены "<script>"')
+        == "scanner|set_fuzz_payload|<script>"
     )
 
 
 def test_install_mask_http_sender_loads_generated_script(tmp_path, monkeypatch):
-    adapter = ZapAdapter(host="127.0.0.1", port="0")
+    adapter = ScannerAdapter(host="127.0.0.1", port="0")
     adapter._connected = True
     script_api = MagicMock()
-    adapter._zap = MagicMock(script=script_api)
+    adapter._scanner = MagicMock(script=script_api)
 
     written = {}
 
@@ -100,10 +100,10 @@ def test_install_mask_http_sender_loads_generated_script(tmp_path, monkeypatch):
 
 
 def test_set_fuzz_payload_uses_script_vars():
-    adapter = ZapAdapter(host="127.0.0.1", port="0")
+    adapter = ScannerAdapter(host="127.0.0.1", port="0")
     adapter._connected = True
     script_api = MagicMock()
-    adapter._zap = MagicMock(script=script_api)
+    adapter._scanner = MagicMock(script=script_api)
     script_api.set_global_var = MagicMock()
 
     adapter.set_fuzz_payload("<script>", "my_key")
@@ -111,5 +111,5 @@ def test_set_fuzz_payload_uses_script_vars():
 
 
 def test_start_fuzzer_gone_from_method_ids():
-    assert lookup_facade_method("ZAP", "ЗапуститьFuzzer") is None
-    assert resolve_call("ZAP ЗапуститьFuzzer http://x") is None
+    assert lookup_facade_method("scanner", "ЗапуститьFuzzer") is None
+    assert resolve_call("scanner ЗапуститьFuzzer http://x") is None

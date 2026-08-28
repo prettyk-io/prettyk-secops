@@ -1,14 +1,14 @@
 ﻿# Демо DefectDojo для локального показа (готовые образы Docker Hub).
-# НЕ для банка «как есть». Роутинг ZAP-отчётов сюда — отдельно, вместе.
+# НЕ для банка «как есть». Роутинг scanner-отчётов сюда — отдельно, вместе.
 #
-# Порт UI: 8081 (8080 занят ZAP).
+# Порт UI: 8081 (8080 занят scanner).
 # Сеть: pk-net (как остальные сервисы PK).
 #
 #   docker network create pk-net 2>nul
 #   docker compose -f services/docker-compose.defectdojo.yml up -d
 #   docker compose -f services/docker-compose.defectdojo.yml logs initializer | findstr /i password
 #
-# Стоп до импорта ZAP: после логина в UI — ждём решения, код импорта не пишем.
+# Стоп до импорта scanner: после логина в UI — ждём решения, код импорта не пишем.
 
 services:
   defectdojo-nginx:

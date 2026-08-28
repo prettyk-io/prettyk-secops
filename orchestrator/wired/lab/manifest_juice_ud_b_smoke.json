@@ -7,9 +7,9 @@
     "scheduled_info": "UD-B1 short: Open Juice → FuzzWave juice_search_q"
   },
   "infrastructure": {
-    "zap_mode": "demon",
+    "scanner_mode": "demon",
     "browser_type": "chrome-headless",
-    "zap_work_timeout_min": 20,
+    "scanner_work_timeout_min": 20,
     "idle_timeout_min": 10,
     "start_with_webswing": false
   },

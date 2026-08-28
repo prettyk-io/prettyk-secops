@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<OWASPZAPReport programName="ZAP" version="2.17.0" generated="Thu, 20 Aug 2026 08:40:24" created="2026-08-20T08:40:24.991050631Z">
+<OWASPscannerReport programName="scanner" version="2.17.0" generated="Thu, 20 Aug 2026 08:40:24" created="2026-08-20T08:40:24.991050631Z">
 	
 		<site name="https://r1---sn-4g5ednrs.gvt1.com" host="r1---sn-4g5ednrs.gvt1.com" port="443" ssl="true">
 			<alerts>
@@ -1898,7 +1898,7 @@ referer=http://juice-shop:3000/</otherinfo>
 					<reason>Warning</reason>
 					<site></site>
 					<key>insight.log.warn</key>
-					<description>ZAP warnings logged - see the zap.log file for details</description>
+					<description>scanner warnings logged - see the scanner.log file for details</description>
 					<statistic>43</statistic>
 				</insight>
 			
@@ -2466,4 +2466,4 @@ referer=http://juice-shop:3000/</otherinfo>
 	
 	
 	
-</OWASPZAPReport>
+</OWASPscannerReport>

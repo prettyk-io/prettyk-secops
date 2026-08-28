@@ -8,7 +8,7 @@
 
 ## 1. Что такое Automation Lab
 
-**Automation Lab — облегчённый продукт PrettyK для функциональной автоматизации без ИБ-инфраструктуры.** Тот же DSL, тот же Canvas, тот же Playwright Browser Core — но без ZAP, без DefectDojo, без Allure, без фаззера, без политик гейтов.
+**Automation Lab — облегчённый продукт PrettyK для функциональной автоматизации без ИБ-инфраструктуры.** Тот же DSL, тот же Canvas, тот же Playwright Browser Core — но без scanner, без DefectDojo, без Allure, без фаззера, без политик гейтов.
 
 Это намеренно урезанная, сверхдоступная версия платформы. Её задача — зайти в QA-отделы, DevOps-команды и к SDET-инженерам, которые никогда не купят полноценный DAST-сканер, но каждый день пишут автотесты.
 
@@ -36,7 +36,7 @@
 
 | Компонент | Почему не здесь |
 |---|---|
-| ZAP demon | Только security-контур |
+| scanner demon | Только security-контур |
 | Fuzzer (Sniper/Pitchfork/Cluster Bomb) | Только security-контур |
 | DefectDojo | Только security-контур |
 | Allure3 Threat Reports | В Automation заменяется на screenshots + logs + видео |
@@ -64,7 +64,7 @@
 ⚡ PRETTYK AUTOMATION LAB          🛡️ PRETTYK SECOPS LAB
 ─────────────────────────────────  ─────────────────────────────────
 Цена: бросовая / сверхдоступная    Цена: Enterprise, взрослый чек
-Вес: <100 MB (без Java, ZAP, Dojo) Вес: полный compose-стек
+Вес: <100 MB (без Java, scanner, Dojo) Вес: полный compose-стек
 Покупатель: QA Lead, DevOps        Покупатель: CISO, AppSec, Финтех
 Ценность: скорость + airgap        Ценность: compliance + security
 ```
@@ -72,7 +72,7 @@
 **Стратегия:**
 
 1. **Automation Lab:** цена на грани себестоимости. Цель — не прибыль здесь, а захват рынка. Выдавить SaaS-конкурентов (aqua, Testim) ценой и airgap.
-2. **SecOps Lab:** взрослый Enterprise-чек. Цель — прибыль. Апгрейд с Automation Lab должен быть бесшовным: тот же DSL, те же сценарии, просто включили ZAP/Dojo/Allure.
+2. **SecOps Lab:** взрослый Enterprise-чек. Цель — прибыль. Апгрейд с Automation Lab должен быть бесшовным: тот же DSL, те же сценарии, просто включили scanner/Dojo/Allure.
 
 ---
 
@@ -95,8 +95,8 @@ services:
     image: prettyk-live:latest
   frontend:
     image: prettyk-frontend:prettyk-lab
-  zap-demon:
-    image: zap-demon:latest
+  scanner-demon:
+    image: scanner-demon:latest
     ports: ["8080:8080"]
   dojo:
     image: defectdojo:latest
@@ -124,7 +124,7 @@ services:
 1. Через квартал приходит плановая проверка ИБ. CISO спрашивает: «Как тестируете безопасность веб-приложений?»
 2. QA Lead отвечает: «У нас все пользовательские пути уже оцифрованы в PrettyK. 200+ сценариев на DSL.»
 3. CISO покупает **SecOps Lab** — полную лицензию.
-4. Тот же DSL, те же сценарии. Разница: добавился ZAP consumer, Dojo, Allure threat reports, политики гейтов.
+4. Тот же DSL, те же сценарии. Разница: добавился scanner consumer, Dojo, Allure threat reports, политики гейтов.
 5. **Ноль дублирования работы. Ноль нового онбординга.** Безопасники получили полный DAST-контур на готовых тестах QA.
 
 ### Почему конкуренты не могут это повторить
@@ -132,7 +132,7 @@ services:
 | Конкурент | Проблема |
 |---|---|
 | aqua, Testim, ACCELQ | Только functional testing. Не умеют DAST. Мост QA→ИБ невозможен. |
-| ZAP, Burp, Acunetix | Только security testing. Не умеют functional automation. Нет общего DSL. |
+| scanner, Burp, Acunetix | Только security testing. Не умеют functional automation. Нет общего DSL. |
 | **PrettyK** | **Один DSL на оба продукта. Airgap. Wedge strategy: дешёвый вход → дорогой апгрейд.** |
 
 ---
@@ -146,7 +146,7 @@ services:
 | **DSL / Canvas / Discovery** | ✅ | ✅ |
 | **Playwright Browser Core** | ✅ | ✅ |
 | **Schedules / CI** | ✅ | ✅ |
-| **ZAP DAST** | ❌ | ✅ |
+| **scanner DAST** | ❌ | ✅ |
 | **Fuzzer (Sniper/Pitchfork)** | ❌ | ✅ |
 | **DefectDojo** | ❌ | ✅ |
 | **Allure3 Security Reports** | ❌ | ✅ |

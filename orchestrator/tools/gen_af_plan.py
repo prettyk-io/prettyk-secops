@@ -1,7 +1,7 @@
 ﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-CLI: манифест → ZAP AF YAML (G-38). Только пишет файл, не запускает план.
+CLI: манифест → scanner AF YAML (G-38). Только пишет файл, не запускает план.
 
   py -3.13 tools/gen_af_plan.py --wired wired/x.json -o plans/out.yaml
   py -3.13 tools/gen_af_plan.py --base-url http://juice-shop:3000 --policy custom_policy -o plans/out.yaml
@@ -26,7 +26,7 @@ from core.af_plan import (  # noqa: E402
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(
-        description="Generate ZAP Automation Framework YAML from PK wired"
+        description="Generate scanner Automation Framework YAML from PK wired"
     )
     p.add_argument("--wired", "-m", help="Путь к JSON-манифесту")
     p.add_argument("--base-url", help="URL цели (если без --wired)")
@@ -35,7 +35,7 @@ def main(argv: list[str] | None = None) -> int:
         default="custom_policy",
         help="scan_policy: custom_policy|scanner_crawler|scanner_fuzzing|openapi_schema|api_scanner",
     )
-    p.add_argument("--context", default=DEFAULT_CONTEXT, help="Имя ZAP context в env")
+    p.add_argument("--context", default=DEFAULT_CONTEXT, help="Имя scanner context в env")
     p.add_argument("-o", "--output", required=True, help="Выходной YAML")
     p.add_argument(
         "--check",

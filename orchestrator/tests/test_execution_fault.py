@@ -59,6 +59,6 @@ def test_apply_admission_void_keeps_counts():
 def test_gate_label_void_wins_over_fail_and_error():
     assert gate_label(True, {"total": 3}, admission_void=True) == "void"
     assert (
-        gate_label(False, {"error": "zap", "admission_void": True}) == "void"
+        gate_label(False, {"error": "scanner", "admission_void": True}) == "void"
     )
     assert gate_label(False, None, admission_void=True) == "void"

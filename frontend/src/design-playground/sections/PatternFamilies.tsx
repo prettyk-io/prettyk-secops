@@ -24,7 +24,7 @@ import {
   Trash2,
   ExternalLink,
   ShieldAlert,
-  Zap,
+  scanner,
 } from 'lucide-react';
 import { PATTERN_FAMILIES } from '../data/patterns';
 import { type GlobalDesignPreset, GLOBAL_STYLE_PRESETS } from '../data/styleSystem';
@@ -50,7 +50,7 @@ export function PatternFamilies({
       >
         <div style={preset.segmentedStyle.container}>
           {[
-            { id: 'forms', label: '⚡ SecOps Combat Forms (Live Suites)', icon: <Zap className="size-3.5 mr-1 text-cyan-400" /> },
+            { id: 'forms', label: '⚡ SecOps Combat Forms (Live Suites)', icon: <scanner className="size-3.5 mr-1 text-cyan-400" /> },
             { id: 'patterns', label: '🧩 UI Pattern Families', icon: <ShieldAlert className="size-3.5 mr-1 text-purple-400" /> },
             { id: 'links', label: '🔗 Marketplace Catalog', icon: <ExternalLink className="size-3.5 mr-1 text-emerald-400" /> },
           ].map((t) => (
@@ -419,7 +419,7 @@ function SecOpsFormsSuite({ preset, backdrop }: { preset: GlobalDesignPreset; ba
               gap: 8,
             }}
           >
-            <Zap className="size-4" />
+            <scanner className="size-4" />
             {isLaunching ? 'Executing Attack Pipeline...' : 'Launch SecOps Pipeline'}
           </button>
 

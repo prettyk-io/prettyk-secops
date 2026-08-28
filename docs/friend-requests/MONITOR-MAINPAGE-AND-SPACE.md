@@ -55,8 +55,8 @@ URL должен вести на `/#/check/<check_id>?tab=results` — имен�
 {
   "instance_id": "<id instance>",
   "run_id": "<uuid>",
-  "app_code": "<app-code из manifest>",
-  "deploy_url": "<deploy_url из manifest>",
+  "app_code": "<app-code из wired>",
+  "deploy_url": "<deploy_url из wired>",
   "check_id": "<check_id>",
   "created_at": 1712345678.0,
   "owner": "appsec-expert",

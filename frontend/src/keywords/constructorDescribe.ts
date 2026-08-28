@@ -21,7 +21,7 @@ function describeParam(param: KeywordParam, formatDefault: FormatDefault): strin
 /** RU override для hover WireK — без правки generated keywords / orchestrator. */
 const ACTION_HEADER_RU: Record<string, string> = {
   'webdriver.gather_info':
-    'СборИнформации: обход URL в браузере, затем паутина ZAP по живому графу. Не плоский Сканер.',
+    'СборИнформации: обход URL в браузере, затем паутина scanner по живому графу. Не плоский Сканер.',
 };
 
 export function describeKeywordAction(

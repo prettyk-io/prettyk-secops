@@ -53,4 +53,4 @@ export interface SectionDef {
 export const SECTIONS: SectionDef[] = [];
 
 // Сохранены как reference для Suite setup в Студии.
-// PURPOSE_OPTIONS, ZAP_MODE_OPTIONS, BROWSER_OPTIONS, AUTH_TYPE_OPTIONS — закомментированы.
+// PURPOSE_OPTIONS, scanner_MODE_OPTIONS, BROWSER_OPTIONS, AUTH_TYPE_OPTIONS — закомментированы.

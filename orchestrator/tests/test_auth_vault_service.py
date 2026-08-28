@@ -7,7 +7,7 @@
   - extract_session_tokens (JSON / Authorization / Set-Cookie / JWT в raw);
   - execute_oauth2 (client_credentials success / invalid / non-json);
   - build_authorization_url (PKCE S256);
-  - apply_to_zap_replacer (bearer + cookie rules);
+  - apply_to_scanner_replacer (bearer + cookie rules);
   - AutoRefreshSession (401/403 → refresh → retry; TTL expiry);
   - load_mtls_context (empty / not_found);
   - check_auth_flow (registered profile → masked tokens, state saved).
@@ -184,37 +184,37 @@ def test_build_authorization_url_pkce():
     assert "response_type=code" in url
 
 
-# ── zap replacer ──
+# ── scanner replacer ──
 
 
-def test_apply_to_zap_replacer_bearer():
+def test_apply_to_scanner_replacer_bearer():
     calls = []
 
-    class _Zap:
+    class _scanner:
         def add_replacer_rule(self, name, mtype, header, val, enabled):
             calls.append((name, mtype, header, val))
 
     tokens = {"access_token": "tok-abc"}
-    applied = av.apply_to_zap_replacer(tokens, _Zap())
+    applied = av.apply_to_scanner_replacer(tokens, _scanner())
     assert applied.get("header") == "Authorization"
     assert calls[0][2] == "Authorization"
     assert "Bearer tok-abc" in calls[0][3]
 
 
-def test_apply_to_zap_replacer_cookie():
+def test_apply_to_scanner_replacer_cookie():
     calls = []
 
-    class _Zap:
+    class _scanner:
         def add_replacer_rule(self, name, mtype, header, val, enabled):
             calls.append((name, mtype, header, val))
 
     tokens = {"jsessionid": "sess-1"}
-    applied = av.apply_to_zap_replacer(tokens, _Zap())
+    applied = av.apply_to_scanner_replacer(tokens, _scanner())
     assert applied.get("cookie") == "Cookie"
 
 
-def test_apply_to_zap_replacer_no_adapter():
-    applied = av.apply_to_zap_replacer({"access_token": "x"}, None)
+def test_apply_to_scanner_replacer_no_adapter():
+    applied = av.apply_to_scanner_replacer({"access_token": "x"}, None)
     assert applied == {}
 
 

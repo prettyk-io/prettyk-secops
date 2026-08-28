@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """Semantic trace: actions and control-flow remain a tree outside Allure."""
 from __future__ import annotations
 
@@ -91,25 +91,25 @@ def test_loop_keeps_iterations_and_nested_try_tree():
 
 def test_method_descriptor_uses_resolved_named_parameters():
     title = render_execution_title(
-        "zap",
+        "scanner",
         "spider_scan",
         {"context_name": "juice_ctx", "timeout_minutes": 0.5},
     )
 
-    assert title == "ZAP: Запустить Spider — контекст: juice_ctx, таймаут, мин: 0.5"
+    assert title == "Сканер: Запустить Spider — контекст: juice_ctx, таймаут, мин: 0.5"
 
 
 def test_scan_descriptor_normalizes_pre_adapter_pretty_slots():
     title = render_execution_title(
-        "zap",
+        "scanner",
         "spider_scan",
         {"url": "juice_ctx", "context_name": "0.5", "timeout_minutes": None},
     )
     ajax_title = render_execution_title(
-        "zap",
+        "scanner",
         "ajax_spider_scan",
         {"url": "1", "timeout_minutes": None},
     )
 
-    assert title == "ZAP: Запустить Spider — контекст: juice_ctx, таймаут, мин: 0.5"
-    assert ajax_title == "ZAP: Запустить AJAX Spider — таймаут, мин: 1"
+    assert title == "Сканер: Запустить Spider — контекст: juice_ctx, таймаут, мин: 0.5"
+    assert ajax_title == "Сканер: Запустить AJAX Spider — таймаут, мин: 1"

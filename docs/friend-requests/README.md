@@ -48,7 +48,7 @@ DESIGN-WORKBENCH (`sanctuary/DESIGN-WORKBENCH.md`)
 | [`LAB-INTRUDER-PRO.md`](LAB-INTRUDER-PRO.md) | Станция атак /lab (Burp Killer) | `to check` |
 | [`INTRUDER-PRO-ADVANCED-ATTACKS.md`](INTRUDER-PRO-ADVANCED-ATTACKS.md) | 4 режима атак, Grep Match/Extract | `to check` |
 | [`LAB-ATTACK-SCENARIO-ENGINE.md`](LAB-ATTACK-SCENARIO-ENGINE.md) | Движок сценариев атак /lab | `to check` |
-| [`AUTH-CHAIN-VAULT.md`](AUTH-CHAIN-VAULT.md) | Pre-flight auth, vault токенов, ZAP Replacer | `to check` |
+| [`AUTH-CHAIN-VAULT.md`](AUTH-CHAIN-VAULT.md) | Pre-flight auth, vault токенов, scanner Replacer | `to check` |
 | [`AUTH-VAULT-CHAIN-INJECTOR.md`](AUTH-VAULT-CHAIN-INJECTOR.md) | Инжектор токенов (Auth Vault & Chain) | `to check` |
 | [`CORPUS-DISCOVERY-ZERO-TOUCH.md`](CORPUS-DISCOVERY-ZERO-TOUCH.md) | Zero-touch корпус discovery | `to check` |
 | [`DISCOVERY-ENGINE-AX-COMPILER.md`](DISCOVERY-ENGINE-AX-COMPILER.md) | Автореверс форм через CDP AX-Tree в PrettyK wired.json (E1–E3) | `to check` |

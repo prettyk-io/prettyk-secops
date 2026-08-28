@@ -146,7 +146,7 @@ function resolveValidationResultIcon(
 
 export type AppProps = {
   checkId: string;
-  initialManifest: unknown;
+  initialWired: unknown;
   initialResources: ResourceContentsMap;
   initialView?: EditorView;
   onRegisterGuard?: (guard: CheckCloseGuard) => void;
@@ -159,7 +159,7 @@ export type AppProps = {
 
 export default function App({
   checkId,
-  initialManifest,
+  initialWired,
   initialResources,
   initialView = 'studio',
   onRegisterGuard,
@@ -174,12 +174,12 @@ export default function App({
   const { dict } = useLocale();
 
   const openBaselineRef = useRef({
-    wired: initialManifest,
+    wired: initialWired,
     resources: { ...initialResources },
   });
 
   const [rawFormData, setRawFormData] = useState<unknown>(() =>
-    clampFormDataForRoleCaps(initialManifest, capsForUser(readSession())),
+    clampFormDataForRoleCaps(initialWired, capsForUser(readSession())),
   );
 
   const [showValidation, setShowValidation] = useState(false);

@@ -16,10 +16,14 @@ import {
 import { getBrowserSession } from '../studio/browserSession';
 import type { BrowserSessionStatus } from '../studio/browserSession';
 import { useScenarioDeckStore } from '../studio/ScenarioDeckStore';
+import type { ScenarioStepModel } from '../studio/scenarioStepModel';
 import { computeCanvasClickToViewport } from './clickCoordinate';
 import { useBrowserCanvasStream } from './useBrowserCanvasStream';
 
 export type BrowserStageMode = 'author' | 'record' | 'debug';
+
+/** Стабильная ссылка на пустой массив для zustand-селекторов (useSyncExternalStore). */
+const EMPTY_STEPS: ScenarioStepModel[] = [];
 
 export interface BrowserStageProps {
   mode: BrowserStageMode;
@@ -167,7 +171,10 @@ export function BrowserStage({
   }, []);
 
   const stopPlay = useCallback(() => { playAbortRef.current?.abort(); setPlaying(false); setPlayStep(0); playAbortRef.current = null; }, []);
-  const steps = useScenarioDeckStore(s => s.decks[0]?.steps ?? []);
+  // ВАЖНО: `?? []` в zustand-селекторе создаёт НОВЫЙ массив на каждом getSnapshot,
+  // из-за чего useSyncExternalStore зацикливается (Maximum update depth exceeded).
+  // Возвращаем стабильную ссылку: decks[0]?.steps (undefined → EMPTY, не новый массив).
+  const steps = useScenarioDeckStore(s => s.decks[0]?.steps) ?? EMPTY_STEPS;
 
   if (collapsed) {
     return (<div className="shrink-0 flex flex-col items-center gap-3 py-2 w-10 border-l border-slate-700/50 bg-[#080c14]"><button onClick={onToggleCollapse} className="p-1 rounded hover:bg-white/5 text-slate-400"><PanelRightOpen className="size-4" /></button></div>);

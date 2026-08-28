@@ -157,12 +157,12 @@ function pathForImportRec(
   return ext ? `resources/${as}.${ext}` : undefined;
 }
 
-function resourceSidecarPathFromManifest(
-  manifestJson: string,
+function resourceSidecarPathFromWired(
+  wiredJson: string,
   as: string,
 ): string {
   try {
-    const parsed = JSON.parse(manifestJson) as {
+    const parsed = JSON.parse(wiredJson) as {
       test_suites?: { imports?: unknown[] };
     };
     const imports = parsed.test_suites?.imports;
@@ -186,7 +186,7 @@ function resourceSidecarPathFromManifest(
 
 function appendResourceSidecars(
   files: Record<string, string>,
-  manifestJson: string,
+  wiredJson: string,
   resources: Record<string, string>,
 ): void {
   for (const [as, content] of Object.entries(resources)) {
@@ -194,18 +194,18 @@ function appendResourceSidecars(
       continue;
     }
     const key = as.trim();
-    files[resourceSidecarPathFromManifest(manifestJson, key)] = content;
+    files[resourceSidecarPathFromWired(wiredJson, key)] = content;
   }
 }
 
 export function buildSuiteZipFiles(
-  manifestJson: string,
+  wiredJson: string,
   resources: Record<string, string>,
 ): Record<string, string> {
   const files: Record<string, string> = {
-    'wired.json': manifestJson.endsWith('\n') ? manifestJson : `${manifestJson}\n`,
+    'wired.json': wiredJson.endsWith('\n') ? wiredJson : `${wiredJson}\n`,
   };
-  appendResourceSidecars(files, manifestJson, resources);
+  appendResourceSidecars(files, wiredJson, resources);
   return files;
 }
 
@@ -245,10 +245,10 @@ export function readStoreZipTextFiles(buffer: ArrayBuffer): Record<string, strin
 }
 
 export function extractSuiteFromZipFiles(files: Record<string, string>): {
-  manifestJson?: string;
+  wiredJson?: string;
   resourceContents: Record<string, string>;
 } {
-  const manifestJson = files['wired.json'];
+  const wiredJson = files['wired.json'];
   const resourceContents: Record<string, string> = {};
   for (const [path, content] of Object.entries(files)) {
     const match = /^resources\/([^/]+)\.(txt|har)$/i.exec(path.replace(/\\/g, '/'));
@@ -257,5 +257,5 @@ export function extractSuiteFromZipFiles(files: Record<string, string>): {
     }
     resourceContents[match[1]] = content;
   }
-  return { manifestJson, resourceContents };
+  return { wiredJson, resourceContents };
 }

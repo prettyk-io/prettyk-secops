@@ -56,7 +56,7 @@ export function createPrettykHoverProvider(): monacoNs.languages.HoverProvider {
       const start = lineText.indexOf(token) + 1;
       const voiceHint =
         entry.id === 'СборИнформации'
-          ? 'Обход URL в браузере, затем паутина ZAP по живому графу. Не плоский Сканер.'
+          ? 'Обход URL в браузере, затем паутина scanner по живому графу. Не плоский Сканер.'
           : entry.id === 'ФаззингВолна'
             ? 'Волна фаззинга по id фаззера из Studio. Параметры из журнала трафика — галка в форме фаззера.'
             : undefined;

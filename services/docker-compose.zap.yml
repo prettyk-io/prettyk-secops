@@ -1,25 +1,25 @@
-# Локальный ZAP в Docker (переходный вариант, пока нет нативного zap.bat / zap.sh).
-# В CI пайпе ZAP поднимается бинарником отдельно — этот файл там не используется.
+# Локальный scanner в Docker (переходный вариант, пока нет нативного scanner.bat / scanner.sh).
+# В CI пайпе scanner поднимается бинарником отдельно — этот файл там не используется.
 #
-#   docker compose -f services/docker-compose.zap.yml up -d
+#   docker compose -f services/docker-compose.scanner.yml up -d
 #
-# Плагины: ../zap/plugins → /zap/plugins
+# Плагины: ../scanner/plugins → /scanner/plugins
 # Порты:
 #   8080 — main (для zapv2 / оркестратора)
 #   8099 — публикуем под browser Local Server (оркестратор поднимает через addLocalServer)
 
 services:
-  zap:
-    image: zaproxy/zap-stable:2.17.0
-    container_name: zap
+  scanner:
+    image: zaproxy/scanner-stable:2.17.0
+    container_name: scanner
     restart: unless-stopped
     ports:
       - "8080:8080"
       - "8099:8099"
     volumes:
-      - ../zap/plugins:/zap/plugins:ro
-      # IMP-HAR: host reports/runs → ZAP importHar (harFile path rewrite in zap_adapter)
-      - ../reports/runs:/zap/wrk/pk-runs
+      - ../scanner/plugins:/scanner/plugins:ro
+      # IMP-HAR: host reports/runs → scanner importHar (harFile path rewrite in scanner_adapter)
+      - ../reports/runs:/scanner/wrk/pk-runs
     networks:
       - pk-net
     # Main слушатель — как в официальном docker guide (-port 8080).
@@ -27,7 +27,7 @@ services:
     # https://www.zaproxy.org/docs/docker/about/
     # https://www.zaproxy.org/docs/desktop/addons/network/options/localservers/
     command:
-      - zap.sh
+      - scanner.sh
       - -daemon
       - -port
       - "8080"

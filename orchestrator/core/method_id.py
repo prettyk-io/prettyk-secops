@@ -4,7 +4,7 @@ MethodId: русское pretty-имя → wire `component|action|args`.
 
 Слои:
   - корень (UI / Проверить* / утилиты) — один токен: `Нажать css .ok`
-  - ворота ZAP|HTTP|Сессия|Драйвер — два токена: `ZAP Сканер ${url}`
+  - ворота scanner|HTTP|Сессия|Драйвер — два токена: `scanner Сканер ${url}`
 
 Wire не меняется. Языковые слова сюда не входят — см. language_words.
 """
@@ -46,49 +46,49 @@ class StepDescriptor:
 
 
 _STEP_DESCRIPTORS: Dict[WireTarget, StepDescriptor] = {
-    ("zap", "create_context"): StepDescriptor(
+    ("scanner", "create_context"): StepDescriptor(
         "Сканер", "Создать контекст", ("context_name", "description")
     ),
-    ("zap", "set_context_include"): StepDescriptor(
+    ("scanner", "set_context_include"): StepDescriptor(
         "Сканер", "Включить в контекст", ("context_name", "regex")
     ),
-    ("zap", "set_context_exclude"): StepDescriptor(
+    ("scanner", "set_context_exclude"): StepDescriptor(
         "Сканер", "Исключить из контекста", ("context_name", "regex")
     ),
-    ("zap", "spider_scan"): StepDescriptor(
+    ("scanner", "spider_scan"): StepDescriptor(
         "Сканер", "Запустить Spider", ("context_name", "timeout_minutes")
     ),
-    ("zap", "ajax_spider_scan"): StepDescriptor(
+    ("scanner", "ajax_spider_scan"): StepDescriptor(
         "Сканер", "Запустить AJAX Spider", ("timeout_minutes",)
     ),
-    ("zap", "active_scan"): StepDescriptor(
+    ("scanner", "active_scan"): StepDescriptor(
         "Сканер", "Запустить активное сканирование", ("context_name", "timeout_minutes")
     ),
-    ("zap", "passive_scan_wait"): StepDescriptor(
+    ("scanner", "passive_scan_wait"): StepDescriptor(
         "Сканер", "Дождаться пассивного сканирования", ("timeout_minutes",)
     ),
-    ("zap", "generate_report"): StepDescriptor(
+    ("scanner", "generate_report"): StepDescriptor(
         "Сканер", "Сформировать отчёт", ("format", "output_file")
     ),
-    ("zap", "apply_wired_auth"): StepDescriptor(
+    ("scanner", "apply_wired_auth"): StepDescriptor(
         "Сканер", "ПрименитьAuth", ("context_name", "module_id")
     ),
-    ("zap", "import_openapi_spec"): StepDescriptor(
+    ("scanner", "import_openapi_spec"): StepDescriptor(
         "Сканер", "Импорт OpenAPI", ("module_id_or_spec",)
     ),
-    ("zap", "list_openapi_operations"): StepDescriptor(
+    ("scanner", "list_openapi_operations"): StepDescriptor(
         "Сканер", "Список операций OpenAPI", ("module_id_or_spec",)
     ),
-    ("zap", "scan_openapi"): StepDescriptor(
+    ("scanner", "scan_openapi"): StepDescriptor(
         "Сканер", "Скан OpenAPI", ("module_id_or_context",)
     ),
-    ("zap", "import_graphql_schema"): StepDescriptor(
+    ("scanner", "import_graphql_schema"): StepDescriptor(
         "Сканер", "Импорт GraphQL", ("module_id_or_schema",)
     ),
-    ("zap", "list_graphql_operations"): StepDescriptor(
+    ("scanner", "list_graphql_operations"): StepDescriptor(
         "Сканер", "Список операций GraphQL", ("module_id_or_schema",)
     ),
-    ("zap", "scan_graphql_api"): StepDescriptor(
+    ("scanner", "scan_graphql_api"): StepDescriptor(
         "Сканер", "Скан GraphQL", ("module_id_or_context",)
     ),
     ("http", "execute_openapi_module"): StepDescriptor(
@@ -97,31 +97,28 @@ _STEP_DESCRIPTORS: Dict[WireTarget, StepDescriptor] = {
     ("http", "execute_graphql_module"): StepDescriptor(
         "HTTP", "Выполнить GraphQL", ("module_id", "query")
     ),
-    ("zap", "import_grpc_proto"): StepDescriptor(
+    ("scanner", "import_grpc_proto"): StepDescriptor(
         "Сканер", "Импорт gRPC", ("proto_file_or_dir",)
     ),
     ("grpc", "list_services"): StepDescriptor(
         "gRPC", "Список сервисов gRPC", ("module_id",)
     ),
-    ("zap", "scan_grpc"): StepDescriptor(
+    ("scanner", "scan_grpc"): StepDescriptor(
         "Сканер", "Скан gRPC", ("context_name",)
     ),
     ("grpc", "unary_call"): StepDescriptor(
         "gRPC", "Вызов gRPC", ("module_id", "method", "request_json")
     ),
-    ("webdriver", "auto_authorize_discovery"): StepDescriptor(
-        "WebDriver", "АвтоАвторизоваться", ("url", "user", "password")
-    ),
-    ("zap", "execute_chain_module"): StepDescriptor(
+    ("scanner", "execute_chain_module"): StepDescriptor(
         "Сканер", "ВыполнитьЦепь", ("module_id",)
     ),
-    ("zap", "scan_chain_module"): StepDescriptor(
+    ("scanner", "scan_chain_module"): StepDescriptor(
         "Сканер", "СканированиеЦепи", ("module_id",)
     ),
-    ("zap", "investigate_chain_module"): StepDescriptor(
+    ("scanner", "investigate_chain_module"): StepDescriptor(
         "Сканер", "РасследованиеЦепи", ("module_id",)
     ),
-    ("zap", "prepare_chain_module"): StepDescriptor(
+    ("scanner", "prepare_chain_module"): StepDescriptor(
         "Сканер", "ПодготовитьЦепь", ("module_id",)
     ),
     ("webdriver", "gather_info"): StepDescriptor(
@@ -172,7 +169,8 @@ _STEP_DESCRIPTORS: Dict[WireTarget, StepDescriptor] = {
 }
 
 _CATEGORY_LABELS = {
-    "zap": "Сканер",
+    "scanner": "Сканер",
+    "scanner": "Сканер",
     "webdriver": "WebDriver",
     "browser": "Браузер",
     "data": "Данные",
@@ -224,8 +222,7 @@ _METHOD_ID: Dict[str, WireTarget] = {
     # --- ui: навигация ---
     "Открыть": ("webdriver", "open"),
     "ОткрытьПоURL": ("webdriver", "open_by_url"),
-    "ОбойтиСтраницы": ("webdriver", "crawl_urls"),
-    # GATHER: teleport + per-node spider burst (ZapWorkStream); не плоский Сканер.
+    # GATHER: teleport + per-node spider burst (scannerWorkStream); не плоский Сканер.
     "СборИнформации": ("webdriver", "gather_info"),
     "Вернуться": ("webdriver", "back"),
     "Вперёд": ("webdriver", "forward"),
@@ -237,17 +234,8 @@ _METHOD_ID: Dict[str, WireTarget] = {
     "Нажать": ("webdriver", "click"),
     "НажатьДважды": ("webdriver", "double_click"),
     "НажатьПравой": ("webdriver", "right_click"),
-    "НажатьУдерживая": ("webdriver", "hold_click"),
     "НажатьJS": ("webdriver", "click_js"),
-    "НажатьПоИндексу": ("webdriver", "click_element_by_index"),
-    "НажатьПоТексту": ("webdriver", "click_element_by_text"),
-    "ЗажатьКнопкуМыши": ("webdriver", "click_and_hold"),
-    "ОтпуститьКнопкуМыши": ("webdriver", "release"),
     "Навести": ("webdriver", "hover"),
-    "Перетащить": ("webdriver", "drag_and_drop"),
-    "ПеретащитьСоСмещением": ("webdriver", "drag_and_drop_by_offset"),
-    "ПереместитьКЭлементу": ("webdriver", "move_to_element"),
-    "СместитьКурсор": ("webdriver", "move_by_offset"),
     # --- ui: текст / значение ---
     "ВставитьЗначение": ("webdriver", "send_keys"),
     "ДописатьТекст": ("webdriver", "append_text"),
@@ -278,33 +266,14 @@ _METHOD_ID: Dict[str, WireTarget] = {
     # --- ui: forms / scroll / windows / keys / screenshot ---
     "ВыбратьПоТексту": ("webdriver", "select_by_text"),
     "ВыбратьПоЗначению": ("webdriver", "select_by_value"),
-    "ВыбратьПоИндексу": ("webdriver", "select_by_index"),
-    "ЭлементыСписка": ("webdriver", "get_list_items"),
-    "ТекстЯчейкиТаблицы": ("webdriver", "get_table_cell_text"),
-    "ЧислоСтрокТаблицы": ("webdriver", "get_table_row_count"),
-    "ОтправитьФорму": ("webdriver", "submit"),
-    "ЗагрузитьФайл": ("webdriver", "upload_file"),
     "ПрокрутитьКЭлементу": ("webdriver", "scroll_to_element"),
     "ПрокрутитьВверх": ("webdriver", "scroll_to_top"),
     "ПрокрутитьВниз": ("webdriver", "scroll_to_bottom"),
     "ПрокрутитьНа": ("webdriver", "scroll_by"),
-    "ПереключитьФрейм": ("webdriver", "switch_to_frame"),
-    "ПереключитьОкно": ("webdriver", "switch_to_window"),
-    "ВернутьсяВОсновнойКонтент": ("webdriver", "switch_to_default"),
-    "СписокОкон": ("webdriver", "get_window_handles"),
-    "ТекущееОкно": ("webdriver", "get_current_window_handle"),
-    "ПринятьОповещение": ("webdriver", "accept_alert"),
-    "ОтклонитьОповещение": ("webdriver", "dismiss_alert"),
-    "ПолучитьТекстОповещения": ("webdriver", "get_alert_text"),
-    "ВвестиВОповещение": ("webdriver", "send_keys_to_alert"),
     "НажатьКлавишу": ("webdriver", "press_key"),
-    "НажатьКомбинацию": ("webdriver", "key_combination"),
-    "ЗажатьКлавишу": ("webdriver", "key_down"),
-    "ОтпуститьКлавишу": ("webdriver", "key_up"),
     "ВыполнитьJS": ("webdriver", "execute_script"),
     "ВыполнитьAsyncJS": ("webdriver", "execute_async_script"),
     "Скриншот": ("webdriver", "take_screenshot"),
-    "СкриншотЭлемента": ("webdriver", "take_element_screenshot"),
     # --- assert ---
     "ПроверитьЗаголовок": ("webdriver", "assert_title"),
     "ПроверитьURL": ("webdriver", "assert_url"),
@@ -313,13 +282,7 @@ _METHOD_ID: Dict[str, WireTarget] = {
     "ПроверитьНевидимостьЭлемента": ("webdriver", "assert_element_not_visible"),
     "ПроверитьТекстНаСтранице": ("webdriver", "assert_text_present"),
     "ПроверитьРавенство": ("webdriver", "assert_equals"),
-    "ПроверитьНеравенство": ("webdriver", "assert_not_equals"),
     "ПроверитьВхождение": ("webdriver", "assert_contains"),
-    "ПроверитьОтсутствиеВхождения": ("webdriver", "assert_not_contains"),
-    "ПроверитьИстину": ("webdriver", "assert_true"),
-    "ПроверитьЛожь": ("webdriver", "assert_false"),
-    "ПроверитьЧекбокс": ("webdriver", "assert_checkbox_checked"),
-    "ПроверитьТекстОповещения": ("webdriver", "assert_alert_text"),
     # --- assert (данные / коллекции → inspector; канон Проверить*, не Утвердить*) ---
     "ПроверитьВСписке": ("inspector", "assert_in"),
     "ПроверитьНеВСписке": ("inspector", "assert_not_in"),
@@ -331,49 +294,50 @@ _METHOD_ID: Dict[str, WireTarget] = {
     "ПроверитьНепустоту": ("inspector", "assert_is_not_empty"),
     # --- коллекции (часть в ui ниже) ---
     "ТекстЭлементаПоИндексу": ("webdriver", "get_element_text_by_index"),
-    "АтрибутЭлементаПоИндексу": ("webdriver", "get_element_attribute_by_index"),
     "ТекстыЭлементов": ("webdriver", "get_elements_texts"),
     "КоличествоЭлементов": ("webdriver", "get_elements_count"),
-    "ТекстыЭлементовСТекстом": ("webdriver", "filter_elements_by_text"),
     # --- util: редко / шум в AC ---
-    "МеткаВДневнике": ("webdriver", "log_marker"),
     # ЭлементПоИндексу убран с surface: сырой WebElement не для Пусть
     "ЭлементОтображается": ("webdriver", "is_displayed"),
     "ЭлементДоступен": ("webdriver", "is_enabled"),
     "ЭлементВыбран": ("webdriver", "is_selected"),
-    "ПолучитьКоординаты": ("webdriver", "get_location"),
-    "ПолучитьРазмер": ("webdriver", "get_size"),
     "Лог": ("core", "log_message"),
     "ЛогПеременную": ("core", "log_variable"),
     # Именованные нарезки логов (LOG-CUT) — не гасят общий diary.
     "НачатьЛогирование": ("core", "start_log_cut"),
     "ОкончитьЛогирование": ("core", "end_log_cut"),
-    # Маркер атаки → канал zap/ALL (не diary LOG). Wire тот же, что у ZAP ЛогАтаки.
-    "ЛогАтаки": ("zap", "log_attack"),
+    # Маркер атаки → канал scanner/ALL (не diary LOG). Wire тот же, что у scanner ЛогАтаки.
+    "ЛогАтаки": ("scanner", "log_attack"),
     # --- отчёт: вложения Allure (wire allure|attach_*) ---
     "ПриложитьСкриншот": ("allure", "attach_screenshot"),
     "ПриложитьТекст": ("allure", "attach_text"),
     "ПриложитьJSON": ("allure", "attach_json"),
     "ПриложитьHTML": ("allure", "attach_html"),
     "ПриложитьФайл": ("allure", "attach_file"),
-    # --- корень: дубли главного из ZAP / HTTP / Сессия (полные списки — за воротами) ---
-    "Сканер": ("zap", "spider_scan"),
-    "СканерЛокальный": ("zap", "spider_scan_local"),  # util / за ZAP
-    "Краулер": ("zap", "ajax_spider_scan"),
-    "КраулерКлиент": ("zap", "client_spider_scan"),
-    # остальные Сканер*/Краулер* — util (и за ZAP)
-    "СканерГлубокий": ("zap", "spider_scan_deep"),
-    "СканерSPA": ("zap", "spider_scan_spa"),
-    "СтатусСканера": ("zap", "spider_status"),
-    "ОстановитьСканера": ("zap", "stop_spider"),
-    "КраулерГлубокий": ("zap", "ajax_spider_scan_deep"),
-    "КраулерПоверхностный": ("zap", "ajax_spider_scan_shallow"),
-    "КраулерИтератор": ("zap", "ajax_spider_scan_iterator"),
-    "СтатусКраулера": ("zap", "ajax_spider_status"),
-    "СтатусКраулерКлиент": ("zap", "client_spider_status"),
-    "АктивноеСканирование": ("zap", "active_scan"),
-    "НовыйКонтекст": ("zap", "create_context"),
-    "ПолучитьАлерты": ("zap", "get_alerts"),
+    # --- корень: дубли главного из scanner / HTTP / Сессия (полные списки — за воротами) ---
+    # spider → crawl (PK-SPIDER-APOCALYPSE)
+        "ЗагрузитьФайл": ("webdriver", "upload_file"),
+    "Сканер": ("scanner", "crawl"),
+    "СканерЛокальный": ("scanner", "spider_scan_local"),
+    "Краулер": ("scanner", "ajax_spider_scan"),
+    "КраулерКлиент": ("scanner", "client_spider_scan"),
+    "СканерГлубокий": ("scanner", "spider_scan_deep"),
+    "СканерSPA": ("scanner", "spider_scan_spa"),
+    "СтатусСканера": ("scanner", "spider_status"),
+    "ОстановитьСканера": ("scanner", "stop_spider"),
+    "КраулерГлубокий": ("scanner", "ajax_spider_scan_deep"),
+    "КраулерПоверхностный": ("scanner", "ajax_spider_scan_shallow"),
+    "КраулерИтератор": ("scanner", "ajax_spider_scan_iterator"),
+    "СтатусКраулера": ("scanner", "ajax_spider_status"),
+    "СтатусКраулерКлиент": ("scanner", "client_spider_status"),
+    "Сканировать": ("scanner", "spider_scan"),
+    "СканерЛокальный": ("scanner", "spider_scan"),
+    "СканерГлубокий": ("scanner", "spider_scan"),
+    "СканерSPA": ("scanner", "spider_scan"),
+    # @DEPRECATED: Краулер*, Статус*, Остановить* удалены из реестра
+    "АктивноеСканирование": ("scanner", "active_scan"),
+    "НовыйКонтекст": ("scanner", "create_context"),
+    "ПолучитьАлерты": ("scanner", "get_alerts"),
     "HttpGet": ("http", "get"),
     "HttpPost": ("http", "post"),
     "ОчиститьCookies": ("browser", "clear_cookies"),
@@ -382,7 +346,7 @@ _METHOD_ID: Dict[str, WireTarget] = {
     "ПолучитьCookie": ("browser", "get_cookie"),
 }
 
-# Первая «стрелка» AC: только это (+ ворота ZAP/HTTP/Сессия/Драйвер).
+# Первая «стрелка» AC: только это (+ ворота scanner/HTTP/Сессия/Драйвер).
 # set — bank overlay может ui_hide / ui_extra / ui_only.
 _UI_IDS = {
     "Открыть",
@@ -447,180 +411,155 @@ _ALIASES: Dict[str, str] = {
     # DISC-2: канон-черновик «ВставитьТекст > Лейбл value» → send_keys
     "ВставитьТекст": "ВставитьЗначение",
     "Назад": "Вернуться",
-    "ФильтрЭлементовПоТексту": "ТекстыЭлементовСТекстом",
     "Логировать": "Лог",
     "ЛогСообщение": "Лог",
-    # Alert* → Оповещение* (браузерный dialog, не ZAP alerts)
-    "ПринятьAlert": "ПринятьОповещение",
-    "ОтклонитьAlert": "ОтклонитьОповещение",
-    "ПолучитьТекстAlert": "ПолучитьТекстОповещения",
-    "ВвестиВAlert": "ВвестиВОповещение",
-    "ПроверитьТекстAlert": "ПроверитьТекстОповещения",
+    # Alert* → Оповещение* (браузерный dialog, не scanner alerts)
     # Сессия: старое CDP-имя → канон ОчиститьCookies (за воротами — DevTools wire)
     "ОчиститьCookiesCDP": "ОчиститьCookies",
     # legacy Утвердить* → канон Проверить* (волна C)
     "УтвердитьРавенство": "ПроверитьРавенство",
-    "УтвердитьНеравенство": "ПроверитьНеравенство",
     "УтвердитьВхождение": "ПроверитьВхождение",
-    "УтвердитьОтсутствие": "ПроверитьОтсутствиеВхождения",
     "УтвердитьВСписке": "ПроверитьВСписке",
     "УтвердитьНеВСписке": "ПроверитьНеВСписке",
-    "УтвердитьИстину": "ПроверитьИстину",
-    "УтвердитьЛожь": "ПроверитьЛожь",
     "УтвердитьБольше": "ПроверитьБольше",
     "УтвердитьМеньше": "ПроверитьМеньше",
     "УтвердитьВДиапазоне": "ПроверитьВДиапазоне",
     "УтвердитьДлину": "ПроверитьДлину",
     "УтвердитьПустоту": "ПроверитьПустоту",
     "УтвердитьНепустоту": "ПроверитьНепустоту",
-    # ── DSL-B3: короткий сахарный синтаксис ──
-    "Клик": "Нажать",
-    "Вставить": "ВставитьЗначение",
-    "Ждать": "ЖдатьЭлемент",
-    "Скрин": "Скриншот",
-    "Текст": "ПолучитьТекст",
-    "Значение": "ПолучитьЗначение",
-    "Атрибут": "ПолучитьАтрибут",
-    "Дописать": "ДописатьТекст",
-    "Очистить": "ОчиститьЗначение",
-    "Выбрать": "ВыбратьПоТексту",
-    "ВыбратьЗначение": "ВыбратьПоЗначению",
-    "Обновить": "ОбновитьСтраницу",
-    "Навести": "Навести",
-    "ЗагрузитьФайл": "ЗагрузитьФайл",
-    "Открыть": "Открыть",
-    "ОткрытьПоURL": "ОткрытьПоURL",
-    "Проверить": "ПроверитьНаличиеЭлемента",
 }
 
 # ---------------------------------------------------------------------------
-# Ворота: ZAP / HTTP / Сессия (cookies+CDP) / Драйвер (хвост webdriver)
+# Ворота: scanner / HTTP / Сессия (cookies+CDP) / Драйвер (хвост webdriver)
 # ---------------------------------------------------------------------------
 
-_FACADE_ZAP: Dict[str, WireTarget] = {
+_FACADE_scanner: Dict[str, WireTarget] = {
     # контексты
-    "НовыйКонтекст": ("zap", "create_context"),
-    "ВключитьВКонтекст": ("zap", "set_context_include"),
-    "ИсключитьИзКонтекста": ("zap", "set_context_exclude"),
-    "ПрименитьДомены": ("zap", "apply_allowed_domains"),
-    "AuthКонтекста": ("zap", "set_context_auth"),
-    "СписокКонтекстов": ("zap", "list_contexts"),
-    "ПереключитьКонтекст": ("zap", "switch_context"),
-    "УдалитьКонтекст": ("zap", "delete_context"),
-    "ОчиститьКонтекст": ("zap", "clear_context"),
-    "АрхивироватьКонтекст": ("zap", "archive_context"),
-    "КонтекстПерехватаПользователя": ("zap", "new_user_intercept_context"),
+    "НовыйКонтекст": ("scanner", "create_context"),
+    "ВключитьВКонтекст": ("scanner", "set_context_include"),
+    "ИсключитьИзКонтекста": ("scanner", "set_context_exclude"),
+    "ПрименитьДомены": ("scanner", "apply_allowed_domains"),
+    "AuthКонтекста": ("scanner", "set_context_auth"),
+    "СписокКонтекстов": ("scanner", "list_contexts"),
+    "ПереключитьКонтекст": ("scanner", "switch_context"),
+    "УдалитьКонтекст": ("scanner", "delete_context"),
+    "ОчиститьКонтекст": ("scanner", "clear_context"),
+    "АрхивироватьКонтекст": ("scanner", "archive_context"),
+    "КонтекстПерехватаПользователя": ("scanner", "new_user_intercept_context"),
     # пользователи
-    "СоздатьПользователя": ("zap", "create_user"),
-    "УчётныеДанныеПользователя": ("zap", "set_user_credentials"),
-    "ForcedUser": ("zap", "set_forced_user"),
-    "ВключитьForcedUser": ("zap", "enable_forced_user_mode"),
-    "ВыключитьForcedUser": ("zap", "disable_forced_user_mode"),
-    "СоздатьИНазначитьForcedUser": ("zap", "create_and_force_user"),
-    "ВключитьПользователя": ("zap", "enable_user"),
-    "ОтключитьПользователя": ("zap", "disable_user"),
-    "СписокПользователей": ("zap", "get_users"),
-    # spider → Сканер*
-    "Сканер": ("zap", "spider_scan"),
-    "СканерЛокальный": ("zap", "spider_scan_local"),
-    "СканерГлубокий": ("zap", "spider_scan_deep"),
-    "СканерSPA": ("zap", "spider_scan_spa"),
-    "СтатусСканера": ("zap", "spider_status"),
-    "ОстановитьСканера": ("zap", "stop_spider"),
-    # ajax spider → Краулер*
-    "Краулер": ("zap", "ajax_spider_scan"),
-    "КраулерКлиент": ("zap", "client_spider_scan"),
-    "КраулерГлубокий": ("zap", "ajax_spider_scan_deep"),
-    "КраулерПоверхностный": ("zap", "ajax_spider_scan_shallow"),
-    "КраулерИтератор": ("zap", "ajax_spider_scan_iterator"),
-    "СтатусКраулера": ("zap", "ajax_spider_status"),
-    "СтатусКраулерКлиент": ("zap", "client_spider_status"),
+    "СоздатьПользователя": ("scanner", "create_user"),
+    "УчётныеДанныеПользователя": ("scanner", "set_user_credentials"),
+    "ForcedUser": ("scanner", "set_forced_user"),
+    "ВключитьForcedUser": ("scanner", "enable_forced_user_mode"),
+    "ВыключитьForcedUser": ("scanner", "disable_forced_user_mode"),
+    "СоздатьИНазначитьForcedUser": ("scanner", "create_and_force_user"),
+    "ВключитьПользователя": ("scanner", "enable_user"),
+    "ОтключитьПользователя": ("scanner", "disable_user"),
+    "СписокПользователей": ("scanner", "get_users"),
+    # spider → crawl (PK-SPIDER-APOCALYPSE)
+        "ЗагрузитьФайл": ("webdriver", "upload_file"),
+    "Сканер": ("scanner", "crawl"),
+    "СканерЛокальный": ("scanner", "spider_scan_local"),
+    "Краулер": ("scanner", "ajax_spider_scan"),
+    "КраулерКлиент": ("scanner", "client_spider_scan"),
+    "СканерГлубокий": ("scanner", "spider_scan_deep"),
+    "СканерSPA": ("scanner", "spider_scan_spa"),
+    "СтатусСканера": ("scanner", "spider_status"),
+    "ОстановитьСканера": ("scanner", "stop_spider"),
+    "КраулерГлубокий": ("scanner", "ajax_spider_scan_deep"),
+    "КраулерПоверхностный": ("scanner", "ajax_spider_scan_shallow"),
+    "КраулерИтератор": ("scanner", "ajax_spider_scan_iterator"),
+    "СтатусКраулера": ("scanner", "ajax_spider_status"),
+    "СтатусКраулерКлиент": ("scanner", "client_spider_status"),
+    "Сканировать": ("scanner", "spider_scan"),
+    "СканерЛокальный": ("scanner", "spider_scan_local"),
+    "СканерГлубокий": ("scanner", "spider_scan_deep"),
+    "СканерSPA": ("scanner", "spider_scan_spa"),
     # scans
-    "АктивноеСканирование": ("zap", "active_scan"),
-    "СтатусАктивногоСканирования": ("zap", "active_scan_status"),
-    "ОстановитьАктивноеСканирование": ("zap", "stop_active_scan"),
-    "ПассивноеСканирование": ("zap", "passive_scan_wait"),
-    "ПолитикаСканирования": ("zap", "set_scan_policy"),
-    "ПрофильСканирования": ("zap", "apply_scan_depth_profile"),
-    "СписокПолитикСканирования": ("zap", "get_scan_policies"),
-    "ПассивныеСканеры": ("zap", "get_passive_scanners"),
-    "ВключитьПассивныеСканеры": ("zap", "enable_passive_scanners"),
-    "ВыключитьПассивныеСканеры": ("zap", "disable_all_passive_scanners"),
+    "АктивноеСканирование": ("scanner", "active_scan"),
+    "СтатусАктивногоСканирования": ("scanner", "active_scan_status"),
+    "ОстановитьАктивноеСканирование": ("scanner", "stop_active_scan"),
+    "ПассивноеСканирование": ("scanner", "passive_scan_wait"),
+    "ПолитикаСканирования": ("scanner", "set_scan_policy"),
+    "ПрофильСканирования": ("scanner", "apply_scan_depth_profile"),
+    "СписокПолитикСканирования": ("scanner", "get_scan_policies"),
+    "ПассивныеСканеры": ("scanner", "get_passive_scanners"),
+    "ВключитьПассивныеСканеры": ("scanner", "enable_passive_scanners"),
+    "ВыключитьПассивныеСканеры": ("scanner", "disable_all_passive_scanners"),
     # alerts / report / filters
-    "ПолучитьАлерты": ("zap", "get_alerts"),
-    "ЧислоАлертов": ("zap", "get_alert_count"),
-    "ФильтрАлерта": ("zap", "add_alert_filter"),
-    "ГлобальныйФильтрАлерта": ("zap", "add_global_alert_filter"),
-    "ЗагрузитьФильтры": ("zap", "load_alert_filters"),
-    "План": ("zap", "run_automation_plan"),
-    "СтатусПлана": ("zap", "automation_plan_progress"),
-    "ОстановитьПлан": ("zap", "stop_automation_plan"),
-    "СгенерироватьПлан": ("zap", "generate_automation_plan"),
-    "ПрименитьAuth": ("zap", "apply_wired_auth"),
-    "BrowserAuth": ("zap", "set_browser_based_auth"),
-    "Отчёт": ("zap", "generate_report"),
-    "ЛогАтаки": ("zap", "log_attack"),
+    "ПолучитьАлерты": ("scanner", "get_alerts"),
+    "ЧислоАлертов": ("scanner", "get_alert_count"),
+    "ФильтрАлерта": ("scanner", "add_alert_filter"),
+    "ГлобальныйФильтрАлерта": ("scanner", "add_global_alert_filter"),
+    "ЗагрузитьФильтры": ("scanner", "load_alert_filters"),
+    "План": ("scanner", "run_automation_plan"),
+    "СтатусПлана": ("scanner", "automation_plan_progress"),
+    "ОстановитьПлан": ("scanner", "stop_automation_plan"),
+    "СгенерироватьПлан": ("scanner", "generate_automation_plan"),
+    "ПрименитьAuth": ("scanner", "apply_wired_auth"),
+    "BrowserAuth": ("scanner", "set_browser_based_auth"),
+    "Отчёт": ("scanner", "generate_report"),
+    "ЛогАтаки": ("scanner", "log_attack"),
     # API import (+ lab inventory)
-    "ИмпортOpenAPI": ("zap", "import_openapi_spec"),
-    "СписокОперацийOpenAPI": ("zap", "list_openapi_operations"),
-    "СканOpenAPI": ("zap", "scan_openapi"),
+    "ИмпортOpenAPI": ("scanner", "import_openapi_spec"),
+    "СписокОперацийOpenAPI": ("scanner", "list_openapi_operations"),
+    "СканOpenAPI": ("scanner", "scan_openapi"),
     "ВыполнитьОперацииOpenAPI": ("http", "execute_openapi_module"),
-    "ИмпортGraphQL": ("zap", "import_graphql_schema"),
-    "СписокОперацийGraphQL": ("zap", "list_graphql_operations"),
-    "СканGraphQL": ("zap", "scan_graphql_api"),
-    "МетодЗапросаGraphQL": ("zap", "set_graphql_request_method"),
+    "ИмпортGraphQL": ("scanner", "import_graphql_schema"),
+    "СписокОперацийGraphQL": ("scanner", "list_graphql_operations"),
+    "СканGraphQL": ("scanner", "scan_graphql_api"),
+    "МетодЗапросаGraphQL": ("scanner", "set_graphql_request_method"),
     "ВыполнитьGraphQL": ("http", "execute_graphql_module"),
-    "ИмпортgRPC": ("zap", "import_grpc_proto"),
+    "ИмпортgRPC": ("scanner", "import_grpc_proto"),
     "СписокСервисовgRPC": ("grpc", "list_services"),
-    "СканgRPC": ("zap", "scan_grpc"),
+    "СканgRPC": ("scanner", "scan_grpc"),
     "ВызовgRPC": ("grpc", "unary_call"),
     # DISC-1 lab stub (honest fail; CANON дно не снимаем)
-    "АвтоАвторизоваться": ("webdriver", "auto_authorize_discovery"),
-    "ИмпортHAR": ("zap", "import_har_sequence"),
-    "СканПоследовательности": ("zap", "sequence_active_scan"),
-    "ВыполнитьЦепь": ("zap", "execute_chain_module"),
-    "СканированиеЦепи": ("zap", "scan_chain_module"),
-    "РасследованиеЦепи": ("zap", "investigate_chain_module"),
-    "ПодготовитьЦепь": ("zap", "prepare_chain_module"),
-    "ИзбегатьLogout": ("zap", "set_logout_avoidance"),
-    # http via zap / session
-    "ЗапросЧерезZAP": ("zap", "zap_http_request"),
-    "СыройЗапросЧерезZAP": ("zap", "zap_http_raw_request"),
-    "Сообщения": ("zap", "get_messages"),
-    "СохранитьСессию": ("zap", "save_session"),
-    "ЗагрузитьСессию": ("zap", "load_session"),
-    "СайтыСессий": ("zap", "get_sessions_sites"),
-    "СессииСайта": ("zap", "get_site_sessions"),
+    "ИмпортHAR": ("scanner", "import_har_sequence"),
+    "СканПоследовательности": ("scanner", "sequence_active_scan"),
+    "ВыполнитьЦепь": ("scanner", "execute_chain_module"),
+    "СканированиеЦепи": ("scanner", "scan_chain_module"),
+    "РасследованиеЦепи": ("scanner", "investigate_chain_module"),
+    "ПодготовитьЦепь": ("scanner", "prepare_chain_module"),
+    "ИзбегатьLogout": ("scanner", "set_logout_avoidance"),
+    # http via scanner / session
+    "ЗапросЧерезscanner": ("scanner", "scanner_http_request"),
+    "СыройЗапросЧерезscanner": ("scanner", "scanner_http_raw_request"),
+    "Сообщения": ("scanner", "get_messages"),
+    "СохранитьСессию": ("scanner", "save_session"),
+    "ЗагрузитьСессию": ("scanner", "load_session"),
+    "СайтыСессий": ("scanner", "get_sessions_sites"),
+    "СессииСайта": ("scanner", "get_site_sessions"),
     # replacer / payloads / scripts
-    "ПравилоReplacer": ("zap", "add_replacer_rule"),
-    "УдалитьReplacer": ("zap", "remove_replacer_rule"),
-    "СписокReplacer": ("zap", "list_replacer_rules"),
-    "ОчиститьReplacer": ("zap", "clear_replacer_rules"),
-    "ДобавитьPayload": ("zap", "add_custom_payload"),
-    "УдалитьPayload": ("zap", "remove_payload"),
-    "СписокPayload": ("zap", "get_payloads"),
-    "ЗагрузитьСкрипт": ("zap", "load_script"),
-    "ВыполнитьСкрипт": ("zap", "run_script"),
-    "УдалитьСкрипт": ("zap", "remove_script"),
-    "СписокСкриптов": ("zap", "list_scripts"),
-    "ЗагрузитьHttpSender": ("zap", "load_http_sender_script"),
-    "ВключитьHttpSender": ("zap", "enable_http_sender_script"),
-    "ВыключитьHttpSender": ("zap", "disable_http_sender_script"),
-    "УдалитьHttpSender": ("zap", "remove_http_sender_script"),
+    "ПравилоReplacer": ("scanner", "add_replacer_rule"),
+    "УдалитьReplacer": ("scanner", "remove_replacer_rule"),
+    "СписокReplacer": ("scanner", "list_replacer_rules"),
+    "ОчиститьReplacer": ("scanner", "clear_replacer_rules"),
+    "ДобавитьPayload": ("scanner", "add_custom_payload"),
+    "УдалитьPayload": ("scanner", "remove_payload"),
+    "СписокPayload": ("scanner", "get_payloads"),
+    "ЗагрузитьСкрипт": ("scanner", "load_script"),
+    "ВыполнитьСкрипт": ("scanner", "run_script"),
+    "УдалитьСкрипт": ("scanner", "remove_script"),
+    "СписокСкриптов": ("scanner", "list_scripts"),
+    "ЗагрузитьHttpSender": ("scanner", "load_http_sender_script"),
+    "ВключитьHttpSender": ("scanner", "enable_http_sender_script"),
+    "ВыключитьHttpSender": ("scanner", "disable_http_sender_script"),
+    "УдалитьHttpSender": ("scanner", "remove_http_sender_script"),
     # alpha fuzz: mask httpsender + ScriptVars (не UI Fuzzer)
-    "HttpSender": ("zap", "install_mask_http_sender"),
-    "ПейлоадПодмены": ("zap", "set_fuzz_payload"),
-    "ГлобальнаяVarСкрипта": ("zap", "set_script_global_var"),
+    "HttpSender": ("scanner", "install_mask_http_sender"),
+    "ПейлоадПодмены": ("scanner", "set_fuzz_payload"),
+    "ГлобальнаяVarСкрипта": ("scanner", "set_script_global_var"),
     # misc
-    "ИмпортСертификата": ("zap", "import_certificate"),
-    "ЛокальныйСервер": ("zap", "add_local_server"),
-    "СтартOAST": ("zap", "start_oast_server"),
-    "СтопOAST": ("zap", "stop_oast_server"),
-    "АлертыOAST": ("zap", "get_oast_alerts"),
+    "ИмпортСертификата": ("scanner", "import_certificate"),
+    "ЛокальныйСервер": ("scanner", "add_local_server"),
+    "СтартOAST": ("scanner", "start_oast_server"),
+    "СтопOAST": ("scanner", "stop_oast_server"),
+    "АлертыOAST": ("scanner", "get_oast_alerts"),
 }
 
-# Все ZAP-методы доступны с корня (без ворот «ZAP …»). HTTP / Сессия / Драйвер — как были.
-_METHOD_ID.update(_FACADE_ZAP)
+# Все scanner-методы доступны с корня (без ворот «scanner …»). HTTP / Сессия / Драйвер — как были.
+_METHOD_ID.update(_FACADE_scanner)
 
 # Фаззинг: legacy модуль + канон сущности Fuzzer (Editor → Campaign).
 _FACADE_FUZZ: Dict[str, WireTarget] = {
@@ -665,8 +604,6 @@ _FACADE_CDP: Dict[str, WireTarget] = {
     # DevTools (бывш. ОчиститьCookiesCDP); корень ОчиститьCookies — Selenium clear_cookies
     "ОчиститьCookies": ("browser", "cdp_clear_browser_cookies"),
     "ВсеCookies": ("browser", "get_all_cookies"),
-    "СохранитьСостояние": ("browser", "save_state"),
-    "ВосстановитьСостояние": ("browser", "restore_state"),
     "ОчиститьСостояние": ("browser", "clear_state"),
     "ПолучитьLocalStorage": ("browser", "get_local_storage_item"),
     "УстановитьLocalStorage": ("browser", "set_local_storage_item"),
@@ -678,22 +615,7 @@ _FACADE_CDP: Dict[str, WireTarget] = {
     "Команда": ("browser", "cdp_command"),
     "ВключитьNetwork": ("browser", "cdp_network_enable"),
     "ВыключитьNetwork": ("browser", "cdp_network_disable"),
-    "ДопЗаголовки": ("browser", "cdp_set_extra_headers"),
-    "СброситьДопЗаголовки": ("browser", "cdp_clear_extra_headers"),
-    "БлокироватьURL": ("browser", "cdp_set_blocked_urls"),
-    "СнятьБлокировкуURL": ("browser", "cdp_clear_blocked_urls"),
-    "ОтключитьКэш": ("browser", "cdp_set_cache_disabled"),
     "ОчиститьКэш": ("browser", "cdp_clear_browser_cache"),
-    "ЭмуляцияСети": ("browser", "cdp_emulate_network"),
-    "СброситьЭмуляциюСети": ("browser", "cdp_reset_network_conditions"),
-    "ПодменитьАгентПользователя": ("browser", "cdp_set_user_agent"),
-    "Геолокация": ("browser", "cdp_set_geolocation"),
-    "РазмерУстройства": ("browser", "cdp_set_device_metrics"),
-    "InitСкрипт": ("browser", "cdp_add_init_script"),
-    "Перезагрузить": ("browser", "cdp_reload"),
-    "Скриншот": ("browser", "cdp_capture_screenshot"),
-    "Выполнить": ("browser", "cdp_evaluate"),
-    "ИгнорСертификатов": ("browser", "cdp_ignore_certificate_errors"),
     "ЛогиБраузера": ("browser", "get_browser_logs"),
     "ОшибкиКонсоли": ("browser", "get_console_errors"),
     # cookies: проверки и перенос между прогонами
@@ -713,19 +635,8 @@ _FACADE_CDP: Dict[str, WireTarget] = {
     "УсловияСети": ("browser", "set_network_conditions"),
     "ТекущиеУсловияСети": ("browser", "get_network_conditions"),
     "ЛогиПроизводительности": ("browser", "get_performance_logs"),
-    "ВключитьМетрики": ("browser", "cdp_performance_enable"),
-    "ВыключитьМетрики": ("browser", "cdp_performance_disable"),
-    "Метрики": ("browser", "cdp_get_performance_metrics"),
     # эмуляция окружения
-    "Локаль": ("browser", "cdp_set_locale"),
-    "Таймзона": ("browser", "cdp_set_timezone"),
-    "ЭмуляцияTouch": ("browser", "cdp_set_touch_emulation"),
-    "СброситьГеолокацию": ("browser", "cdp_clear_geolocation"),
-    "СброситьРазмерУстройства": ("browser", "cdp_clear_device_metrics"),
     # управление вкладкой и загрузками
-    "ОстановитьЗагрузкуСтраницы": ("browser", "cdp_stop_loading"),
-    "НаПереднийПлан": ("browser", "cdp_bring_to_front"),
-    "ПоведениеЗагрузок": ("browser", "cdp_set_download_behavior"),
 }
 
 # Хвост webdriver — ворота «Драйвер» (не путать с кликами в корне: Нажать без ворот).
@@ -737,7 +648,7 @@ _FACADE_DRIVER: Dict[str, WireTarget] = {
 
 # Сессия = cookies / storage / CDP (адаптер browser). Для банка понятнее, чем «CDP».
 _FACADES: Dict[str, Dict[str, WireTarget]] = {
-    "Сканер": _FACADE_ZAP,
+    "Сканер": _FACADE_scanner,
     "HTTP": _FACADE_HTTP,
     "Сессия": _FACADE_CDP,
     "Драйвер": _FACADE_DRIVER,
@@ -745,7 +656,8 @@ _FACADES: Dict[str, Dict[str, WireTarget]] = {
 
 # Старые ярлыки ворот (ещё резолвим).
 _FACADE_ALIASES: Dict[str, str] = {
-    "ZAP": "Сканер",
+    "SCANNER": "Сканер",
+    "scanner": "Сканер",
     "CDP": "Сессия",
     "WD": "Драйвер",
     "Браузер": "Драйвер",
@@ -753,8 +665,8 @@ _FACADE_ALIASES: Dict[str, str] = {
 
 # Alias методов за воротами (канон не в корневом _METHOD_ID).
 _FACADE_METHOD_ALIASES: Dict[str, str] = {
-    "HttpЧерезZAP": "ЗапросЧерезZAP",
-    "СыройHttpЧерезZAP": "СыройЗапросЧерезZAP",
+    "HttpЧерезscanner": "ЗапросЧерезscanner",
+    "СыройHttpЧерезscanner": "СыройЗапросЧерезscanner",
     "ПодменаHttpSender": "HttpSender",
     "ПодменитьUserAgent": "ПодменитьАгентПользователя",
 }
@@ -763,7 +675,7 @@ _WIRE_COMPONENTS = frozenset(
     {
         "webdriver",
         "browser",
-        "zap",
+        "scanner",
         "http",
         "grpc",
         "connector",
@@ -1023,7 +935,7 @@ def resolve_call(text: str) -> Optional[str]:
     """
     `Нажать css .ok` → `webdriver|click|css|.ok`
     `Нажать > Войти` → `webdriver|click|label|Войти`
-    `ZAP Сканер ${url}` → `zap|spider_scan|${url}`
+    `scanner Сканер ${url}` → `scanner|spider_scan|${url}`
     Не MethodId / уже wire → None.
     """
     raw = (text or "").strip()
@@ -1184,6 +1096,9 @@ def _resolve_execution_title_meta(
     comp: str, act: str, params: Dict[str, object]
 ) -> tuple[str, str, tuple]:
     descriptor = _STEP_DESCRIPTORS.get((comp, act))
+    if not descriptor and comp in ("scanner", "scanner"):
+        alt_comp = "scanner" if comp == "scanner" else "scanner"
+        descriptor = _STEP_DESCRIPTORS.get((alt_comp, act))
     category = descriptor.category if descriptor else _CATEGORY_LABELS.get(comp, comp or "PK")
     if descriptor:
         return category, descriptor.title, descriptor.params
@@ -1232,11 +1147,11 @@ def _normalize_execution_params(
     Повторить только пользовательский sugar сканов для отчёта.
 
     Адаптер принимает `Сканер juice_ctx 1` в технических slots
-    ``url, context_name`` и нормализует его перед запросом ZAP. Trace обязан
+    ``url, context_name`` и нормализует его перед запросом scanner. Trace обязан
     показывать авторский смысл, а не промежуточное расположение аргументов.
     """
     normalized = dict(params)
-    if component != "zap":
+    if component not in ("scanner", "scanner"):
         return normalized
     if action in {
         "spider_scan",

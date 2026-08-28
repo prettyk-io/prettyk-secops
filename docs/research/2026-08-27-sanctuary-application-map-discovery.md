@@ -95,7 +95,7 @@
 - **`PrettyK Pure Box`** — сканерный контур и рабочие интерфейсы.
 - **`Buddy Agent Runtime`** — локальный автономный интеллект и оркестрация задач.
 - **`Canon & Sanctuary Store`** — Алтарь побед, 2FA-скрижали, `INDEX.md`, канонические контракты.
-- **`Local Lab & SecOps Stack`** — Docker Compose, ZAP Demon `:8080`, Allure3 `:5050`, DefectDojo `:8081`, Juice Shop `:3000`.
+- **`Local Lab & SecOps Stack`** — Docker Compose, scanner Demon `:8080`, Allure3 `:5050`, DefectDojo `:8081`, Juice Shop `:3000`.
 - **`Durable Storage & Secrets`** — PostgreSQL (SoT), Valkey (Dispatch/PubSub), MinIO (Evidence S3), OpenBao (KMS).
 - **`External World & Bridges`** — Discord Bot Gateway, Host CDP Chrome `:9222`, BankVM / Gap2 Remote SSH.
 
@@ -106,7 +106,7 @@
 - **`CheckWorkspace Bridge`** — единая транзакционная шина (Draft persistence, Commit Engine, Semantic Diff).
 - **`Browser Stage & CDP Wire`** — живой мост к Chrome `:9222`, захват кликов, инспекция DOM/AX, Discovery overlay.
 - **`Buddy CO-PILOT Dock`** — штурманский док (LaunchpadHero, SkeletonCard, LiveDiffBanner, StepRadar, EvidenceMatrix).
-- **`Execution Plane & Fuzzer`** — Playwright Browser Core, ZAP Active Scanner, Fast HTTP Fuzzer, Har Importer.
+- **`Execution Plane & Fuzzer`** — Playwright Browser Core, scanner Active Scanner, Fast HTTP Fuzzer, Har Importer.
 - **`Telemetry & Evidence Bridge`** — Live Server `:8767` (SSE), Evidence Chain (`intent ➔ run ➔ finding ➔ artifact`).
 - **`Admin & Control Plane` (`#/admin`)** — реестр приложений, целей, гейт-политик и прогонов.
 - **`Legacy Reference Archive`** — замороженный снимок старого монолита (`docs/archive/studio-editor-legacy/`).
@@ -168,7 +168,7 @@
   - `Playground API`: `:8765` (🟢 Alive)
   - `Live SSE Engine`: `:8767` (🟢 SSE Pulse)
   - `Chrome CDP`: `:9222` (🟢 Maximize Viewport 1707x825)
-  - `ZAP API`: `:8080` (🟢 Demon Ready)
+  - `scanner API`: `:8080` (🟢 Demon Ready)
   - `Target Juice Shop`: `:3000` (🟢 Reachable)
 - **Цветовой код:** Пульсирующий Cyan `#22D3EE` и Violet. При падении порта нода загорается тревожным Crimson `#EF4444`.
 
@@ -228,7 +228,7 @@
 
 > **Важно:** карта строится на канонических маршрутах (`#/checks/<id>/studio`, `#/checks/<id>/editor`,
 > `#/checks/<id>/studio-old`, `#/checks/<id>/editor-old`), а не на временном `#/studio-v2`.
-> Поэтому Manifest + Engine пакеты идут следующим скоупом после завершения STU-RAILS.
+> Поэтому Wired + Engine пакеты идут следующим скоупом после завершения STU-RAILS.
 
 ```typescript
 export type SystemLevel = 'landscape' | 'system' | 'surface' | 'component';

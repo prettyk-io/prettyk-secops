@@ -12,5 +12,5 @@ class WiredError(Exception):
     """Манифест нельзя выполнить: неизвестный keyword, битый конструктор, неверная арность."""
 
 
-class ZapApiError(RuntimeError):
-    """Неуспешный ответ ZAP API (4xx/5xx при validate=True у обёртки zapv2)."""
+class scannerApiError(RuntimeError):
+    """Неуспешный ответ scanner API (4xx/5xx при validate=True у обёртки zapv2)."""

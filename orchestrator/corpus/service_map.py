@@ -13,7 +13,7 @@
      когда прямых совпадений нет.
 
 Выход: adjacency (page → endpoints) + подписанные параметры (endpoint → fields).
-Дальше это кормит CD-4 (awaken) и CD-5 (ZAP context).
+Дальше это кормит CD-4 (awaken) и CD-5 (scanner context).
 """
 from __future__ import annotations
 

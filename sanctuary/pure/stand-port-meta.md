@@ -14,8 +14,8 @@
 | **PrettyK Live / Monitor** | 8767 | `lab_up.ps1` → `run_live_idle.py` | `netstat -ano \| findstr :8767` |
 | **Allure 3** | 5050 | `services/docker-compose.yml` → `allure3-secops` | `curl http://127.0.0.1:5050/health` |
 | **Allure 2** (legacy) | 5051 | `services/docker-compose.yml` → `allure-light-secops` | `curl http://127.0.0.1:5051/health` |
-| **ZAP demon API** | 8080 | `services/docker-compose.zap.yml` | `curl http://127.0.0.1:8080/JSON/core/view/version/` |
-| **ZAP** | 8080 | default | `netstat -ano \| findstr :8080` |
+| **scanner demon API** | 8080 | `services/docker-compose.scanner.yml` | `curl http://127.0.0.1:8080/JSON/core/view/version/` |
+| **scanner** | 8080 | default | `netstat -ano \| findstr :8080` |
 | **Selenium Grid** | 4444 | `services/docker-compose.yml` | `curl http://127.0.0.1:4444/status` |
 | **noVNC Chrome** | 7900 | `services/docker-compose.yml` | `netstat -ano \| findstr :7900` |
 | **noVNC Firefox** | 7901 | `services/docker-compose.yml` | `netstat -ano \| findstr :7901` |
@@ -41,7 +41,7 @@
 .\orchestrator\tools\lab_up.ps1 -IncludeSonarQube
 ```
 
-`lab_up.ps1` внутри: compose (Grid/Chrome/Firefox/Allure 2+3) → ZAP → Juice → api-lab → `lab_ensure_ui.ps1 -StartIfDown` (Editor+Playground) → `run_live_idle.py` (Live) → HTTP-readiness всех.
+`lab_up.ps1` внутри: compose (Grid/Chrome/Firefox/Allure 2+3) → scanner → Juice → api-lab → `lab_ensure_ui.ps1 -StartIfDown` (Editor+Playground) → `run_live_idle.py` (Live) → HTTP-readiness всех.
 
 ### Только Editor + Playground (без Docker)
 
@@ -95,7 +95,7 @@ allure3-secops (канон)      http://127.0.0.1:5050/
 DefectDojo            http://127.0.0.1:8081/ admin/admin
 PrettyK Live              http://127.0.0.1:8767/
 Editor                http://localhost:5173/
-ZAP demon API         http://127.0.0.1:8080/
+scanner demon API         http://127.0.0.1:8080/
 Selenium Grid         http://127.0.0.1:4444/ui/
 Authoring Browser      http://127.0.0.1:7902/vnc.html?autoconnect=1&resize=scale
 Juice Shop            http://127.0.0.1:3000/

@@ -18,7 +18,7 @@ def test_build_run_ui_summary_prefers_dojo(tmp_path: Path, monkeypatch):
             "stats": {"critical": 0, "high": 2, "medium": 0, "low": 0, "info": 0},
             "executive": {"executive_class": "High"},
         },
-        zap={"counts": {"critical": 0, "high": 9, "medium": 0, "low": 0, "info": 0}, "ok": True},
+        scanner={"counts": {"critical": 0, "high": 9, "medium": 0, "low": 0, "info": 0}, "ok": True},
         run_id="lab-1",
     )
     assert summary["risks_source"] == "dojo"
@@ -40,15 +40,15 @@ def test_build_run_ui_summary_prefers_dojo(tmp_path: Path, monkeypatch):
     assert trend[0].get("allure_pass_rate") == 0.75
 
 
-def test_build_run_ui_summary_falls_back_to_zap():
+def test_build_run_ui_summary_falls_back_to_scanner():
     summary = rus.build_run_ui_summary(
-        zap={
+        scanner={
             "ok": True,
             "counts": {"critical": 0, "high": 0, "medium": 1, "low": 2, "info": 0},
             "top_findings": [{"name": "CSP", "risk": "medium", "count": 3}],
         },
         run_id="z1",
     )
-    assert summary["risks_source"] == "zap"
+    assert summary["risks_source"] == "scanner"
     assert summary["risks"]["medium"] == 1
     assert summary["top_findings"][0]["name"] == "CSP"

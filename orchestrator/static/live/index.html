@@ -27,7 +27,7 @@
       --video-w: 960px;
       --video-h: 540px;
       --inspector-w: 403px;
-      --zap-min: 220px;
+      --scanner-min: 220px;
       --diary-min: 140px;
     }
     * { box-sizing: border-box; }
@@ -386,7 +386,7 @@
     .playhead-marker[data-kind="STEP"] { background: #8ab4f8; }
     .playhead-marker[data-kind="ERROR"] { background: #f28b82; }
     .playhead-marker[data-kind="HIGH"] { background: #fdd663; }
-    .playhead-marker[data-kind="ZAP"] { background: #ff8a65; }
+    .playhead-marker[data-kind="scanner"] { background: #ff8a65; }
     .playhead-time {
       display: flex;
       align-items: center;
@@ -411,7 +411,7 @@
       height: 100%;
       min-width: 0;
       min-height: 0;
-      grid-template-columns: var(--video-w) minmax(var(--zap-min), 1fr);
+      grid-template-columns: var(--video-w) minmax(var(--scanner-min), 1fr);
       grid-template-rows: var(--video-h) minmax(var(--diary-min), 1fr);
       overflow: hidden;
     }
@@ -460,7 +460,7 @@
       background: var(--panel);
       border-top: 1px solid var(--border);
     }
-    .zap-pane {
+    .scanner-pane {
       grid-column: 2;
       grid-row: 1 / -1;
       display: flex;
@@ -471,7 +471,7 @@
       background: var(--panel);
       border-left: 1px solid var(--border);
     }
-    /* В наблюдателе дневник и ZAP остаются исходными grid-панелями. */
+    /* В наблюдателе дневник и scanner остаются исходными grid-панелями. */
     .focus-inspector { display: contents; }
     .focus-log-pane { display: none; }
     .execution-rail {
@@ -627,7 +627,7 @@
       background: var(--panel);
     }
     .stage[data-live-view="focus"] .diary-pane,
-    .stage[data-live-view="focus"] .zap-pane {
+    .stage[data-live-view="focus"] .scanner-pane {
       display: none;
     }
     .stage[data-live-view="observer"] .focus-log-pane {
@@ -686,7 +686,7 @@
       background: var(--panel);
     }
     .stage[data-live-view="split"] .diary-pane,
-    .stage[data-live-view="split"] .zap-pane {
+    .stage[data-live-view="split"] .scanner-pane {
       display: none;
     }
     .stage[data-live-view="split"] .execution-rail {
@@ -797,8 +797,8 @@
     .row.LOW .kind { color: #81c995; }
     .row.INFO .kind, .row.INFORMATIONAL .kind { color: #80cbc4; }
     .row.LOG .kind, .row.CONSOLE .kind { color: #c3a6ff; }
-    /* ZAP + ФАЗЗИНГ / FUZZ — один «оранжевый» DAST-тон. */
-    .row.ZAP .kind,
+    /* scanner + ФАЗЗИНГ / FUZZ — один «оранжевый» DAST-тон. */
+    .row.scanner .kind,
     .row.FUZZ .kind,
     .row.ФАЗЗИНГ .kind { color: #ff8a65; }
     .row .ts { color: var(--muted); margin-right: 8px; }
@@ -1036,7 +1036,7 @@
           <div class="pane-toolbar">
             <div class="kind-chips" id="focusKindChips">
               <button type="button" data-kind="ALL" class="active">ВСЕ</button>
-              <button type="button" data-kind="ZAP">ZAP</button>
+              <button type="button" data-kind="scanner">scanner</button>
               <button type="button" data-kind="STEP">STEP</button>
               <button type="button" data-kind="LOG">LOG</button>
               <button type="button" data-kind="ERROR">ERROR</button>
@@ -1059,17 +1059,17 @@
           </div>
           <div class="log" id="diaryLog"><div class="empty">Ожидание событий...</div></div>
         </aside>
-        <aside class="zap-pane" id="zapPane">
+        <aside class="scanner-pane" id="scannerPane">
           <div class="pane-toolbar">
-            <div class="kind-chips" id="zapKindChips">
+            <div class="kind-chips" id="scannerKindChips">
               <button type="button" data-kind="ALL" class="active">ВСЕ</button>
-              <button type="button" data-kind="ZAP">ZAP</button>
+              <button type="button" data-kind="scanner">scanner</button>
               <button type="button" data-kind="LOG">LOG</button>
             </div>
-            <input id="zapFilter" class="filter-input" type="search" spellcheck="false" autocomplete="off"
+            <input id="scannerFilter" class="filter-input" type="search" spellcheck="false" autocomplete="off"
                    placeholder="Фильтр / regExp" />
           </div>
-          <div class="log" id="zapLog"><div class="empty">Ожидание событий...</div></div>
+          <div class="log" id="scannerLog"><div class="empty">Ожидание событий...</div></div>
         </aside>
       </div>
       <section class="execution-rail" aria-label="Ход выполнения" aria-live="off">
@@ -1333,9 +1333,9 @@
       }
     }
 
-    /* Маркеры событий (STEP/ERROR/HIGH/ZAP) — накопительный набор */
+    /* Маркеры событий (STEP/ERROR/HIGH/scanner) — накопительный набор */
     const playheadMarkerSet = [];
-    const MARKER_KINDS = new Set(["STEP", "ERROR", "HIGH", "ZAP"]);
+    const MARKER_KINDS = new Set(["STEP", "ERROR", "HIGH", "scanner"]);
     function addPlayheadMarker(ev) {
       const kind = eventKind(ev);
       if (!MARKER_KINDS.has(kind)) return;
@@ -1613,13 +1613,13 @@
           // Очищаем начальные пустые заглушки перед заполнением
           focusPane.clear();
           diaryPane.clear();
-          zapPane.clear();
+          scannerPane.clear();
 
           for (const ev of events) {
             focusPane.appendEvent(ev);
             const channel = String(ev?.channel || "diary").toLowerCase();
-            if (channel === "zap") {
-              zapPane.appendEvent(ev);
+            if (channel === "scanner") {
+              scannerPane.appendEvent(ev);
             } else {
               diaryPane.appendEvent(ev);
             }
@@ -1700,7 +1700,7 @@
 
     (function initStageLayout() {
       const AR = 16 / 9;
-      const ZAP_MIN = 220;
+      const scanner_MIN = 220;
       const DIARY_MIN = 140;
       const OBSERVER_VIDEO_SCALE = 0.8;
       const FOCUS_INSPECTOR_RATIO = 0.42;
@@ -1722,7 +1722,7 @@
           return { inspectorW };
         }
 
-        const maxW = Math.max(0, availW - ZAP_MIN);
+        const maxW = Math.max(0, availW - scanner_MIN);
         const maxH = Math.max(0, availH - DIARY_MIN);
         let w, h;
         if (maxW < 1 || maxH < 1) {
@@ -1934,11 +1934,11 @@
       return raw;
     }
 
-    /** CSS-класс строки (для цвета бейджа): ЛогАтаки → ZAP, FUZZ → ФАЗЗИНГ. */
+    /** CSS-класс строки (для цвета бейджа): ЛогАтаки → scanner, FUZZ → ФАЗЗИНГ. */
     function displayRowKind(ev) {
       const raw = String(ev?.kind || "NOTE").toUpperCase();
       if (raw === "FUZZ") return "ФАЗЗИНГ";
-      if (raw === "LOG" && isAttackLog(ev)) return "ZAP";
+      if (raw === "LOG" && isAttackLog(ev)) return "scanner";
       return raw;
     }
 
@@ -1948,7 +1948,7 @@
 
     function isSecurityKind(ev) {
       const kind = eventKind(ev);
-      return kind === "ZAP" || kind === "ФАЗЗИНГ" || kind === "HIGH" || isAttackLog(ev);
+      return kind === "scanner" || kind === "ФАЗЗИНГ" || kind === "HIGH" || isAttackLog(ev);
     }
 
     const SIGNAL_PRESET_KINDS = new Set([
@@ -2075,10 +2075,10 @@
       return { appendEvent, renderAll, clear };
     }
 
-    // Рабочая сцена: merge diary+zap в один лог.
-    // ВСЕ = diary.ВСЕ ∪ zap.ВСЕ; LOG = diary.LOG ∪ zap.LOG (+ ЛогАтаки).
+    // Рабочая сцена: merge diary+scanner в один лог.
+    // ВСЕ = diary.ВСЕ ∪ scanner.ВСЕ; LOG = diary.LOG ∪ scanner.LOG (+ ЛогАтаки).
     const focusKindMatchers = {
-      ZAP: (ev) => isSecurityKind(ev),
+      scanner: (ev) => isSecurityKind(ev),
       STEP: (ev) => eventKind(ev) === "STEP",
       LOG: (ev) => ["LOG", "CONSOLE"].includes(eventKind(ev)) || isAttackLog(ev),
       ERROR: (ev) => eventKind(ev) === "ERROR",
@@ -2092,7 +2092,7 @@
       emptyText: "Ожидание событий...",
     });
     // Наблюдатель: панели раздельно, как раньше (без merge).
-    // В правой ZAP-панели ВСЕ = только zap-поток (ZAP+LOG+…).
+    // В правой scanner-панели ВСЕ = только scanner-поток (scanner+LOG+…).
     const diaryPane = createLogPane({
       logEl: document.getElementById("diaryLog"),
       filterInput: document.getElementById("diaryFilter"),
@@ -2103,13 +2103,13 @@
       },
       emptyText: "Ожидание событий...",
     });
-    const zapPane = createLogPane({
-      logEl: document.getElementById("zapLog"),
-      filterInput: document.getElementById("zapFilter"),
-      kindChipsEl: document.getElementById("zapKindChips"),
-      presetChipsEl: document.getElementById("zapFilterPresets"),
+    const scannerPane = createLogPane({
+      logEl: document.getElementById("scannerLog"),
+      filterInput: document.getElementById("scannerFilter"),
+      kindChipsEl: document.getElementById("scannerKindChips"),
+      presetChipsEl: document.getElementById("scannerFilterPresets"),
       kindGroups: {
-        ZAP: ["ZAP", "HIGH", "ФАЗЗИНГ", "FUZZ"],
+        scanner: ["scanner", "HIGH", "ФАЗЗИНГ", "FUZZ"],
         LOG: ["LOG", "CONSOLE"],
       },
       emptyText: "Ожидание событий...",
@@ -2118,7 +2118,7 @@
     /* MON-11: скраббинг перерисовывает все панели */
     registerPlayheadPane(() => focusPane.renderAll());
     registerPlayheadPane(() => diaryPane.renderAll());
-    registerPlayheadPane(() => zapPane.renderAll());
+    registerPlayheadPane(() => scannerPane.renderAll());
 
     function bindSSE(url, onEvent) {
       const es = new EventSource(url);
@@ -2153,8 +2153,8 @@
       }
       addPlayheadMarker(event);
       focusPane.appendEvent(event);
-      if (channel === "zap") {
-        zapPane.appendEvent(event);
+      if (channel === "scanner") {
+        scannerPane.appendEvent(event);
         return;
       }
       diaryPane.appendEvent(event);

@@ -18,8 +18,8 @@ _SEV_MAP = {
 }
 _SEV_RANK = ("info", "low", "medium", "high", "critical")
 
-# ZAP scanner_confidence → numeric threshold
-# 0: False Positive (фильтруется ещё в ZAP, не приходит)
+# scanner scanner_confidence → numeric threshold
+# 0: False Positive (фильтруется ещё в scanner, не приходит)
 # 1: Low / Tentative  2: Medium / Firm  3: High / Certain  4: User Confirmed
 _CONFIDENCE_MAP: Dict[Any, int] = {
     "low": 1,

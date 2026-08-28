@@ -13,7 +13,7 @@ function makePipeline(): PipelineDefinition {
     requiredCapabilities: ['checks:create', 'fuzzer:execute'],
     steps: [
       { id: 'disc', component: { name: 'Browser Discovery', version: '1.4.0' } },
-      { id: 'scan', component: { name: 'ZAP Active Scan', version: '2.15.0' }, approvals: [{ kind: 'role', required: 'fuzzer:execute', label: 'Fuzz approval' }] },
+      { id: 'scan', component: { name: 'scanner Active Scan', version: '2.15.0' }, approvals: [{ kind: 'role', required: 'fuzzer:execute', label: 'Fuzz approval' }] },
     ],
     edges: [{ from: 'disc', to: 'scan', kind: 'depends_on' }],
   };

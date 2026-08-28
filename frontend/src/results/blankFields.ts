@@ -73,7 +73,7 @@ export type BlankViewModel = {
   exclusions: string;
   stop_conditions: string[];
   expected_results: string[];
-  manifest_hash: string;
+  wired_hash: string;
   generated_at: string;
   template_version: string;
   logo_ref: string;
@@ -140,14 +140,14 @@ function assessmentPurposeLabel(raw: string): string {
   }
 }
 
-function zapModeLabel(raw: string): string {
+function scannerModeLabel(raw: string): string {
   if (raw === 'webswing') {
-    return 'Комплекс средств динамического анализа (PrettyK) с применением OWASP ZAP (интерактивный режим)';
+    return 'Комплекс средств динамического анализа (PrettyK) с применением OWASP scanner (интерактивный режим)';
   }
   if (raw === 'demon') {
-    return 'Комплекс средств динамического анализа (PrettyK) с применением OWASP ZAP (режим сканирования)';
+    return 'Комплекс средств динамического анализа (PrettyK) с применением OWASP scanner (режим сканирования)';
   }
-  return 'Комплекс средств динамического анализа (PrettyK) с применением OWASP ZAP';
+  return 'Комплекс средств динамического анализа (PrettyK) с применением OWASP scanner';
 }
 
 function scanPolicyLabel(raw: string): string {
@@ -426,7 +426,7 @@ export function buildBlankViewModel(payload: BlankPayload): BlankViewModel {
 
   return {
     kind: payload.kind,
-    document_number: `DAST-${(payload.manifest_hash ?? 'draft').toUpperCase()}`,
+    document_number: `DAST-${(payload.wired_hash ?? 'draft').toUpperCase()}`,
     date_created: formatRuDate(payload.generated_at),
     place: 'г. Москва',
     confidentiality: 'ДСП (для служебного пользования)',
@@ -442,7 +442,7 @@ export function buildBlankViewModel(payload: BlankPayload): BlankViewModel {
     assessment_purpose: assessmentPurposeLabel(str(meta.assessment_purpose, 'scheduled')),
     date_start: run?.started_at ? formatRuDate(run.started_at) : DASH,
     date_end: DASH,
-    testing_tools: zapModeLabel(str(infra.zap_mode, 'demon')),
+    testing_tools: scannerModeLabel(str(infra.scanner_mode, 'demon')),
     testing_mode: testingModeFromAuth(authType),
     test_credentials_role: credentialsRole(authType, hasAuth),
     scan_policy: scanPolicyLabel(str(sec.scan_policy)),
@@ -488,7 +488,7 @@ export function buildBlankViewModel(payload: BlankPayload): BlankViewModel {
       'оформление акта по результатам выполненных работ с рекомендациями по устранению недостатков;',
       'решение о необходимости перепроверки после устранения критических и высоких уязвимостей — по итогам акта.',
     ],
-    manifest_hash: str(payload.manifest_hash),
+    wired_hash: str(payload.wired_hash),
     generated_at: payload.generated_at,
     template_version: payload.template_version,
     logo_ref: str(payload.org.logo_ref, ''),

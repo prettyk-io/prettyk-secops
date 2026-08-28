@@ -42,7 +42,7 @@ def test_mask_locals_stack_password_slot():
 def test_diary_masks_constructor(monkeypatch):
     published = []
 
-    def fake_publish(kind, text, channel="diary"):
+    def fake_publish(kind, text, channel="diary", **kwargs):
         published.append((channel, kind, text))
 
     monkeypatch.setattr(diary_bus, "publish", fake_publish)
@@ -74,7 +74,7 @@ def test_log_attack_masks_message(monkeypatch):
         stream=stream,
     )
     assert any(
-        ch == "zap" and "atk-secret" not in text and SECRET_LOG_MASK in text
+        ch == "scanner" and "atk-secret" not in text and SECRET_LOG_MASK in text
         for ch, _k, text in published
     )
 

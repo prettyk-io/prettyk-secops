@@ -78,6 +78,9 @@ KNOWN_STUB_ACTIONS = frozenset(
     {
         "browser.set_proxy",
         "browser.disable_proxy",
+        # gather_info — controller-level (GATHER: teleport + spider burst),
+        # не в каталоге адаптеров, регистрируется в Controller напрямую.
+        "webdriver.gather_info",
     }
 )
 

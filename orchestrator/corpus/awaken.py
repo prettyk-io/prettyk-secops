@@ -6,7 +6,7 @@
 эвристические payload-значения по типам полей и возвращает шаблоны
 пробуждённых эндпоинтов.
 
-Вызывающий код (браузер/ZAP/CDP) отправляет ``RequestTemplate`` и
+Вызывающий код (браузер/scanner/CDP) отправляет ``RequestTemplate`` и
 слушает ответ; ``awaken_candidates`` только вычисляет кандидатов.
 """
 from __future__ import annotations
@@ -190,7 +190,7 @@ def awaken_candidates(
     """Найти формы/поля без зафиксированных сетевых вызовов и сгенерировать шаблоны.
 
     Возвращает список ``AwakenCandidate`` — готовые ``RequestTemplate``
-    для пробуждения. Вызывающий код отправляет их через браузер/ZAP.
+    для пробуждения. Вызывающий код отправляет их через браузер/scanner.
     """
     parsed = parse_corpus(corpus)
     all_fields: List[FormField] = parsed["form_fields"]

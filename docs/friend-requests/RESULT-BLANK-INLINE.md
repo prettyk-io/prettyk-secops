@@ -35,7 +35,7 @@ As-built якорь: `to-sanitize/src-hybrid/results/BlankPanel.tsx` + `blankMar
 1. Перенести `BlankPanel.tsx` → `cosmo/src/results/`
 2. Перенести `blankMarkdown.ts` (если не весь, то шаблон `renderActMarkdown`)
 3. Добавить `BlankPanel` в `ResultsWorkspace` ниже `ResultsSummaryPanel`
-4. Пробросить `run` и `manifest` как пропсы (уже есть в `useResultsLivePoll`)
+4. Пробросить `run` и `wired` как пропсы (уже есть в `useResultsLivePoll`)
 
 ## Риски
 

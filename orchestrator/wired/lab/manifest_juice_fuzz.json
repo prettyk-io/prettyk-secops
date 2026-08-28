@@ -1,19 +1,19 @@
 ﻿{
   "meta": {
-    "project_id": "owasp-zap-tests",
+    "project_id": "owasp-scanner-tests",
     "initiator_name": "ss7developer@dev.spaceport.ru Космопорт Разработчик",
     "app_leader": "ss7leader-itlead@dev.spaceport.ru Космопорт ИТ-Лидер",
     "assessment_purpose": "emergency",
-    "release_domain": "deploydomain-builddomain-owasp-zap-tests",
+    "release_domain": "deploydomain-builddomain-owasp-scanner-tests",
     "compliance_requirements": "",
     "release_manager": "ss7rel-manager@dev.spaceport.ru Космопорт Релиз-Менеджер",
     "emergency_reason": "Daddy, chill!",
     "app_type": "web"
   },
   "infrastructure": {
-    "zap_mode": "demon",
+    "scanner_mode": "demon",
     "browser_type": "chrome",
-    "zap_work_timeout_min": 60,
+    "scanner_work_timeout_min": 60,
     "additional_local_server_port": 8085,
     "webswing_session_timeout_min": 60,
     "idle_timeout_min": 10,

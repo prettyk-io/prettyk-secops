@@ -326,7 +326,7 @@ export function InputVault({
               />
               <button
                 type="button"
-                onClick={() => toast.success('Payload dispatched to ZAP demon')}
+                onClick={() => toast.success('Payload dispatched to scanner demon')}
                 style={{
                   ...preset.primaryButtonStyle(),
                   padding: '6px 14px',

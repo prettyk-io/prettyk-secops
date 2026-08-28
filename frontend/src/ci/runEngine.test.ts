@@ -14,7 +14,7 @@ function makePipeline(): PipelineDefinition {
     requiredCapabilities: ['checks:create', 'fuzzer:execute'],
     steps: [
       { id: 'disc', component: { name: 'Browser Discovery', version: '1.4.0' } },
-      { id: 'scan', component: { name: 'ZAP Active Scan', version: '2.15.0' } },
+      { id: 'scan', component: { name: 'scanner Active Scan', version: '2.15.0' } },
     ],
     edges: [{ from: 'disc', to: 'scan', kind: 'depends_on' }],
   };
@@ -94,8 +94,8 @@ describe('Run Engine (PK-CI-2)', () => {
     engine.transition(run.id, 'approve');
     engine.transition(run.id, 'acquire');
 
-    engine.recordEvidence(run.id, 'evd:zap-report-1', { report: '...' });
-    engine.recordEvidence(run.id, 'evd:zap-report-1', { report: '...' });
+    engine.recordEvidence(run.id, 'evd:scanner-report-1', { report: '...' });
+    engine.recordEvidence(run.id, 'evd:scanner-report-1', { report: '...' });
     expect(engine.listEvidence(run.id).length).toBe(1);
   });
 

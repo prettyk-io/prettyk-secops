@@ -57,7 +57,7 @@ class FakeHttp:
         }
 
 
-class FakeZap:
+class Fakescanner:
     def __init__(self):
         self.rules = []
 
@@ -204,33 +204,33 @@ def test_compose_success_fail(monkeypatch):
     assert out.get("error") == "success check failed"
 
 
-def test_zap_api_key_header(monkeypatch):
-    from core.auth_bootstrap import apply_zap_auth
+def test_scanner_api_key_header(monkeypatch):
+    from core.auth_bootstrap import apply_scanner_auth
 
-    zap = FakeZap()
-    out = apply_zap_auth(
-        zap_adapter=zap,
+    scanner = Fakescanner()
+    out = apply_scanner_auth(
+        scanner_adapter=scanner,
         context_name="ctx",
         auth_type="API Key",
         auth_details={"Заголовок": "X-Api-Key", "Токен": "z"},
     )
     assert out["applied"] is True
-    assert any(r[2] == "X-Api-Key" for r in zap.rules)
+    assert any(r[2] == "X-Api-Key" for r in scanner.rules)
 
 
-def test_zap_query_key_honest_not_applied(monkeypatch):
-    from core.auth_bootstrap import apply_zap_auth
+def test_scanner_query_key_honest_not_applied(monkeypatch):
+    from core.auth_bootstrap import apply_scanner_auth
 
-    zap = FakeZap()
-    out = apply_zap_auth(
-        zap_adapter=zap,
+    scanner = Fakescanner()
+    out = apply_scanner_auth(
+        scanner_adapter=scanner,
         context_name="ctx",
         auth_type="Query Key",
         auth_details={"Query-параметр": "k", "Токен": "v"},
     )
     assert out["applied"] is False
     assert any("HttpAdapter" in n for n in out["notes"])
-    assert zap.rules == []
+    assert scanner.rules == []
 
 
 def test_dialect_apikey_maps_bootstrap(monkeypatch):

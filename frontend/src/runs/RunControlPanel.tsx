@@ -87,7 +87,7 @@ const MOCK_RUN: RunState = {
     { id: 'b2', name: 'SAST: Semgrep', status: 'passed', duration: 120 },
     { id: 'b3', name: 'SCA: Dep Check', status: 'passed', duration: 85 },
     { id: 'b4', name: 'Deploy to Stage', status: 'running' },
-    { id: 'b5', name: 'DAST: ZAP Scan', status: 'pending' },
+    { id: 'b5', name: 'DAST: scanner Scan', status: 'pending' },
     { id: 'b6', name: 'Quality Gate', status: 'pending' },
   ],
   gates: [

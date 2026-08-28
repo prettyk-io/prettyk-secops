@@ -12,7 +12,7 @@ function pipeline(): PipelineDefinition {
     policy: { id: 'default', name: 'Default', version: '3' },
     requiredCapabilities: ['browser'],
     steps: [
-      { id: 'scan', component: { name: 'zap', version: '2.14.0' } },
+      { id: 'scan', component: { name: 'scanner', version: '2.14.0' } },
       { id: 'build', component: { name: 'build', version: '1.2.0' } },
     ],
     edges: [{ from: 'build', to: 'scan', kind: 'depends_on' }],
@@ -42,7 +42,7 @@ describe('compilePipeline', () => {
       ...pipeline(),
       steps: [
         { id: 'build', component: { name: 'build', version: 'latest' } },
-        { id: 'scan', component: { name: 'zap', version: '2.14.0' } },
+        { id: 'scan', component: { name: 'scanner', version: '2.14.0' } },
       ],
       edges: [{ from: 'scan', to: 'build', kind: 'depends_on' }],
     })).rejects.toBeInstanceOf(PlanCompilationError);

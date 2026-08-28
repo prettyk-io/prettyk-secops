@@ -29,7 +29,7 @@ PrettyK Web IDE может получить почти полноценный т
 
 ## 3. Продуктовый интент
 
-Оператор не должен переключаться между Web IDE, SSH, Docker logs, CI UI, ZAP UI, Allure и файловым менеджером, чтобы понять, что происходит с проверкой.
+Оператор не должен переключаться между Web IDE, SSH, Docker logs, CI UI, scanner UI, Allure и файловым менеджером, чтобы понять, что происходит с проверкой.
 
 Web IDE должна стать одним рабочим местом для:
 
@@ -68,7 +68,7 @@ Workspace не имеет доступа к host filesystem и не получа
 Терминал, привязанный к конкретному run/worker:
 
 - live process/log view;
-- состояние browser/ZAP/fuzzer;
+- состояние browser/scanner/fuzzer;
 - временная файловая система run;
 - диагностические команды;
 - pause/resume/cancel где это разрешено policy;
@@ -227,7 +227,7 @@ Debugger показывает не только переменные:
 - auth context без раскрытия секрета;
 - redacted request/response;
 - locator decision;
-- ZAP/fuzzer state;
+- scanner/fuzzer state;
 - retry reason;
 - generated evidence;
 - блокирующую причину.
@@ -326,7 +326,7 @@ DAP стандартизирует связь editor/debugger. Актуальн�
 
 VS Code Server показывает удобный remote-workspace паттерн, но официально ориентирован на single-user access и не должен бездумно встраиваться как multi-user PrettyK service.
 
-WebContainers полезны для лёгкого browser-side Node preview, но не являются базой для реального ZAP/Playwright execution из-за browser isolation, SharedArrayBuffer/cross-origin requirements и memory limits.
+WebContainers полезны для лёгкого browser-side Node preview, но не являются базой для реального scanner/Playwright execution из-за browser isolation, SharedArrayBuffer/cross-origin requirements и memory limits.
 
 ---
 

@@ -54,7 +54,7 @@ Runtime Dispatcher (ActionFactory / Controller)
         │      └── Runtime: PlaywrightAdapter.context_state
         │
         ├── 4. СКАНЕР (Spider, AJAX Spider, Active Scan, OpenAPI, Auth)
-        │      └── Runtime: ZapAdapter (ZAP Daemon API)
+        │      └── Runtime: scannerAdapter (scanner Daemon API)
         │
         ├── 5. HTTP (Raw API, микросервисы, REST/GraphQL seed)
         │      └── Runtime: HttpAdapter (Requests / HTTPX)
@@ -65,7 +65,7 @@ Runtime Dispatcher (ActionFactory / Controller)
 
 ### Правила изоляции гейтов:
 1. **`Сессия` не кликает:** операции взаимодействия с элементами живут только в Root UI (`Сессия Нажать` — ❌).
-2. **`Сканер` не водит браузер сам:** трафик через ZAP генерируется Root UI действиями браузера через настроенный прокси (`host.docker.internal:8099`).
+2. **`Сканер` не водит браузер сам:** трафик через scanner генерируется Root UI действиями браузера через настроенный прокси (`host.docker.internal:8099`).
 3. **`HTTP` не трогает DOM:** только прямые сетевые вызовы API.
 4. **`Драйвер` — это только Advanced/Legacy:** фреймы, сырой JS, системные диалоги `alert/confirm`.
 
@@ -230,4 +230,4 @@ webdriver|take_screenshot|dashboard.png
 2. **Task B2 (Smart Locator Engine):** Реализовать в `PlaywrightAdapter` каскадный `_locator(selector_type, selector_value)` с поддержкой всех 11 стратегий из Раздела 5.
 3. **Task B3 (MethodId & Sugar Parser):** Обновить `orchestrator/core/method_id.py` для поддержки коротких глаголов (`Клик`, `Вставить`, `Ждать`, `Скрин`), пайпа `-> $var` и модификатора `>?`.
 4. **Task B4 (Allowlist Validation Registry):** Перевести `orchestrator/core/wired_validate.py` и `action_factory.py` с `dir()` reflection blacklist на строгий allowlist `PrettyMethodSpec`.
-5. **Task B5 (Parity Integration Test Suite):** Создать `orchestrator/tests/test_browser_runtime_parity.py` — сквозной тест одного wired-сценария на двух runtime (Playwright и Selenium) с проверкой эквивалентности verdicts, ZAP-прокси и evidence.
+5. **Task B5 (Parity Integration Test Suite):** Создать `orchestrator/tests/test_browser_runtime_parity.py` — сквозной тест одного wired-сценария на двух runtime (Playwright и Selenium) с проверкой эквивалентности verdicts, scanner-прокси и evidence.

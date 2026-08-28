@@ -127,11 +127,11 @@ Google Cloud предоставляет отдельный Gen AI evaluation ser
 
 ### Приватность и управление жизненным циклом
 
-В обучение не попадают production secrets, реальные cookies/tokens, customer payloads, необезличенные target URLs и сырые логи с персональными данными. Нужен отдельный data-preparation gate: классификация → redaction → синтетическая замена → проверка redaction → dataset manifest/hash. Стабильные placeholders должны сохранять структуру примера, но не позволять восстановить исходное значение.
+В обучение не попадают production secrets, реальные cookies/tokens, customer payloads, необезличенные target URLs и сырые логи с персональными данными. Нужен отдельный data-preparation gate: классификация → redaction → синтетическая замена → проверка redaction → dataset wired/hash. Стабильные placeholders должны сохранять структуру примера, но не позволять восстановить исходное значение.
 
 Для controlled cloud PoC нужны как минимум IAM с раздельными ролями dataset/training/inference, Cloud Storage с ограниченным доступом, audit logging, региональная политика, retention/deletion policy и проверка условий Google для tuning data и prompts. При повышенных требованиях рассматриваются CMEK, VPC Service Controls и private connectivity. AI Studio API key и consumer-style experimentation нельзя считать эквивалентом enterprise data boundary Vertex/Agent Platform.
 
-Каждая tuned revision должна быть связана с `base_model_id`, версией PrettyK DSL/канонов, dataset manifest hash, eval report, датой и владельцем. При изменении DSL или policy модель не «помнит» автоматически новую истину: её нужно переоценить, а при необходимости переобучить или заменить retrieval context. Старую revision нельзя молча использовать после несовместимого изменения контракта.
+Каждая tuned revision должна быть связана с `base_model_id`, версией PrettyK DSL/канонов, dataset wired hash, eval report, датой и владельцем. При изменении DSL или policy модель не «помнит» автоматически новую истину: её нужно переоценить, а при необходимости переобучить или заменить retrieval context. Старую revision нельзя молча использовать после несовместимого изменения контракта.
 
 ### RAG, prompting, tuning и adapters
 
@@ -177,7 +177,7 @@ deterministic validation + explicit operator approval
 workspace change or run + evidence
 ```
 
-Admin хранит не «обучающуюся кнопку», а понятную карточку provider: `enabled`, profile (`non-AirGap`), base model, tuned revision, endpoint/region, evaluation status, dataset manifest hash, last validation date, token/cost budget и fallback policy. По умолчанию tuned revision не получает права применять изменения. В AirGap карточка Gemini, endpoint и все связанные настройки отсутствуют и технически заблокированы; Local Qwen и deterministic Buddy работают по текущей матрице.
+Admin хранит не «обучающуюся кнопку», а понятную карточку provider: `enabled`, profile (`non-AirGap`), base model, tuned revision, endpoint/region, evaluation status, dataset wired hash, last validation date, token/cost budget и fallback policy. По умолчанию tuned revision не получает права применять изменения. В AirGap карточка Gemini, endpoint и все связанные настройки отсутствуют и технически заблокированы; Local Qwen и deterministic Buddy работают по текущей матрице.
 
 Buddy показывает оператору, какой вариант реально ответил: `Gemini tuned / revision`, `Gemini generic`, `Qwen` или `deterministic`. В ответе сохраняются безопасные provenance-поля — model revision, request/task id, input/context hashes и ссылки на evidence — но не секреты и не лишний plaintext prompt. Если tuned endpoint недоступен, истёк бюджет, не прошёл validator или не хватает evidence, система честно откатывается к следующему разрешённому уровню, а не делает silent rewrite.
 

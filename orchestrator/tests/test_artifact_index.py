@@ -12,8 +12,8 @@ from utils.artifact_index import (
 def test_record_and_load_roundtrip(tmp_path, monkeypatch):
     idx = tmp_path / "artifact_index.json"
     monkeypatch.setenv("PK_ARTIFACT_INDEX_PATH", str(idx))
-    zap = tmp_path / "zap.xml"
-    zap.write_text("<xml/>", encoding="utf-8")
+    scanner = tmp_path / "scanner.xml"
+    scanner.write_text("<xml/>", encoding="utf-8")
     run_dir = tmp_path / "runs" / "r1"
     run_dir.mkdir(parents=True)
 
@@ -21,7 +21,7 @@ def test_record_and_load_roundtrip(tmp_path, monkeypatch):
         check_id="chk_a",
         run_id="r1",
         run_dir=run_dir,
-        zap_xml=zap,
+        scanner_xml=scanner,
         allure_results_dir=tmp_path / "allure-results",
         allure_report_url="http://127.0.0.1:5050/",
         dojo={"test_id": 9, "engagement_id": 3, "engagement_url": "http://dd/e/3"},
@@ -32,7 +32,7 @@ def test_record_and_load_roundtrip(tmp_path, monkeypatch):
     assert len(entry["runs"]) == 1
     run = entry["runs"][0]
     assert run["run_id"] == "r1"
-    assert run["paths"]["zap_xml"] == str(zap)
+    assert run["paths"]["scanner_xml"] == str(scanner)
     assert run["dojo"]["test_id"] == 9
 
     loaded = load_artifact_index()
@@ -44,7 +44,7 @@ def test_record_and_load_roundtrip(tmp_path, monkeypatch):
     record_finalize_artifacts(
         check_id="chk_a",
         run_id="r1",
-        zap_xml=zap,
+        scanner_xml=scanner,
         dojo={"test_id": 10},
     )
     assert len(get_check_entry("chk_a")["runs"]) == 1

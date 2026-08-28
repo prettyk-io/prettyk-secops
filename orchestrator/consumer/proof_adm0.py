@@ -1,8 +1,8 @@
 ﻿# -*- coding: utf-8 -*-
 """ADM-0 Contract Proof: run the same Wired scenario through two consumers.
 
-   AutomationConsumer -- Playwright only, no ZAP/Dojo/Allure.
-   SecurityConsumer  -- existing Controller (ZAP + Dojo + Allure).
+   AutomationConsumer -- Playwright only, no scanner/Dojo/Allure.
+   SecurityConsumer  -- existing Controller (scanner + Dojo + Allure).
 
 Usage:
     .venv\\Scripts\\python.exe orchestrator/consumer/proof_adm0.py
@@ -25,7 +25,7 @@ FIXTURE = _here / "fixtures" / "adm0_contract_proof.json"
 
 def run_automation():
     print("=" * 70)
-    print("AUTOMATION CONSUMER -- Playwright only, no ZAP/Dojo/Allure")
+    print("AUTOMATION CONSUMER -- Playwright only, no scanner/Dojo/Allure")
     print("=" * 70)
 
     runner = AutomationRunner(
@@ -78,7 +78,7 @@ def compare(automation_results):
     print("\n  [GATE 1] Contract gate: same Wired fixture used by both consumers")
     print("    PASS (fixture: " + FIXTURE.name + ")")
 
-    print("\n  [GATE 2] Artifact gate: result without ZAP/Dojo/Allure")
+    print("\n  [GATE 2] Artifact gate: result without scanner/Dojo/Allure")
     print("    PASS (pure Playwright, no security infra)")
 
     print("\n  [GATE 3] Envelope gate: consumer-agnostic structure")
@@ -110,7 +110,7 @@ def main():
     print("=" * 70)
     print("To run: .venv\\Scripts\\python.exe orchestrator/main.py")
     print(f"       --wired {FIXTURE}")
-    print("Requires: ZAP demon on :8080, Dojo on :8081")
+    print("Requires: scanner demon on :8080, Dojo on :8081")
 
     passed = compare(automation_results)
     sys.exit(0 if passed else 1)

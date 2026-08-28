@@ -2,7 +2,7 @@
 /**
  * Studio — каноническая рабочая поверхность проверки (ранее StudioV2).
  *
- * B1 — привязка к CheckInstance: checkId + initialManifest(legacy formData) + initialResources.
+ * B1 — привязка к CheckInstance: checkId + initialWired(legacy formData) + initialResources.
  * B2/B3 — живой Explorer (StudioExplorer = каноническое дерево 6 корней) + CRUD/drag-drop.
  * B4 — полноценный конструктор PrettyK (Monaco, autocomplete, диагностика, gutter-run).
  * B5 — честная валидация: локальная + серверная диагностика, нет фантомов, незавершённое ≠ зелёное.
@@ -63,7 +63,7 @@ export interface StudioProps {
   /** Привязка к конкретной проверке (B1). undefined → честное пустое. */
   checkId?: string;
   /** Legacy formData проверки (item.wired) — для standalone mode. */
-  initialManifest?: unknown;
+  initialWired?: unknown;
   /** Содержимое ресурсов проверки — для standalone mode. */
   initialResources?: ResourceContentsMap;
   /** Controlled mode (App.tsx single source): formData от родителя. */
@@ -77,7 +77,7 @@ export interface StudioProps {
 
 export function Studio({
   checkId,
-  initialManifest,
+  initialWired,
   initialResources,
   formData: controlledFormData,
   onFormDataChange: controlledOnFormDataChange,
@@ -92,7 +92,7 @@ export function Studio({
   const [rightTab, setRightTab] = useState<RightTab>("code");
 
   // ── B1: standalone fallback — локальный formData, привязан к ЭТОЙ проверке ──
-  const [selfFormData, setSelfFormData] = useState<unknown>(initialManifest);
+  const [selfFormData, setSelfFormData] = useState<unknown>(initialWired);
   const [selfResources, setSelfResources] = useState<ResourceContentsMap>(
     initialResources ?? {},
   );
@@ -104,10 +104,10 @@ export function Studio({
 
   // При смене checkId (другая проверка, standalone) — перезагружаем её данные, НЕ оставляем чужое.
   useEffect(() => {
-    setSelfFormData(initialManifest);
+    setSelfFormData(initialWired);
     setSelfResources(initialResources ?? {});
     setSelectedTabId(undefined);
-  }, [checkId, initialManifest, initialResources]);
+  }, [checkId, initialWired, initialResources]);
 
   // ── B4: живой контекст конструктора (каталог/переменные/страницы) для подсказок ──
   useEffect(() => {

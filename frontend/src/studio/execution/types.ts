@@ -5,12 +5,12 @@
 
 // ── Diary / SSE events ──
 
-export type DiaryChannel = 'diary' | 'zap' | 'telemetry';
+export type DiaryChannel = 'diary' | 'scanner' | 'telemetry';
 
 export type DiaryEventKind =
   | 'STEP' | 'NEXT' | 'LOG' | 'CONSOLE'
   | 'ERROR' | 'HIGH' | 'WARN' | 'WARNING' | 'FAIL' | 'FAILED'
-  | 'GATE' | 'CI' | 'NOTE' | 'INFO' | 'SCAN' | 'FUZZ' | 'CUT' | 'ZAP';
+  | 'GATE' | 'CI' | 'NOTE' | 'INFO' | 'SCAN' | 'FUZZ' | 'CUT' | 'scanner';
 
 export interface DiaryEvent {
   event_id: string;

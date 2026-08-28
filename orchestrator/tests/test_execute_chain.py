@@ -1,5 +1,5 @@
-﻿# -*- coding: utf-8 -*-
-"""ВыполнитьЦепь / СканированиеЦепи / РасследованиеЦепи (mock ZAP)."""
+# -*- coding: utf-8 -*-
+"""ВыполнитьЦепь / СканированиеЦепи / РасследованиеЦепи (mock scanner)."""
 from __future__ import annotations
 
 import json
@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from adapters.zap_adapter import ZapAdapter
+from adapters.scanner_adapter import ScannerAdapter
 from core.errors import WiredError
 from core.method_id import ensure_wire, lookup_method_id
 from utils.chain_investigate import seed_prettyk_investigate_chain
@@ -47,14 +47,14 @@ MINI = {
 
 
 def test_method_id_wire():
-    assert lookup_method_id("ВыполнитьЦепь") == ("zap", "execute_chain_module")
-    assert lookup_method_id("СканированиеЦепи") == ("zap", "scan_chain_module")
-    assert lookup_method_id("РасследованиеЦепи") == ("zap", "investigate_chain_module")
-    assert lookup_method_id("ПодготовитьЦепь") == ("zap", "prepare_chain_module")
-    assert ensure_wire("ВыполнитьЦепь pay") == "zap|execute_chain_module|pay"
-    assert ensure_wire("СканированиеЦепи pay") == "zap|scan_chain_module|pay"
-    assert ensure_wire("РасследованиеЦепи pay") == "zap|investigate_chain_module|pay"
-    assert ensure_wire("ПодготовитьЦепь pay") == "zap|prepare_chain_module|pay"
+    assert lookup_method_id("ВыполнитьЦепь") == ("scanner", "execute_chain_module")
+    assert lookup_method_id("СканированиеЦепи") == ("scanner", "scan_chain_module")
+    assert lookup_method_id("РасследованиеЦепи") == ("scanner", "investigate_chain_module")
+    assert lookup_method_id("ПодготовитьЦепь") == ("scanner", "prepare_chain_module")
+    assert ensure_wire("ВыполнитьЦепь pay") == "scanner|execute_chain_module|pay"
+    assert ensure_wire("СканированиеЦепи pay") == "scanner|scan_chain_module|pay"
+    assert ensure_wire("РасследованиеЦепи pay") == "scanner|investigate_chain_module|pay"
+    assert ensure_wire("ПодготовитьЦепь pay") == "scanner|prepare_chain_module|pay"
 
 
 def test_seed_prettyk():
@@ -79,7 +79,7 @@ def test_resolve_chain_module(tmp_path):
     )
     suites = SimpleNamespace(test_data_constructor=[mod], imports=[])
     wired = SimpleNamespace(test_suites=suites)
-    resolved = resolve_chain_arg(Wired, "flow_me", wired_dir=tmp_path)
+    resolved = resolve_chain_arg(wired, "flow_me", wired_dir=tmp_path)
     assert resolved.from_module is True
     assert resolved.har_as == "me"
 
@@ -104,11 +104,11 @@ def test_execute_and_scan_chain_module(tmp_path, monkeypatch):
         test_suites=SimpleNamespace(test_data_constructor=[mod], imports=[])
     )
 
-    zap = ZapAdapter.__new__(ZapAdapter)
-    zap._run_wired = wired
-    zap._wired_dir = tmp_path
-    zap._ensure_connected = lambda: None
-    zap._zap = MagicMock()
+    scanner = ScannerAdapter.__new__(ScannerAdapter)
+    scanner._run_wired = wired
+    scanner._wired_dir = tmp_path
+    scanner._ensure_connected = lambda: None
+    scanner._scanner = MagicMock()
     calls = []
 
     def fake_import(name, path, assert_code=True, assert_length=None):
@@ -121,26 +121,26 @@ def test_execute_and_scan_chain_module(tmp_path, monkeypatch):
         calls.append(("scan", name))
         return True
 
-    zap.import_har_sequence = fake_import
-    zap.sequence_active_scan = fake_scan
+    scanner.import_har_sequence = fake_import
+    scanner.sequence_active_scan = fake_scan
 
-    assert zap.execute_chain_module("flow_me") is True
+    assert scanner.execute_chain_module("flow_me") is True
     assert calls == [("import", "me_seq", str(tmp_path / "resources" / "me.har"))]
 
     calls.clear()
-    assert zap.scan_chain_module("flow_me") is True
+    assert scanner.scan_chain_module("flow_me") is True
     assert calls[0][0] == "import"
     assert calls[1] == ("scan", "me_seq")
 
 
 def test_execute_chain_missing_raises():
-    zap = ZapAdapter.__new__(ZapAdapter)
-    zap._run_wired = SimpleNamespace(
+    scanner = ScannerAdapter.__new__(ScannerAdapter)
+    scanner._run_wired = SimpleNamespace(
         test_suites=SimpleNamespace(test_data_constructor=[], imports=[])
     )
-    zap._wired_dir = None
+    scanner._wired_dir = None
     with pytest.raises(WiredError, match="ВыполнитьЦепь"):
-        zap.execute_chain_module("nope")
+        scanner.execute_chain_module("nope")
 
 
 def test_extract_auth_from_har_bearer(tmp_path):
@@ -195,13 +195,13 @@ def test_investigate_chain_module_phase_order(tmp_path, monkeypatch):
         test_suites=SimpleNamespace(test_data_constructor=[mod], imports=[])
     )
 
-    zap = ZapAdapter.__new__(ZapAdapter)
-    zap._run_wired = wired
-    zap._wired_dir = tmp_path
-    zap._ensure_connected = lambda: None
-    zap._zap = MagicMock()
-    zap.context_name = "prev_ctx"
-    zap.base_url = "https://api.example"
+    scanner = ScannerAdapter.__new__(ScannerAdapter)
+    scanner._run_wired = wired
+    scanner._wired_dir = tmp_path
+    scanner._ensure_connected = lambda: None
+    scanner._scanner = MagicMock()
+    scanner.context_name = "prev_ctx"
+    scanner.base_url = "https://api.example"
     calls = []
     rules = []
 
@@ -216,7 +216,7 @@ def test_investigate_chain_module_phase_order(tmp_path, monkeypatch):
 
     def fake_create(name, description=""):
         calls.append(("create_context", name))
-        zap.context_name = name
+        scanner.context_name = name
         return name
 
     def fake_delete(name):
@@ -224,7 +224,7 @@ def test_investigate_chain_module_phase_order(tmp_path, monkeypatch):
 
     def fake_switch(name):
         calls.append(("switch_context", name))
-        zap.context_name = name
+        scanner.context_name = name
 
     def fake_include(ctx, regex=None):
         calls.append(("include", ctx, regex))
@@ -261,20 +261,20 @@ def test_investigate_chain_module_phase_order(tmp_path, monkeypatch):
         calls.append(("replacer_rm", rule_id))
         rules[:] = [r for r in rules if r.get("id") != rule_id and r.get("description") != rule_id]
 
-    zap.create_context = fake_create
-    zap.delete_context = fake_delete
-    zap.switch_context = fake_switch
-    zap.set_context_include = fake_include
-    zap.import_har_sequence = fake_import
-    zap.sequence_active_scan = fake_seq
-    zap.spider_scan = fake_spider
-    zap.active_scan = fake_ascan
-    zap.passive_scan_wait = fake_pscan
-    zap.add_replacer_rule = fake_add_rule
-    zap.list_replacer_rules = fake_list_rules
-    zap.remove_replacer_rule = fake_remove_rule
+    scanner.create_context = fake_create
+    scanner.delete_context = fake_delete
+    scanner.switch_context = fake_switch
+    scanner.set_context_include = fake_include
+    scanner.import_har_sequence = fake_import
+    scanner.sequence_active_scan = fake_seq
+    scanner.spider_scan = fake_spider
+    scanner.active_scan = fake_ascan
+    scanner.passive_scan_wait = fake_pscan
+    scanner.add_replacer_rule = fake_add_rule
+    scanner.list_replacer_rules = fake_list_rules
+    scanner.remove_replacer_rule = fake_remove_rule
 
-    assert zap.investigate_chain_module("flow_me") is True
+    assert scanner.investigate_chain_module("flow_me") is True
     kinds = [c[0] for c in calls]
     assert kinds == [
         "start_log",
@@ -292,7 +292,7 @@ def test_investigate_chain_module_phase_order(tmp_path, monkeypatch):
         "switch_context",
     ]
     assert calls[-1] == ("switch_context", "prev_ctx")
-    notes = zap._last_chain_investigate["notes"]
+    notes = scanner._last_chain_investigate["notes"]
     assert "auth_applied" in notes
     assert any(n.startswith("purge_stale_auth") for n in notes)
     assert any(n.startswith("evidence ") for n in notes)
@@ -344,10 +344,10 @@ def test_prepare_chain_module_imports_setup(tmp_path):
     wired = SimpleNamespace(
         test_suites=SimpleNamespace(test_data_constructor=[mod], imports=[])
     )
-    zap = ZapAdapter.__new__(ZapAdapter)
-    zap._run_wired = wired
-    zap._wired_dir = tmp_path
-    zap._ensure_connected = lambda: None
+    scanner = ScannerAdapter.__new__(ScannerAdapter)
+    scanner._run_wired = wired
+    scanner._wired_dir = tmp_path
+    scanner._ensure_connected = lambda: None
     calls = []
 
     def fake_import(name, path, assert_code=True, assert_length=None):
@@ -358,6 +358,6 @@ def test_prepare_chain_module_imports_setup(tmp_path):
         assert "pay" not in text
         return True
 
-    zap.import_har_sequence = fake_import
-    assert zap.prepare_chain_module("flow_me") is True
+    scanner.import_har_sequence = fake_import
+    assert scanner.prepare_chain_module("flow_me") is True
     assert calls[0][0] == "me_setup"

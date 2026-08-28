@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """Волна C: OA + GQL + gRPC MethodId-цепочки в одном pipe на болванках."""
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ import pytest
 
 from adapters.grpc_adapter import GrpcAdapter
 from adapters.http_adapter import HttpAdapter
-from adapters.zap_adapter import ZapAdapter
+from adapters.scanner_adapter import ScannerAdapter
 from core.action_factory import ActionFactory
 from core.constructor_validate import validate_language_script
 from core.controller import Controller
@@ -73,7 +73,7 @@ def _bank_wired():
                         "spec_mode": "resource",
                         "spec_as": "bank_oas",
                         "spec_path_rel": "/openapi.json",
-                        "zap_import": True,
+                        "scanner_import": True,
                         "auth_module_id": "",
                     },
                 ),
@@ -85,8 +85,8 @@ def _bank_wired():
                         "sdl_as": "bank_sdl",
                         "schema_path_rel": "/graphql",
                         "endpoint_rel": "/graphql",
-                        "zap_import": True,
-                        "zap_scan": False,
+                        "scanner_import": True,
+                        "scanner_scan": False,
                         "auth_module_id": "",
                     },
                 ),
@@ -131,10 +131,10 @@ def test_triple_controller_pipe_dry():
         pytest.skip("lab proto_pack missing")
 
     wired = _bank_wired()
-    zap = ZapAdapter.__new__(ZapAdapter)
-    zap._connected = False
-    zap._zap = None
-    zap.bind_run_wired(wired, str(ROOT))
+    scanner = ScannerAdapter.__new__(ScannerAdapter)
+    scanner._connected = False
+    scanner._scanner = None
+    scanner.bind_run_wired(wired, str(ROOT))
 
     http = HttpAdapter()
     http.bind_run_wired(wired)
@@ -153,10 +153,10 @@ def test_triple_controller_pipe_dry():
     grpc.bind_run_wired(wired, str(ROOT))
 
     factory = ActionFactory()
-    factory.register("zap", "list_openapi_operations", zap.list_openapi_operations)
-    factory.register("zap", "import_openapi_spec", zap.import_openapi_spec)
-    factory.register("zap", "list_graphql_operations", zap.list_graphql_operations)
-    factory.register("zap", "import_graphql_schema", zap.import_graphql_schema)
+    factory.register("scanner", "list_openapi_operations", scanner.list_openapi_operations)
+    factory.register("scanner", "import_openapi_spec", scanner.import_openapi_spec)
+    factory.register("scanner", "list_graphql_operations", scanner.list_graphql_operations)
+    factory.register("scanner", "import_graphql_schema", scanner.import_graphql_schema)
     factory.register("http", "execute_openapi_module", http.execute_openapi_module)
     factory.register("http", "execute_graphql_module", http.execute_graphql_module)
     factory.register("grpc", "list_services", grpc.list_services)
@@ -165,9 +165,9 @@ def test_triple_controller_pipe_dry():
     ctrl = Controller.__new__(Controller)
     ctrl.language_engine = LanguageEngine()
     ctrl.page_resolver = None
-    ctrl.adapters = {"zap": zap, "http": http, "grpc": grpc}
+    ctrl.adapters = {"scanner": scanner, "http": http, "grpc": grpc}
     ctrl._wired_problems = []
-    ctrl.last_zap_report = None
+    ctrl.last_scanner_report = None
     ctrl.wired = wired
     ctrl.action_factory = factory
     ctrl._diary = lambda *a, **k: None

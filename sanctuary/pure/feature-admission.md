@@ -64,7 +64,7 @@ DoD-гейты: см. §5
 | 2 | **Генерализация** — работает на любом контуре, не только на ЦБ | нет hardcoded доменов/портов/ID заказчика |
 | 3 | **Поведение глазами заказчика** — результат виден, не «мок вызван» | приёмка по UI/acceptance |
 | 4 | **Точечный smoke-тест** | умеренный тест под фичу, не весь suite |
-| 5 | **Machine-контракт синхронизирован** — при изменении формы/контракта обновлены Pydantic-модели `orchestrator/models/manifest.py` (+ legacy `docs/manifest.json` если нужно) | `schema-sot.mdc` |
+| 5 | **Machine-контракт синхронизирован** — при изменении формы/контракта обновлены Pydantic-модели `orchestrator/models/wired.py` (+ legacy `docs/wired.json` если нужно) | `schema-sot.mdc` |
 | 6 | **Не нарушает honest-contract и стены** | `honest-contract.md`, `walls.md` |
 | 7 | **Ничего наружу** — фича не отдаёт телеметрию/аналитику третьим сторонам | `admin-integrations.md` |
 

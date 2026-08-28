@@ -35,14 +35,14 @@ class _FakeStream:
         return value
 
 
-class _FakeZap:
+class _Fakescanner:
     def __init__(self, *, messages=None, status=200, status_sequence=None):
         self.calls = []
         self._messages = list(messages or [])
         self._status = status
         self._status_sequence = list(status_sequence or [])
 
-    def zap_http_request(
+    def scanner_http_request(
         self, method, url, headers=None, body=None, follow_redirects=False
     ):
         self.calls.append((method, url, dict(headers or {})))
@@ -167,49 +167,49 @@ def test_suite_wave_session_replay_fallback_merges_headers():
             ),
         }
     ]
-    zap = _FakeZap(messages=messages)
+    scanner = _Fakescanner(messages=messages)
     summary = SuiteFuzzerRunner(
         _wave_Wired(session_replay=True, message=None),
-        zap,
+        scanner,
         _FakeStream(),
     ).run("df10_wave")
     assert summary["session_bound"] is True
     assert summary["has_cookie"] is True
     assert any(
-        (hdr.get("Cookie") == f"token={token}") for _m, _u, hdr in zap.calls
+        (hdr.get("Cookie") == f"token={token}") for _m, _u, hdr in scanner.calls
     )
     evidence = Path(summary["evidence_path"]).read_text(encoding="utf-8")
     assert token not in evidence
 
 
 def test_suite_wave_session_missing_hard_fail():
-    zap = _FakeZap(messages=[])
+    scanner = _Fakescanner(messages=[])
     with pytest.raises(WiredError, match="session_missing"):
         SuiteFuzzerRunner(
             _wave_Wired(session_replay=True),
-            zap,
+            scanner,
             _FakeStream(),
         ).run("df10_wave")
-    assert zap.calls == []
+    assert scanner.calls == []
 
 
 def test_suite_wave_explicit_cookie_skips_history():
-    zap = _FakeZap(messages=[])
+    scanner = _Fakescanner(messages=[])
     summary = SuiteFuzzerRunner(
         _wave_Wired(
             session_replay=True,
             headers={"Cookie": "token=explicit"},
         ),
-        zap,
+        scanner,
         _FakeStream(),
     ).run("df10_wave")
     assert summary["session_bound"] is True
-    assert any(hdr.get("Cookie") == "token=explicit" for _m, _u, hdr in zap.calls)
+    assert any(hdr.get("Cookie") == "token=explicit" for _m, _u, hdr in scanner.calls)
 
 
 def test_campaign_session_lost_stops_after_streak():
     # baseline 200, then three 401 → stop (SESSION_LOST_STREAK=3)
-    zap = _FakeZap(status_sequence=[200, 401, 401, 401, 200, 200])
+    scanner = _Fakescanner(status_sequence=[200, 401, 401, 401, 200, 200])
     campaign = Campaign(
         message=FuzzMessage(
             source="template",
@@ -222,7 +222,7 @@ def test_campaign_session_lost_stops_after_streak():
         policy=FuzzPolicy(max_requests=5, requests_per_second=1.0),
         module_id="lost",
     )
-    summary = FuzzCampaignRunner(zap).run(
+    summary = FuzzCampaignRunner(scanner).run(
         campaign, base_url="http://juice-shop:3000"
     )
     assert summary["stopped_reason"] == "session_lost"
@@ -230,4 +230,4 @@ def test_campaign_session_lost_stops_after_streak():
     assert summary["cases_total"] == 3
     assert "session_lost" in (summary.get("reason_counts") or {})
     # baseline + 3 attacks (not 5)
-    assert len(zap.calls) == 4
+    assert len(scanner.calls) == 4

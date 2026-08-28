@@ -183,7 +183,7 @@ export function ControlPanel() {
             </Typography>
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 2, mb: 4 }}>
               {[
-                { icon: <Dns />, label: 'Demons & Runners', desc: 'ZAP demon, Browser Cores, background workers', color: '#38bdf8' },
+                { icon: <Dns />, label: 'Demons & Runners', desc: 'scanner demon, Browser Cores, background workers', color: '#38bdf8' },
                 { icon: <Article />, label: 'Audit Logs', desc: 'Structured audit trail placeholder', color: '#a855f7' },
                 { icon: <Settings />, label: 'Box Configuration', desc: 'Platform tuning and infrastructure settings', color: '#3fb27f' },
                 { icon: <DashIcon />, label: 'Licensing & Quotas', desc: 'Service profile and workspace allocation', color: '#f0a830' },

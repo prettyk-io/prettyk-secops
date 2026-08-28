@@ -23,10 +23,10 @@ jobs:
       - name: Pytest
         run: python -m pytest tests -q
       - name: validate-only OK
-        run: python main.py --manifest fixtures/validate_ok.json --validate-only
+        run: python main.py --wired fixtures/validate_ok.json --validate-only
       - name: validate-only bad ctor (expect fail)
         run: |
-          if python main.py --manifest fixtures/validate_bad_ctor.json --validate-only; then
+          if python main.py --wired fixtures/validate_bad_ctor.json --validate-only; then
             echo "expected exit 1" >&2
             exit 1
           fi
@@ -54,7 +54,7 @@ jobs:
       - name: compose config
         run: |
           docker compose -f services/docker-compose.yml config >/dev/null
-          docker compose -f services/docker-compose.zap.yml config >/dev/null
+          docker compose -f services/docker-compose.scanner.yml config >/dev/null
           docker compose -f services/docker-compose.target.yml config >/dev/null
           docker compose -f services/docker-compose.defectdojo.yml config >/dev/null
 

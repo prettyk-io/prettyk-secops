@@ -1,6 +1,6 @@
 ﻿"""Ядро фаззинг-POC: Campaign → Evidence (не продуктовая поверхность PrettyK).
 
-Модель как у ZAP/Burp:
+Модель как у scanner/Burp:
   message (шаблон URL или History) → location (одна дырка) → payloads (corpus строк)
   → evidence table (baseline + rows с deltas).
 
@@ -11,7 +11,7 @@ Context / base_url_override = allowlist хостов (same-origin), не сло�
   - corpus строк (fuzz_corpus / list[str]) — что вставляем в дырку;
   - URL-list обхода (data_file) — другая ось; фаззер её не читает как payloads.
 
-Отправка через уже поднятый ZapAdapter (zap_http_request), не Desktop Fuzzer API.
+Отправка через уже поднятый ScannerAdapter (scanner_http_request), не Desktop Fuzzer API.
 Экспериментальный MethodId «ЗапуститьФаззер» / nested fuzzing_fields — адаптер к ядру,
 не канон языка.
 """
@@ -136,7 +136,7 @@ def _publish_beam(
 
 @dataclass(frozen=True)
 class FuzzMessage:
-    """Цель кампании: явный same-origin шаблон или выбор из ZAP History."""
+    """Цель кампании: явный same-origin шаблон или выбор из scanner History."""
 
     source: MessageSource = "template"
     method: str = "GET"
@@ -651,7 +651,7 @@ _REQUEST_LINE_RE = re.compile(
     re.IGNORECASE,
 )
 
-# Не тащим в sender: hop-by-hop / то, что выставит транспорт ZAP сам.
+# Не тащим в sender: hop-by-hop / то, что выставит транспорт scanner сам.
 _SKIP_REQUEST_HEADERS = frozenset(
     {
         "host",
@@ -706,7 +706,7 @@ def _set_parsed_header(out: Dict[str, str], key: str, val: str) -> None:
 
 
 def parse_http_request_headers(request_header: str) -> Dict[str, str]:
-    """Разобрать блок ZAP ``requestHeader`` → dict заголовков для replay.
+    """Разобрать блок scanner ``requestHeader`` → dict заголовков для replay.
 
     Первая строка (request-line) пропускается. Несколько ``Cookie:`` склеиваются
     через ``; ``. Hop-by-hop заголовки отбрасываются (см. ``_SKIP_REQUEST_HEADERS``).
@@ -798,8 +798,8 @@ def _method_url_from_request_line(header: str) -> tuple[str, str]:
     return match.group(1).upper(), match.group(2).strip()
 
 
-def parse_zap_history_message(message: Dict[str, Any]) -> Dict[str, Any]:
-    """Вытащить method/url/headers из записи ZAP core.messages().
+def parse_scanner_history_message(message: Dict[str, Any]) -> Dict[str, Any]:
+    """Вытащить method/url/headers из записи scanner core.messages().
 
     Поддержка:
       - поля url / requestUrl / uri (если адаптер уже нормализовал);
@@ -881,7 +881,7 @@ def pick_message_from_history(
         if not isinstance(raw, dict):
             continue
         try:
-            parsed = parse_zap_history_message(raw)
+            parsed = parse_scanner_history_message(raw)
         except WiredError:
             continue
         if _history_message_matches(
@@ -927,7 +927,7 @@ def _session_headers_same_origin(
         if not isinstance(raw, dict):
             continue
         try:
-            parsed = parse_zap_history_message(raw)
+            parsed = parse_scanner_history_message(raw)
             assert_same_origin(parsed["url"], base_url)
         except WiredError:
             continue
@@ -949,7 +949,7 @@ def pick_session_headers_from_history(
     url_contains: str = "",
     method: str = "",
 ) -> Dict[str, str]:
-    """Вытащить session-заголовки из ZAP History (DF-10).
+    """Вытащить session-заголовки из scanner History (DF-10).
 
     - если ``url_contains`` задан — последнее совпадение (как ``pick_message_from_history``);
     - иначе — последнее same-origin сообщение с Cookie/Authorization/XSRF.
@@ -993,7 +993,7 @@ def anomaly_reasons(
     """Классификатор наблюдений (POC-C): Intruder/ffuf-метрики, не CVE.
 
     Порядок стабильный: transport → missing → status → 5xx → latency → size → reflection.
-    ``zap_alert`` добавляет runner после опроса ZAP (DF-13), не здесь.
+    ``scanner_alert`` добавляет runner после опроса scanner (DF-13), не здесь.
     """
     if transport_error:
         return ["transport_error"]
@@ -1021,15 +1021,15 @@ def anomaly_reasons(
 
 
 def alert_fingerprint(alert: Dict[str, Any]) -> str:
-    """Стабильный ключ ZAP alert для diff до/после кампании."""
+    """Стабильный ключ scanner alert для diff до/после кампании."""
     return "|".join(
         str(alert.get(key) or "")
         for key in ("pluginId", "alertRef", "url", "param", "name", "risk")
     )
 
 
-def snapshot_alert_fingerprints(zap: Any) -> set[str]:
-    getter = getattr(zap, "get_alerts", None)
+def snapshot_alert_fingerprints(scanner: Any) -> set[str]:
+    getter = getattr(scanner, "get_alerts", None)
     if not callable(getter):
         return set()
     try:
@@ -1041,7 +1041,7 @@ def snapshot_alert_fingerprints(zap: Any) -> set[str]:
     }
 
 
-def compact_zap_alert(alert: Dict[str, Any]) -> Dict[str, object]:
+def compact_scanner_alert(alert: Dict[str, Any]) -> Dict[str, object]:
     """Без query/payload в URL — только path + sha256 (redact evidence)."""
     url = str(alert.get("url") or "")
     path = urlsplit(url).path if url else ""
@@ -1056,14 +1056,14 @@ def compact_zap_alert(alert: Dict[str, Any]) -> Dict[str, object]:
 
 
 def new_alerts_for_origin(
-    zap: Any,
+    scanner: Any,
     *,
     origin: str,
     before: set[str],
     limit: int = 50,
 ) -> list[Dict[str, object]]:
     """DF-13: новые passive alerts на origin цели после ударов."""
-    getter = getattr(zap, "get_alerts", None)
+    getter = getattr(scanner, "get_alerts", None)
     if not callable(getter):
         return []
     try:
@@ -1082,17 +1082,17 @@ def new_alerts_for_origin(
         if origin_n:
             if origin_n not in url and not url.startswith(origin_n):
                 continue
-        out.append(compact_zap_alert(raw))
+        out.append(compact_scanner_alert(raw))
         if len(out) >= limit:
             break
     return out
 
 
-def apply_zap_alerts_to_rows(
+def apply_scanner_alerts_to_rows(
     rows: list[EvidenceRow],
     alerts: Sequence[Dict[str, object]],
 ) -> list[EvidenceRow]:
-    """Пометить cases причиной ``zap_alert`` (match URL sha256; иначе last case)."""
+    """Пометить cases причиной ``scanner_alert`` (match URL sha256; иначе last case)."""
     if not rows or not alerts:
         return rows
     url_hashes = set()
@@ -1108,8 +1108,8 @@ def apply_zap_alerts_to_rows(
     matched = False
     for row in rows:
         deltas = list(row.deltas)
-        if row.request_url_sha256 in url_hashes and "zap_alert" not in deltas:
-            deltas.append("zap_alert")
+        if row.request_url_sha256 in url_hashes and "scanner_alert" not in deltas:
+            deltas.append("scanner_alert")
             matched = True
         updated.append(replace(row, deltas=tuple(deltas)))
     if matched:
@@ -1117,8 +1117,8 @@ def apply_zap_alerts_to_rows(
     # Attribution fallback: origin-level alert без точного URL → последний удар.
     last = updated[-1]
     deltas = list(last.deltas)
-    if "zap_alert" not in deltas:
-        deltas.append("zap_alert")
+    if "scanner_alert" not in deltas:
+        deltas.append("scanner_alert")
         updated[-1] = replace(last, deltas=tuple(deltas))
     return updated
 
@@ -1140,13 +1140,13 @@ def export_fuzz_security_artifacts(
         "digest_path": summary.get("digest_path") or "",
         "evidence_path": summary.get("evidence_path") or "",
         "reason_counts": dict(summary.get("reason_counts") or {}),
-        "zap_alerts": list(summary.get("zap_alerts") or []),
+        "scanner_alerts": list(summary.get("scanner_alerts") or []),
         "anomalies_total": summary.get("anomalies_total")
         or summary.get("anomalies_count")
         or 0,
         "dojo_note": (
             "Import path: attach digest/findings to engagement review; "
-            "full ZAP XML still via Reporter.finalize_reports / generate_report xml."
+            "full scanner XML still via Reporter.finalize_reports / generate_report xml."
         ),
     }
     findings_path = root / f"{run_id}.findings.json"
@@ -1311,8 +1311,8 @@ def build_audit_digest(summary: Dict[str, object]) -> Dict[str, object]:
         "cases_total": summary.get("cases_total"),
         "anomalies_total": summary.get("anomalies_total"),
         "reason_counts": count_anomaly_reasons(summary),
-        "zap_alerts_total": int(summary.get("zap_alerts_total") or 0),
-        "zap_alerts": list(summary.get("zap_alerts") or [])[:20],
+        "scanner_alerts_total": int(summary.get("scanner_alerts_total") or 0),
+        "scanner_alerts": list(summary.get("scanner_alerts") or [])[:20],
         "anomalies": _digest_anomaly_rows(summary),
         "verdict": summary.get("verdict") or "observations_require_review",
         "evidence_path": summary.get("evidence_path") or "",
@@ -1418,10 +1418,10 @@ def evidence_contains_raw_payload(summary: Dict[str, object], payloads: Iterable
 
 
 class FuzzCampaignRunner:
-    """Исполняет Campaign через ZapAdapter-подобный объект (zap_http_request)."""
+    """Исполняет Campaign через ScannerAdapter-подобный объект (scanner_http_request)."""
 
-    def __init__(self, zap: Any) -> None:
-        self.zap = zap
+    def __init__(self, scanner: Any) -> None:
+        self.scanner = scanner
 
     def resolve_message_url(
         self, message: FuzzMessage, *, base_url: str
@@ -1436,11 +1436,11 @@ class FuzzCampaignRunner:
             return method, url, dict(message.headers or {}), bool(message.follow_redirects)
 
         if message.source == "history":
-            getter = getattr(self.zap, "get_messages", None)
+            getter = getattr(self.scanner, "get_messages", None)
             if not callable(getter):
                 raise WiredError(
-                    "Фаззер History: у zap нет get_messages "
-                    "(нужен ZapAdapter или fake с History)"
+                    "Фаззер History: у scanner нет get_messages "
+                    "(нужен ScannerAdapter или fake с History)"
                 )
             messages = getter()
             picked = pick_message_from_history(
@@ -1663,7 +1663,7 @@ class FuzzCampaignRunner:
             else target_url
         )
         target_origin = origin_of(target_url)
-        alerts_before = snapshot_alert_fingerprints(self.zap)
+        alerts_before = snapshot_alert_fingerprints(self.scanner)
         baseline = self._send(
             baseline_url,
             method=method,
@@ -1683,12 +1683,12 @@ class FuzzCampaignRunner:
             base_url=base_url,
             baseline=baseline,
         )
-        # DF-13: passive alerts после серии ударов → zap_alert в deltas.
-        zap_alerts = new_alerts_for_origin(
-            self.zap, origin=target_origin, before=alerts_before
+        # DF-13: passive alerts после серии ударов → scanner_alert в deltas.
+        scanner_alerts = new_alerts_for_origin(
+            self.scanner, origin=target_origin, before=alerts_before
         )
-        if zap_alerts:
-            rows = apply_zap_alerts_to_rows(rows, zap_alerts)
+        if scanner_alerts:
+            rows = apply_scanner_alerts_to_rows(rows, scanner_alerts)
 
         evidence = Evidence(
             run_id=run_id,
@@ -1708,8 +1708,8 @@ class FuzzCampaignRunner:
         summary.update(session_meta)
         summary["method"] = method
         summary["stopped_reason"] = stopped_reason
-        summary["zap_alerts"] = zap_alerts
-        summary["zap_alerts_total"] = len(zap_alerts)
+        summary["scanner_alerts"] = scanner_alerts
+        summary["scanner_alerts_total"] = len(scanner_alerts)
         summary["policy"] = {
             "max_requests": policy.max_requests,
             "requests_per_second": policy.requests_per_second,
@@ -1785,7 +1785,7 @@ class FuzzCampaignRunner:
         """Возвращает (metrics|None, transport_error, response_body). Body только для reflection."""
         started = time.monotonic()
         try:
-            response = self.zap.zap_http_request(
+            response = self.scanner.scanner_http_request(
                 method,
                 url,
                 headers=dict(headers or {}),
@@ -1811,11 +1811,11 @@ class FuzzCampaignRunner:
 class FuzzRunner:
     """Адаптер: модуль «Фаззер» + fuzzing_fields → Campaign (эксперимент, не канон)."""
 
-    def __init__(self, wired: Any, zap: Any, stream: Any) -> None:
+    def __init__(self, wired: Any, scanner: Any, stream: Any) -> None:
         self.wired = wired
-        self.zap = zap
+        self.scanner = scanner
         self.stream = stream
-        self._campaign_runner = FuzzCampaignRunner(zap)
+        self._campaign_runner = FuzzCampaignRunner(scanner)
 
     def run(self, module_id: str) -> Dict[str, object]:
         module = self._module(module_id)
@@ -2013,16 +2013,16 @@ class SuiteFuzzerRunner:
     def __init__(
         self,
         wired: Any,
-        zap: Any,
+        scanner: Any,
         stream: Any,
         *,
         browser: Any | None = None,
     ) -> None:
         self.wired = wired
-        self.zap = zap
+        self.scanner = scanner
         self.stream = stream
         self.browser = browser
-        self._campaign_runner = FuzzCampaignRunner(zap)
+        self._campaign_runner = FuzzCampaignRunner(scanner)
         self._storage_meta: Dict[str, object] | None = None
         self._http_sessions_meta: Dict[str, object] | None = None
 
@@ -2133,14 +2133,14 @@ class SuiteFuzzerRunner:
         )
         if not headers_have_session(headers):
             raise WiredError(
-                f"ФаззингВолна {fuzzer_id!r}: session_replay=true, но в ZAP History "
+                f"ФаззингВолна {fuzzer_id!r}: session_replay=true, но в scanner History "
                 "нет Cookie/Authorization для origin цели (session_missing)"
             )
         try:
             from core.session_bridge import read_http_sessions_snapshot
 
             self._http_sessions_meta = read_http_sessions_snapshot(
-                self.zap, base_url=base_url
+                self.scanner, base_url=base_url
             )
         except Exception:
             self._http_sessions_meta = None
@@ -2246,7 +2246,7 @@ class SuiteFuzzerRunner:
             return targets, meta
         if not traffic_feed_enabled():
             return targets, meta
-        getter = getattr(self.zap, "get_messages", None)
+        getter = getattr(self.scanner, "get_messages", None)
         if not callable(getter):
             meta["traffic_feed"] = "no_get_messages"
             return targets, meta
@@ -2475,7 +2475,7 @@ class SuiteFuzzerRunner:
         if headers_have_session(headers) and not url_contains:
             # Явные credentials в fuzzer.headers — History не обязателен.
             return self._apply_storage_replay(headers)
-        getter = getattr(self.zap, "get_messages", None)
+        getter = getattr(self.scanner, "get_messages", None)
         if callable(getter):
             try:
                 picked_headers = pick_session_headers_from_history(
@@ -2530,12 +2530,12 @@ class FuzzAdapter:
     def __init__(
         self,
         wired: Any,
-        zap: Any,
+        scanner: Any,
         *,
         browser: Any | None = None,
     ) -> None:
         self.wired = wired
-        self.zap = zap
+        self.scanner = scanner
         self.browser = browser
         self._stream: Any | None = None
 
@@ -2545,14 +2545,14 @@ class FuzzAdapter:
     def run(self, module_id: str) -> Dict[str, object]:
         if self._stream is None:
             raise WiredError("Фаззер: DataStream не привязан")
-        return FuzzRunner(self.wired, self.zap, self._stream).run(module_id)
+        return FuzzRunner(self.wired, self.scanner, self._stream).run(module_id)
 
     def wave(self, fuzzer_id: str) -> Dict[str, object]:
         if self._stream is None:
             raise WiredError("ФаззингВолна: DataStream не привязан")
         return SuiteFuzzerRunner(
             self.wired,
-            self.zap,
+            self.scanner,
             self._stream,
             browser=self.browser,
         ).run(fuzzer_id)
@@ -2564,7 +2564,7 @@ class FuzzAdapter:
         resolved = resolve_chain_arg(
             self.wired,
             mid,
-            wired_dir=getattr(self.zap, "_wired_dir", None),
+            wired_dir=getattr(self.scanner, "_wired_dir", None),
         )
         fields = dict(resolved.chain_fields or {})
         if not fields:
@@ -2582,10 +2582,10 @@ class FuzzAdapter:
         from utils.chain_ops import ROLE_PRECONDITION, filter_steps_by_role
 
         pre = filter_steps_by_role(steps, ROLE_PRECONDITION)
-        if not (pre and self.zap is not None and hasattr(self.zap, "prepare_chain_module")):
+        if not (pre and self.scanner is not None and hasattr(self.scanner, "prepare_chain_module")):
             return
         try:
-            self.zap.prepare_chain_module(mid)
+            self.scanner.prepare_chain_module(mid)
             notes.append("prepare_chain ok")
         except WiredError as exc:
             notes.append(f"prepare_soft: {exc}")

@@ -11,7 +11,7 @@
   - time delay → ``time_based`` (Medium)
   - diff от baseline → ``anomaly`` (Low/Info)
 
-Чистый Python, без ZAP: ``Anomaly`` → ``Finding`` — детерминированное
+Чистый Python, без scanner: ``Anomaly`` → ``Finding`` — детерминированное
 преобразование в JSON-совместимый вид для Dojo/Allure.
 """
 from __future__ import annotations

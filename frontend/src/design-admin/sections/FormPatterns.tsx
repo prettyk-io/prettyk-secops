@@ -119,7 +119,7 @@ function FormStateMatrix({ isCompact }: { isCompact: boolean }) {
             fullWidth
             error
             size={isCompact ? 'small' : 'medium'}
-            label="ZAP Demon Proxy Port"
+            label="scanner Demon Proxy Port"
             defaultValue="99999"
             helperText="Port number must be between 1024 and 65535"
           />

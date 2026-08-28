@@ -139,7 +139,7 @@ export function formatPrimaryAction(
     return `Скрин ${payload || ''}`.trim();
   }
 
-  if (act === 'Spider') return 'SpiderScan';
+  if (act === 'Crawl') return 'crawl';
   if (act === 'ActiveScan') return 'ActiveScan';
   if (act === 'FuzzWave') return `FuzzWave ${payload || 'corpus'}`;
   if (act === 'GenerateEmail') return 'GenerateEmail';

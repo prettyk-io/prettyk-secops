@@ -17,7 +17,7 @@ Git для этого не нужен.
 
 **PrettyK DAST — закрытая коробка.** Для проверки, созданной в UI или QWEN, не нужны ни внешний code review, ни branch/merge, ни коммиты в репозиторий, ни файловая атомизация, ни custom file extensions.
 
-**Git появится только в Cosmoport 2.0** как инструмент оркестрации приложений, доменов, исходников и build/deploy-контуров. Даже там Git будет принадлежать Cosmoport orchestration layer, а не DAST execution layer. DAST получает уже развёрнутую цель (`deployed target → Playwright / ZAP / Fuzzer → findings → evidence`) и не зависит от Git вообще.
+**Git появится только в Cosmoport 2.0** как инструмент оркестрации приложений, доменов, исходников и build/deploy-контуров. Даже там Git будет принадлежать Cosmoport orchestration layer, а не DAST execution layer. DAST получает уже развёрнутую цель (`deployed target → Playwright / scanner / Fuzzer → findings → evidence`) и не зависит от Git вообще.
 
 **Luna подтвердила:** концепт здравый, граница между DAST и Cosmoport чёткая, native revisions достаточны для текущего продукта.
 

@@ -177,13 +177,13 @@
 | **PK-CI-1** | Проверка как граф шагов с зависимостями и approvals | Граф восстанавливается после рестарта стенда | 5h | Boss |
 | **PK-CI-2** | Изолированный запуск с честной state machine | Статусы честные, повтор не дублирует findings | 6h | Boss |
 | **PK-CI-3** | Визуальный граф ↔ текст синхронны | Клик по узлу подсвечивает DSL и наоборот | 4h | Boss |
-| **PK-CI-4** | Каталог готовых security-шагов | Discovery, ZAP Scan, Fuzzing, Gate, Evidence Pack | 3h | Boss |
+| **PK-CI-4** | Каталог готовых security-шагов | Discovery, scanner Scan, Fuzzing, Gate, Evidence Pack | 3h | Boss |
 | **PK-CI-5** | Preflight проверка scope, policy, approvals | Нарушение scope блокирует запуск с аудитом | 4h | Boss |
 | **PK-CI-6** | Вызов проверки из внешнего CI/CD | Внешний job получает стабильный exit-код и ссылку | 5h | Boss |
 | **PK-CI-7** | Предпросмотр плана до запуска | План с рисками, правами, gates и ресурсами | 3h | Boss |
 | **PK-CI-8** | Импорт/экспорт с отчётом о потерях | Явный список несовместимостей при импорте | 3h | Boss |
 | **PK-CI-9** | Версионирование security-компонентов | Блокировка непинованных версий в production | 3h | Boss |
-| **PK-CI-10** | Полное доказательство с provenance | Provenance manifest, SHA-256 артефактов | 4h | Boss |
+| **PK-CI-10** | Полное доказательство с provenance | Provenance wired, SHA-256 артефактов | 4h | Boss |
 | **PK-CI-11** | Авто-сборка Reproduce из находки | Минимальный повторяемый конвейер | 3h | Boss |
 | **PK-CI-12** | Step Debugger: вход/выход, повтор с payload | Изолированная отладка шага | 4h | Boss |
 
@@ -249,7 +249,7 @@
 
 - Выпилены `@rjsf/core`, `@rjsf/antd`, `@rjsf/validator-ajv8`, `ajv`, `json-schema-merge-allof`.
 - Удалены 72 файла legacy `src/schema/` и `src/form/`.
-- `ManifestForm.tsx` переписан на прямой React-маппер без RJSF.
+- `WiredForm.tsx` переписан на прямой React-маппер без RJSF.
 - `Wired` / `wired.py` — единственный machine-контракт.
 
 ---
@@ -258,11 +258,11 @@
 
 | ID | Зона | Что проверено | Статус |
 |---|---|---|---|
-| **PSI-1** | Стенд | `lab_up.ps1` — Grid + Allure + ZAP demon + Juice Shop healthy | ✅ |
+| **PSI-1** | Стенд | `lab_up.ps1` — Grid + Allure + scanner demon + Juice Shop healthy | ✅ |
 | **PSI-2** | Редактор | Vite dev (`cosmo`) — login, Home, Admin, History, Studio, Results. E2E smoke 17/17 | ✅ |
 | **PSI-3** | Оркестратор | `orchestrator/main.py` — validate-only без ошибок | ✅ |
-| **PSI-4** | Прогон | Полный цикл: manifest → Controller.run() → ZAP alerts → allure → run_summary | ✅ |
-| **PSI-5** | Dojo | DefectDojo import ZAP XML → findings в UI → dedup → suppression | ✅ |
+| **PSI-4** | Прогон | Полный цикл: wired → Controller.run() → scanner alerts → allure → run_summary | ✅ |
+| **PSI-5** | Dojo | DefectDojo import scanner XML → findings в UI → dedup → suppression | ✅ |
 | **PSI-6** | Gate | Quality gate: High порог → exit code 0/2. Admission filter | ✅ |
 | **PSI-7** | Live | KDT Live :8767 idle → прогон → ленты сценария/сканера → журнал | ✅ |
 | **PSI-8** | Бандл | `vite build` prod (< 2 MB gzip), `package_vps.py` | ✅ |
@@ -273,11 +273,11 @@
 
 ## 15. Эпик CORPUS-DISCOVERY — Zero-Touch Корпус (CLOSED · 16 авг 2026)
 
-- `CD-1`: `discovery_capture.py` — захват DOM + ZAP History в NDJSON (12 тестов).
+- `CD-1`: `discovery_capture.py` — захват DOM + scanner History в NDJSON (12 тестов).
 - `CD-2`: `corpus_parser.py` — извлечение форм, инпутов и шаблонов запросов (10 тестов).
 - `CD-3`: `service_map.py` — топологический граф эндпоинтов и форм (7 тестов).
 - `CD-4`: `awaken.py` — эвристическое пробуждение orphan-форм (6 тестов).
-- `CD-5`: `zap_context.py` — инжекция сырого HTTP/1.1 корпуса в Sites Tree (3 теста).
+- `CD-5`: `scanner_context.py` — инжекция сырого HTTP/1.1 корпуса в Sites Tree (3 теста).
 - `CD-6`: `pipeline.py` — сквозной конвейер discovery → passive → activeScan (1 тест).
 - `CD-7`: `fuzzer.py` — собственный мутационный фаззер (50+ векторов, sniper/pitchfork/cluster-bomb, 12 тестов).
 - `CD-8`: `fuzz_reporter.py` — классификация аномалий и генерация findings (17 тестов).
@@ -297,7 +297,7 @@
 
 - **IMP:** OpenAPI 3 / Swagger 2 import (`IMP-OA-0…9`), GraphQL introspection (`IMP-GQL-0…6`), gRPC pack (`IMP-GRPC-0…6`), HAR replay (`IMP-HAR-0…5`), Business Chain builder (`IMP-CHAIN-0…8`).
 - **ART:** Индекс артефактов `check_id` → `run_id` → disk (`ART-1`), мягкий `legal_hold` (`SURVEY-3`), CLI/API cleanup job (`ART-5…7`).
-- **AUTH:** Multi-profile авторизация (API Key, Basic, Bearer, CSV/compose, Form/Selenium, MFA TOTP/SMS, cookies injection в ZAP).
+- **AUTH:** Multi-profile авторизация (API Key, Basic, Bearer, CSV/compose, Form/Selenium, MFA TOTP/SMS, cookies injection в scanner).
 - **CONN:** Тонкие коннекторы MethodId (Prometheus, SSH-команды, TCP-пробы к MQ/DB, HTTP-логи).
 - **MONITOR:** 3-й сплит-view, таймлайн, скраббинг видео и логов, KDT Live VNC streaming.
 - **SONAR:** Массовая очистка technical debt (SQ-BE-60…74, SQ-FE-50…60, A/A/A quality gate).

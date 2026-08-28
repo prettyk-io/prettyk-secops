@@ -162,7 +162,7 @@ Then: ручная правка сохраняется
 - multi-user collaboration;
 - production database/persistence и retention policy;
 - полный semantic diff engine;
-- ZAP, Dojo, Allure, findings и evidence pack integration;
+- scanner, Dojo, Allure, findings и evidence pack integration;
 - mobile/browser matrix;
 - автономный AI-оператор;
 - полная запись network/console как отдельный продуктовый поток;

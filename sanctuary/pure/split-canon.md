@@ -18,11 +18,11 @@
 
 > `CANON SEEKER` — полный 2FA получен 15 авг 2026. Мясо дозревает: парсер, typed JSON, удаление schema/form/ — эпик RK в backlog.
 
-Манифест (`docs/manifest.json`, 2729 строк JSON Schema) разделяется на две части:
+Манифест (`docs/wired.json`, 2729 строк JSON Schema) разделяется на две части:
 
 | Часть | Что содержит | CANON BASE | INTEGRATION |
 |---|---|---|---|
-| `regulation.*` | meta, assessment_purpose, base_url, zap_mode, gate, act, оси допуска | **Минимальный** (project_id + assessment_purpose + base_url) | **Расширенный** (+ релизные поля, акты, оси) |
+| `regulation.*` | meta, assessment_purpose, base_url, scanner_mode, gate, act, оси допуска | **Минимальный** (project_id + assessment_purpose + base_url) | **Расширенный** (+ релизные поля, акты, оси) |
 | `editor.*` | PrettyK, auth-модули, цепочки, фаззеры, data-модули | **Полный** (все модули) | **Тот же** (общий редактор) |
 
 **Формат хранения:** плоский typed JSON (без `oneOf`/`allOf`/`$ref`). JSON Schema выпиливается как формат — заменяется на `docs/regulation.schema.json` + `docs/editor-payload.json`.
@@ -58,11 +58,11 @@
 | Регламент (форма) | `frontend/src/form/CosmoLadderFields*` | Банковская лесенка |
 | Ролевая модель | `frontend/src/form/applyRoleFormCaps.ts` | Роли банка (admin_ib, nshr, expert_ib) |
 | Blank-форма | `frontend/src/results/blankPayload.ts`, `blankHtml.ts` | Init проверки по deploy |
-| App code → deploy chain | `frontend/src/admin/appCode.ts`, `buildManifestFromDeploy.ts` | Специфика ЦБ |
+| App code → deploy chain | `frontend/src/admin/appCode.ts`, `buildWiredFromDeploy.ts` | Специфика ЦБ |
 | Deploy registry | `frontend/src/admin/deployStore.ts` | Банковские деплои |
 | Admin page | `frontend/src/shell/AdminPage.tsx` | Частично общее см. ниже |
 | Docs ЦБ | `sanctuary/canon/custom/cosmo/cbr-specific/` | Только локально, не в git |
-| Manifest demo | `docs/manifest.json` | Демо под банк |
+| Wired demo | `docs/wired.json` | Демо под банк |
 
 ### Спорные — частично общее
 

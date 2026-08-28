@@ -18,7 +18,7 @@
 ```mermaid
 flowchart TB
   subgraph authoring [Authoring]
-    ManifestSoT[manifest_json_SoT]
+    WiredSoT[wired_json_SoT]
     StudioHub[Studio_ActionHub]
     PrettyK[PrettyK_language]
     AuthMod[Auth_module]
@@ -36,7 +36,7 @@ flowchart TB
   subgraph runtime [Runtime]
     Orch[Orchestrator]
     WD[WebDriver_plus_Grid]
-    ZAP[ZAP_MITM_API]
+    scanner[scanner_MITM_API]
     Live[KDT_Live_shell]
   end
   subgraph evidence [Evidence_gate]
@@ -53,13 +53,13 @@ flowchart TB
   StudioHub --> ApiMod
   StudioHub --> FuzzerEnt
   AdminInt -->|secrets_packs| ConnSlot
-  Workspace --> ManifestSoT
-  ManifestSoT --> Orch
+  Workspace --> WiredSoT
+  WiredSoT --> Orch
   AuthMod -->|IR_bootstrap| Orch
   ConnSlot -.->|no_executor_yet| Orch
   PrettyK --> Orch
   Orch --> WD
-  WD --> ZAP
+  WD --> scanner
   Orch --> Live
   Orch --> Allure
   Orch --> Dojo
@@ -75,10 +75,10 @@ flowchart TB
 
 | mermaid id | Модуль (1 фраза) | Статус hub | Источник экстракта | След. шаг |
 |---|---|---|---|---|
-| `ManifestSoT` | JSON-манифест = machine SoT формы | **FRIEND** [`manifest-sot.md`](manifest-sot.md) | — | — |
+| `WiredSoT` | JSON-манифест = machine SoT формы | **FRIEND** [`wired-sot.md`](wired-sot.md) | — | — |
 | `runtime` блок | Grid ≠ Live ≠ Allure ≠ Dojo | **FRIEND** [`runtime-shell.md`](runtime-shell.md) | — | — |
 | lab contour | lab_up обязательный vs opt-in | **FRIEND** [`lab-up.md`](lab-up.md) | — | — |
-| `ZAP` | demon; порты :8080/:8099 | **FRIEND** [`zap-dual.md`](zap-dual.md) | — | — |
+| `scanner` | demon; порты :8080/:8099 | **FRIEND** [`scanner-dual.md`](scanner-dual.md) | — | — |
 | security | loopback / MITM / disablekey | **FRIEND** [`security-lab.md`](security-lab.md) | — | — |
 | `Admit` / `ActPkg` | две оси; акт optional | **FRIEND** [`admission.md`](admission.md) | — | — |
 | honest | слот ≠ runtime | **FRIEND** [`honest-contract.md`](honest-contract.md) | — | — |
@@ -111,7 +111,7 @@ Hub create-auth
   → module_type=Авторизация + auth_fields.constructor
   → parse → AuthProfile IR
   → validate/dry-run (без утечки секретов)
-  → apply: Http bootstrap | static ZAP
+  → apply: Http bootstrap | static scanner
 ```
 
 | Тезис | Факт |
@@ -120,7 +120,7 @@ Hub create-auth
 | Static | `auth=bearer\|basic\|cookie\|header\|none` |
 | Chain | `auth=chain` + `METHOD URL` + Header/Body + `Capture … as id` |
 | Указатель | `active_auth_module` = id листа |
-| Честность | unsupported → notes / `applied: false`; chain→ZAP = позже (AUTH-12) |
+| Честность | unsupported → notes / `applied: false`; chain→scanner = позже (AUTH-12) |
 | Git якорь | `c71d638` → `dev` (lab) |
 
 Отвергнуто: auth снова на анкету; фейковый applied.
@@ -173,7 +173,7 @@ flowchart LR
   Parse --> IR[AuthProfile_IR]
   IR --> Val[validate_dry_run]
   Val --> Http[Http_bootstrap]
-  Val --> ZapStatic[ZAP_static_apply]
+  Val --> scannerStatic[scanner_static_apply]
 ```
 
 **CONN activate**

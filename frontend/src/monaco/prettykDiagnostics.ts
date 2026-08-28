@@ -21,7 +21,7 @@ const PRETTYK_ROOT_KEYWORDS = [
 ];
 
 const PRETTYK_PIPE_ACTIONS = [
-  'Браузер|', 'webdriver|', 'zap|', 'http|', 'Сессия|',
+  'Браузер|', 'webdriver|', 'scanner|', 'http|', 'Сессия|',
   'Драйвер|', 'Фаззер|', 'Проверка|', 'Утверждение|',
   'Отчёт|',
 ];

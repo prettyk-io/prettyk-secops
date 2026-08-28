@@ -97,7 +97,7 @@ async function main() {
 
   const checkId = 'trial-manual-idle-' + Date.now().toString(36);
   const now = new Date().toISOString();
-  const manifest = {
+  const wired = {
     meta: {
       assessment_purpose: 'manual',
       project_id: 'trial-manual-idle',
@@ -167,7 +167,7 @@ async function main() {
           updated_at: now,
           last_opened_at: now,
           view: 'form',
-          manifest,
+          wired,
           resource_contents: {},
           runs: [],
         },
@@ -188,7 +188,7 @@ async function main() {
       const btn = document.querySelector('[data-testid="form-launch-baseline"]');
       const purpose = [...document.querySelectorAll('.ant-select-selection-item')]
         .map((el) => (el.textContent || '').trim())
-        .find((t) => /проверк/i.test(t) || /ZAP/i.test(t));
+        .find((t) => /проверк/i.test(t) || /scanner/i.test(t));
       return {
         href: location.href,
         hasBtn: !!btn,

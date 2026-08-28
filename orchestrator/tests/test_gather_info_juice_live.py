@@ -1,6 +1,6 @@
 ﻿# -*- coding: utf-8 -*-
 """
-Цикл C: Juice+Grid+ZAP demon — короткий СборИнформации (skipif).
+Цикл C: Juice+Grid+scanner demon — короткий СборИнформации (skipif).
 """
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ def _stand_ready() -> bool:
     )
 
 
-@pytest.mark.skipif(not _stand_ready(), reason="Juice/Grid/ZAP demon not up")
+@pytest.mark.skipif(not _stand_ready(), reason="Juice/Grid/scanner demon not up")
 def test_juice_gather_info_one_url_burst():
     from selenium import webdriver
     from selenium.webdriver.chrome.options import Options
@@ -36,7 +36,7 @@ def test_juice_gather_info_one_url_burst():
     from selenium.webdriver.support import expected_conditions as EC
     from selenium.webdriver.support.ui import WebDriverWait
 
-    from adapters.zap_adapter import ZapAdapter
+    from adapters.scanner_adapter import ScannerAdapter
 
     class _WdShim:
         base_url = "http://juice-shop:3000"
@@ -61,7 +61,7 @@ def test_juice_gather_info_one_url_burst():
         command_executor="http://127.0.0.1:4444/wd/hub",
         options=opts,
     )
-    zap = ZapAdapter(port=8080, api_key="")
+    scanner = ScannerAdapter(port=8080, api_key="")
     try:
         opened = False
         login_url = None
@@ -88,7 +88,7 @@ def test_juice_gather_info_one_url_burst():
         # absolute URL — base не нужен; burst короткий
         summary = run_gather_info(
             wd,
-            zap,
+            scanner,
             [login_url],
             burst_sec=8,
             settle_sec=1,

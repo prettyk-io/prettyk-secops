@@ -40,7 +40,7 @@
 ## Не обещаем
 
 - Silent active scan от галочки модуля  
-- Живой ZAP sequence / тяжёлый AS как default без opt-in и согласованного контура  
+- Живой scanner sequence / тяжёлый AS как default без opt-in и согласованного контура  
 - Что Цепь = промышленный «полный банк DAST»  
 - Подмену [`discovery-heal.md`](discovery-heal.md) (дно)
 

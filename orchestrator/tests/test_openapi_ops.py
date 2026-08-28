@@ -11,7 +11,7 @@ from utils.openapi_ops import (
     ops_to_fuzz_targets,
     parse_openapi_ops,
     seed_prettyk_comments,
-    try_zap_import_openapi,
+    try_scanner_import_openapi,
 )
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures" / "openapi"
@@ -51,27 +51,27 @@ def test_ops_to_fuzz_targets_and_seed():
     assert seed.count("\n# ") >= 2
 
 
-def test_zap_import_skipped_without_flag(monkeypatch):
-    monkeypatch.delenv("PK_OPENAPI_ZAP_IMPORT", raising=False)
+def test_scanner_import_skipped_without_flag(monkeypatch):
+    monkeypatch.delenv("PK_OPENAPI_scanner_IMPORT", raising=False)
 
-    class Zap:
+    class scanner:
         def import_openapi_spec(self, _):
             raise AssertionError("must not call")
 
-    res = try_zap_import_openapi("https://example/openapi.json", zap_adapter=Zap())
+    res = try_scanner_import_openapi("https://example/openapi.json", scanner_adapter=scanner())
     assert res["skipped"] is True
     assert res["attempted"] is False
 
 
-def test_zap_import_opt_in(monkeypatch):
-    monkeypatch.setenv("PK_OPENAPI_ZAP_IMPORT", "1")
+def test_scanner_import_opt_in(monkeypatch):
+    monkeypatch.setenv("PK_OPENAPI_scanner_IMPORT", "1")
     calls: list[str] = []
 
-    class Zap:
+    class scanner:
         def import_openapi_spec(self, spec):
             calls.append(spec)
             return True
 
-    res = try_zap_import_openapi("file:///tmp/a.json", zap_adapter=Zap())
+    res = try_scanner_import_openapi("file:///tmp/a.json", scanner_adapter=scanner())
     assert res["imported"] is True
     assert calls == ["file:///tmp/a.json"]

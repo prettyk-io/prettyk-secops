@@ -36,7 +36,7 @@ Set-Location ..
 | `orchestrator/tests/` | Python-тесты |
 | `frontend/` | Форма + Редактор-IDE (PrettyK / WireK; без UI-песочницы) |
 | `frontend/src/generated/` | производные schema, keywords и MethodId |
-| `docs/manifest.json` | редактируемая JSON Schema |
+| `docs/wired.json` | редактируемая JSON Schema |
 | `services/` | лабораторные compose-конфигурации и allure3-secops |
 | `reports/` | локальные результаты; не исходный код |
 
@@ -45,22 +45,22 @@ Set-Location ..
 Публичный CLI:
 
 ```powershell
-.\.venv\Scripts\python.exe orchestrator\main.py --manifest <path>
-.\.venv\Scripts\python.exe orchestrator\main.py --manifest <path> --validate-only
+.\.venv\Scripts\python.exe orchestrator\main.py --wired <path>
+.\.venv\Scripts\python.exe orchestrator\main.py --wired <path> --validate-only
 ```
 
-`--validate-only` — JSON Schema (`docs/manifest.json`) + Pydantic + конструкторы языка; без Controller/Scanner/Grid. Код выхода: `0` ок, `1` ошибки валидации. Фикстуры: `orchestrator/fixtures/validate_ok.json`, `validate_bad_ctor.json`.
+`--validate-only` — JSON Schema (`docs/wired.json`) + Pydantic + конструкторы языка; без Controller/Scanner/Grid. Код выхода: `0` ок, `1` ошибки валидации. Фикстуры: `orchestrator/fixtures/validate_ok.json`, `validate_bad_ctor.json`.
 
 `orchestrator/cli/parser.py` не подключён к `main.py`. Его параметры `--scanner-host`, `--scanner-port` и `--headless` не являются публичным контрактом.
 
-`orchestrator/manifest_runner.py` — устаревшая pytest-обвязка. Не используйте её как промышленную точку запуска.
+`orchestrator/wired_runner.py` — устаревшая pytest-обвязка. Не используйте её как промышленную точку запуска.
 
 ## 4. Источники истины
 
 | Контракт | Редактируемый источник | Производный артефакт |
 |---|---|---|
-| схема манифеста (SoT формы/Редактора) | `docs/manifest.json` | `frontend/src/generated/manifest.schema.json` |
-| runtime-модель | `orchestrator/models/manifest.py` | — |
+| схема манифеста (SoT формы/Редактора) | `docs/wired.json` | `frontend/src/generated/wired.schema.json` |
+| runtime-модель | `orchestrator/models/wired.py` | — |
 | исполнение | `orchestrator/core/controller.py` и адаптеры | — |
 | wire-сигнатуры | публичные методы адаптеров и Reporter | `frontend/src/generated/keywords.json` |
 | MethodId | `orchestrator/core/method_id.py` | `frontend/src/generated/method_ids.json` |
@@ -89,7 +89,7 @@ Set-Location ..
 .\.venv\Scripts\python.exe orchestrator\tools\export_method_ids.py --check
 ```
 
-Для schema отдельного `--check` нет. Запустите генератор и убедитесь, что `git diff --exit-code -- frontend/src/generated/manifest.schema.json` не показывает незапланированный дрейф.
+Для schema отдельного `--check` нет. Запустите генератор и убедитесь, что `git diff --exit-code -- frontend/src/generated/wired.schema.json` не показывает незапланированный дрейф.
 
 Команда frontend `npm run generate` последовательно обновляет все три артефакта, но использует команду `python`. На Windows с виртуальной средой надёжнее запускать Python-генераторы явно, как показано выше.
 
@@ -153,11 +153,11 @@ docker compose -f services\docker-compose.defectdojo.yml config
 
 Изменение поля считается контрактным и выполняется в одной поставке:
 
-1. получить решение владельца и изменить `docs/manifest.json`;
+1. получить решение владельца и изменить `docs/wired.json`;
 2. изменить Pydantic-модель либо явно оставить поле декларативным;
 3. определить поведение Controller;
 4. добавить тесты валидного и невалидного ввода;
-5. обновить `docs/manifest.md` (и Форма/Редактор UX, если меняется поверхность авторства);
+5. обновить `docs/wired.md` (и Форма/Редактор UX, если меняется поверхность авторства);
 6. перегенерировать schema (`npm run generate:schema`);
 7. проверить **Форму**, **Редактор**, tests и build (зона FE — ветка `frontend`).
 
@@ -185,12 +185,12 @@ docker compose -f services\docker-compose.defectdojo.yml config
 
 Предпочтительные ворота:
 
-- `Сканер` — `zap|*`;
+- `Сканер` — `scanner|*`;
 - `HTTP` — `http|*`;
 - `Сессия` — `browser|*`;
 - `Драйвер` — `webdriver|*`.
 
-Первая стрелка AC в Monaco Редактора (Ctrl+Space): язык + `?` + короткий ui + `Проверить*` + ворота + `Операция`. Не светить util dump, сырой `webdriver|…`, корневые `ПолучитьАлерты` / `ОтчётZAP` / `Паук*`. Resolve при execute шире AC. Исторические идеи переименования RU без смены wire — в [`history/2026-08-editor-wave/`](history/2026-08-editor-wave/README.md).
+Первая стрелка AC в Monaco Редактора (Ctrl+Space): язык + `?` + короткий ui + `Проверить*` + ворота + `Операция`. Не светить util dump, сырой `webdriver|…`, корневые `ПолучитьАлерты` / `Отчётscanner` / `Паук*`. Resolve при execute шире AC. Исторические идеи переименования RU без смены wire — в [`history/2026-08-editor-wave/`](history/2026-08-editor-wave/README.md).
 
 ## 10. Изменение языка
 

@@ -4,8 +4,21 @@ __all__ = ["pk_env", "pk_env_flag", "pk_env_int", "pk_env_name"]
 
 
 def pk_env(name: str, default: str = "") -> str:
-    """PK_{name} env."""
-    return os.environ.get(f"PK_{name}", default)
+    """PK_{name} env. SCN-R2: read PK_SCANNER_*, fallback to PK_scanner_*.
+
+    Например pk_env("SCANNER_MODE") читает PK_SCANNER_MODE,
+    при пустом — PK_scanner_MODE (обратная совместимость).
+    """
+    new_key = f"PK_{name}"
+    result = os.environ.get(new_key)
+    if result is not None:
+        return result
+    # read-both fallback: PK_SCANNER_* → PK_scanner_*
+    if name.startswith("SCANNER_"):
+        old_name = "scanner" + name[7:]  # SCANNER_MODE → scanner_MODE
+        old_key = f"PK_{old_name}"
+        return os.environ.get(old_key, default)
+    return default
 
 
 def pk_env_name(name: str, default: str = "") -> str:

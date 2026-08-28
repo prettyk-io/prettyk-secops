@@ -1,6 +1,6 @@
 /**
  * Lab API import (OpenAPI / GraphQL / gRPC) → playground :8765.
- * Не запускает ZAP scan.
+ * Не запускает scanner scan.
  */
 
 export type LabOpenApiParseResult = {

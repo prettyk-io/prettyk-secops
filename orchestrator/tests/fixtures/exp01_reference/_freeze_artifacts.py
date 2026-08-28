@@ -15,19 +15,19 @@ with open(os.path.join(BASE, 'dojo_baseline_findings.json'), 'w', encoding='utf-
     json.dump(dojo_result, f, ensure_ascii=False, indent=2)
 print(f"Dojo findings: {dojo_result.get('findings_n')} saved")
 
-# 2. Spider URLs from ZAP
-zap_urls = []
+# 2. Spider URLs from scanner
+scanner_urls = []
 try:
     r = requests.get('http://127.0.0.1:8080/JSON/core/view/urls/', timeout=15)
     data = r.json()
-    zap_urls = data.get('urls', []) if isinstance(data, dict) else []
+    scanner_urls = data.get('urls', []) if isinstance(data, dict) else []
 except Exception as e:
     print(f"Spider URLs WARN: {e}")
 with open(os.path.join(BASE, 'spider_urls.json'), 'w', encoding='utf-8') as f:
-    json.dump({'urls': zap_urls, 'count': len(zap_urls)}, f, ensure_ascii=False, indent=2)
-print(f"Spider URLs: {len(zap_urls)} saved")
+    json.dump({'urls': scanner_urls, 'count': len(scanner_urls)}, f, ensure_ascii=False, indent=2)
+print(f"Spider URLs: {len(scanner_urls)} saved")
 
-# 3. ZAP raw alerts (paginated)
+# 3. scanner raw alerts (paginated)
 all_alerts = []
 try:
     start = 0
@@ -46,9 +46,9 @@ try:
         start += len(batch)
 except Exception as e:
     print(f"Raw alerts WARN: {e}")
-with open(os.path.join(BASE, 'zap_raw_alerts.json'), 'w', encoding='utf-8') as f:
+with open(os.path.join(BASE, 'scanner_raw_alerts.json'), 'w', encoding='utf-8') as f:
     json.dump({'alerts': all_alerts, 'count': len(all_alerts)}, f, ensure_ascii=False, indent=2)
-print(f"ZAP raw alerts: {len(all_alerts)} saved")
+print(f"scanner raw alerts: {len(all_alerts)} saved")
 
 # 4. Run summary snapshot
 summary_path = os.path.join(ROOT, 'run_summary.json')

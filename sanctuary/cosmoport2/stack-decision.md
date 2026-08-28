@@ -14,7 +14,7 @@
 | **Edge** | Caddy (Reverse Proxy + Auto TLS) | Nginx (сложный), Traefik (only K8s) |
 | **Frontend** | React 18 + TypeScript + Vite + TailwindCSS + AntD/MUI | Vue, Svelte, Next.js SSR |
 | **Graph/Code** | @xyflow/react + Monaco Editor | Кастомный Canvas/SVG |
-| **Execution Runtime** | Playwright + ZAP Demon + Fuzzer + Woodpecker | Selenium, GitLab CI (только как адаптер) |
+| **Execution Runtime** | Playwright + scanner Demon + Fuzzer + Woodpecker | Selenium, GitLab CI (только как адаптер) |
 | **Auth/KMS** | Better Auth + OpenBao | Keycloak, Blitz OIDC |
 
 ## Архитектурный стилЬ

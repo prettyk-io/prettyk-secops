@@ -11,10 +11,10 @@
     "app_type": "api"
   },
   "infrastructure": {
-    "zap_mode": "demon",
+    "scanner_mode": "demon",
     "browser_type": "chrome",
     "additional_local_server_port": 8085,
-    "zap_work_timeout_min": 30,
+    "scanner_work_timeout_min": 30,
     "start_with_webswing": false,
     "idle_timeout_min": 10,
     "webswing_session_timeout_min": 30,
@@ -74,7 +74,7 @@
           "spec_as": "",
           "spec_path_rel": "/openapi.json",
           "auth_module_id": "",
-          "zap_import": true,
+          "scanner_import": true,
           "last_inventory": []
         }
       },
@@ -88,8 +88,8 @@
           "schema_path_rel": "/graphql",
           "endpoint_rel": "/graphql",
           "auth_module_id": "",
-          "zap_import": true,
-          "zap_scan": false,
+          "scanner_import": true,
+          "scanner_scan": false,
           "last_inventory": []
         }
       },

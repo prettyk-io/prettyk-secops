@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """G-38 / G-35 / G-45: генератор AF YAML + MethodId План / mock runPlan."""
 import json
 import sys
@@ -20,7 +20,7 @@ from core.af_plan import (  # noqa: E402
     profile_for_scan_policy,
 )
 from core.method_id import lookup_facade_method, resolve_call  # noqa: E402
-from adapters.zap_adapter import ZapAdapter  # noqa: E402
+from adapters.scanner_adapter import ScannerAdapter  # noqa: E402
 from core.errors import WiredError  # noqa: E402
 from core.controller import Controller  # noqa: E402
 from models.wired import Infrastructure, Wired, Meta, SecurityConfiguration
@@ -237,34 +237,34 @@ def test_juice_from_Wired_artifact_matches_generator():
 
 
 def test_method_id_plan():
-    assert lookup_facade_method("ZAP", "План") == ("zap", "run_automation_plan")
+    assert lookup_facade_method("scanner", "План") == ("scanner", "run_automation_plan")
     assert (
-        resolve_call("ZAP План plans/juice-baseline.yaml")
-        == "zap|run_automation_plan|plans/juice-baseline.yaml"
+        resolve_call("scanner План plans/juice-baseline.yaml")
+        == "scanner|run_automation_plan|plans/juice-baseline.yaml"
     )
-    assert lookup_facade_method("ZAP", "СгенерироватьПлан") == (
-        "zap",
+    assert lookup_facade_method("scanner", "СгенерироватьПлан") == (
+        "scanner",
         "generate_automation_plan",
     )
-    assert lookup_facade_method("ZAP", "ПрименитьAuth") == (
-        "zap",
+    assert lookup_facade_method("scanner", "ПрименитьAuth") == (
+        "scanner",
         "apply_wired_auth",
     )
-    assert lookup_facade_method("ZAP", "КраулерКлиент") == (
-        "zap",
+    assert lookup_facade_method("scanner", "КраулерКлиент") == (
+        "scanner",
         "client_spider_scan",
     )
 
 
-def test_controller_init_does_not_run_zap_scans(monkeypatch):
+def test_controller_init_does_not_run_scanner_scans(monkeypatch):
     """Honest Contract: load манифеста не вызывает spider/active/runPlan."""
     monkeypatch.setenv("PK_AUTH_BOOTSTRAP", "0")
-    monkeypatch.setenv("PK_ZAP_AUTH_BOOTSTRAP", "0")
+    monkeypatch.setenv("PK_scanner_AUTH_BOOTSTRAP", "0")
 
-    zap = MagicMock()
-    zap.run_automation_plan = MagicMock()
-    zap.spider_scan = MagicMock()
-    zap.generate_automation_plan = MagicMock()
+    scanner = MagicMock()
+    scanner.run_automation_plan = MagicMock()
+    scanner.spider_scan = MagicMock()
+    scanner.generate_automation_plan = MagicMock()
 
     with patch.object(Controller, "_init_adapters", lambda self: None), patch.object(
         Controller, "_register_actions", lambda self: None
@@ -275,7 +275,7 @@ def test_controller_init_does_not_run_zap_scans(monkeypatch):
             Wired(
                 meta=Meta(assessment_purpose="scheduled"),
                 infrastructure=Infrastructure(
-                    zap_mode="demon", browser_type="chrome-headless"
+                    scanner_mode="demon", browser_type="chrome-headless"
                 ),
                 security_configuration=SecurityConfiguration(
                     base_url_override="http://juice-shop:3000",
@@ -287,19 +287,19 @@ def test_controller_init_does_not_run_zap_scans(monkeypatch):
                 test_suites=TestSuites(scenarios=[]),
             )
         )
-        ctrl.adapters["zap"] = zap
+        ctrl.adapters["scanner"] = scanner
         ctrl._log_declarative_gap()
 
-    zap.run_automation_plan.assert_not_called()
-    zap.spider_scan.assert_not_called()
-    zap.generate_automation_plan.assert_not_called()
+    scanner.run_automation_plan.assert_not_called()
+    scanner.spider_scan.assert_not_called()
+    scanner.generate_automation_plan.assert_not_called()
 
 
 def test_run_automation_plan_mock(tmp_path):
     plan = tmp_path / "p.yaml"
     plan.write_text("env: {}\njobs: []\n", encoding="utf-8")
 
-    adapter = ZapAdapter.__new__(ZapAdapter)
+    adapter = ScannerAdapter.__new__(ScannerAdapter)
     adapter.host = "127.0.0.1"
     adapter.port = 8080
     adapter.api_key = None
@@ -313,17 +313,17 @@ def test_run_automation_plan_mock(tmp_path):
         {"finished": "", "error": ""},
         {"finished": "2026-01-01T00:00:00Z", "error": ""},
     ]
-    adapter._zap = MagicMock()
-    adapter._zap.automation = auto
+    adapter._scanner = MagicMock()
+    adapter._scanner.automation = auto
 
-    pid = ZapAdapter.run_automation_plan(adapter, str(plan), timeout_minutes=0.05)
+    pid = ScannerAdapter.run_automation_plan(adapter, str(plan), timeout_minutes=0.05)
     assert pid == "7"
     auto.run_plan.assert_called_once()
     assert auto.plan_progress.call_count >= 2
 
 
 def test_client_spider_scan_mock():
-    adapter = ZapAdapter.__new__(ZapAdapter)
+    adapter = ScannerAdapter.__new__(ScannerAdapter)
     adapter._connected = True
     adapter.client_spider_timeout = 15
     adapter.spider_stall_seconds = 60
@@ -331,10 +331,10 @@ def test_client_spider_scan_mock():
     client = MagicMock()
     client.scan.return_value = "3"
     client.status.side_effect = ["10", "50", "100"]
-    adapter._zap = MagicMock()
-    adapter._zap.clientSpider = client
+    adapter._scanner = MagicMock()
+    adapter._scanner.clientSpider = client
 
-    progress = ZapAdapter.client_spider_scan(
+    progress = ScannerAdapter.client_spider_scan(
         adapter, "http://spa.test", context_name="ctx1", timeout_minutes=0.05
     )
     assert progress == 100
@@ -343,7 +343,7 @@ def test_client_spider_scan_mock():
 
 
 def test_generate_automation_plan_from_wired_json(tmp_path):
-    adapter = ZapAdapter.__new__(ZapAdapter)
+    adapter = ScannerAdapter.__new__(ScannerAdapter)
     adapter._connected = True
     out = tmp_path / "gen.yaml"
     wired = {
@@ -355,7 +355,7 @@ def test_generate_automation_plan_from_wired_json(tmp_path):
             "scan_schema": "https://gen.test/openapi.json",
         },
     }
-    path = ZapAdapter.generate_automation_plan(
+    path = ScannerAdapter.generate_automation_plan(
         adapter,
         str(out),
         wired_json=json.dumps(wired),
@@ -366,9 +366,9 @@ def test_generate_automation_plan_from_wired_json(tmp_path):
 
 
 def test_run_automation_plan_missing_file():
-    adapter = ZapAdapter.__new__(ZapAdapter)
+    adapter = ScannerAdapter.__new__(ScannerAdapter)
     adapter._connected = True
-    adapter._zap = MagicMock()
+    adapter._scanner = MagicMock()
     with pytest.raises(WiredError, match="not found"):
-        ZapAdapter.run_automation_plan(adapter, "plans/no-such-plan-xyz.yaml")
+        ScannerAdapter.run_automation_plan(adapter, "plans/no-such-plan-xyz.yaml")
 

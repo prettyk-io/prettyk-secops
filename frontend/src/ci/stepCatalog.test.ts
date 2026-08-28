@@ -5,7 +5,7 @@ describe('Step Catalog (PK-CI-4)', () => {
   it('contains the canonical security steps', () => {
     const ids = STEP_CATALOG.map(s => s.id);
     expect(ids).toContain('browser-discovery');
-    expect(ids).toContain('zap-active-scan');
+    expect(ids).toContain('scanner-active-scan');
     expect(ids).toContain('corpus-fuzzing');
     expect(ids).toContain('quality-gate');
     expect(ids).toContain('evidence-pack');
@@ -35,14 +35,14 @@ describe('Step Catalog (PK-CI-4)', () => {
     expect(findStep('quality-gate')?.capability.risk).toBe('none');
   });
 
-  it('zap requires fuzzer:execute + checks:create', () => {
-    const caps = stepCapabilities('zap-active-scan');
+  it('scanner requires fuzzer:execute + checks:create', () => {
+    const caps = stepCapabilities('scanner-active-scan');
     expect(caps).toContain('fuzzer:execute');
     expect(caps).toContain('checks:create');
   });
 
   it('pipelineRequiredCapabilities unions distinct caps', () => {
-    const caps = pipelineRequiredCapabilities(['browser-discovery', 'zap-active-scan', 'quality-gate']);
+    const caps = pipelineRequiredCapabilities(['browser-discovery', 'scanner-active-scan', 'quality-gate']);
     expect(caps).toContain('checks:create');
     expect(caps).toContain('fuzzer:execute');
     expect(caps).toContain('policies:manage');

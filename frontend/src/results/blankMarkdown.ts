@@ -76,7 +76,7 @@ function metaLines(vm: BlankViewModel): string {
     `**Дата составления:** ${vm.date_created}`,
     `**Место составления:** ${vm.place}`,
     `**Степень конфиденциальности:** ${vm.confidentiality}`,
-    `**Идентификатор задания:** \`${vm.manifest_hash}\``,
+    `**Идентификатор задания:** \`${vm.wired_hash}\``,
   ].join('  \n');
 }
 
@@ -199,7 +199,7 @@ export function renderActMarkdown(vm: BlankViewModel): string {
     '',
     objectSection(vm),
     '',
-    `Ссылка на техническое задание (идентификатор): \`${vm.manifest_hash}\``,
+    `Ссылка на техническое задание (идентификатор): \`${vm.wired_hash}\``,
     '',
     '### 2. Параметры проведения тестирования',
     '',

@@ -9,7 +9,7 @@ export type OpenApiFields = {
   spec_as: string;
   spec_path_rel: string;
   auth_module_id: string;
-  zap_import: boolean;
+  scanner_import: boolean;
   last_inventory: Record<string, unknown>[];
 };
 
@@ -21,8 +21,8 @@ export type GraphqlFields = {
   schema_path_rel: string;
   endpoint_rel: string;
   auth_module_id: string;
-  zap_import: boolean;
-  zap_scan: boolean;
+  scanner_import: boolean;
+  scanner_scan: boolean;
   last_inventory: Record<string, unknown>[];
 };
 
@@ -40,7 +40,7 @@ export function defaultOpenApiFields(
     spec_as: '',
     spec_path_rel: '/openapi.json',
     auth_module_id: '',
-    zap_import: false,
+    scanner_import: false,
     last_inventory: [],
     ...overrides,
   };
@@ -55,8 +55,8 @@ export function defaultGraphqlFields(
     schema_path_rel: '/graphql',
     endpoint_rel: '/graphql',
     auth_module_id: '',
-    zap_import: false,
-    zap_scan: false,
+    scanner_import: false,
+    scanner_scan: false,
     last_inventory: [],
     ...overrides,
   };
@@ -88,7 +88,7 @@ export function normalizeOpenApiFields(raw: unknown): OpenApiFields {
       str(o?.spec_url) ||
       (mode === 'url_relative' ? '/openapi.json' : ''),
     auth_module_id: str(o?.auth_module_id),
-    zap_import: Boolean(o?.zap_import),
+    scanner_import: Boolean(o?.scanner_import),
     last_inventory: Array.isArray(o?.last_inventory)
       ? (o!.last_inventory as Record<string, unknown>[])
       : [],
@@ -112,8 +112,8 @@ export function normalizeGraphqlFields(raw: unknown): GraphqlFields {
       '/graphql',
     endpoint_rel: str(o?.endpoint_rel) || str(o?.endpoint) || '/graphql',
     auth_module_id: str(o?.auth_module_id),
-    zap_import: Boolean(o?.zap_import),
-    zap_scan: Boolean(o?.zap_scan),
+    scanner_import: Boolean(o?.scanner_import),
+    scanner_scan: Boolean(o?.scanner_scan),
     last_inventory: Array.isArray(o?.last_inventory)
       ? (o!.last_inventory as Record<string, unknown>[])
       : [],

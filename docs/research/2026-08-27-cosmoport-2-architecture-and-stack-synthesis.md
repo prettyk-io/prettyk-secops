@@ -33,7 +33,7 @@ PrettyK Cosmoport 2.0 — это **не клон Rails-приложения** и
 │                                                     ▼                               ▼   │
 │                                            ┌──────────────────┐           ┌─────────────────┐
 │                                            │ Execution Engine │           │  SecOps Engine  │
-│                                            │ (Woodpecker/Git) │           │ (PW/ZAP/Fuzzer) │
+│                                            │ (Woodpecker/Git) │           │ (PW/scanner/Fuzzer) │
 │                                            └────────┬─────────┘           └────────┬────────┘
 │                                                     │                              │    │
 │                                                     └──────────────┬───────────────┘    │
@@ -48,7 +48,7 @@ PrettyK Cosmoport 2.0 — это **не клон Rails-приложения** и
 PrettyK **арендует** generic-инфраструктуру (Git-фордж Gitea, CI-раннеры Woodpecker), но **единолично владеет**:
 - Компиляцией графа зависимостей и планов (`PlanCompiler`);
 - Машиной состояний и жизненным циклом запусков (`RunControlPlane`);
-- Защитными средами и фаззинг-лучами (`CapabilityBroker`, Playwright, ZAP, Fuzzer);
+- Защитными средами и фаззинг-лучами (`CapabilityBroker`, Playwright, scanner, Fuzzer);
 - Политикой допуска и стоп-гейтами (`SecurityGates`);
 - Неизменяемым криптографическим реестром улик (`EvidenceChain Ledger`).
 
@@ -62,14 +62,14 @@ PrettyK **арендует** generic-инфраструктуру (Git-форд�
 
 | Слой / Подсистема | Выбранный стек | Почему именно он | Что отбросили и почему |
 |---|---|---|---|
-| **Backend Core & Control Plane** | **Python 3.12+ (FastAPI + Pydantic v2 + SQLAlchemy 2 Async)** | Родной язык для SecOps рантайма (Playwright, ZAP API, Fuzzer, Discovery). Единое адресное пространство с движком. Строгие Pydantic-контракты. | **Ruby on Rails:** легаси, медленный, сложный в поддержке.<br>**Node.js:** плох для CPU-bound криптографии и SecOps-инструментария.<br>**Go:** избыточный бойлерплейт для динамических DSL-моделей. |
+| **Backend Core & Control Plane** | **Python 3.12+ (FastAPI + Pydantic v2 + SQLAlchemy 2 Async)** | Родной язык для SecOps рантайма (Playwright, scanner API, Fuzzer, Discovery). Единое адресное пространство с движком. Строгие Pydantic-контракты. | **Ruby on Rails:** легаси, медленный, сложный в поддержке.<br>**Node.js:** плох для CPU-bound криптографии и SecOps-инструментария.<br>**Go:** избыточный бойлерплейт для динамических DSL-моделей. |
 | **Durable Source of Truth** | **PostgreSQL 16 (JSONB + GIN + WAL archiving)** | Единственный источник истины. Транзакционная стейт-машина. JSONB для динамических DAG-артефактов и findings без потери строгой реляционности. | **SQLite:** только для локального Pure Box.<br>**MongoDB / NoSQL:** отсутствие ACID и строгих реляционных инвариантов для аудита. |
 | **Transport, Leases & Telemetry** | **Valkey 8 (Streams + Consumer Groups + PubSub)** | Свободный форк (BSD) без лицензионных рисков Redis Ltd. Идеален для очередей задач (XREADGROUP, XACK, XAUTOCLAIM) и live SSE. | **Redis 7.4+:** лицензионный капкан (SSPL/RSALv2).<br>**RabbitMQ / Kafka:** оверинжиниринг и лишние JVM/Erlang брокеры на старте. |
 | **Artifact & Evidence Storage** | **S3-совместимый контракт (MinIO / Ceph / Local File Engine)** | Неизменяемые бинарные артефакты (видео прогонов, PCAP-дампы, сырые логи, скриншоты, HAR). База данных не раздувается бинарниками. | **Хранение BLOB в PostgreSQL:** деградация производительности WAL и бэкапов. |
 | **Edge & Ingress** | **Caddy (Reverse Proxy + Automatic HTTPS)** | Один бинарник, конфиг в 10 строк, автоматический TLS, встроенный rate-limiting и reverse proxy без зоопарка nginx-модулей. | **Nginx:** сложный конфиг, ручные сертификаты.<br>**Traefik:** избыточен вне чистого Kubernetes. |
 | **Frontend UI / Control Station** | **React 18 + TypeScript + Vite + TailwindCSS + Ant Design / MUI** | Быстрый рендер, богатая экосистема готовых виджетов (AntD/ProComponents для таблиц аудита, xyflow для DAG-графов, Monaco для DSL). | **Vue / Svelte:** разрыв с существующей базой компонентов PrettyK Studio.<br>**Next.js / SSR:** не нужен для интранет-инструмента и усложняет airgap. |
 | **Graph & Code Surfaces** | **@xyflow/react (React Flow) + Monaco Editor** | Канонические интерактивные редакторы графов пайплайнов и кода PrettyK DSL с поддержкой sugar-автокомплита и диагностики. | Кастомный Canvas/SVG: слишком дорого писать и поддерживать с нуля. |
-| **Security & Execution Runtime** | **Playwright + OWASP ZAP Demon + PrettyK Fuzzer + Woodpecker** | Современный headless/CDP браузер, автоматический proxy-перехват, независимый генератор атак и легковесный CI-движок. | **Selenium:** легаси, медленный протокол HTTP JSON Wire.<br>**GitLab CI / Jenkins:** тяжеловесные монстры (оставлены только как опциональные внешние адаптеры). |
+| **Security & Execution Runtime** | **Playwright + OWASP scanner Demon + PrettyK Fuzzer + Woodpecker** | Современный headless/CDP браузер, автоматический proxy-перехват, независимый генератор атак и легковесный CI-движок. | **Selenium:** легаси, медленный протокол HTTP JSON Wire.<br>**GitLab CI / Jenkins:** тяжеловесные монстры (оставлены только как опциональные внешние адаптеры). |
 | **Auth & KMS Boundary** | **Better Auth (Drizzle / PG) + OpenBao (Vault Fork)** | Локальный суверенный auth-сервер без внешних зависимостей. Секреты хранятся в OpenBao (MPL-2.0 форк Vault). | **Keycloak:** тяжеловесный Java-комбайн.<br>**Blitz OIDC:** закрытая проприетарная специфика ЦБ. |
 
 ---
@@ -104,7 +104,7 @@ orchestrator/
 │   │
 │   ├── capability/           # Брокер защищённых сред (Capability Broker)
 │   │   ├── broker.py         # Аллокатор портов, привязка к run_id
-│   │   ├── scheduler.py      # Capability-aware диспетчеризация (ZAP/PW/Fuzz)
+│   │   ├── scheduler.py      # Capability-aware диспетчеризация (scanner/PW/Fuzz)
 │   │   └── health_monitor.py # Liveness, Readiness, Execution Readiness
 │   │
 │   ├── ledger/               # Неизменяемый журнал улик (Evidence Ledger)
@@ -122,7 +122,7 @@ orchestrator/
 │   │   │   ├── woodpecker.py # Канонический адаптер Woodpecker (gRPC/YAML)
 │   │   │   └── jenkins.py    # Легаси-адаптер Jenkins (опциональный)
 │   │   └── security/         # Интеграция с рантаймами SecOps
-│   │       ├── zap_ctl.py    # Управление ZAP Demon API
+│   │       ├── scanner_ctl.py    # Управление scanner Demon API
 │   │       ├── pw_ctl.py     # Управление Playwright CDP
 │   │       └── dojo_ctl.py   # Экспорт в DefectDojo / Allure
 │   │
@@ -181,7 +181,7 @@ orchestrator/
               │
               ▼ 6. SecOps Live Attack Beam (Capability Broker)
     ┌───────────────────┐
-    │  SecOps Runtime   │ ──> Playwright CDP + ZAP Demon (:8080) + Fuzzer (:8767)
+    │  SecOps Runtime   │ ──> Playwright CDP + scanner Demon (:8080) + Fuzzer (:8767)
     └─────────┬─────────┘
               │
               ▼ 7. Telemetry & Evidence Streaming
@@ -278,7 +278,7 @@ orchestrator/
 │ • 1 Docker Compose стек       │             │ • PostgreSQL 16 Cluster (HA / Patroni)│
 │ • Встроенный Gitea & Woodpecker│             │ • Valkey 8 Cluster (Streams)          │
 │ • Локальный MinIO S3          │             │ • Внешние Gitea/GitLab + Woodpecker   │
-│ • Локальный ZAP & Playwright  │             │ • Distributed Worker Pools            │
+│ • Локальный scanner & Playwright  │             │ • Distributed Worker Pools            │
 │ • Аутентификация: Local Admin │             │ • MinIO / Ceph S3 Cluster             │
 │ • Нулевой выход в интернет    │             │ • Better Auth + OpenBao KMS + 2FA     │
 └───────────────────────────────┘             └───────────────────────────────────────┘

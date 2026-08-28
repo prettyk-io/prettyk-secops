@@ -1,5 +1,5 @@
 {
-  "$comment": "СГЕНЕРИРОВАННЫЙ ФАЙЛ. Не редактировать вручную. Источник: docs/manifest.json, генератор: frontend/scripts/generate-schema.mjs. Обновить: npm run generate:schema",
+  "$comment": "СГЕНЕРИРОВАННЫЙ ФАЙЛ. Не редактировать вручную. Источник: docs/wired.json, генератор: frontend/scripts/generate-schema.mjs. Обновить: npm run generate:schema",
   "title": "Запуск Автоматизированных проверок и тестирование безопасности",
   "type": "object",
   "required": [
@@ -17,7 +17,7 @@
         "project_id": {
           "type": "string",
           "title": "Приложения участвующие в проверке",
-          "default": "owasp-zap-tests",
+          "default": "owasp-scanner-tests",
           "readOnly": true
         },
         "initiator_name": {
@@ -51,7 +51,7 @@
             },
             {
               "const": "manual",
-              "title": "Ручная проверка в ZAP"
+              "title": "Ручная проверка в scanner"
             }
           ]
         },
@@ -69,7 +69,7 @@
       "required": [
         "base_url_override",
         "allowed_extra_domains",
-        "zap_mode",
+        "scanner_mode",
         "browser_type"
       ],
       "properties": {
@@ -83,9 +83,9 @@
           "title": "Дополнительные разрешенные URL",
           "default": "https://rkn.gov.ru,auth.dev.spaceport.ru,*.internal.bank"
         },
-        "zap_mode": {
+        "scanner_mode": {
           "type": "string",
-          "title": "Режим работы ZAP",
+          "title": "Режим работы scanner",
           "default": "demon",
           "oneOf": [
             {
@@ -139,7 +139,7 @@
       "properties": {
         "scan_policy": {
           "type": "string",
-          "title": "Политика сканирования ZAP",
+          "title": "Политика сканирования scanner",
           "default": "custom_policy",
           "oneOf": [
             {
@@ -246,7 +246,7 @@
           },
           "infrastructure": {
             "properties": {
-              "zap_mode": {
+              "scanner_mode": {
                 "const": "demon",
                 "readOnly": true
               },
@@ -284,7 +284,7 @@
               "release_domain": {
                 "type": "string",
                 "title": "Домен развертывания для релизной сборки приложения",
-                "default": "deploydomain-builddomain-owasp-zap-tests",
+                "default": "deploydomain-builddomain-owasp-scanner-tests",
                 "readOnly": true
               },
               "compliance_requirements": {
@@ -315,7 +315,7 @@
           },
           "infrastructure": {
             "properties": {
-              "zap_mode": {
+              "scanner_mode": {
                 "const": "demon",
                 "readOnly": true
               },
@@ -369,8 +369,8 @@
             "properties": {
               "additional_local_server_port": {
                 "type": "integer",
-                "title": "Дополнительный порт ZAP (API + Proxy)",
-                "description": "Опционально. Поднимает дополнительный local server ZAP с API и Proxy на указанном порту. Основной порт раннера (по умолчанию 8080, API+proxy) задаётся инфраструктурой и с формы не меняется.",
+                "title": "Дополнительный порт scanner (API + Proxy)",
+                "description": "Опционально. Поднимает дополнительный local server scanner с API и Proxy на указанном порту. Основной порт раннера (по умолчанию 8080, API+proxy) задаётся инфраструктурой и с формы не меняется.",
                 "minimum": 1024,
                 "maximum": 65535
               }
@@ -406,7 +406,7 @@
           },
           "infrastructure": {
             "properties": {
-              "zap_mode": false,
+              "scanner_mode": false,
               "browser_type": false,
               "base_url_override": false,
               "allowed_extra_domains": false,
@@ -1192,7 +1192,7 @@
           },
           "infrastructure": {
             "properties": {
-              "zap_mode": {
+              "scanner_mode": {
                 "const": "demon"
               }
             }
@@ -1203,9 +1203,9 @@
         "properties": {
           "infrastructure": {
             "properties": {
-              "zap_work_timeout_min": {
+              "scanner_work_timeout_min": {
                 "type": "integer",
-                "title": "Таймаут работы ZAP (от 10 до 180 минут)",
+                "title": "Таймаут работы scanner (от 10 до 180 минут)",
                 "minimum": 10,
                 "maximum": 180,
                 "default": 60
@@ -1220,7 +1220,7 @@
         "properties": {
           "infrastructure": {
             "properties": {
-              "zap_mode": {
+              "scanner_mode": {
                 "const": "webswing"
               }
             }
@@ -2016,9 +2016,9 @@
                           "title": "Модуль «Авторизация» (идентификатор)",
                           "default": ""
                         },
-                        "zap_import": {
+                        "scanner_import": {
                           "type": "boolean",
-                          "title": "Разрешить импорт в ZAP (только по шагу сценария)",
+                          "title": "Разрешить импорт в scanner (только по шагу сценария)",
                           "default": false
                         },
                         "last_inventory": {
@@ -2067,14 +2067,14 @@
                           "title": "Модуль «Авторизация» (идентификатор)",
                           "default": ""
                         },
-                        "zap_import": {
+                        "scanner_import": {
                           "type": "boolean",
-                          "title": "Разрешить импорт в ZAP (только по шагу сценария)",
+                          "title": "Разрешить импорт в scanner (только по шагу сценария)",
                           "default": false
                         },
-                        "zap_scan": {
+                        "scanner_scan": {
                           "type": "boolean",
-                          "title": "Разрешить скан GraphQL в ZAP (только по шагу сценария)",
+                          "title": "Разрешить скан GraphQL в scanner (только по шагу сценария)",
                           "default": false
                         },
                         "last_inventory": {
@@ -2128,7 +2128,7 @@
                         },
                         "sequence_name": {
                           "type": "string",
-                          "title": "Имя последовательности ZAP",
+                          "title": "Имя последовательности scanner",
                           "default": ""
                         },
                         "source_har": {

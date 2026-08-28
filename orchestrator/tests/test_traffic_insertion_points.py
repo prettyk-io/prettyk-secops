@@ -97,14 +97,14 @@ def test_suite_runner_feed_opt_in(monkeypatch):
         }
     ]
 
-    class Zap:
+    class scanner:
         def get_messages(self):
             return messages
 
     monkeypatch.setenv(TRAFFIC_FEED_ENV, "1")
     runner = SuiteFuzzerRunner(
         wired=type("M", (), {"scan_base_url": lambda: "http://juice:3000"})(),
-        zap=Zap(),
+        scanner=scanner(),
         stream=type("S", (), {"resolve_arg": lambda self, v: v})(),
     )
     merged, meta = runner._maybe_feed_traffic_targets(

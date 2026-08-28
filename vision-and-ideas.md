@@ -15,7 +15,7 @@ PrettyK начинался как DAST scanner, но вырос в мощную 
 1. **Приоритет №1 — DAST & SecOps Platform (Флагман)**
    * Браузерное исследование (Playwright browser context, discovery, обход SPA).
    * Сценарный движок атак и умный фаззинг (DSL, мутации, генерация пэйлоадов).
-   * ZAP / API / Web security checks.
+   * scanner / API / Web security checks.
    * Нормализация находок (fingerprints, lifecycle, дедупликация).
    * Честные Quality Gates и Evidence (видео, скриншоты, HAR, request/response proof).
 
@@ -83,7 +83,7 @@ PrettyK начинался как DAST scanner, но вырос в мощную 
 ```text
 1. Engine & Runtime (Backend)
    • Python — DSL-интерпретатор, сценарный движок, оркестрация
-   • Playwright Browser Core + ZAP Engine — headless/headed браузер, API-пробы, фаззинг
+   • Playwright Browser Core + scanner Engine — headless/headed браузер, API-пробы, фаззинг
 
 2. State & Persistence (Durable & Realtime)
    • PostgreSQL 16 — durable Source of Truth (прогоны, находки, политики, аудит)

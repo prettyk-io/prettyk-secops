@@ -1,0 +1,2725 @@
+{
+  "methods": [
+    {
+      "id": "AuthКонтекста",
+      "component": "scanner",
+      "action": "set_context_auth",
+      "wirek": "scanner|set_context_auth",
+      "tier": "util"
+    },
+    {
+      "id": "BrowserAuth",
+      "component": "scanner",
+      "action": "set_browser_based_auth",
+      "wirek": "scanner|set_browser_based_auth",
+      "tier": "util"
+    },
+    {
+      "id": "ForcedUser",
+      "component": "scanner",
+      "action": "set_forced_user",
+      "wirek": "scanner|set_forced_user",
+      "tier": "util"
+    },
+    {
+      "id": "HttpGet",
+      "component": "http",
+      "action": "get",
+      "wirek": "http|get",
+      "tier": "ui"
+    },
+    {
+      "id": "HttpPost",
+      "component": "http",
+      "action": "post",
+      "wirek": "http|post",
+      "tier": "ui"
+    },
+    {
+      "id": "HttpSender",
+      "component": "scanner",
+      "action": "install_mask_http_sender",
+      "wirek": "scanner|install_mask_http_sender",
+      "tier": "util"
+    },
+    {
+      "id": "АктивноеСканирование",
+      "component": "scanner",
+      "action": "active_scan",
+      "wirek": "scanner|active_scan",
+      "tier": "ui"
+    },
+    {
+      "id": "АлертыOAST",
+      "component": "scanner",
+      "action": "get_oast_alerts",
+      "wirek": "scanner|get_oast_alerts",
+      "tier": "util"
+    },
+    {
+      "id": "АрхивироватьКонтекст",
+      "component": "scanner",
+      "action": "archive_context",
+      "wirek": "scanner|archive_context",
+      "tier": "util"
+    },
+    {
+      "id": "Вернуться",
+      "component": "webdriver",
+      "action": "back",
+      "wirek": "webdriver|back",
+      "tier": "ui"
+    },
+    {
+      "id": "ВключитьForcedUser",
+      "component": "scanner",
+      "action": "enable_forced_user_mode",
+      "wirek": "scanner|enable_forced_user_mode",
+      "tier": "util"
+    },
+    {
+      "id": "ВключитьHttpSender",
+      "component": "scanner",
+      "action": "enable_http_sender_script",
+      "wirek": "scanner|enable_http_sender_script",
+      "tier": "util"
+    },
+    {
+      "id": "ВключитьВКонтекст",
+      "component": "scanner",
+      "action": "set_context_include",
+      "wirek": "scanner|set_context_include",
+      "tier": "ui"
+    },
+    {
+      "id": "ВключитьПассивныеСканеры",
+      "component": "scanner",
+      "action": "enable_passive_scanners",
+      "wirek": "scanner|enable_passive_scanners",
+      "tier": "util"
+    },
+    {
+      "id": "ВключитьПользователя",
+      "component": "scanner",
+      "action": "enable_user",
+      "wirek": "scanner|enable_user",
+      "tier": "util"
+    },
+    {
+      "id": "Вперёд",
+      "component": "webdriver",
+      "action": "forward",
+      "wirek": "webdriver|forward",
+      "tier": "util"
+    },
+    {
+      "id": "ВставитьЗначение",
+      "component": "webdriver",
+      "action": "send_keys",
+      "wirek": "webdriver|send_keys",
+      "tier": "ui"
+    },
+    {
+      "id": "ВыбратьПоЗначению",
+      "component": "webdriver",
+      "action": "select_by_value",
+      "wirek": "webdriver|select_by_value",
+      "tier": "util"
+    },
+    {
+      "id": "ВыбратьПоТексту",
+      "component": "webdriver",
+      "action": "select_by_text",
+      "wirek": "webdriver|select_by_text",
+      "tier": "ui"
+    },
+    {
+      "id": "ВызовgRPC",
+      "component": "grpc",
+      "action": "unary_call",
+      "wirek": "grpc|unary_call",
+      "tier": "util"
+    },
+    {
+      "id": "ВыключитьForcedUser",
+      "component": "scanner",
+      "action": "disable_forced_user_mode",
+      "wirek": "scanner|disable_forced_user_mode",
+      "tier": "util"
+    },
+    {
+      "id": "ВыключитьHttpSender",
+      "component": "scanner",
+      "action": "disable_http_sender_script",
+      "wirek": "scanner|disable_http_sender_script",
+      "tier": "util"
+    },
+    {
+      "id": "ВыключитьПассивныеСканеры",
+      "component": "scanner",
+      "action": "disable_all_passive_scanners",
+      "wirek": "scanner|disable_all_passive_scanners",
+      "tier": "util"
+    },
+    {
+      "id": "ВыполнитьAsyncJS",
+      "component": "webdriver",
+      "action": "execute_async_script",
+      "wirek": "webdriver|execute_async_script",
+      "tier": "util"
+    },
+    {
+      "id": "ВыполнитьGraphQL",
+      "component": "http",
+      "action": "execute_graphql_module",
+      "wirek": "http|execute_graphql_module",
+      "tier": "util"
+    },
+    {
+      "id": "ВыполнитьJS",
+      "component": "webdriver",
+      "action": "execute_script",
+      "wirek": "webdriver|execute_script",
+      "tier": "ui"
+    },
+    {
+      "id": "ВыполнитьКоманду",
+      "component": "core",
+      "action": "run_command",
+      "wirek": "core|run_command",
+      "tier": "ui"
+    },
+    {
+      "id": "ВыполнитьКомандуSSH",
+      "component": "connector",
+      "action": "run_ssh_command",
+      "wirek": "connector|run_ssh_command",
+      "tier": "ui"
+    },
+    {
+      "id": "ВыполнитьОперацииOpenAPI",
+      "component": "http",
+      "action": "execute_openapi_module",
+      "wirek": "http|execute_openapi_module",
+      "tier": "util"
+    },
+    {
+      "id": "ВыполнитьСкрипт",
+      "component": "scanner",
+      "action": "run_script",
+      "wirek": "scanner|run_script",
+      "tier": "util"
+    },
+    {
+      "id": "ВыполнитьЦепь",
+      "component": "scanner",
+      "action": "execute_chain_module",
+      "wirek": "scanner|execute_chain_module",
+      "tier": "util"
+    },
+    {
+      "id": "ГлобальнаяVarСкрипта",
+      "component": "scanner",
+      "action": "set_script_global_var",
+      "wirek": "scanner|set_script_global_var",
+      "tier": "util"
+    },
+    {
+      "id": "ГлобальныйФильтрАлерта",
+      "component": "scanner",
+      "action": "add_global_alert_filter",
+      "wirek": "scanner|add_global_alert_filter",
+      "tier": "util"
+    },
+    {
+      "id": "ДобавитьPayload",
+      "component": "scanner",
+      "action": "add_custom_payload",
+      "wirek": "scanner|add_custom_payload",
+      "tier": "util"
+    },
+    {
+      "id": "ДописатьТекст",
+      "component": "webdriver",
+      "action": "append_text",
+      "wirek": "webdriver|append_text",
+      "tier": "util"
+    },
+    {
+      "id": "ЖдатьURL",
+      "component": "webdriver",
+      "action": "wait_for_url",
+      "wirek": "webdriver|wait_for_url",
+      "tier": "util"
+    },
+    {
+      "id": "ЖдатьЗаголовок",
+      "component": "webdriver",
+      "action": "wait_for_title",
+      "wirek": "webdriver|wait_for_title",
+      "tier": "util"
+    },
+    {
+      "id": "ЖдатьЗагрузкуСтраницы",
+      "component": "webdriver",
+      "action": "wait_for_page_load",
+      "wirek": "webdriver|wait_for_page_load",
+      "tier": "util"
+    },
+    {
+      "id": "ЖдатьИсчезновенияЭлемента",
+      "component": "webdriver",
+      "action": "wait_for_element_not",
+      "wirek": "webdriver|wait_for_element_not",
+      "tier": "util"
+    },
+    {
+      "id": "ЖдатьПростойСети",
+      "component": "webdriver",
+      "action": "wait_for_network_idle",
+      "wirek": "webdriver|wait_for_network_idle",
+      "tier": "util"
+    },
+    {
+      "id": "ЖдатьТекст",
+      "component": "webdriver",
+      "action": "wait_for_text",
+      "wirek": "webdriver|wait_for_text",
+      "tier": "ui"
+    },
+    {
+      "id": "ЖдатьЭлемент",
+      "component": "webdriver",
+      "action": "wait_for_element",
+      "wirek": "webdriver|wait_for_element",
+      "tier": "ui"
+    },
+    {
+      "id": "ЗагрузитьHttpSender",
+      "component": "scanner",
+      "action": "load_http_sender_script",
+      "wirek": "scanner|load_http_sender_script",
+      "tier": "util"
+    },
+    {
+      "id": "ЗагрузитьСессию",
+      "component": "scanner",
+      "action": "load_session",
+      "wirek": "scanner|load_session",
+      "tier": "util"
+    },
+    {
+      "id": "ЗагрузитьСкрипт",
+      "component": "scanner",
+      "action": "load_script",
+      "wirek": "scanner|load_script",
+      "tier": "util"
+    },
+    {
+      "id": "ЗагрузитьФайл",
+      "component": "webdriver",
+      "action": "upload_file",
+      "wirek": "webdriver|upload_file",
+      "tier": "util"
+    },
+    {
+      "id": "ЗагрузитьФильтры",
+      "component": "scanner",
+      "action": "load_alert_filters",
+      "wirek": "scanner|load_alert_filters",
+      "tier": "util"
+    },
+    {
+      "id": "ЗакрытьБраузер",
+      "component": "webdriver",
+      "action": "quit",
+      "wirek": "webdriver|quit",
+      "tier": "util"
+    },
+    {
+      "id": "ЗакрытьОкно",
+      "component": "webdriver",
+      "action": "close",
+      "wirek": "webdriver|close",
+      "tier": "util"
+    },
+    {
+      "id": "ЗакрытьТекущееОкно",
+      "component": "webdriver",
+      "action": "close_current_window",
+      "wirek": "webdriver|close_current_window",
+      "tier": "util"
+    },
+    {
+      "id": "ЗапросЧерезscanner",
+      "component": "scanner",
+      "action": "scanner_http_request",
+      "wirek": "scanner|scanner_http_request",
+      "tier": "util"
+    },
+    {
+      "id": "ЗапроситьЛогиКоннектора",
+      "component": "connector",
+      "action": "query_logs",
+      "wirek": "connector|query_logs",
+      "tier": "ui"
+    },
+    {
+      "id": "ЗапроситьМетрикиКоннектора",
+      "component": "connector",
+      "action": "query_metric_pack",
+      "wirek": "connector|query_metric_pack",
+      "tier": "ui"
+    },
+    {
+      "id": "ЗапуститьФаззер",
+      "component": "fuzz",
+      "action": "run",
+      "wirek": "fuzz|run",
+      "tier": "util"
+    },
+    {
+      "id": "ИзбегатьLogout",
+      "component": "scanner",
+      "action": "set_logout_avoidance",
+      "wirek": "scanner|set_logout_avoidance",
+      "tier": "util"
+    },
+    {
+      "id": "ИмпортGraphQL",
+      "component": "scanner",
+      "action": "import_graphql_schema",
+      "wirek": "scanner|import_graphql_schema",
+      "tier": "util"
+    },
+    {
+      "id": "ИмпортHAR",
+      "component": "scanner",
+      "action": "import_har_sequence",
+      "wirek": "scanner|import_har_sequence",
+      "tier": "util"
+    },
+    {
+      "id": "ИмпортOpenAPI",
+      "component": "scanner",
+      "action": "import_openapi_spec",
+      "wirek": "scanner|import_openapi_spec",
+      "tier": "util"
+    },
+    {
+      "id": "ИмпортgRPC",
+      "component": "scanner",
+      "action": "import_grpc_proto",
+      "wirek": "scanner|import_grpc_proto",
+      "tier": "util"
+    },
+    {
+      "id": "ИмпортСертификата",
+      "component": "scanner",
+      "action": "import_certificate",
+      "wirek": "scanner|import_certificate",
+      "tier": "util"
+    },
+    {
+      "id": "ИнициализироватьКоннектор",
+      "component": "connector",
+      "action": "init_connector",
+      "wirek": "connector|init_connector",
+      "tier": "ui"
+    },
+    {
+      "id": "ИсключитьИзКонтекста",
+      "component": "scanner",
+      "action": "set_context_exclude",
+      "wirek": "scanner|set_context_exclude",
+      "tier": "util"
+    },
+    {
+      "id": "КоличествоЭлементов",
+      "component": "webdriver",
+      "action": "get_elements_count",
+      "wirek": "webdriver|get_elements_count",
+      "tier": "ui"
+    },
+    {
+      "id": "КонтекстПерехватаПользователя",
+      "component": "scanner",
+      "action": "new_user_intercept_context",
+      "wirek": "scanner|new_user_intercept_context",
+      "tier": "util"
+    },
+    {
+      "id": "Краулер",
+      "component": "scanner",
+      "action": "ajax_spider_scan",
+      "wirek": "scanner|ajax_spider_scan",
+      "tier": "ui"
+    },
+    {
+      "id": "КраулерГлубокий",
+      "component": "scanner",
+      "action": "ajax_spider_scan_deep",
+      "wirek": "scanner|ajax_spider_scan_deep",
+      "tier": "util"
+    },
+    {
+      "id": "КраулерИтератор",
+      "component": "scanner",
+      "action": "ajax_spider_scan_iterator",
+      "wirek": "scanner|ajax_spider_scan_iterator",
+      "tier": "util"
+    },
+    {
+      "id": "КраулерКлиент",
+      "component": "scanner",
+      "action": "client_spider_scan",
+      "wirek": "scanner|client_spider_scan",
+      "tier": "util"
+    },
+    {
+      "id": "КраулерПоверхностный",
+      "component": "scanner",
+      "action": "ajax_spider_scan_shallow",
+      "wirek": "scanner|ajax_spider_scan_shallow",
+      "tier": "util"
+    },
+    {
+      "id": "Лог",
+      "component": "core",
+      "action": "log_message",
+      "wirek": "core|log_message",
+      "tier": "ui"
+    },
+    {
+      "id": "ЛогАтаки",
+      "component": "scanner",
+      "action": "log_attack",
+      "wirek": "scanner|log_attack",
+      "tier": "ui"
+    },
+    {
+      "id": "ЛогПеременную",
+      "component": "core",
+      "action": "log_variable",
+      "wirek": "core|log_variable",
+      "tier": "util"
+    },
+    {
+      "id": "ЛокальныйСервер",
+      "component": "scanner",
+      "action": "add_local_server",
+      "wirek": "scanner|add_local_server",
+      "tier": "util"
+    },
+    {
+      "id": "МетодЗапросаGraphQL",
+      "component": "scanner",
+      "action": "set_graphql_request_method",
+      "wirek": "scanner|set_graphql_request_method",
+      "tier": "util"
+    },
+    {
+      "id": "Навести",
+      "component": "webdriver",
+      "action": "hover",
+      "wirek": "webdriver|hover",
+      "tier": "ui"
+    },
+    {
+      "id": "Нажать",
+      "component": "webdriver",
+      "action": "click",
+      "wirek": "webdriver|click",
+      "tier": "ui"
+    },
+    {
+      "id": "НажатьJS",
+      "component": "webdriver",
+      "action": "click_js",
+      "wirek": "webdriver|click_js",
+      "tier": "ui"
+    },
+    {
+      "id": "НажатьДважды",
+      "component": "webdriver",
+      "action": "double_click",
+      "wirek": "webdriver|double_click",
+      "tier": "util"
+    },
+    {
+      "id": "НажатьКлавишу",
+      "component": "webdriver",
+      "action": "press_key",
+      "wirek": "webdriver|press_key",
+      "tier": "util"
+    },
+    {
+      "id": "НажатьПравой",
+      "component": "webdriver",
+      "action": "right_click",
+      "wirek": "webdriver|right_click",
+      "tier": "util"
+    },
+    {
+      "id": "НачатьЛогирование",
+      "component": "core",
+      "action": "start_log_cut",
+      "wirek": "core|start_log_cut",
+      "tier": "util"
+    },
+    {
+      "id": "НовыйКонтекст",
+      "component": "scanner",
+      "action": "create_context",
+      "wirek": "scanner|create_context",
+      "tier": "ui"
+    },
+    {
+      "id": "ОбновитьСтраницу",
+      "component": "webdriver",
+      "action": "refresh",
+      "wirek": "webdriver|refresh",
+      "tier": "ui"
+    },
+    {
+      "id": "ОкончитьЛогирование",
+      "component": "core",
+      "action": "end_log_cut",
+      "wirek": "core|end_log_cut",
+      "tier": "util"
+    },
+    {
+      "id": "ОстановитьАктивноеСканирование",
+      "component": "scanner",
+      "action": "stop_active_scan",
+      "wirek": "scanner|stop_active_scan",
+      "tier": "util"
+    },
+    {
+      "id": "ОстановитьПлан",
+      "component": "scanner",
+      "action": "stop_automation_plan",
+      "wirek": "scanner|stop_automation_plan",
+      "tier": "util"
+    },
+    {
+      "id": "ОстановитьСканера",
+      "component": "scanner",
+      "action": "stop_spider",
+      "wirek": "scanner|stop_spider",
+      "tier": "util"
+    },
+    {
+      "id": "ОтключитьПользователя",
+      "component": "scanner",
+      "action": "disable_user",
+      "wirek": "scanner|disable_user",
+      "tier": "util"
+    },
+    {
+      "id": "Открыть",
+      "component": "webdriver",
+      "action": "open",
+      "wirek": "webdriver|open",
+      "tier": "ui"
+    },
+    {
+      "id": "ОткрытьПоURL",
+      "component": "webdriver",
+      "action": "open_by_url",
+      "wirek": "webdriver|open_by_url",
+      "tier": "ui"
+    },
+    {
+      "id": "Отчёт",
+      "component": "scanner",
+      "action": "generate_report",
+      "wirek": "scanner|generate_report",
+      "tier": "ui"
+    },
+    {
+      "id": "ОчиститьCookies",
+      "component": "browser",
+      "action": "clear_cookies",
+      "wirek": "browser|clear_cookies",
+      "tier": "ui"
+    },
+    {
+      "id": "ОчиститьReplacer",
+      "component": "scanner",
+      "action": "clear_replacer_rules",
+      "wirek": "scanner|clear_replacer_rules",
+      "tier": "util"
+    },
+    {
+      "id": "ОчиститьЗначение",
+      "component": "webdriver",
+      "action": "clear",
+      "wirek": "webdriver|clear",
+      "tier": "ui"
+    },
+    {
+      "id": "ОчиститьКонтекст",
+      "component": "scanner",
+      "action": "clear_context",
+      "wirek": "scanner|clear_context",
+      "tier": "util"
+    },
+    {
+      "id": "ОчиститьКэш",
+      "component": "browser",
+      "action": "cdp_clear_browser_cache",
+      "wirek": "browser|cdp_clear_browser_cache",
+      "tier": "ui"
+    },
+    {
+      "id": "ПассивноеСканирование",
+      "component": "scanner",
+      "action": "passive_scan_wait",
+      "wirek": "scanner|passive_scan_wait",
+      "tier": "util"
+    },
+    {
+      "id": "ПассивныеСканеры",
+      "component": "scanner",
+      "action": "get_passive_scanners",
+      "wirek": "scanner|get_passive_scanners",
+      "tier": "util"
+    },
+    {
+      "id": "Пауза",
+      "component": "core",
+      "action": "sleep",
+      "wirek": "core|sleep",
+      "tier": "ui"
+    },
+    {
+      "id": "ПейлоадПодмены",
+      "component": "scanner",
+      "action": "set_fuzz_payload",
+      "wirek": "scanner|set_fuzz_payload",
+      "tier": "util"
+    },
+    {
+      "id": "ПереключитьКонтекст",
+      "component": "scanner",
+      "action": "switch_context",
+      "wirek": "scanner|switch_context",
+      "tier": "util"
+    },
+    {
+      "id": "План",
+      "component": "scanner",
+      "action": "run_automation_plan",
+      "wirek": "scanner|run_automation_plan",
+      "tier": "ui"
+    },
+    {
+      "id": "ПодготовитьЦепь",
+      "component": "scanner",
+      "action": "prepare_chain_module",
+      "wirek": "scanner|prepare_chain_module",
+      "tier": "util"
+    },
+    {
+      "id": "ПолитикаСканирования",
+      "component": "scanner",
+      "action": "set_scan_policy",
+      "wirek": "scanner|set_scan_policy",
+      "tier": "util"
+    },
+    {
+      "id": "ПолучитьCSS",
+      "component": "webdriver",
+      "action": "get_css_value",
+      "wirek": "webdriver|get_css_value",
+      "tier": "util"
+    },
+    {
+      "id": "ПолучитьCookie",
+      "component": "browser",
+      "action": "get_cookie",
+      "wirek": "browser|get_cookie",
+      "tier": "ui"
+    },
+    {
+      "id": "ПолучитьАлерты",
+      "component": "scanner",
+      "action": "get_alerts",
+      "wirek": "scanner|get_alerts",
+      "tier": "util"
+    },
+    {
+      "id": "ПолучитьАтрибут",
+      "component": "webdriver",
+      "action": "get_attribute",
+      "wirek": "webdriver|get_attribute",
+      "tier": "util"
+    },
+    {
+      "id": "ПолучитьЗначение",
+      "component": "webdriver",
+      "action": "get_value",
+      "wirek": "webdriver|get_value",
+      "tier": "ui"
+    },
+    {
+      "id": "ПолучитьСвойство",
+      "component": "webdriver",
+      "action": "get_property",
+      "wirek": "webdriver|get_property",
+      "tier": "util"
+    },
+    {
+      "id": "ПолучитьТекст",
+      "component": "webdriver",
+      "action": "get_text",
+      "wirek": "webdriver|get_text",
+      "tier": "ui"
+    },
+    {
+      "id": "ПравилоReplacer",
+      "component": "scanner",
+      "action": "add_replacer_rule",
+      "wirek": "scanner|add_replacer_rule",
+      "tier": "util"
+    },
+    {
+      "id": "ПриложитьHTML",
+      "component": "allure",
+      "action": "attach_html",
+      "wirek": "allure|attach_html",
+      "tier": "util"
+    },
+    {
+      "id": "ПриложитьJSON",
+      "component": "allure",
+      "action": "attach_json",
+      "wirek": "allure|attach_json",
+      "tier": "util"
+    },
+    {
+      "id": "ПриложитьСкриншот",
+      "component": "allure",
+      "action": "attach_screenshot",
+      "wirek": "allure|attach_screenshot",
+      "tier": "ui"
+    },
+    {
+      "id": "ПриложитьТекст",
+      "component": "allure",
+      "action": "attach_text",
+      "wirek": "allure|attach_text",
+      "tier": "util"
+    },
+    {
+      "id": "ПриложитьФайл",
+      "component": "allure",
+      "action": "attach_file",
+      "wirek": "allure|attach_file",
+      "tier": "util"
+    },
+    {
+      "id": "ПрименитьAuth",
+      "component": "scanner",
+      "action": "apply_wired_auth",
+      "wirek": "scanner|apply_wired_auth",
+      "tier": "ui"
+    },
+    {
+      "id": "ПрименитьДомены",
+      "component": "scanner",
+      "action": "apply_allowed_domains",
+      "wirek": "scanner|apply_allowed_domains",
+      "tier": "ui"
+    },
+    {
+      "id": "ПроверитьURL",
+      "component": "webdriver",
+      "action": "assert_url",
+      "wirek": "webdriver|assert_url",
+      "tier": "assert"
+    },
+    {
+      "id": "ПроверитьБазуКоннектора",
+      "component": "connector",
+      "action": "probe_db",
+      "wirek": "connector|probe_db",
+      "tier": "assert"
+    },
+    {
+      "id": "ПроверитьБольше",
+      "component": "inspector",
+      "action": "assert_greater",
+      "wirek": "inspector|assert_greater",
+      "tier": "assert"
+    },
+    {
+      "id": "ПроверитьВДиапазоне",
+      "component": "inspector",
+      "action": "assert_between",
+      "wirek": "inspector|assert_between",
+      "tier": "assert"
+    },
+    {
+      "id": "ПроверитьВСписке",
+      "component": "inspector",
+      "action": "assert_in",
+      "wirek": "inspector|assert_in",
+      "tier": "assert"
+    },
+    {
+      "id": "ПроверитьВидимостьЭлемента",
+      "component": "webdriver",
+      "action": "assert_element_visible",
+      "wirek": "webdriver|assert_element_visible",
+      "tier": "assert"
+    },
+    {
+      "id": "ПроверитьВхождение",
+      "component": "webdriver",
+      "action": "assert_contains",
+      "wirek": "webdriver|assert_contains",
+      "tier": "assert"
+    },
+    {
+      "id": "ПроверитьДлину",
+      "component": "inspector",
+      "action": "assert_length",
+      "wirek": "inspector|assert_length",
+      "tier": "assert"
+    },
+    {
+      "id": "ПроверитьЗаголовок",
+      "component": "webdriver",
+      "action": "assert_title",
+      "wirek": "webdriver|assert_title",
+      "tier": "assert"
+    },
+    {
+      "id": "ПроверитьМеньше",
+      "component": "inspector",
+      "action": "assert_less",
+      "wirek": "inspector|assert_less",
+      "tier": "assert"
+    },
+    {
+      "id": "ПроверитьНаличиеЭлемента",
+      "component": "webdriver",
+      "action": "assert_element_present",
+      "wirek": "webdriver|assert_element_present",
+      "tier": "assert"
+    },
+    {
+      "id": "ПроверитьНеВСписке",
+      "component": "inspector",
+      "action": "assert_not_in",
+      "wirek": "inspector|assert_not_in",
+      "tier": "assert"
+    },
+    {
+      "id": "ПроверитьНевидимостьЭлемента",
+      "component": "webdriver",
+      "action": "assert_element_not_visible",
+      "wirek": "webdriver|assert_element_not_visible",
+      "tier": "assert"
+    },
+    {
+      "id": "ПроверитьНепустоту",
+      "component": "inspector",
+      "action": "assert_is_not_empty",
+      "wirek": "inspector|assert_is_not_empty",
+      "tier": "assert"
+    },
+    {
+      "id": "ПроверитьОчередьКоннектора",
+      "component": "connector",
+      "action": "probe_queue",
+      "wirek": "connector|probe_queue",
+      "tier": "assert"
+    },
+    {
+      "id": "ПроверитьПустоту",
+      "component": "inspector",
+      "action": "assert_is_empty",
+      "wirek": "inspector|assert_is_empty",
+      "tier": "assert"
+    },
+    {
+      "id": "ПроверитьРавенство",
+      "component": "webdriver",
+      "action": "assert_equals",
+      "wirek": "webdriver|assert_equals",
+      "tier": "assert"
+    },
+    {
+      "id": "ПроверитьТекстНаСтранице",
+      "component": "webdriver",
+      "action": "assert_text_present",
+      "wirek": "webdriver|assert_text_present",
+      "tier": "assert"
+    },
+    {
+      "id": "ПрокрутитьВверх",
+      "component": "webdriver",
+      "action": "scroll_to_top",
+      "wirek": "webdriver|scroll_to_top",
+      "tier": "util"
+    },
+    {
+      "id": "ПрокрутитьВниз",
+      "component": "webdriver",
+      "action": "scroll_to_bottom",
+      "wirek": "webdriver|scroll_to_bottom",
+      "tier": "util"
+    },
+    {
+      "id": "ПрокрутитьКЭлементу",
+      "component": "webdriver",
+      "action": "scroll_to_element",
+      "wirek": "webdriver|scroll_to_element",
+      "tier": "ui"
+    },
+    {
+      "id": "ПрокрутитьНа",
+      "component": "webdriver",
+      "action": "scroll_by",
+      "wirek": "webdriver|scroll_by",
+      "tier": "util"
+    },
+    {
+      "id": "ПрофильСканирования",
+      "component": "scanner",
+      "action": "apply_scan_depth_profile",
+      "wirek": "scanner|apply_scan_depth_profile",
+      "tier": "util"
+    },
+    {
+      "id": "РасследованиеЦепи",
+      "component": "scanner",
+      "action": "investigate_chain_module",
+      "wirek": "scanner|investigate_chain_module",
+      "tier": "util"
+    },
+    {
+      "id": "СайтыСессий",
+      "component": "scanner",
+      "action": "get_sessions_sites",
+      "wirek": "scanner|get_sessions_sites",
+      "tier": "util"
+    },
+    {
+      "id": "СборИнформации",
+      "component": "webdriver",
+      "action": "gather_info",
+      "wirek": "webdriver|gather_info",
+      "tier": "ui"
+    },
+    {
+      "id": "СгенерироватьПлан",
+      "component": "scanner",
+      "action": "generate_automation_plan",
+      "wirek": "scanner|generate_automation_plan",
+      "tier": "ui"
+    },
+    {
+      "id": "СессииСайта",
+      "component": "scanner",
+      "action": "get_site_sessions",
+      "wirek": "scanner|get_site_sessions",
+      "tier": "util"
+    },
+    {
+      "id": "СканGraphQL",
+      "component": "scanner",
+      "action": "scan_graphql_api",
+      "wirek": "scanner|scan_graphql_api",
+      "tier": "util"
+    },
+    {
+      "id": "СканOpenAPI",
+      "component": "scanner",
+      "action": "scan_openapi",
+      "wirek": "scanner|scan_openapi",
+      "tier": "util"
+    },
+    {
+      "id": "СканgRPC",
+      "component": "scanner",
+      "action": "scan_grpc",
+      "wirek": "scanner|scan_grpc",
+      "tier": "util"
+    },
+    {
+      "id": "СканПоследовательности",
+      "component": "scanner",
+      "action": "sequence_active_scan",
+      "wirek": "scanner|sequence_active_scan",
+      "tier": "util"
+    },
+    {
+      "id": "Сканер",
+      "component": "scanner",
+      "action": "crawl",
+      "wirek": "scanner|crawl",
+      "tier": "ui"
+    },
+    {
+      "id": "СканерSPA",
+      "component": "scanner",
+      "action": "spider_scan_spa",
+      "wirek": "scanner|spider_scan_spa",
+      "tier": "util"
+    },
+    {
+      "id": "СканерГлубокий",
+      "component": "scanner",
+      "action": "spider_scan_deep",
+      "wirek": "scanner|spider_scan_deep",
+      "tier": "util"
+    },
+    {
+      "id": "СканерЛокальный",
+      "component": "scanner",
+      "action": "spider_scan_local",
+      "wirek": "scanner|spider_scan_local",
+      "tier": "util"
+    },
+    {
+      "id": "СканированиеЦепи",
+      "component": "scanner",
+      "action": "scan_chain_module",
+      "wirek": "scanner|scan_chain_module",
+      "tier": "util"
+    },
+    {
+      "id": "Сканировать",
+      "component": "scanner",
+      "action": "spider_scan",
+      "wirek": "scanner|spider_scan",
+      "tier": "util"
+    },
+    {
+      "id": "Скриншот",
+      "component": "webdriver",
+      "action": "take_screenshot",
+      "wirek": "webdriver|take_screenshot",
+      "tier": "ui"
+    },
+    {
+      "id": "СоздатьИНазначитьForcedUser",
+      "component": "scanner",
+      "action": "create_and_force_user",
+      "wirek": "scanner|create_and_force_user",
+      "tier": "util"
+    },
+    {
+      "id": "СоздатьПользователя",
+      "component": "scanner",
+      "action": "create_user",
+      "wirek": "scanner|create_user",
+      "tier": "util"
+    },
+    {
+      "id": "Сообщения",
+      "component": "scanner",
+      "action": "get_messages",
+      "wirek": "scanner|get_messages",
+      "tier": "util"
+    },
+    {
+      "id": "СохранитьСессию",
+      "component": "scanner",
+      "action": "save_session",
+      "wirek": "scanner|save_session",
+      "tier": "util"
+    },
+    {
+      "id": "СписокPayload",
+      "component": "scanner",
+      "action": "get_payloads",
+      "wirek": "scanner|get_payloads",
+      "tier": "util"
+    },
+    {
+      "id": "СписокReplacer",
+      "component": "scanner",
+      "action": "list_replacer_rules",
+      "wirek": "scanner|list_replacer_rules",
+      "tier": "util"
+    },
+    {
+      "id": "СписокКонтекстов",
+      "component": "scanner",
+      "action": "list_contexts",
+      "wirek": "scanner|list_contexts",
+      "tier": "util"
+    },
+    {
+      "id": "СписокОперацийGraphQL",
+      "component": "scanner",
+      "action": "list_graphql_operations",
+      "wirek": "scanner|list_graphql_operations",
+      "tier": "util"
+    },
+    {
+      "id": "СписокОперацийOpenAPI",
+      "component": "scanner",
+      "action": "list_openapi_operations",
+      "wirek": "scanner|list_openapi_operations",
+      "tier": "util"
+    },
+    {
+      "id": "СписокПолитикСканирования",
+      "component": "scanner",
+      "action": "get_scan_policies",
+      "wirek": "scanner|get_scan_policies",
+      "tier": "util"
+    },
+    {
+      "id": "СписокПользователей",
+      "component": "scanner",
+      "action": "get_users",
+      "wirek": "scanner|get_users",
+      "tier": "util"
+    },
+    {
+      "id": "СписокСервисовgRPC",
+      "component": "grpc",
+      "action": "list_services",
+      "wirek": "grpc|list_services",
+      "tier": "util"
+    },
+    {
+      "id": "СписокСкриптов",
+      "component": "scanner",
+      "action": "list_scripts",
+      "wirek": "scanner|list_scripts",
+      "tier": "util"
+    },
+    {
+      "id": "СтартOAST",
+      "component": "scanner",
+      "action": "start_oast_server",
+      "wirek": "scanner|start_oast_server",
+      "tier": "util"
+    },
+    {
+      "id": "СтатусАктивногоСканирования",
+      "component": "scanner",
+      "action": "active_scan_status",
+      "wirek": "scanner|active_scan_status",
+      "tier": "util"
+    },
+    {
+      "id": "СтатусКраулерКлиент",
+      "component": "scanner",
+      "action": "client_spider_status",
+      "wirek": "scanner|client_spider_status",
+      "tier": "util"
+    },
+    {
+      "id": "СтатусКраулера",
+      "component": "scanner",
+      "action": "ajax_spider_status",
+      "wirek": "scanner|ajax_spider_status",
+      "tier": "util"
+    },
+    {
+      "id": "СтатусПлана",
+      "component": "scanner",
+      "action": "automation_plan_progress",
+      "wirek": "scanner|automation_plan_progress",
+      "tier": "util"
+    },
+    {
+      "id": "СтатусСканера",
+      "component": "scanner",
+      "action": "spider_status",
+      "wirek": "scanner|spider_status",
+      "tier": "util"
+    },
+    {
+      "id": "СтопOAST",
+      "component": "scanner",
+      "action": "stop_oast_server",
+      "wirek": "scanner|stop_oast_server",
+      "tier": "util"
+    },
+    {
+      "id": "СыройЗапросЧерезscanner",
+      "component": "scanner",
+      "action": "scanner_http_raw_request",
+      "wirek": "scanner|scanner_http_raw_request",
+      "tier": "util"
+    },
+    {
+      "id": "ТекстЭлементаПоИндексу",
+      "component": "webdriver",
+      "action": "get_element_text_by_index",
+      "wirek": "webdriver|get_element_text_by_index",
+      "tier": "ui"
+    },
+    {
+      "id": "ТекстыЭлементов",
+      "component": "webdriver",
+      "action": "get_elements_texts",
+      "wirek": "webdriver|get_elements_texts",
+      "tier": "ui"
+    },
+    {
+      "id": "УдалитьHttpSender",
+      "component": "scanner",
+      "action": "remove_http_sender_script",
+      "wirek": "scanner|remove_http_sender_script",
+      "tier": "util"
+    },
+    {
+      "id": "УдалитьPayload",
+      "component": "scanner",
+      "action": "remove_payload",
+      "wirek": "scanner|remove_payload",
+      "tier": "util"
+    },
+    {
+      "id": "УдалитьReplacer",
+      "component": "scanner",
+      "action": "remove_replacer_rule",
+      "wirek": "scanner|remove_replacer_rule",
+      "tier": "util"
+    },
+    {
+      "id": "УдалитьКонтекст",
+      "component": "scanner",
+      "action": "delete_context",
+      "wirek": "scanner|delete_context",
+      "tier": "util"
+    },
+    {
+      "id": "УдалитьСкрипт",
+      "component": "scanner",
+      "action": "remove_script",
+      "wirek": "scanner|remove_script",
+      "tier": "util"
+    },
+    {
+      "id": "УстановитьCookie",
+      "component": "browser",
+      "action": "set_cookie",
+      "wirek": "browser|set_cookie",
+      "tier": "ui"
+    },
+    {
+      "id": "УстановитьЗначениеDOM",
+      "component": "webdriver",
+      "action": "set_value",
+      "wirek": "webdriver|set_value",
+      "tier": "util"
+    },
+    {
+      "id": "УчётныеДанныеПользователя",
+      "component": "scanner",
+      "action": "set_user_credentials",
+      "wirek": "scanner|set_user_credentials",
+      "tier": "util"
+    },
+    {
+      "id": "ФаззингВолна",
+      "component": "fuzz",
+      "action": "wave",
+      "wirek": "fuzz|wave",
+      "tier": "ui"
+    },
+    {
+      "id": "ФаззингЦепи",
+      "component": "fuzz",
+      "action": "fuzz_chain_module",
+      "wirek": "fuzz|fuzz_chain_module",
+      "tier": "ui"
+    },
+    {
+      "id": "ФильтрАлерта",
+      "component": "scanner",
+      "action": "add_alert_filter",
+      "wirek": "scanner|add_alert_filter",
+      "tier": "util"
+    },
+    {
+      "id": "ЧислоАлертов",
+      "component": "scanner",
+      "action": "get_alert_count",
+      "wirek": "scanner|get_alert_count",
+      "tier": "util"
+    },
+    {
+      "id": "ЭлементВыбран",
+      "component": "webdriver",
+      "action": "is_selected",
+      "wirek": "webdriver|is_selected",
+      "tier": "util"
+    },
+    {
+      "id": "ЭлементДоступен",
+      "component": "webdriver",
+      "action": "is_enabled",
+      "wirek": "webdriver|is_enabled",
+      "tier": "util"
+    },
+    {
+      "id": "ЭлементОтображается",
+      "component": "webdriver",
+      "action": "is_displayed",
+      "wirek": "webdriver|is_displayed",
+      "tier": "util"
+    }
+  ],
+  "aliases": {
+    "НажатьКнопку": "Нажать",
+    "ВставитьТекст": "ВставитьЗначение",
+    "Назад": "Вернуться",
+    "Логировать": "Лог",
+    "ЛогСообщение": "Лог",
+    "ОчиститьCookiesCDP": "ОчиститьCookies",
+    "УтвердитьРавенство": "ПроверитьРавенство",
+    "УтвердитьВхождение": "ПроверитьВхождение",
+    "УтвердитьВСписке": "ПроверитьВСписке",
+    "УтвердитьНеВСписке": "ПроверитьНеВСписке",
+    "УтвердитьБольше": "ПроверитьБольше",
+    "УтвердитьМеньше": "ПроверитьМеньше",
+    "УтвердитьВДиапазоне": "ПроверитьВДиапазоне",
+    "УтвердитьДлину": "ПроверитьДлину",
+    "УтвердитьПустоту": "ПроверитьПустоту",
+    "УтвердитьНепустоту": "ПроверитьНепустоту"
+  },
+  "facadeAliases": {
+    "SCANNER": "Сканер",
+    "scanner": "Сканер",
+    "CDP": "Сессия",
+    "WD": "Драйвер",
+    "Браузер": "Драйвер"
+  },
+  "facadeMethodAliases": {
+    "HttpЧерезscanner": "ЗапросЧерезscanner",
+    "СыройHttpЧерезscanner": "СыройЗапросЧерезscanner",
+    "ПодменаHttpSender": "HttpSender",
+    "ПодменитьUserAgent": "ПодменитьАгентПользователя"
+  },
+  "facades": {
+    "Сканер": {
+      "label": "Сканер",
+      "methods": [
+        {
+          "id": "AuthКонтекста",
+          "component": "scanner",
+          "action": "set_context_auth",
+          "wirek": "scanner|set_context_auth"
+        },
+        {
+          "id": "BrowserAuth",
+          "component": "scanner",
+          "action": "set_browser_based_auth",
+          "wirek": "scanner|set_browser_based_auth"
+        },
+        {
+          "id": "ForcedUser",
+          "component": "scanner",
+          "action": "set_forced_user",
+          "wirek": "scanner|set_forced_user"
+        },
+        {
+          "id": "HttpSender",
+          "component": "scanner",
+          "action": "install_mask_http_sender",
+          "wirek": "scanner|install_mask_http_sender"
+        },
+        {
+          "id": "АктивноеСканирование",
+          "component": "scanner",
+          "action": "active_scan",
+          "wirek": "scanner|active_scan"
+        },
+        {
+          "id": "АлертыOAST",
+          "component": "scanner",
+          "action": "get_oast_alerts",
+          "wirek": "scanner|get_oast_alerts"
+        },
+        {
+          "id": "АрхивироватьКонтекст",
+          "component": "scanner",
+          "action": "archive_context",
+          "wirek": "scanner|archive_context"
+        },
+        {
+          "id": "ВключитьForcedUser",
+          "component": "scanner",
+          "action": "enable_forced_user_mode",
+          "wirek": "scanner|enable_forced_user_mode"
+        },
+        {
+          "id": "ВключитьHttpSender",
+          "component": "scanner",
+          "action": "enable_http_sender_script",
+          "wirek": "scanner|enable_http_sender_script"
+        },
+        {
+          "id": "ВключитьВКонтекст",
+          "component": "scanner",
+          "action": "set_context_include",
+          "wirek": "scanner|set_context_include"
+        },
+        {
+          "id": "ВключитьПассивныеСканеры",
+          "component": "scanner",
+          "action": "enable_passive_scanners",
+          "wirek": "scanner|enable_passive_scanners"
+        },
+        {
+          "id": "ВключитьПользователя",
+          "component": "scanner",
+          "action": "enable_user",
+          "wirek": "scanner|enable_user"
+        },
+        {
+          "id": "ВызовgRPC",
+          "component": "grpc",
+          "action": "unary_call",
+          "wirek": "grpc|unary_call"
+        },
+        {
+          "id": "ВыключитьForcedUser",
+          "component": "scanner",
+          "action": "disable_forced_user_mode",
+          "wirek": "scanner|disable_forced_user_mode"
+        },
+        {
+          "id": "ВыключитьHttpSender",
+          "component": "scanner",
+          "action": "disable_http_sender_script",
+          "wirek": "scanner|disable_http_sender_script"
+        },
+        {
+          "id": "ВыключитьПассивныеСканеры",
+          "component": "scanner",
+          "action": "disable_all_passive_scanners",
+          "wirek": "scanner|disable_all_passive_scanners"
+        },
+        {
+          "id": "ВыполнитьGraphQL",
+          "component": "http",
+          "action": "execute_graphql_module",
+          "wirek": "http|execute_graphql_module"
+        },
+        {
+          "id": "ВыполнитьОперацииOpenAPI",
+          "component": "http",
+          "action": "execute_openapi_module",
+          "wirek": "http|execute_openapi_module"
+        },
+        {
+          "id": "ВыполнитьСкрипт",
+          "component": "scanner",
+          "action": "run_script",
+          "wirek": "scanner|run_script"
+        },
+        {
+          "id": "ВыполнитьЦепь",
+          "component": "scanner",
+          "action": "execute_chain_module",
+          "wirek": "scanner|execute_chain_module"
+        },
+        {
+          "id": "ГлобальнаяVarСкрипта",
+          "component": "scanner",
+          "action": "set_script_global_var",
+          "wirek": "scanner|set_script_global_var"
+        },
+        {
+          "id": "ГлобальныйФильтрАлерта",
+          "component": "scanner",
+          "action": "add_global_alert_filter",
+          "wirek": "scanner|add_global_alert_filter"
+        },
+        {
+          "id": "ДобавитьPayload",
+          "component": "scanner",
+          "action": "add_custom_payload",
+          "wirek": "scanner|add_custom_payload"
+        },
+        {
+          "id": "ЗагрузитьHttpSender",
+          "component": "scanner",
+          "action": "load_http_sender_script",
+          "wirek": "scanner|load_http_sender_script"
+        },
+        {
+          "id": "ЗагрузитьСессию",
+          "component": "scanner",
+          "action": "load_session",
+          "wirek": "scanner|load_session"
+        },
+        {
+          "id": "ЗагрузитьСкрипт",
+          "component": "scanner",
+          "action": "load_script",
+          "wirek": "scanner|load_script"
+        },
+        {
+          "id": "ЗагрузитьФайл",
+          "component": "webdriver",
+          "action": "upload_file",
+          "wirek": "webdriver|upload_file"
+        },
+        {
+          "id": "ЗагрузитьФильтры",
+          "component": "scanner",
+          "action": "load_alert_filters",
+          "wirek": "scanner|load_alert_filters"
+        },
+        {
+          "id": "ЗапросЧерезscanner",
+          "component": "scanner",
+          "action": "scanner_http_request",
+          "wirek": "scanner|scanner_http_request"
+        },
+        {
+          "id": "ИзбегатьLogout",
+          "component": "scanner",
+          "action": "set_logout_avoidance",
+          "wirek": "scanner|set_logout_avoidance"
+        },
+        {
+          "id": "ИмпортGraphQL",
+          "component": "scanner",
+          "action": "import_graphql_schema",
+          "wirek": "scanner|import_graphql_schema"
+        },
+        {
+          "id": "ИмпортHAR",
+          "component": "scanner",
+          "action": "import_har_sequence",
+          "wirek": "scanner|import_har_sequence"
+        },
+        {
+          "id": "ИмпортOpenAPI",
+          "component": "scanner",
+          "action": "import_openapi_spec",
+          "wirek": "scanner|import_openapi_spec"
+        },
+        {
+          "id": "ИмпортgRPC",
+          "component": "scanner",
+          "action": "import_grpc_proto",
+          "wirek": "scanner|import_grpc_proto"
+        },
+        {
+          "id": "ИмпортСертификата",
+          "component": "scanner",
+          "action": "import_certificate",
+          "wirek": "scanner|import_certificate"
+        },
+        {
+          "id": "ИсключитьИзКонтекста",
+          "component": "scanner",
+          "action": "set_context_exclude",
+          "wirek": "scanner|set_context_exclude"
+        },
+        {
+          "id": "КонтекстПерехватаПользователя",
+          "component": "scanner",
+          "action": "new_user_intercept_context",
+          "wirek": "scanner|new_user_intercept_context"
+        },
+        {
+          "id": "Краулер",
+          "component": "scanner",
+          "action": "ajax_spider_scan",
+          "wirek": "scanner|ajax_spider_scan"
+        },
+        {
+          "id": "КраулерГлубокий",
+          "component": "scanner",
+          "action": "ajax_spider_scan_deep",
+          "wirek": "scanner|ajax_spider_scan_deep"
+        },
+        {
+          "id": "КраулерИтератор",
+          "component": "scanner",
+          "action": "ajax_spider_scan_iterator",
+          "wirek": "scanner|ajax_spider_scan_iterator"
+        },
+        {
+          "id": "КраулерКлиент",
+          "component": "scanner",
+          "action": "client_spider_scan",
+          "wirek": "scanner|client_spider_scan"
+        },
+        {
+          "id": "КраулерПоверхностный",
+          "component": "scanner",
+          "action": "ajax_spider_scan_shallow",
+          "wirek": "scanner|ajax_spider_scan_shallow"
+        },
+        {
+          "id": "ЛогАтаки",
+          "component": "scanner",
+          "action": "log_attack",
+          "wirek": "scanner|log_attack"
+        },
+        {
+          "id": "ЛокальныйСервер",
+          "component": "scanner",
+          "action": "add_local_server",
+          "wirek": "scanner|add_local_server"
+        },
+        {
+          "id": "МетодЗапросаGraphQL",
+          "component": "scanner",
+          "action": "set_graphql_request_method",
+          "wirek": "scanner|set_graphql_request_method"
+        },
+        {
+          "id": "НовыйКонтекст",
+          "component": "scanner",
+          "action": "create_context",
+          "wirek": "scanner|create_context"
+        },
+        {
+          "id": "ОстановитьАктивноеСканирование",
+          "component": "scanner",
+          "action": "stop_active_scan",
+          "wirek": "scanner|stop_active_scan"
+        },
+        {
+          "id": "ОстановитьПлан",
+          "component": "scanner",
+          "action": "stop_automation_plan",
+          "wirek": "scanner|stop_automation_plan"
+        },
+        {
+          "id": "ОстановитьСканера",
+          "component": "scanner",
+          "action": "stop_spider",
+          "wirek": "scanner|stop_spider"
+        },
+        {
+          "id": "ОтключитьПользователя",
+          "component": "scanner",
+          "action": "disable_user",
+          "wirek": "scanner|disable_user"
+        },
+        {
+          "id": "Отчёт",
+          "component": "scanner",
+          "action": "generate_report",
+          "wirek": "scanner|generate_report"
+        },
+        {
+          "id": "ОчиститьReplacer",
+          "component": "scanner",
+          "action": "clear_replacer_rules",
+          "wirek": "scanner|clear_replacer_rules"
+        },
+        {
+          "id": "ОчиститьКонтекст",
+          "component": "scanner",
+          "action": "clear_context",
+          "wirek": "scanner|clear_context"
+        },
+        {
+          "id": "ПассивноеСканирование",
+          "component": "scanner",
+          "action": "passive_scan_wait",
+          "wirek": "scanner|passive_scan_wait"
+        },
+        {
+          "id": "ПассивныеСканеры",
+          "component": "scanner",
+          "action": "get_passive_scanners",
+          "wirek": "scanner|get_passive_scanners"
+        },
+        {
+          "id": "ПейлоадПодмены",
+          "component": "scanner",
+          "action": "set_fuzz_payload",
+          "wirek": "scanner|set_fuzz_payload"
+        },
+        {
+          "id": "ПереключитьКонтекст",
+          "component": "scanner",
+          "action": "switch_context",
+          "wirek": "scanner|switch_context"
+        },
+        {
+          "id": "План",
+          "component": "scanner",
+          "action": "run_automation_plan",
+          "wirek": "scanner|run_automation_plan"
+        },
+        {
+          "id": "ПодготовитьЦепь",
+          "component": "scanner",
+          "action": "prepare_chain_module",
+          "wirek": "scanner|prepare_chain_module"
+        },
+        {
+          "id": "ПолитикаСканирования",
+          "component": "scanner",
+          "action": "set_scan_policy",
+          "wirek": "scanner|set_scan_policy"
+        },
+        {
+          "id": "ПолучитьАлерты",
+          "component": "scanner",
+          "action": "get_alerts",
+          "wirek": "scanner|get_alerts"
+        },
+        {
+          "id": "ПравилоReplacer",
+          "component": "scanner",
+          "action": "add_replacer_rule",
+          "wirek": "scanner|add_replacer_rule"
+        },
+        {
+          "id": "ПрименитьAuth",
+          "component": "scanner",
+          "action": "apply_wired_auth",
+          "wirek": "scanner|apply_wired_auth"
+        },
+        {
+          "id": "ПрименитьДомены",
+          "component": "scanner",
+          "action": "apply_allowed_domains",
+          "wirek": "scanner|apply_allowed_domains"
+        },
+        {
+          "id": "ПрофильСканирования",
+          "component": "scanner",
+          "action": "apply_scan_depth_profile",
+          "wirek": "scanner|apply_scan_depth_profile"
+        },
+        {
+          "id": "РасследованиеЦепи",
+          "component": "scanner",
+          "action": "investigate_chain_module",
+          "wirek": "scanner|investigate_chain_module"
+        },
+        {
+          "id": "СайтыСессий",
+          "component": "scanner",
+          "action": "get_sessions_sites",
+          "wirek": "scanner|get_sessions_sites"
+        },
+        {
+          "id": "СгенерироватьПлан",
+          "component": "scanner",
+          "action": "generate_automation_plan",
+          "wirek": "scanner|generate_automation_plan"
+        },
+        {
+          "id": "СессииСайта",
+          "component": "scanner",
+          "action": "get_site_sessions",
+          "wirek": "scanner|get_site_sessions"
+        },
+        {
+          "id": "СканGraphQL",
+          "component": "scanner",
+          "action": "scan_graphql_api",
+          "wirek": "scanner|scan_graphql_api"
+        },
+        {
+          "id": "СканOpenAPI",
+          "component": "scanner",
+          "action": "scan_openapi",
+          "wirek": "scanner|scan_openapi"
+        },
+        {
+          "id": "СканgRPC",
+          "component": "scanner",
+          "action": "scan_grpc",
+          "wirek": "scanner|scan_grpc"
+        },
+        {
+          "id": "СканПоследовательности",
+          "component": "scanner",
+          "action": "sequence_active_scan",
+          "wirek": "scanner|sequence_active_scan"
+        },
+        {
+          "id": "Сканер",
+          "component": "scanner",
+          "action": "crawl",
+          "wirek": "scanner|crawl"
+        },
+        {
+          "id": "СканерSPA",
+          "component": "scanner",
+          "action": "spider_scan_spa",
+          "wirek": "scanner|spider_scan_spa"
+        },
+        {
+          "id": "СканерГлубокий",
+          "component": "scanner",
+          "action": "spider_scan_deep",
+          "wirek": "scanner|spider_scan_deep"
+        },
+        {
+          "id": "СканерЛокальный",
+          "component": "scanner",
+          "action": "spider_scan_local",
+          "wirek": "scanner|spider_scan_local"
+        },
+        {
+          "id": "СканированиеЦепи",
+          "component": "scanner",
+          "action": "scan_chain_module",
+          "wirek": "scanner|scan_chain_module"
+        },
+        {
+          "id": "Сканировать",
+          "component": "scanner",
+          "action": "spider_scan",
+          "wirek": "scanner|spider_scan"
+        },
+        {
+          "id": "СоздатьИНазначитьForcedUser",
+          "component": "scanner",
+          "action": "create_and_force_user",
+          "wirek": "scanner|create_and_force_user"
+        },
+        {
+          "id": "СоздатьПользователя",
+          "component": "scanner",
+          "action": "create_user",
+          "wirek": "scanner|create_user"
+        },
+        {
+          "id": "Сообщения",
+          "component": "scanner",
+          "action": "get_messages",
+          "wirek": "scanner|get_messages"
+        },
+        {
+          "id": "СохранитьСессию",
+          "component": "scanner",
+          "action": "save_session",
+          "wirek": "scanner|save_session"
+        },
+        {
+          "id": "СписокPayload",
+          "component": "scanner",
+          "action": "get_payloads",
+          "wirek": "scanner|get_payloads"
+        },
+        {
+          "id": "СписокReplacer",
+          "component": "scanner",
+          "action": "list_replacer_rules",
+          "wirek": "scanner|list_replacer_rules"
+        },
+        {
+          "id": "СписокКонтекстов",
+          "component": "scanner",
+          "action": "list_contexts",
+          "wirek": "scanner|list_contexts"
+        },
+        {
+          "id": "СписокОперацийGraphQL",
+          "component": "scanner",
+          "action": "list_graphql_operations",
+          "wirek": "scanner|list_graphql_operations"
+        },
+        {
+          "id": "СписокОперацийOpenAPI",
+          "component": "scanner",
+          "action": "list_openapi_operations",
+          "wirek": "scanner|list_openapi_operations"
+        },
+        {
+          "id": "СписокПолитикСканирования",
+          "component": "scanner",
+          "action": "get_scan_policies",
+          "wirek": "scanner|get_scan_policies"
+        },
+        {
+          "id": "СписокПользователей",
+          "component": "scanner",
+          "action": "get_users",
+          "wirek": "scanner|get_users"
+        },
+        {
+          "id": "СписокСервисовgRPC",
+          "component": "grpc",
+          "action": "list_services",
+          "wirek": "grpc|list_services"
+        },
+        {
+          "id": "СписокСкриптов",
+          "component": "scanner",
+          "action": "list_scripts",
+          "wirek": "scanner|list_scripts"
+        },
+        {
+          "id": "СтартOAST",
+          "component": "scanner",
+          "action": "start_oast_server",
+          "wirek": "scanner|start_oast_server"
+        },
+        {
+          "id": "СтатусАктивногоСканирования",
+          "component": "scanner",
+          "action": "active_scan_status",
+          "wirek": "scanner|active_scan_status"
+        },
+        {
+          "id": "СтатусКраулерКлиент",
+          "component": "scanner",
+          "action": "client_spider_status",
+          "wirek": "scanner|client_spider_status"
+        },
+        {
+          "id": "СтатусКраулера",
+          "component": "scanner",
+          "action": "ajax_spider_status",
+          "wirek": "scanner|ajax_spider_status"
+        },
+        {
+          "id": "СтатусПлана",
+          "component": "scanner",
+          "action": "automation_plan_progress",
+          "wirek": "scanner|automation_plan_progress"
+        },
+        {
+          "id": "СтатусСканера",
+          "component": "scanner",
+          "action": "spider_status",
+          "wirek": "scanner|spider_status"
+        },
+        {
+          "id": "СтопOAST",
+          "component": "scanner",
+          "action": "stop_oast_server",
+          "wirek": "scanner|stop_oast_server"
+        },
+        {
+          "id": "СыройЗапросЧерезscanner",
+          "component": "scanner",
+          "action": "scanner_http_raw_request",
+          "wirek": "scanner|scanner_http_raw_request"
+        },
+        {
+          "id": "УдалитьHttpSender",
+          "component": "scanner",
+          "action": "remove_http_sender_script",
+          "wirek": "scanner|remove_http_sender_script"
+        },
+        {
+          "id": "УдалитьPayload",
+          "component": "scanner",
+          "action": "remove_payload",
+          "wirek": "scanner|remove_payload"
+        },
+        {
+          "id": "УдалитьReplacer",
+          "component": "scanner",
+          "action": "remove_replacer_rule",
+          "wirek": "scanner|remove_replacer_rule"
+        },
+        {
+          "id": "УдалитьКонтекст",
+          "component": "scanner",
+          "action": "delete_context",
+          "wirek": "scanner|delete_context"
+        },
+        {
+          "id": "УдалитьСкрипт",
+          "component": "scanner",
+          "action": "remove_script",
+          "wirek": "scanner|remove_script"
+        },
+        {
+          "id": "УчётныеДанныеПользователя",
+          "component": "scanner",
+          "action": "set_user_credentials",
+          "wirek": "scanner|set_user_credentials"
+        },
+        {
+          "id": "ФильтрАлерта",
+          "component": "scanner",
+          "action": "add_alert_filter",
+          "wirek": "scanner|add_alert_filter"
+        },
+        {
+          "id": "ЧислоАлертов",
+          "component": "scanner",
+          "action": "get_alert_count",
+          "wirek": "scanner|get_alert_count"
+        }
+      ]
+    },
+    "HTTP": {
+      "label": "HTTP",
+      "methods": [
+        {
+          "id": "AuthApiKey",
+          "component": "http",
+          "action": "set_auth_api_key",
+          "wirek": "http|set_auth_api_key"
+        },
+        {
+          "id": "AuthBasic",
+          "component": "http",
+          "action": "set_auth_basic",
+          "wirek": "http|set_auth_basic"
+        },
+        {
+          "id": "AuthBearer",
+          "component": "http",
+          "action": "set_auth_bearer",
+          "wirek": "http|set_auth_bearer"
+        },
+        {
+          "id": "AuthCookie",
+          "component": "http",
+          "action": "set_auth_cookie",
+          "wirek": "http|set_auth_cookie"
+        },
+        {
+          "id": "DELETE",
+          "component": "http",
+          "action": "delete",
+          "wirek": "http|delete"
+        },
+        {
+          "id": "GET",
+          "component": "http",
+          "action": "get",
+          "wirek": "http|get"
+        },
+        {
+          "id": "HEAD",
+          "component": "http",
+          "action": "head",
+          "wirek": "http|head"
+        },
+        {
+          "id": "OPTIONS",
+          "component": "http",
+          "action": "options",
+          "wirek": "http|options"
+        },
+        {
+          "id": "PATCH",
+          "component": "http",
+          "action": "patch",
+          "wirek": "http|patch"
+        },
+        {
+          "id": "POST",
+          "component": "http",
+          "action": "post",
+          "wirek": "http|post"
+        },
+        {
+          "id": "PUT",
+          "component": "http",
+          "action": "put",
+          "wirek": "http|put"
+        },
+        {
+          "id": "ЗаголовокПоУмолчанию",
+          "component": "http",
+          "action": "set_default_header",
+          "wirek": "http|set_default_header"
+        },
+        {
+          "id": "ПараметрПоУмолчанию",
+          "component": "http",
+          "action": "set_default_param",
+          "wirek": "http|set_default_param"
+        },
+        {
+          "id": "СброситьAuth",
+          "component": "http",
+          "action": "clear_auth",
+          "wirek": "http|clear_auth"
+        },
+        {
+          "id": "СброситьСессию",
+          "component": "http",
+          "action": "reset_session",
+          "wirek": "http|reset_session"
+        },
+        {
+          "id": "СброситьСтатистику",
+          "component": "http",
+          "action": "reset_stats",
+          "wirek": "http|reset_stats"
+        },
+        {
+          "id": "Статистика",
+          "component": "http",
+          "action": "get_stats",
+          "wirek": "http|get_stats"
+        },
+        {
+          "id": "УдалитьЗаголовок",
+          "component": "http",
+          "action": "remove_default_header",
+          "wirek": "http|remove_default_header"
+        },
+        {
+          "id": "УдалитьПараметр",
+          "component": "http",
+          "action": "remove_default_param",
+          "wirek": "http|remove_default_param"
+        }
+      ]
+    },
+    "Сессия": {
+      "label": "Сессия",
+      "methods": [
+        {
+          "id": "CookiesДомена",
+          "component": "browser",
+          "action": "get_cookies_for_domain",
+          "wirek": "browser|get_cookies_for_domain"
+        },
+        {
+          "id": "CookieЕсть",
+          "component": "browser",
+          "action": "cookie_exists",
+          "wirek": "browser|cookie_exists"
+        },
+        {
+          "id": "IdСессии",
+          "component": "browser",
+          "action": "get_session_id",
+          "wirek": "browser|get_session_id"
+        },
+        {
+          "id": "ВключитьNetwork",
+          "component": "browser",
+          "action": "cdp_network_enable",
+          "wirek": "browser|cdp_network_enable"
+        },
+        {
+          "id": "ВозможностиСессии",
+          "component": "browser",
+          "action": "get_session_capabilities",
+          "wirek": "browser|get_session_capabilities"
+        },
+        {
+          "id": "ВсеCookies",
+          "component": "browser",
+          "action": "get_all_cookies",
+          "wirek": "browser|get_all_cookies"
+        },
+        {
+          "id": "ВыгрузитьCookies",
+          "component": "browser",
+          "action": "export_cookies_to_json",
+          "wirek": "browser|export_cookies_to_json"
+        },
+        {
+          "id": "ВыключитьNetwork",
+          "component": "browser",
+          "action": "cdp_network_disable",
+          "wirek": "browser|cdp_network_disable"
+        },
+        {
+          "id": "ДобавитьCookieПолностью",
+          "component": "browser",
+          "action": "add_cookie_full",
+          "wirek": "browser|add_cookie_full"
+        },
+        {
+          "id": "ЗагрузитьCookies",
+          "component": "browser",
+          "action": "import_cookies_from_json",
+          "wirek": "browser|import_cookies_from_json"
+        },
+        {
+          "id": "ЗначениеCookie",
+          "component": "browser",
+          "action": "get_cookie_value",
+          "wirek": "browser|get_cookie_value"
+        },
+        {
+          "id": "КоличествоCookies",
+          "component": "browser",
+          "action": "get_cookies_count",
+          "wirek": "browser|get_cookies_count"
+        },
+        {
+          "id": "Команда",
+          "component": "browser",
+          "action": "cdp_command",
+          "wirek": "browser|cdp_command"
+        },
+        {
+          "id": "ЛогиБраузера",
+          "component": "browser",
+          "action": "get_browser_logs",
+          "wirek": "browser|get_browser_logs"
+        },
+        {
+          "id": "ЛогиПроизводительности",
+          "component": "browser",
+          "action": "get_performance_logs",
+          "wirek": "browser|get_performance_logs"
+        },
+        {
+          "id": "ОчиститьCookies",
+          "component": "browser",
+          "action": "cdp_clear_browser_cookies",
+          "wirek": "browser|cdp_clear_browser_cookies"
+        },
+        {
+          "id": "ОчиститьLocalStorage",
+          "component": "browser",
+          "action": "clear_local_storage",
+          "wirek": "browser|clear_local_storage"
+        },
+        {
+          "id": "ОчиститьSessionStorage",
+          "component": "browser",
+          "action": "clear_session_storage",
+          "wirek": "browser|clear_session_storage"
+        },
+        {
+          "id": "ОчиститьКэш",
+          "component": "browser",
+          "action": "cdp_clear_browser_cache",
+          "wirek": "browser|cdp_clear_browser_cache"
+        },
+        {
+          "id": "ОчиститьСостояние",
+          "component": "browser",
+          "action": "clear_state",
+          "wirek": "browser|clear_state"
+        },
+        {
+          "id": "ОшибкиКонсоли",
+          "component": "browser",
+          "action": "get_console_errors",
+          "wirek": "browser|get_console_errors"
+        },
+        {
+          "id": "ПолучитьCookie",
+          "component": "browser",
+          "action": "get_cookie",
+          "wirek": "browser|get_cookie"
+        },
+        {
+          "id": "ПолучитьLocalStorage",
+          "component": "browser",
+          "action": "get_local_storage_item",
+          "wirek": "browser|get_local_storage_item"
+        },
+        {
+          "id": "ПолучитьSessionStorage",
+          "component": "browser",
+          "action": "get_session_storage_item",
+          "wirek": "browser|get_session_storage_item"
+        },
+        {
+          "id": "ТаймаутыСессии",
+          "component": "browser",
+          "action": "get_session_timeouts",
+          "wirek": "browser|get_session_timeouts"
+        },
+        {
+          "id": "ТекущиеУсловияСети",
+          "component": "browser",
+          "action": "get_network_conditions",
+          "wirek": "browser|get_network_conditions"
+        },
+        {
+          "id": "УдалитьCookie",
+          "component": "browser",
+          "action": "delete_cookie",
+          "wirek": "browser|delete_cookie"
+        },
+        {
+          "id": "УдалитьLocalStorage",
+          "component": "browser",
+          "action": "remove_local_storage_item",
+          "wirek": "browser|remove_local_storage_item"
+        },
+        {
+          "id": "УдалитьSessionStorage",
+          "component": "browser",
+          "action": "remove_session_storage_item",
+          "wirek": "browser|remove_session_storage_item"
+        },
+        {
+          "id": "УсловияСети",
+          "component": "browser",
+          "action": "set_network_conditions",
+          "wirek": "browser|set_network_conditions"
+        },
+        {
+          "id": "УстановитьCookie",
+          "component": "browser",
+          "action": "set_cookie",
+          "wirek": "browser|set_cookie"
+        },
+        {
+          "id": "УстановитьLocalStorage",
+          "component": "browser",
+          "action": "set_local_storage_item",
+          "wirek": "browser|set_local_storage_item"
+        },
+        {
+          "id": "УстановитьSessionStorage",
+          "component": "browser",
+          "action": "set_session_storage_item",
+          "wirek": "browser|set_session_storage_item"
+        },
+        {
+          "id": "УстановитьТаймаутыСессии",
+          "component": "browser",
+          "action": "set_session_timeouts",
+          "wirek": "browser|set_session_timeouts"
+        }
+      ]
+    },
+    "Драйвер": {
+      "label": "Драйвер",
+      "methods": [
+        {
+          "id": "Вернуться",
+          "component": "webdriver",
+          "action": "back",
+          "wirek": "webdriver|back"
+        },
+        {
+          "id": "Вперёд",
+          "component": "webdriver",
+          "action": "forward",
+          "wirek": "webdriver|forward"
+        },
+        {
+          "id": "ВставитьЗначение",
+          "component": "webdriver",
+          "action": "send_keys",
+          "wirek": "webdriver|send_keys"
+        },
+        {
+          "id": "ВыбратьПоЗначению",
+          "component": "webdriver",
+          "action": "select_by_value",
+          "wirek": "webdriver|select_by_value"
+        },
+        {
+          "id": "ВыбратьПоТексту",
+          "component": "webdriver",
+          "action": "select_by_text",
+          "wirek": "webdriver|select_by_text"
+        },
+        {
+          "id": "ВыполнитьAsyncJS",
+          "component": "webdriver",
+          "action": "execute_async_script",
+          "wirek": "webdriver|execute_async_script"
+        },
+        {
+          "id": "ВыполнитьJS",
+          "component": "webdriver",
+          "action": "execute_script",
+          "wirek": "webdriver|execute_script"
+        },
+        {
+          "id": "ДописатьТекст",
+          "component": "webdriver",
+          "action": "append_text",
+          "wirek": "webdriver|append_text"
+        },
+        {
+          "id": "ЖдатьURL",
+          "component": "webdriver",
+          "action": "wait_for_url",
+          "wirek": "webdriver|wait_for_url"
+        },
+        {
+          "id": "ЖдатьЗаголовок",
+          "component": "webdriver",
+          "action": "wait_for_title",
+          "wirek": "webdriver|wait_for_title"
+        },
+        {
+          "id": "ЖдатьЗагрузкуСтраницы",
+          "component": "webdriver",
+          "action": "wait_for_page_load",
+          "wirek": "webdriver|wait_for_page_load"
+        },
+        {
+          "id": "ЖдатьИсчезновенияЭлемента",
+          "component": "webdriver",
+          "action": "wait_for_element_not",
+          "wirek": "webdriver|wait_for_element_not"
+        },
+        {
+          "id": "ЖдатьПростойСети",
+          "component": "webdriver",
+          "action": "wait_for_network_idle",
+          "wirek": "webdriver|wait_for_network_idle"
+        },
+        {
+          "id": "ЖдатьТекст",
+          "component": "webdriver",
+          "action": "wait_for_text",
+          "wirek": "webdriver|wait_for_text"
+        },
+        {
+          "id": "ЖдатьЭлемент",
+          "component": "webdriver",
+          "action": "wait_for_element",
+          "wirek": "webdriver|wait_for_element"
+        },
+        {
+          "id": "ЗагрузитьФайл",
+          "component": "webdriver",
+          "action": "upload_file",
+          "wirek": "webdriver|upload_file"
+        },
+        {
+          "id": "ЗакрытьБраузер",
+          "component": "webdriver",
+          "action": "quit",
+          "wirek": "webdriver|quit"
+        },
+        {
+          "id": "ЗакрытьОкно",
+          "component": "webdriver",
+          "action": "close",
+          "wirek": "webdriver|close"
+        },
+        {
+          "id": "ЗакрытьТекущееОкно",
+          "component": "webdriver",
+          "action": "close_current_window",
+          "wirek": "webdriver|close_current_window"
+        },
+        {
+          "id": "КоличествоЭлементов",
+          "component": "webdriver",
+          "action": "get_elements_count",
+          "wirek": "webdriver|get_elements_count"
+        },
+        {
+          "id": "Навести",
+          "component": "webdriver",
+          "action": "hover",
+          "wirek": "webdriver|hover"
+        },
+        {
+          "id": "Нажать",
+          "component": "webdriver",
+          "action": "click",
+          "wirek": "webdriver|click"
+        },
+        {
+          "id": "НажатьJS",
+          "component": "webdriver",
+          "action": "click_js",
+          "wirek": "webdriver|click_js"
+        },
+        {
+          "id": "НажатьДважды",
+          "component": "webdriver",
+          "action": "double_click",
+          "wirek": "webdriver|double_click"
+        },
+        {
+          "id": "НажатьКлавишу",
+          "component": "webdriver",
+          "action": "press_key",
+          "wirek": "webdriver|press_key"
+        },
+        {
+          "id": "НажатьПравой",
+          "component": "webdriver",
+          "action": "right_click",
+          "wirek": "webdriver|right_click"
+        },
+        {
+          "id": "ОбновитьСтраницу",
+          "component": "webdriver",
+          "action": "refresh",
+          "wirek": "webdriver|refresh"
+        },
+        {
+          "id": "Открыть",
+          "component": "webdriver",
+          "action": "open",
+          "wirek": "webdriver|open"
+        },
+        {
+          "id": "ОткрытьПоURL",
+          "component": "webdriver",
+          "action": "open_by_url",
+          "wirek": "webdriver|open_by_url"
+        },
+        {
+          "id": "ОчиститьЗначение",
+          "component": "webdriver",
+          "action": "clear",
+          "wirek": "webdriver|clear"
+        },
+        {
+          "id": "ПолучитьCSS",
+          "component": "webdriver",
+          "action": "get_css_value",
+          "wirek": "webdriver|get_css_value"
+        },
+        {
+          "id": "ПолучитьАтрибут",
+          "component": "webdriver",
+          "action": "get_attribute",
+          "wirek": "webdriver|get_attribute"
+        },
+        {
+          "id": "ПолучитьЗначение",
+          "component": "webdriver",
+          "action": "get_value",
+          "wirek": "webdriver|get_value"
+        },
+        {
+          "id": "ПолучитьСвойство",
+          "component": "webdriver",
+          "action": "get_property",
+          "wirek": "webdriver|get_property"
+        },
+        {
+          "id": "ПолучитьТекст",
+          "component": "webdriver",
+          "action": "get_text",
+          "wirek": "webdriver|get_text"
+        },
+        {
+          "id": "ПроверитьURL",
+          "component": "webdriver",
+          "action": "assert_url",
+          "wirek": "webdriver|assert_url"
+        },
+        {
+          "id": "ПроверитьВидимостьЭлемента",
+          "component": "webdriver",
+          "action": "assert_element_visible",
+          "wirek": "webdriver|assert_element_visible"
+        },
+        {
+          "id": "ПроверитьВхождение",
+          "component": "webdriver",
+          "action": "assert_contains",
+          "wirek": "webdriver|assert_contains"
+        },
+        {
+          "id": "ПроверитьЗаголовок",
+          "component": "webdriver",
+          "action": "assert_title",
+          "wirek": "webdriver|assert_title"
+        },
+        {
+          "id": "ПроверитьНаличиеЭлемента",
+          "component": "webdriver",
+          "action": "assert_element_present",
+          "wirek": "webdriver|assert_element_present"
+        },
+        {
+          "id": "ПроверитьНевидимостьЭлемента",
+          "component": "webdriver",
+          "action": "assert_element_not_visible",
+          "wirek": "webdriver|assert_element_not_visible"
+        },
+        {
+          "id": "ПроверитьРавенство",
+          "component": "webdriver",
+          "action": "assert_equals",
+          "wirek": "webdriver|assert_equals"
+        },
+        {
+          "id": "ПроверитьТекстНаСтранице",
+          "component": "webdriver",
+          "action": "assert_text_present",
+          "wirek": "webdriver|assert_text_present"
+        },
+        {
+          "id": "ПрокрутитьВверх",
+          "component": "webdriver",
+          "action": "scroll_to_top",
+          "wirek": "webdriver|scroll_to_top"
+        },
+        {
+          "id": "ПрокрутитьВниз",
+          "component": "webdriver",
+          "action": "scroll_to_bottom",
+          "wirek": "webdriver|scroll_to_bottom"
+        },
+        {
+          "id": "ПрокрутитьКЭлементу",
+          "component": "webdriver",
+          "action": "scroll_to_element",
+          "wirek": "webdriver|scroll_to_element"
+        },
+        {
+          "id": "ПрокрутитьНа",
+          "component": "webdriver",
+          "action": "scroll_by",
+          "wirek": "webdriver|scroll_by"
+        },
+        {
+          "id": "СборИнформации",
+          "component": "webdriver",
+          "action": "gather_info",
+          "wirek": "webdriver|gather_info"
+        },
+        {
+          "id": "Скриншот",
+          "component": "webdriver",
+          "action": "take_screenshot",
+          "wirek": "webdriver|take_screenshot"
+        },
+        {
+          "id": "ТекстЭлементаПоИндексу",
+          "component": "webdriver",
+          "action": "get_element_text_by_index",
+          "wirek": "webdriver|get_element_text_by_index"
+        },
+        {
+          "id": "ТекстыЭлементов",
+          "component": "webdriver",
+          "action": "get_elements_texts",
+          "wirek": "webdriver|get_elements_texts"
+        },
+        {
+          "id": "УстановитьЗначениеDOM",
+          "component": "webdriver",
+          "action": "set_value",
+          "wirek": "webdriver|set_value"
+        },
+        {
+          "id": "ЭлементВыбран",
+          "component": "webdriver",
+          "action": "is_selected",
+          "wirek": "webdriver|is_selected"
+        },
+        {
+          "id": "ЭлементДоступен",
+          "component": "webdriver",
+          "action": "is_enabled",
+          "wirek": "webdriver|is_enabled"
+        },
+        {
+          "id": "ЭлементОтображается",
+          "component": "webdriver",
+          "action": "is_displayed",
+          "wirek": "webdriver|is_displayed"
+        }
+      ]
+    }
+  }
+}

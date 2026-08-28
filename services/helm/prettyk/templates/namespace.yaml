@@ -1,0 +1,7 @@
+# PrettyK Pure system namespace.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.systemNamespace }}
+  labels:
+    {{- include "prettyk.labels" . | nindent 4 }}

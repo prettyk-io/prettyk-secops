@@ -1,5 +1,5 @@
 ﻿# -*- coding: utf-8 -*-
-"""IMP-HAR: ZAP path rewrite + controller har_file stream."""
+"""IMP-HAR: scanner path rewrite + controller har_file stream."""
 from __future__ import annotations
 
 import sys
@@ -13,29 +13,29 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from adapters.zap_adapter import ZapAdapter, zap_har_file_for_api
+from adapters.scanner_adapter import ScannerAdapter, scanner_har_file_for_api
 from core.controller import Controller
 from core.data_stream import DataStream
 from core.errors import WiredError
 
 
-def test_zap_har_file_for_api_rewrites_under_runs(tmp_path, monkeypatch):
+def test_scanner_har_file_for_api_rewrites_under_runs(tmp_path, monkeypatch):
     runs = tmp_path / "runs"
     runs.mkdir()
     host = runs / "abc" / "resources" / "checkout.har"
     host.parent.mkdir(parents=True)
     host.write_text('{"log":{"entries":[]}}', encoding="utf-8")
-    monkeypatch.setattr("adapters.zap_adapter.RUNS_DIR", runs)
-    out = zap_har_file_for_api(str(host))
+    monkeypatch.setattr("adapters.scanner_adapter.RUNS_DIR", runs)
+    out = scanner_har_file_for_api(str(host))
     assert out.replace("\\", "/").endswith("abc/resources/checkout.har")
-    assert out.startswith("/zap/wrk/pk-runs/")
+    assert out.startswith("/scanner/wrk/pk-runs/")
 
 
-def test_zap_har_file_outside_runs_unchanged(tmp_path, monkeypatch):
-    monkeypatch.setattr("adapters.zap_adapter.RUNS_DIR", tmp_path / "runs")
+def test_scanner_har_file_outside_runs_unchanged(tmp_path, monkeypatch):
+    monkeypatch.setattr("adapters.scanner_adapter.RUNS_DIR", tmp_path / "runs")
     other = tmp_path / "elsewhere.har"
     other.write_text("{}", encoding="utf-8")
-    assert zap_har_file_for_api(str(other)) == str(other.resolve())
+    assert scanner_har_file_for_api(str(other)) == str(other.resolve())
 
 
 def test_import_har_sequence_uses_rewritten_path(tmp_path, monkeypatch):
@@ -43,13 +43,13 @@ def test_import_har_sequence_uses_rewritten_path(tmp_path, monkeypatch):
     har = runs / "r1" / "resources" / "x.har"
     har.parent.mkdir(parents=True)
     har.write_text('{"log":{"entries":[]}}', encoding="utf-8")
-    monkeypatch.setattr("adapters.zap_adapter.RUNS_DIR", runs)
-    zap = ZapAdapter.__new__(ZapAdapter)
-    zap._ensure_connected = lambda: None
-    zap._zap = MagicMock()
-    assert zap.import_har_sequence("seq", str(har), assert_code=False) is True
-    data = zap._zap.urlopen.call_args.kwargs["data"]
-    assert data["harFile"].startswith("/zap/wrk/pk-runs/")
+    monkeypatch.setattr("adapters.scanner_adapter.RUNS_DIR", runs)
+    scanner = ScannerAdapter.__new__(ScannerAdapter)
+    scanner._ensure_connected = lambda: None
+    scanner._scanner = MagicMock()
+    assert scanner.import_har_sequence("seq", str(har), assert_code=False) is True
+    data = scanner._scanner.urlopen.call_args.kwargs["data"]
+    assert data["harFile"].startswith("/scanner/wrk/pk-runs/")
     assert data["harFile"].endswith("r1/resources/x.har")
 
 

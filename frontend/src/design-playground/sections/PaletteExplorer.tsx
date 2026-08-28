@@ -8,7 +8,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
-import { Copy, Zap, Flame, Eye } from 'lucide-react';
+import { Copy, scanner, Flame, Eye } from 'lucide-react';
 import {
   PALETTES,
   SWATCHES,
@@ -54,7 +54,7 @@ export function PaletteExplorer({
         >
           <div style={preset.segmentedStyle.container}>
             {[
-              { id: 'gradients', label: '🌈 Brand Master Gradients', icon: <Zap className="size-3.5 mr-1 text-cyan-400" /> },
+              { id: 'gradients', label: '🌈 Brand Master Gradients', icon: <scanner className="size-3.5 mr-1 text-cyan-400" /> },
               { id: 'threats', label: '🛡️ SecOps Threat Matrix Tokens', icon: <Flame className="size-3.5 mr-1 text-rose-400" /> },
               { id: 'packs', label: '🎨 Color Palette Packs', icon: <Eye className="size-3.5 mr-1 text-amber-400" /> },
             ].map((t) => (

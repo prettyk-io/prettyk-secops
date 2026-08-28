@@ -98,12 +98,12 @@ BrickOverride(
 | **id** | `dast-default` |
 | **type** | `dast` |
 | **executor** | `woodpecker` |
-| **image** | `owasp/zap2docker-stable:latest` |
+| **image** | `owasp/scanner2docker-stable:latest` |
 | **timeout_s** | `5400` (1.5 часа) |
 | **depends_on** | `["deploy-default"]` |
-| **capability** | `ZapCapabilityBroker` |
+| **capability** | `scannerCapabilityBroker` |
 
-Адаптер: `orchestrator/adapters/capability_zap.py` (COS-L9).
+Адаптер: `orchestrator/adapters/capability_scanner.py` (COS-L9).
 
 ---
 
@@ -174,5 +174,5 @@ SAST ──┬── SCA
 | Gate | `orchestrator/models/gate_model.py` | COS-L5 |
 | Woodpecker | `orchestrator/adapters/execution_woodpecker.py` | COS-L7 |
 | Jenkins | `orchestrator/adapters/execution_jenkins.py` | COS-L8 |
-| ZAP | `orchestrator/adapters/capability_zap.py` | COS-L9 |
+| scanner | `orchestrator/adapters/capability_scanner.py` | COS-L9 |
 | Fuzzer | `orchestrator/adapters/capability_fuzzer.py` | COS-L10 |

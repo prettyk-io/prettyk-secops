@@ -2,7 +2,7 @@
 """
 Мост PK ↔ Selene (питоний порт Selenide).
 
-Создание драйвера (local/Selenoid/ZAP-proxy) остаётся на Selenium.
+Создание драйвера (local/Selenoid/scanner-proxy) остаётся на Selenium.
 Все ожидания и действия с элементами — через Selene: lazy-локаторы,
 встроенный wait/retry до timeout, как в банковском Java-Selenide.
 """

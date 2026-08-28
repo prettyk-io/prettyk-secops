@@ -1,10 +1,10 @@
 ﻿# -*- coding: utf-8 -*-
-"""Мосты между плоскостями сессии: Browser jar ↔ HTTP headers (для ZAP sender).
+"""Мосты между плоскостями сессии: Browser jar ↔ HTTP headers (для scanner sender).
 
 Не продуктовая поверхность PrettyK. См. docs/session-composition.md.
 
 Redact: в meta пишем только имена cookie / storage keys; значения — только в
-runtime headers для zap_http_request / Campaign, не в evidence.
+runtime headers для scanner_http_request / Campaign, не в evidence.
 """
 from __future__ import annotations
 
@@ -231,7 +231,7 @@ def browser_storage_meta(
 
 
 def _as_name_list(raw: Any) -> list[str]:
-    """Нормализовать ZAP/JSON ответ в список имён (без значений)."""
+    """Нормализовать scanner/JSON ответ в список имён (без значений)."""
     if raw is None:
         return []
     if isinstance(raw, str):
@@ -272,7 +272,7 @@ def http_sessions_snapshot_meta(
     sites_raw: Any = None,
     sessions_by_site: Mapping[str, Any] | None = None,
 ) -> Dict[str, object]:
-    """S-3 / N2.5: имена сайтов и session labels из ZAP httpSessions — без cookie/token."""
+    """S-3 / N2.5: имена сайтов и session labels из scanner httpSessions — без cookie/token."""
     sites = _as_name_list(sites_raw)
     session_names: list[str] = []
     seen: set[str] = set()
@@ -290,12 +290,12 @@ def http_sessions_snapshot_meta(
     }
 
 
-def read_http_sessions_snapshot(zap: Any, *, base_url: str = "") -> Dict[str, object]:
-    """Best-effort снимок httpSessions с живого ZapAdapter."""
-    if zap is None:
+def read_http_sessions_snapshot(scanner: Any, *, base_url: str = "") -> Dict[str, object]:
+    """Best-effort снимок httpSessions с живого ScannerAdapter."""
+    if scanner is None:
         return http_sessions_snapshot_meta()
     sites_raw = None
-    getter_sites = getattr(zap, "get_sessions_sites", None)
+    getter_sites = getattr(scanner, "get_sessions_sites", None)
     try:
         if callable(getter_sites):
             sites_raw = getter_sites()
@@ -316,7 +316,7 @@ def read_http_sessions_snapshot(zap: Any, *, base_url: str = "") -> Dict[str, ob
             key=lambda s: (0 if prefer in str(s).lower() else 1, str(s)),
         )
     sessions_by_site: Dict[str, Any] = {}
-    getter = getattr(zap, "get_site_sessions", None)
+    getter = getattr(scanner, "get_site_sessions", None)
     for site in ordered[:8]:
         if not callable(getter):
             break

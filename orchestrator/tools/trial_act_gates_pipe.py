@@ -93,7 +93,7 @@ def _base_wired(**meta_extra: Any) -> Dict[str, Any]:
     return {
         "meta": meta,
         "infrastructure": {
-            "zap_mode": "demon",
+            "scanner_mode": "demon",
             "browser_type": "chrome",
             "base_url_override": "http://juice-shop:3000",
             "allowed_extra_domains": "",
@@ -447,7 +447,7 @@ def main(argv: List[str] | None = None) -> int:
                     "generate_act": False,
                 },
                 "infrastructure": {
-                    "zap_mode": "demon",
+                    "scanner_mode": "demon",
                     "browser_type": "chrome",
                     "base_url_override": "http://juice-shop:3000",
                     "allowed_extra_domains": "",

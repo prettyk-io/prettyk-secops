@@ -24,7 +24,7 @@ describe('runJournal', () => {
       preset: 'signal',
       events_total: 3,
       events: [
-        { ts: 1, kind: 'HIGH', channel: 'zap', text: 'SQLi' },
+        { ts: 1, kind: 'HIGH', channel: 'scanner', text: 'SQLi' },
         { ts: 2, kind: 'NOTE', channel: 'diary', text: 'ok' },
       ],
       counts: { HIGH: 1, NOTE: 1 },

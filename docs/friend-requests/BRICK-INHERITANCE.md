@@ -8,7 +8,7 @@ Pipeline Bricks — переиспользуемые определения ша
 
 ## Ключевые свойства
 
-- **Единый каталог коробки:** `brick-build-docker`, `brick-sast-sonarqube`, `brick-sca-trivy`, `brick-deploy-stage`, `brick-dast-zap`, `brick-autotest-playwright`, `brick-gate-severity-threshold`.
+- **Единый каталог коробки:** `brick-build-docker`, `brick-sast-sonarqube`, `brick-sca-trivy`, `brick-deploy-stage`, `brick-dast-scanner`, `brick-autotest-playwright`, `brick-gate-severity-threshold`.
 - **Переопределение на домен.** Domain «Цифровой рубль» может заменить `brick-deploy-stage` на свой (специфичный раннер или политика ЦБ).
 - **Разрешение:** `domain:{id}/brick-xxx` → если нет → `core/brick-xxx`.
 - **Зависимости.** Кирпич может `depends_on` другие кирпичи — формирует DAG при компиляции.

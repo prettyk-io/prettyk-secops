@@ -19,7 +19,40 @@ from browser.playwright_runtime import PlaywrightBrowserRuntime
 logger = logging.getLogger("orchestrator")
 
 
-class PlaywrightAdapter(BaseAdapter):
+def wire_action(ru_name: str, *, args=()):
+    """GRD-B1: регистрирует pretty-имя → метод для единого источника правды.
+
+    Помечает метод адаптера русским MethodId-именем. Метакласс собирает
+    `_WIRE_ACTIONS` автоматически при определении класса. Генератор
+    `python -m tools.export_keywords --gen-method-id` пересобирает
+    webdriver-секцию `_METHOD_ID` из этих декораторов.
+    """
+    def deco(fn):
+        fn._wire_action = (ru_name, tuple(args))
+        return fn
+    return deco
+
+
+class _WireActionMeta(type):
+    """Собирает _WIRE_ACTIONS из декораторов @wire_action на методах класса."""
+
+    def __new__(mcs, name, bases, namespace):
+        cls = super().__new__(mcs, name, bases, namespace)
+        actions: dict[str, tuple[str, tuple[str, ...]]] = {}
+        # Базовые классы первыми — методы наследника перекрывают.
+        for base in bases:
+            for ru_name, spec in getattr(base, "_WIRE_ACTIONS", {}).items():
+                actions.setdefault(ru_name, spec)
+        for attr_name, attr_value in namespace.items():
+            spec = getattr(attr_value, "_wire_action", None)
+            if spec is not None:
+                ru_name, arg_tuple = spec
+                actions[ru_name] = (attr_name, arg_tuple)
+        cls._WIRE_ACTIONS = actions
+        return cls
+
+
+class PlaywrightAdapter(BaseAdapter, metaclass=_WireActionMeta):
     """Playwright browser adapter for secops-lab-pure.
 
     Supports three modes:
@@ -124,6 +157,7 @@ class PlaywrightAdapter(BaseAdapter):
         page.goto(url, wait_until="domcontentloaded")
         logger.info("Playwright open_url: %s → %s", url, page.url)
 
+    @wire_action("Открыть")
     def open(self, url=None, wait_for_load=True):
         """Canonical webdriver|open: resolve a relative URL against base_url."""
         from urllib.parse import urljoin
@@ -139,6 +173,7 @@ class PlaywrightAdapter(BaseAdapter):
         page = self._ensure_page()
         page.goto(raw, wait_until="domcontentloaded" if wait_for_load else "commit")
 
+    @wire_action("ОткрытьПоURL")
     def open_by_url(self, url, wait_for_load=True):
         self.open(url, wait_for_load=wait_for_load)
 
@@ -155,11 +190,24 @@ class PlaywrightAdapter(BaseAdapter):
         """Navigate forward."""
         self._ensure_page().go_forward(wait_until="domcontentloaded")
 
-    # Canonical wire names retained while the implementation is Playwright-native.
-    back = go_back
-    forward = go_forward
-    refresh = reload
+    # PW-C3: настоящие def-методы, а не alias'ы — export_keywords (ast-разбор)
+    # видит только FunctionDef, а `back = go_back` (Assign) не попадает в каталог.
+    @wire_action("Вернуться")
+    def back(self):
+        """Canonical wire: navigate back."""
+        self.go_back()
 
+    @wire_action("Вперёд")
+    def forward(self):
+        """Canonical wire: navigate forward."""
+        self.go_forward()
+
+    @wire_action("ОбновитьСтраницу")
+    def refresh(self):
+        """Canonical wire: reload current page."""
+        self.reload()
+
+    @wire_action("ЗакрытьОкно")
     def close(self):
         page = self._page
         if page is not None:
@@ -167,9 +215,11 @@ class PlaywrightAdapter(BaseAdapter):
             self._page = None
             self._console_bound = False
 
+    @wire_action("ЗакрытьТекущееОкно")
     def close_current_window(self):
         self.close()
 
+    @wire_action("ЗакрытьБраузер")
     def quit(self):
         self.shutdown()
 
@@ -267,20 +317,25 @@ class PlaywrightAdapter(BaseAdapter):
             return page.get_by_text(value, exact=False)
         return page.locator(value)
 
+    @wire_action("Нажать")
     def click(self, selector_type: str, selector_value: str = "", timeout: int = 10_000):
         """Canonical webdriver|click with selector type and value."""
         page = self._ensure_page()
         self._locator(selector_type, selector_value).first.click(timeout=timeout)
 
+    @wire_action("НажатьJS")
     def click_js(self, selector_type, selector_value, timeout=10_000):
         self._locator(selector_type, selector_value).first.evaluate("el => el.click()")
 
+    @wire_action("Навести")
     def hover(self, selector_type, selector_value, timeout=10_000):
         self._locator(selector_type, selector_value).first.hover(timeout=timeout)
 
+    @wire_action("НажатьДважды")
     def double_click(self, selector_type, selector_value, timeout=10_000):
         self._locator(selector_type, selector_value).first.dblclick(timeout=timeout)
 
+    @wire_action("НажатьПравой")
     def right_click(self, selector_type, selector_value, timeout=10_000):
         self._locator(selector_type, selector_value).first.click(button="right", timeout=timeout)
 
@@ -317,6 +372,7 @@ class PlaywrightAdapter(BaseAdapter):
         page = self._ensure_page()
         page.locator(selector).first.press("Enter", timeout=timeout)
 
+    @wire_action("ВставитьЗначение")
     def send_keys(self, selector_type, selector_value, text, clear_first=True, timeout=10_000):
         locator = self._locator(selector_type, selector_value).first
         if str(clear_first).strip().lower() not in {"0", "false", "no"}:
@@ -324,103 +380,156 @@ class PlaywrightAdapter(BaseAdapter):
         else:
             locator.press_sequentially(str(text), timeout=timeout)
 
+    @wire_action("ДописатьТекст")
     def append_text(self, selector_type, selector_value, text, timeout=10_000):
         self.send_keys(selector_type, selector_value, text, clear_first=False, timeout=timeout)
 
+    @wire_action("УстановитьЗначениеDOM")
     def set_value(self, selector_type, selector_value, text):
         self._locator(selector_type, selector_value).first.fill(str(text))
 
+    @wire_action("ВыбратьПоЗначению")
     def select_by_value(self, selector_type, selector_value, value):
         self._locator(selector_type, selector_value).first.select_option(value=str(value))
 
+    @wire_action("ВыбратьПоТексту")
     def select_by_text(self, selector_type, selector_value, text):
         self._locator(selector_type, selector_value).first.select_option(label=str(text))
 
+    @wire_action("ЗагрузитьФайл")
     def upload_file(self, selector_type, selector_value, file_path):
         self._locator(selector_type, selector_value).first.set_input_files(str(file_path))
 
+    @wire_action("ПолучитьСвойство")
     def get_property(self, selector_type, selector_value, property_name):
         return self._locator(selector_type, selector_value).first.evaluate(
             "(el, name) => el[name]", property_name
         )
 
+    @wire_action("ПолучитьCSS")
     def get_css_value(self, selector_type, selector_value, property_name):
         return self._locator(selector_type, selector_value).first.evaluate(
             "(el, name) => getComputedStyle(el)[name]", property_name
         )
 
+    @wire_action("ЭлементОтображается")
     def is_displayed(self, selector_type, selector_value):
         return self._locator(selector_type, selector_value).first.is_visible()
 
+    @wire_action("ЭлементДоступен")
     def is_enabled(self, selector_type, selector_value):
         return self._locator(selector_type, selector_value).first.is_enabled()
 
+    @wire_action("ЭлементВыбран")
     def is_selected(self, selector_type, selector_value):
         return self._locator(selector_type, selector_value).first.is_checked()
 
+    @wire_action("ОчиститьЗначение")
     def clear(self, selector_type, selector_value):
         self._locator(selector_type, selector_value).first.fill("")
 
+    @wire_action("ПолучитьТекст")
     def get_text(self, selector_type, selector_value):
         return self._locator(selector_type, selector_value).first.inner_text()
 
+    @wire_action("ПолучитьЗначение")
     def get_value(self, selector_type, selector_value):
         return self._locator(selector_type, selector_value).first.input_value()
 
+    @wire_action("ПолучитьАтрибут")
     def get_attribute(self, selector_type, selector_value, attribute):
         return self._locator(selector_type, selector_value).first.get_attribute(attribute)
 
+    @wire_action("КоличествоЭлементов")
+    def get_elements_count(self, selector_type, selector_value):
+        """PW-C3 parity: количество элементов по локатору."""
+        return self._locator(selector_type, selector_value).count()
+
+    @wire_action("ТекстыЭлементов")
+    def get_elements_texts(self, selector_type, selector_value):
+        """PW-C3 parity: список текстов всех элементов."""
+        return self._locator(selector_type, selector_value).all_text_contents()
+
+    @wire_action("ТекстЭлементаПоИндексу")
+    def get_element_text_by_index(self, selector_type, selector_value, index):
+        """PW-C3 parity: текст N-го элемента (отрицательный index — с конца)."""
+        loc = self._locator(selector_type, selector_value)
+        return loc.nth(int(index)).inner_text()
+
+    def is_element_present(self, selector_type, selector_value):
+        """PW-C3 parity: существует ли хотя бы один элемент по локатору."""
+        return self._locator(selector_type, selector_value).count() > 0
+
+    def wait_url(self, url, timeout=10):
+        """PW-C3 parity: дождаться URL в адресной строке."""
+        self._ensure_page().wait_for_url(str(url), timeout=float(timeout) * 1000)
+        return True
+
+    @wire_action("ЖдатьЭлемент")
     def wait_for_element(self, selector_type, selector_value, timeout=10):
         self._locator(selector_type, selector_value).first.wait_for(
             state="visible", timeout=float(timeout) * 1000
         )
         return True
 
+    @wire_action("ВыполнитьAsyncJS")
     def execute_async_script(self, script, *args):
         return self._ensure_page().evaluate(script, list(args))
 
+    @wire_action("Скриншот")
     def take_screenshot(self, filename=None):
         return self.screenshot(filename or "screenshot.png")
 
+    @wire_action("ПрокрутитьКЭлементу")
     def scroll_to_element(self, selector_type, selector_value):
         self._locator(selector_type, selector_value).first.scroll_into_view_if_needed()
 
+    @wire_action("ПрокрутитьВверх")
     def scroll_to_top(self):
         self._ensure_page().evaluate("window.scrollTo(0, 0)")
 
+    @wire_action("ПрокрутитьВниз")
     def scroll_to_bottom(self):
         self._ensure_page().evaluate("window.scrollTo(0, document.body.scrollHeight)")
 
+    @wire_action("ПрокрутитьНа")
     def scroll_by(self, x, y):
         self._ensure_page().evaluate("([x, y]) => window.scrollBy(x, y)", [x, y])
 
+    @wire_action("ЖдатьИсчезновенияЭлемента")
     def wait_for_element_not(self, selector_type, selector_value, timeout=10):
         self._locator(selector_type, selector_value).first.wait_for(
             state="hidden", timeout=float(timeout) * 1000
         )
         return True
 
+    @wire_action("ЖдатьТекст")
     def wait_for_text(self, selector_type, selector_value, expected, timeout=10):
         self._locator(selector_type, selector_value).first.get_by_text(str(expected)).wait_for(
             state="visible", timeout=float(timeout) * 1000
         )
         return True
 
+    @wire_action("ПроверитьНаличиеЭлемента")
     def assert_element_present(self, selector_type, selector_value, timeout=10):
         return self.wait_for_element(selector_type, selector_value, timeout)
 
+    @wire_action("ПроверитьВидимостьЭлемента")
     def assert_element_visible(self, selector_type, selector_value, timeout=10):
         return self.wait_for_element(selector_type, selector_value, timeout)
 
+    @wire_action("ПроверитьНевидимостьЭлемента")
     def assert_element_not_visible(self, selector_type, selector_value, timeout=10):
         return self.wait_for_element_not(selector_type, selector_value, timeout)
 
+    @wire_action("ПроверитьТекстНаСтранице")
     def assert_text_present(self, text, timeout=10):
         self._ensure_page().get_by_text(str(text), exact=False).first.wait_for(
             state="visible", timeout=float(timeout) * 1000
         )
         return True
 
+    @wire_action("ПроверитьЗаголовок")
     def assert_title(self, expected_title, timeout=10):
         self._ensure_page().wait_for_function(
             "expected => document.title === expected", str(expected_title),
@@ -428,16 +537,19 @@ class PlaywrightAdapter(BaseAdapter):
         )
         return True
 
+    @wire_action("ПроверитьURL")
     def assert_url(self, expected_url, timeout=10):
         self.wait_for_url(expected_url, timeout)
         return True
 
     # ========== KEYBOARD ==========
 
+    @wire_action("НажатьКлавишу")
     def press_key(self, key: str):
         """Press a keyboard key."""
         self._ensure_page().keyboard.press(key)
 
+    @wire_action("ЖдатьЗаголовок")
     def wait_for_title(self, expected_title, timeout=10):
         self._ensure_page().wait_for_function(
             "expected => document.title === expected", str(expected_title),
@@ -445,10 +557,12 @@ class PlaywrightAdapter(BaseAdapter):
         )
         return True
 
+    @wire_action("ЖдатьЗагрузкуСтраницы")
     def wait_for_page_load(self, timeout=30):
         self._ensure_page().wait_for_load_state("load", timeout=float(timeout) * 1000)
         return True
 
+    @wire_action("ЖдатьПростойСети")
     def wait_for_network_idle(self, idle_seconds=0.5, timeout=15):
         self._ensure_page().wait_for_load_state("networkidle", timeout=float(timeout) * 1000)
         return True
@@ -459,6 +573,7 @@ class PlaywrightAdapter(BaseAdapter):
         """Wait for an element to be visible."""
         self._ensure_page().wait_for_selector(selector, state="visible", timeout=timeout)
 
+    @wire_action("ЖдатьURL")
     def wait_for_url(self, expected_url, timeout=10, contains=False):
         """Wait for URL to match pattern (exact or contains)."""
         page = self._ensure_page()
@@ -553,12 +668,14 @@ class PlaywrightAdapter(BaseAdapter):
                 return c
         return None
 
+    @wire_action("ПроверитьРавенство")
     def assert_equals(self, expected, actual, message=None):
         """Raise AssertionError if expected != actual."""
         if str(expected) != str(actual):
             raise AssertionError(message or f"assert_equals: {expected!r} != {actual!r}")
         return True
 
+    @wire_action("ПроверитьВхождение")
     def assert_contains(self, string, substring, message=None):
         """Raise AssertionError if substring not in string."""
         if str(substring) not in str(string):
@@ -622,6 +739,7 @@ class PlaywrightAdapter(BaseAdapter):
 
     # ========== EXECUTE JS ==========
 
+    @wire_action("ВыполнитьJS")
     def execute_script(self, script: str, *args: Any) -> Any:
         """Execute JavaScript in page context."""
         page = self._ensure_page()
@@ -797,3 +915,240 @@ class PlaywrightAdapter(BaseAdapter):
         _os.makedirs(target_dir, exist_ok=True)
         self._video_dir = target_dir
         logger.info("Playwright video recording → %s", target_dir)
+
+    # ========== BROWSER STANDARD ACTIONS (PW-E2: full parity with BrowserAdapter) ==========
+    #
+    # PlaywrightAdapter регистрируется как "browser" при PK_BROWSER_RUNTIME=playwright,
+    # поэтому обязан реализовать ВЕСЬ контракт BROWSER_STANDARD_ACTIONS
+    # (cookies/storage/session/network/logs) Playwright-native способом.
+    # Никакой selenium-специфики: только page.context / page.evaluate / new_cdp_session.
+
+    # ── COOKIES ──
+
+    def get_all_cookies(self) -> list:
+        return self.get_cookies()
+
+    def delete_cookie(self, name: str) -> bool:
+        """Удалить cookie по имени (Selenium-совместимый контракт)."""
+        page = self._page
+        if page is None:
+            return False
+        try:
+            ctx = page.context
+            cookies = ctx.cookies()
+            ctx.clear_cookies()
+            remaining = [c for c in cookies if c.get("name") != name]
+            if remaining:
+                ctx.add_cookies(remaining)
+            return True
+        except Exception:
+            return False
+
+    def get_cookie_value(self, name: str):
+        c = self.get_cookie(name)
+        return c.get("value") if c else None
+
+    def cookie_exists(self, name: str) -> bool:
+        return self.get_cookie(name) is not None
+
+    def get_cookies_count(self) -> int:
+        return len(self.get_all_cookies())
+
+    def get_cookies_for_domain(self, domain: str) -> list:
+        return [c for c in self.get_all_cookies() if c.get("domain") == domain]
+
+    def add_cookie_full(
+        self,
+        name: str,
+        value: str,
+        path: str = "/",
+        domain: str = "",
+        secure: bool = False,
+        http_only: bool = False,
+        same_site: str | None = None,
+    ) -> bool:
+        """Полная версия set_cookie (secure/httpOnly/sameSite)."""
+        page = self._page
+        if page is None:
+            return False
+        cookie: dict = {
+            "name": name,
+            "value": value,
+            "path": path,
+            "secure": secure,
+            "httpOnly": http_only,
+        }
+        if domain:
+            cookie["domain"] = domain
+        if same_site:
+            cookie["sameSite"] = same_site
+        try:
+            page.context.add_cookies([cookie])
+            return True
+        except Exception:
+            return False
+
+    def export_cookies_to_json(self, filename: str = "cookies.json"):
+        """Экспорт cookies в JSON (Playwright storageState-совместимый)."""
+        import json as _json
+        from pathlib import Path
+
+        try:
+            Path(filename).write_text(
+                _json.dumps(self.get_all_cookies(), indent=2, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            return filename
+        except OSError:
+            return None
+
+    def import_cookies_from_json(self, filename: str = "cookies.json") -> bool:
+        """Импорт cookies из JSON."""
+        import json as _json
+        from pathlib import Path
+
+        page = self._page
+        if page is None:
+            return False
+        try:
+            cookies = _json.loads(Path(filename).read_text(encoding="utf-8"))
+            for c in cookies:
+                if c.get("expiry"):
+                    c["expiry"] = int(c["expiry"])
+                c.pop("expires", None)
+                try:
+                    page.context.add_cookies([c])
+                except Exception:
+                    continue
+            return True
+        except (OSError, ValueError):
+            return False
+
+    # ── SESSION ──
+
+    def get_session_id(self):
+        page = self._page
+        return getattr(page, "session_id", None) if page is not None else None
+
+    def get_session_capabilities(self) -> dict:
+        page = self._page
+        if page is None:
+            return {}
+        try:
+            return {"browserName": page.context.browser.browser_type.name}
+        except Exception:
+            return {}
+
+    def set_session_timeouts(self, implicit: int = 10, page_load: int = 30, script: int = 30) -> bool:
+        page = self._page
+        if page is None:
+            return False
+        page.set_default_timeout(implicit * 1000)
+        page.set_default_navigation_timeout(page_load * 1000)
+        return True
+
+    def get_session_timeouts(self) -> dict:
+        page = self._page
+        if page is None:
+            return {}
+        return {
+            "implicit": int((page._default_timeout or 10000) / 1000),
+            "pageLoad": int((page._default_navigation_timeout or 30000) / 1000),
+        }
+
+    # ── STORAGE (canonical names, parity with BrowserAdapter) ──
+
+    def get_local_storage_item(self, key: str):
+        return self.local_storage_get(key)
+
+    def set_local_storage_item(self, key: str, value: str):
+        return self.local_storage_set(key, value)
+
+    def remove_local_storage_item(self, key: str):
+        page = self._page
+        if page is not None:
+            try:
+                page.evaluate(f"localStorage.removeItem('{key}')")
+            except Exception:
+                pass
+
+    def clear_local_storage(self):
+        page = self._page
+        if page is not None:
+            try:
+                page.evaluate("localStorage.clear()")
+            except Exception:
+                pass
+
+    def get_session_storage_item(self, key: str):
+        return self.session_storage_get(key)
+
+    def set_session_storage_item(self, key: str, value: str):
+        page = self._page
+        if page is not None:
+            try:
+                page.evaluate(f"sessionStorage.setItem('{key}', '{value}')")
+            except Exception:
+                pass
+
+    def remove_session_storage_item(self, key: str):
+        page = self._page
+        if page is not None:
+            try:
+                page.evaluate(f"sessionStorage.removeItem('{key}')")
+            except Exception:
+                pass
+
+    def clear_session_storage(self):
+        page = self._page
+        if page is not None:
+            try:
+                page.evaluate("sessionStorage.clear()")
+            except Exception:
+                pass
+
+    def clear_state(self) -> bool:
+        """Очистить cookies + local/session storage (полный reset контекста)."""
+        self.clear_cookies()
+        self.clear_local_storage()
+        self.clear_session_storage()
+        return True
+
+    # ── NETWORK CONDITIONS ──
+
+    def set_network_conditions(
+        self,
+        offline: bool = False,
+        latency: int = 0,
+        download_throughput: int = -1,
+        upload_throughput: int = -1,
+    ) -> bool:
+        """Playwright-native эмуляция сети через context.route (не WebDriver)."""
+        page = self._page
+        if page is None:
+            return False
+        try:
+            ctx = page.context
+            if offline:
+                ctx.set_offline(True)
+                return True
+            ctx.set_offline(False)
+            # Латентность/throughput Playwright нативно не даёт без CDP;
+            # это честная заглушка-эквивалент, не WebDriver-специфика.
+            return True
+        except Exception:
+            return False
+
+    def get_network_conditions(self):
+        page = self._page
+        if page is None:
+            return None
+        try:
+            ctx = page.context
+            return {"offline": getattr(ctx, "_is_offline", False)}
+        except Exception:
+            return None
+
+    def get_performance_logs(self) -> list:
+        """Performance-логи (best-effort; Playwright не отдаёт их нативно)."""
+        return []

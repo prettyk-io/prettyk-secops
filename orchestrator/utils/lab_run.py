@@ -15,6 +15,9 @@ from typing import Any, Dict, List, Optional
 from core.wired_validate import validate_wired_file
 from utils.paths import REPO_ROOT, RUNS_DIR, ensure_runs_dir
 
+# WIRE-RUNCTL: управляемый жизненный цикл запуска поверх single-flight subprocess.
+from core.run_control_plane import RunControlPlane, FailureClass, RunState
+
 _lock = threading.Lock()
 _active_proc: Optional[subprocess.Popen] = None
 _STATUS_NAME = "current.json"
@@ -574,6 +577,11 @@ def _watch_lab_process(proc, log_fh, run_id: str) -> None:
             )
             if _active_proc is proc:
                 _active_proc = None
+            # WIRE-RUNCTL: обновить RunControlPlane по завершении subprocess.
+            try:
+                _finish_plane_run(run_id, int(code))
+            except Exception:
+                pass
 
     threading.Thread(target=_watch, name=f"lab-run-{run_id}", daemon=True).start()
 
@@ -589,6 +597,7 @@ def start_run(
     owner_user_id: str | None = None,
     check_id: str | None = None,
     env: Optional[Dict[str, str]] = None,
+    run_id: str | None = None,
 ) -> Dict[str, Any]:
     """
     Validate + spawn main.py (single-flight).
@@ -597,6 +606,7 @@ def start_run(
     chain_bindings: IMP-CHAIN slot_id → fresh value at play.
     owner_user_id: PERS lab → PK_OWNER_USER + diary meta (Editor caller).
     env: allowlisted lab overrides (e.g. PK_TRAFFIC_INSERTION_FEED) — not SoT.
+    run_id: явный id запуска (WIRE-RUNCTL); если None → uuid4.
     Returns ok payload or raises ValueError / RuntimeError.
     """
     if not isinstance(wired, dict):
@@ -615,7 +625,7 @@ def start_run(
                 f"run already in progress (run_id={status.get('run_id')}, pid={status.get('pid')})"
             )
 
-        run_id = uuid.uuid4().hex[:12]
+        run_id = run_id or uuid.uuid4().hex[:12]
         run_dir = ensure_runs_dir() / run_id
         run_dir.mkdir(parents=True, exist_ok=True)
         log_path = run_dir / "runner.log"
@@ -888,3 +898,149 @@ def _maybe_write_run_space(
         )
     except Exception:
         pass  # non-blocking: run стартует даже без index
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# WIRE-RUNCTL: RunControlPlane wiring (in-memory, поверх single-flight subprocess)
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# lab_run остаётся single-flight (один активный subprocess), но теперь каждый
+# запуск — управляемая сущность с жизненным циклом и защитой от дублей.
+# RunControlPlane не вводит очереди/SQL/Cosmo — чистый in-memory слой.
+
+_run_plane: Optional[RunControlPlane] = None
+_run_plane_lock = threading.Lock()
+
+
+def _get_run_plane() -> RunControlPlane:
+    """Ленивый синглтон RunControlPlane.
+
+    max_retries=1 — авто-повтор subprocess ОТКЛЮЧЁН (не перезапускаем прогон
+    молча): любой fail — терминальный. Жизненный цикл и dedup — от ядра.
+    """
+    global _run_plane
+    with _run_plane_lock:
+        if _run_plane is None:
+            _run_plane = RunControlPlane(max_concurrent=1, max_retries=1)
+            _run_plane.register_worker("lab-single-flight", frozenset({"browser", "scanner"}))
+        return _run_plane
+
+
+def reset_run_plane_for_tests() -> None:
+    """Test helper: сбросить in-memory RunControlPlane."""
+    global _run_plane
+    with _run_plane_lock:
+        _run_plane = None
+
+
+def _finish_plane_run(run_id: str, exit_code: int) -> None:
+    """Обновить RunControlPlane по завершении subprocess (watch-поток)."""
+    plane = _get_run_plane()
+    run = plane.get_run(run_id)
+    if run is None or run.is_terminal:
+        return
+    if exit_code == 0:
+        plane.succeed_run(run_id)
+    else:
+        plane.fail_run(run_id, FailureClass.INFRA, f"exit_code={exit_code}")
+
+
+def _runctl_params(
+    wired: Any,
+    *,
+    session_name: str | None,
+    stub: bool,
+    check_id: str | None,
+) -> dict:
+    """Канонические параметры запуска для dedup_key (порядок-независимый)."""
+    return {
+        "wired": wired,
+        "session_name": (session_name or "").strip(),
+        "stub": bool(stub),
+        "check_id": (check_id or "").strip(),
+    }
+
+
+def submit_run(
+    wired: Any,
+    *,
+    session_name: str | None = None,
+    stub: bool = False,
+    stub_opts: Optional[Dict[str, Any]] = None,
+    resource_contents: Optional[Dict[str, str]] = None,
+    chain_bindings: Optional[Dict[str, str]] = None,
+    owner_user_id: str | None = None,
+    check_id: str | None = None,
+    env: Optional[Dict[str, str]] = None,
+) -> Dict[str, Any]:
+    """WIRE-RUNCTL: управляемый запуск с dedup и жизненным циклом.
+
+    Обёртка над start_run:
+      1. dedup по каноническим параметрам → повторный идентичный запрос
+         возвращает ТОТ ЖЕ run_id (без второго subprocess);
+      2. run проходит lifecycle queued→running→succeeded/failed;
+      3. при провале валидации → fail(VALIDATION), subprocess не спавнится.
+    """
+    plane = _get_run_plane()
+    params = _runctl_params(
+        wired,
+        session_name=session_name,
+        stub=stub,
+        check_id=check_id,
+    )
+
+    run, is_new = plane.create_run(params)
+    if not is_new:
+        # RUN-CTL-2: повторный идентичный запуск → тот же run_id.
+        return {
+            "ok": True,
+            "run_id": run.id,
+            "dedup": True,
+            "reused": True,
+            "state": run.state.value,
+        }
+
+    try:
+        result = start_run(
+            wired,
+            session_name=session_name,
+            stub=stub,
+            stub_opts=stub_opts,
+            resource_contents=resource_contents,
+            chain_bindings=chain_bindings,
+            owner_user_id=owner_user_id,
+            check_id=check_id,
+            env=env,
+            run_id=run.id,
+        )
+    except Exception as exc:
+        # Валидация/подготовка упала до spawn — мгновенный fail, без повтора.
+        plane.fail_run(run.id, FailureClass.VALIDATION, f"{type(exc).__name__}: {exc}")
+        raise
+
+    # Прокинуть lifecycle в результат
+    result["control_plane"] = {
+        "run_id": run.id,
+        "state": run.state.value,
+        "attempt": run.attempt,
+    }
+    return result
+
+
+def get_run_control_plane_status(run_id: str) -> Dict[str, Any]:
+    """Lifecycle-статус запуска в RunControlPlane (для диагностики/монитора)."""
+    plane = _get_run_plane()
+    run = plane.get_run(run_id)
+    if run is None:
+        return {"ok": False, "error": "run not found"}
+    return {
+        "ok": True,
+        "run_id": run.id,
+        "state": run.state.value,
+        "attempt": run.attempt,
+        "worker_id": run.worker_id,
+        "failure_class": run.failure_class.value if run.failure_class else None,
+        "error": run.error,
+        "started_at": run.started_at,
+        "finished_at": run.finished_at,
+    }

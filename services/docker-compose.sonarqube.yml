@@ -2,7 +2,7 @@
 # НЕ для банка «как есть». Не в обязательном lab_up — только явный старт.
 #
 # Порт UI: 9000.
-# Сеть: pk-net (как DefectDojo / ZAP).
+# Сеть: pk-net (как DefectDojo / scanner).
 #
 #   docker network create pk-net 2>nul
 #   docker compose -f services/docker-compose.sonarqube.yml up -d

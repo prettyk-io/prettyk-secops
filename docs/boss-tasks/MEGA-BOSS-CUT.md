@@ -48,7 +48,7 @@ P0_ALLOWLIST из 25 spec-объектов.
 ### DSL-B5 — Parity Integration Suite (2h)
 Файл: `orchestrator/tests/test_browser_runtime_parity.py`
 Один wired → `PK_BROWSER_RUNTIME=playwright` vs `selenium`.
-Сравнение: статусы, скриншоты, аттачи, ZAP-прокси.
+Сравнение: статусы, скриншоты, аттачи, scanner-прокси.
 Приёмка: 5 parity-тестов зелёных.
 
 ### DSL-B6 — CDP Cleanup (1h)
@@ -128,7 +128,7 @@ Woodpecker implementation: `.woodpecker.yml` генератор, API trigger, we
 Capability mapping: Brick.executtor → Woodpecker labels.
 
 ### COS-B10 — SecurityCapabilityBroker (2h)
-Рантайм для ZAP/Playwright/Fuzzer: `start_zap_demon`, `start_playwright_cdpp`, `start_fuzzer`, `isolate`, `teardown`.
+Рантайм для scanner/Playwright/Fuzzer: `start_scanner_demon`, `start_playwright_cdpp`, `start_fuzzer`, `isolate`, `teardown`.
 Привязка к `run_id`, изоляция (сетевая/файловая), гарантированный teardown.
 
 ---
@@ -181,10 +181,10 @@ Admission-статус деплоя: `passed | failed | pending`.
 
 ## Блок 6: PW-AIRGAP — завершение airgap
 
-### PW-B1 — Execution parity: Playwright full wired run через ZAP proxy (2h)
+### PW-B1 — Execution parity: Playwright full wired run через scanner proxy (2h)
 Реальный прогон с `PK_BROWSER_RUNTIME=playwright`.
-ZAP-прокси: `host.docker.innternal:8099`.
-Проверка: трафик в ZAP site tree.
+scanner-прокси: `host.docker.innternal:8099`.
+Проверка: трафик в scanner site tree.
 
 ### PW-B2 — Playwright video recording + ffmpeg → MP4 (1h)
 `record_viddeo_dir` + `run_id` нейминг.

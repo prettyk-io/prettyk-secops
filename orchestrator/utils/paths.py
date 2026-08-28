@@ -19,7 +19,7 @@ _reports_override = pk_env("REPORTS_DIR")
 REPORTS_DIR = Path(_reports_override).resolve() if _reports_override else REPO_ROOT / "reports"
 ALLURE_RESULTS_DIR = REPORTS_DIR / "allure-results"
 ALLURE_REPORT_DIR = REPORTS_DIR / "allure-report"
-ZAP_RESULTS_DIR = REPORTS_DIR / "scanner-results"
+scanner_RESULTS_DIR = REPORTS_DIR / "scanner-results"
 VIDEO_DIR = REPORTS_DIR / "video"
 LIVE_DIR = REPORTS_DIR / "live"
 DIARY_NDJSON = LIVE_DIR / "diary.ndjson"
@@ -54,7 +54,7 @@ def ensure_reports_dirs() -> None:
         REPORTS_DIR,
         ALLURE_RESULTS_DIR,
         ALLURE_REPORT_DIR,
-        ZAP_RESULTS_DIR,
+        scanner_RESULTS_DIR,
         VIDEO_DIR,
         LIVE_DIR,
     ):
@@ -65,11 +65,11 @@ def artifact_path(file_path: str) -> Path:
     """
     Куда писать артефакт:
     - имя без директории → allure-results (скриншоты / вложения шагов);
-    - reports/scanner-results/… или scanner-results/… → ZAP XML для DefectDojo;
+    - reports/scanner-results/… или scanner-results/… → scanner XML для DefectDojo;
     - относительный путь → от корня репозитория;
     - абсолютный не меняется.
 
-    Для ZAP Отчёт см. zap_report_path: голое имя → scanner-results, не allure-results.
+    Для scanner Отчёт см. scanner_report_path: голое имя → scanner-results, не allure-results.
     """
     path = Path(file_path)
     if path.is_absolute():
@@ -77,22 +77,22 @@ def artifact_path(file_path: str) -> Path:
     if path.parent == Path("."):
         return ALLURE_RESULTS_DIR / path
     parts = path.parts
-    if parts and parts[0] == "scanner-results":
-        return ZAP_RESULTS_DIR.joinpath(*parts[1:])
-    if len(parts) >= 2 and parts[0] == "reports" and parts[1] == "scanner-results":
-        return ZAP_RESULTS_DIR.joinpath(*parts[2:])
+    if parts and parts[0] in ("scanner-results", "scanner-results"):
+        return scanner_RESULTS_DIR.joinpath(*parts[1:])
+    if len(parts) >= 2 and parts[0] == "reports" and parts[1] in ("scanner-results", "scanner-results"):
+        return scanner_RESULTS_DIR.joinpath(*parts[2:])
     return REPO_ROOT / path
 
 
-def zap_report_path(file_path: str) -> Path:
+def scanner_report_path(file_path: str) -> Path:
     """
-    Выход ZAP Отчёт / generate_report:
+    Выход scanner Отчёт / generate_report:
     - имя без директории → reports/scanner-results/… (Dojo, финальный HTML);
     - иначе как artifact_path (включая scanner-results/… и reports/scanner-results/…).
     """
     path = Path(file_path)
     if not path.is_absolute() and path.parent == Path("."):
-        return ZAP_RESULTS_DIR / path
+        return scanner_RESULTS_DIR / path
     return artifact_path(file_path)
 
 
@@ -103,7 +103,7 @@ def find_artifact(file_path: str) -> Optional[Path]:
         return path if path.is_file() else None
     for candidate in (
         ALLURE_RESULTS_DIR / path,
-        ZAP_RESULTS_DIR / path,
+        scanner_RESULTS_DIR / path,
         REPO_ROOT / path,
         Path.cwd() / path,
     ):

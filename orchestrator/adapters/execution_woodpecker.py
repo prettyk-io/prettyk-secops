@@ -1,15 +1,17 @@
+# PoC — NOT production. Cosmoport boundary. Do not import into DAST runtime.
 """
-COS-L7: Woodpecker ExecutionAdapter.
+COS-008: Абстрактный ExecutionAdapter + реализация Woodpecker.
 
-Генерация .woodpecker.yml из Batch, запуск через API, мониторинг.
+ExecutionAdapter — базовый интерфейс для CI-исполнителей (Woodpecker, Jenkins).
+WoodpeckerAdapter — генерация .woodpecker.yml, submit/status/logs/cancel.
 """
 from __future__ import annotations
 
 import logging
+from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any
 
-import requests
 import yaml
 
 logger = logging.getLogger(__name__)
@@ -26,25 +28,65 @@ class JobStatus(str, Enum):
     ERROR = "error"
 
 
-class WoodpeckerAdapter:
+class ExecutionAdapter(ABC):
+    """Абстрактный интерфейс CI-исполнителя.
+
+    Реализации: WoodpeckerAdapter, JenkinsAdapter (COS-008).
+    """
+
+    @abstractmethod
+    def generate_pipeline_yaml(self, batch: dict) -> str:
+        """Сгенерировать конфигурацию пайплайна из Batch."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def submit_run(self, repo_owner: str, repo_name: str, branch: str = "main") -> dict:
+        """Создать и запустить пайплайн. Возвращает handle."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_status(self, handle: dict) -> str:
+        """Текущий статус пайплайна."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_logs(self, handle: dict, step: int = 0) -> list[str]:
+        """Сырые логи выполнения."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def cancel_run(self, handle: dict) -> bool:
+        """Отменить выполнение."""
+        raise NotImplementedError
+
+
+class WoodpeckerAdapter(ExecutionAdapter):
     """Адаптер Woodpecker CI API."""
 
     def __init__(self, base_url: str, token: str):
         self._base = base_url.rstrip("/")
+        self._token = token
+        # Используем requests (не httpx) — совместимость с requirements.txt
+        import requests
         self._session = requests.Session()
         self._session.headers.update({
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
         })
 
-    def _get(self, path: str, **kwargs: Any) -> requests.Response:
+    def _get(self, path: str, **kwargs: Any):
         return self._session.get(f"{self._base}{path}", timeout=DEFAULT_TIMEOUT, **kwargs)
 
-    def _post(self, path: str, **kwargs: Any) -> requests.Response:
+    def _post(self, path: str, **kwargs: Any):
         return self._session.post(f"{self._base}{path}", timeout=DEFAULT_TIMEOUT, **kwargs)
 
+    def _delete(self, path: str, **kwargs: Any):
+        return self._session.delete(f"{self._base}{path}", timeout=DEFAULT_TIMEOUT, **kwargs)
+
+    # ── ExecutionAdapter interface ──
+
     def generate_pipeline_yaml(self, batch: dict) -> str:
-        """Генерирует .woodpecker.yml из Batch."""
+        """Сгенерировать .woodpecker.yml из Batch."""
         bricks = batch.get("bricks", [])
         pipeline: dict[str, Any] = {"pipeline": {}, "steps": {}}
 
@@ -66,33 +108,41 @@ class WoodpeckerAdapter:
 
         return yaml.dump(pipeline, default_flow_style=False, allow_unicode=True)
 
-    def trigger_pipeline(self, repo_owner: str, repo_name: str, branch: str = "main") -> dict:
-        """Запускает пайплайн через Woodpecker API."""
+    def submit_run(self, repo_owner: str, repo_name: str, branch: str = "main") -> dict:
         r = self._post(
             f"/api/repos/{repo_owner}/{repo_name}/pipelines",
             params={"branch": branch},
         )
         r.raise_for_status()
-        return r.json()
+        data = r.json()
+        return {
+            "job_id": data["id"],
+            "number": data["number"],
+            "repo_owner": repo_owner,
+            "repo_name": repo_name,
+        }
 
-    def get_job_status(self, repo_owner: str, repo_name: str, pipeline_number: int) -> str:
-        """Получает статус джоба."""
+    def get_status(self, handle: dict) -> str:
         r = self._get(
-            f"/api/repos/{repo_owner}/{repo_name}/pipelines/{pipeline_number}",
+            f"/api/repos/{handle['repo_owner']}/{handle['repo_name']}/pipelines/{handle['number']}",
         )
         r.raise_for_status()
-        data = r.json()
-        return data.get("status", "pending")
+        return r.json().get("status", "pending")
 
-    def stream_logs(self, repo_owner: str, repo_name: str, pipeline_number: int, step: int = 0) -> list[str]:
-        """Получает логи джоба."""
+    def get_logs(self, handle: dict, step: int = 0) -> list[str]:
         r = self._get(
-            f"/api/repos/{repo_owner}/{repo_name}/logs/{pipeline_number}/{step}",
+            f"/api/repos/{handle['repo_owner']}/{handle['repo_name']}/logs/{handle['number']}/{step}",
         )
         r.raise_for_status()
         data = r.json()
         logs = data if isinstance(data, list) else data.get("logs", [])
         return logs if isinstance(logs, list) else []
+
+    def cancel_run(self, handle: dict) -> bool:
+        r = self._delete(
+            f"/api/repos/{handle['repo_owner']}/{handle['repo_name']}/pipelines/{handle['number']}",
+        )
+        return r.status_code in (200, 204)
 
     def close(self) -> None:
         self._session.close()

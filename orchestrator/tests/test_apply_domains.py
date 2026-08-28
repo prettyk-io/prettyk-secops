@@ -1,25 +1,25 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """G-34 ПрименитьДомены — парсер CSV → regex + MethodId."""
 from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from adapters.zap_adapter import ZapAdapter
+from adapters.scanner_adapter import ScannerAdapter
 from core.method_id import lookup_facade_method, resolve_call
 
 
 def test_method_id_apply_domains():
-    assert lookup_facade_method("ZAP", "ПрименитьДомены") == (
-        "zap",
+    assert lookup_facade_method("scanner", "ПрименитьДомены") == (
+        "scanner",
         "apply_allowed_domains",
     )
     assert resolve_call(
-        "ZAP ПрименитьДомены juice_ctx https://a.test,*.b.test"
-    ) == "zap|apply_allowed_domains|juice_ctx|https://a.test,*.b.test"
+        "scanner ПрименитьДомены juice_ctx https://a.test,*.b.test"
+    ) == "scanner|apply_allowed_domains|juice_ctx|https://a.test,*.b.test"
 
 
 def test_domains_csv_to_regexes():
-    rxs = ZapAdapter.domains_csv_to_include_regexes(
+    rxs = ScannerAdapter.domains_csv_to_include_regexes(
         "https://rkn.gov.ru,auth.dev.spaceport.ru,*.internal.bank"
     )
     assert len(rxs) == 3
@@ -27,20 +27,20 @@ def test_domains_csv_to_regexes():
     assert "rkn" in rxs[0]
     assert "auth\\.dev\\.spaceport\\.ru" in rxs[1] or "auth.dev" in rxs[1]
     assert "internal" in rxs[2]
-    pipe = ZapAdapter.domains_csv_to_include_regexes(
+    pipe = ScannerAdapter.domains_csv_to_include_regexes(
         "https://rkn.gov.ru|auth.dev.spaceport.ru"
     )
     assert len(pipe) == 2
 
 
 def test_apply_allowed_domains_calls_include():
-    zap = ZapAdapter.__new__(ZapAdapter)
-    zap._ensure_connected = lambda: None
-    zap._zap = MagicMock()
-    zap.allowed_extra_domains = "https://example.test/app,*.lab.local"
-    zap.base_url = ""
-    n = ZapAdapter.apply_allowed_domains(
-        zap, "juice_ctx", "https://example.test/app,*.lab.local"
+    scanner = ScannerAdapter.__new__(ScannerAdapter)
+    scanner._ensure_connected = lambda: None
+    scanner._scanner = MagicMock()
+    scanner.allowed_extra_domains = "https://example.test/app,*.lab.local"
+    scanner.base_url = ""
+    n = ScannerAdapter.apply_allowed_domains(
+        scanner, "juice_ctx", "https://example.test/app,*.lab.local"
     )
     assert n == 2
-    assert zap._zap.context.include_in_context.call_count == 2
+    assert scanner._scanner.context.include_in_context.call_count == 2

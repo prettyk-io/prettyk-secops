@@ -14,8 +14,8 @@ BASE = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "exp01_refer
 # DO NOT EDIT unless deliberately rotating the baseline.
 EXPECTED: dict[str, str] = {
     "dojo_baseline_findings.json": "952be4c758a2dccb3c350d431975b2a4f5b9c56fc06fdaa6d7582518be86e7a3",
-    "zap_raw_alerts_from_xml.json": "d9ec3807ce88bbef73e6fba8e7060b275a8b125c76cee6736f8edf2c07ef7dbb",
-    "zap_raw_report.xml": "a7528434fbcd61f515124973743903471f8d58d2ecc8eebe7736d6fb7bcd9102",
+    "scanner_raw_alerts_from_xml.json": "d9ec3807ce88bbef73e6fba8e7060b275a8b125c76cee6736f8edf2c07ef7dbb",
+    "scanner_raw_report.xml": "a7528434fbcd61f515124973743903471f8d58d2ecc8eebe7736d6fb7bcd9102",
     "Wired.json": "c5603cc407cb2ba6bdaf7ff69213116e0ea2cef5d5ead0824887ee2696c6bdab",
     "spider_urls.json": "5eb6e973721794618c4f0e5b22a4a13131d0e26cb86b12a64f48e963d93d1a9b",
 }

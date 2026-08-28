@@ -23,7 +23,12 @@ DEFAULT_CHUNK = 65536  # 64 KiB
 
 def find_video_for_run(run_id: str) -> Optional[Path]:
     """
-    Найти видео-файл, имя которого начинается с run_id_ (MON-5).
+    Найти видео-файл для run_id (MON-5 + PW-E3).
+
+    Два согласованных паттерна имени:
+      - Grid:   `{run_id}_<...>.mp4` (chrome-video sidecar)
+      - PW-E3:  `{run_id}.mp4`     (convert_webm_to_mp4 конверт)
+
     Возвращает путь к файлу или None. Без fallback — чужой прогон не подменяем.
     """
     if not run_id:
@@ -31,18 +36,28 @@ def find_video_for_run(run_id: str) -> Optional[Path]:
     vdir = Path(VIDEO_DIR)
     if not vdir.is_dir():
         return None
-    prefix = f"{run_id}_"
-    candidates = [
+    # Точное имя ({run_id}.mp4) — приоритетнее (PW-E3 конверт),
+    # иначе префикс ({run_id}_*) — Grid sidecar.
+    exact = [
         p for p in vdir.iterdir()
         if p.is_file()
         and p.suffix.lower() in _VIDEO_EXTENSIONS
-        and p.name.startswith(prefix)
+        and p.name == f"{run_id}{p.suffix.lower()}"
     ]
-    if not candidates:
+    if exact:
+        exact.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+        return exact[0]
+    prefix = [
+        p for p in vdir.iterdir()
+        if p.is_file()
+        and p.suffix.lower() in _VIDEO_EXTENSIONS
+        and p.name.startswith(f"{run_id}_")
+    ]
+    if not prefix:
         return None
     # Новейший при нескольких (re-run)
-    candidates.sort(key=lambda p: p.stat().st_mtime, reverse=True)
-    return candidates[0]
+    prefix.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    return prefix[0]
 
 
 def video_content_type(path: Path) -> str:

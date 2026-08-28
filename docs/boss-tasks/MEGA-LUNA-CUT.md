@@ -109,12 +109,12 @@ XML-генератор pipeline job.
 API: build trigger, status, logs.
 Приёмка: `test_execution_jenkins.py` → 6+ тестов.
 
-### COS-L9 — CapabilityBroker для ZAP (1h)
-Файл: `orchestrator/adapters/capability_zap.py`
-`start_zap_demon(run_id)` → ZAPSession.
+### COS-L9 — CapabilityBroker для scanner (1h)
+Файл: `orchestrator/adapters/capability_scanner.py`
+`start_scanner_demon(run_id)` → scannerSession.
 Прокси: настроить MITM на host.docker.innternal:port.
 Teardown: остановить, очистить контексты.
-Приёмка: `test_capability_zap.py` → 5+ тестов.
+Приёмка: `test_capability_scanner.py` → 5+ тестов.
 
 ### COS-L10 — CapabilityBroker для Fuzzer (1h)
 Файл: `orchestrator/adapters/capability_fuzzer.py`
@@ -202,7 +202,7 @@ Team scope внутри Domain.
 ### COS-L20 — End-to-end: Domain → Run → Evidence → ГОСТ-Акт (2h)
 Файл: `orchestrator/tests/test_e2e_cosmo.py`
 Сценарий: создать Domain → создать App → скомпилировать Plan → запустить Run → пройти Gates → собрать Evidence → сгенерировать Акт.
-Мок: ForgeAdapter, ExecutionAdapter, ZAP, Playwright.
+Мок: ForgeAdapter, ExecutionAdapter, scanner, Playwright.
 Приёмка: сценарий проходит без ошибок. 5+ тестов.
 
 ---

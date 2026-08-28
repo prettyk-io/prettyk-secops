@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import {
   Copy,
-  Zap,
+  scanner,
   Rocket,
   Check,
   Settings,
@@ -90,7 +90,7 @@ export function ControlsVault({
             gap: 8,
           }}
         >
-          <Zap className="size-4" /> Active Fuzz Engine
+          <scanner className="size-4" /> Active Fuzz Engine
         </button>
       ),
       code: '<button style={{ background: "linear-gradient(135deg, #38bdf8 0%, #7a1fa2 50%, #522e90 100%)" }}>Active Fuzz</button>',
@@ -339,7 +339,7 @@ export function ControlsVault({
           <div className="flex items-center justify-between bg-card/60 p-3 rounded-lg border border-border/40">
             <div>
               <span className="text-xs font-semibold text-foreground block">
-                ZAP Demon Proxy
+                scanner Demon Proxy
               </span>
               <span className="text-[10px] text-muted-foreground">Background HTTP interceptor</span>
             </div>

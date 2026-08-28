@@ -35,7 +35,7 @@
     {
       "id": "lab-stack",
       "label": "Local Lab & SecOps Stack",
-      "subtitle": "Docker Compose, ZAP, Allure, Dojo, Juice Shop",
+      "subtitle": "Docker Compose, scanner, Allure, Dojo, Juice Shop",
       "level": "landscape",
       "status": "infrastructure",
       "lenses": ["architecture", "runtime"],
@@ -118,7 +118,7 @@
     {
       "id": "execution-plane",
       "label": "Execution Plane & Fuzzer",
-      "subtitle": "Playwright Core, ZAP Active Scanner, Fast Fuzzer",
+      "subtitle": "Playwright Core, scanner Active Scanner, Fast Fuzzer",
       "level": "system",
       "parent": "prettyk-core",
       "status": "hybrid_mock",
@@ -181,8 +181,8 @@
     },
 
     {
-      "id": "zap-demon",
-      "label": "ZAP Demon API",
+      "id": "scanner-demon",
+      "label": "scanner Demon API",
       "subtitle": "Active Scanner, прокси :8080",
       "level": "system",
       "parent": "lab-stack",
@@ -347,7 +347,7 @@
     { "id": "e-cdp-browserpanel", "source": "browser-cdp", "target": "browser-panel", "type": "dependency", "lenses": ["architecture"] },
     { "id": "e-cdp-editorstage", "source": "browser-cdp", "target": "editor-browser-stage", "type": "dependency", "lenses": ["architecture"] },
     { "id": "e-exec-telemetry", "source": "execution-plane", "target": "telemetry-bridge", "type": "data_stream", "lenses": ["architecture", "runtime", "flow"] },
-    { "id": "e-lab-zap", "source": "lab-stack", "target": "zap-demon", "type": "dependency", "lenses": ["runtime"] },
+    { "id": "e-lab-scanner", "source": "lab-stack", "target": "scanner-demon", "type": "dependency", "lenses": ["runtime"] },
     { "id": "e-lab-allure", "source": "lab-stack", "target": "allure3", "type": "dependency", "lenses": ["runtime"] },
     { "id": "e-lab-dojo", "source": "lab-stack", "target": "defectdojo", "type": "dependency", "lenses": ["runtime"] },
     { "id": "e-lab-juice", "source": "lab-stack", "target": "juice-shop", "type": "dependency", "lenses": ["runtime", "flow"] },

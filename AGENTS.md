@@ -50,7 +50,7 @@ Explorer icons: rule [`.opencode/rules/explorer-theme-icons.mdc`](.opencode/rule
 
 Канон: global skill `prettyk-lab` · rule [`.opencode/rules/stand-lab-ops.mdc`](.opencode/rules/stand-lab-ops.mdc) · [`docs/stand.md`](docs/stand.md).
 
-- **Стартуй всё** → обязательный compose (Grid/allure3-secops/ZAP **demon**/Juice) + ensure UI + Live idle.
+- **Стартуй всё** → обязательный compose (Grid/allure3-secops/scanner **demon**/Juice) + ensure UI + Live idle.
 - **Почисти и стартуй** → allure3-secops + Live (+ Dojo hint) → старт. Не prod.
 - **После правок FE:** playground restart если Python API; фронт — ensure с телом формы.
 - В ответе после «подними» — пульты **автоматом** (в т.ч. Webswing URL):
@@ -64,7 +64,7 @@ KDT Live
 http://127.0.0.1:8767/
 Editor
 http://localhost:5173/
-ZAP demon API
+scanner demon API
 http://127.0.0.1:8080/
 ```
 

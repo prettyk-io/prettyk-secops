@@ -1,5 +1,5 @@
-﻿"""
-Адаптер для OWASP ZAP API.
+"""
+Адаптер для OWASP scanner API.
 """
 from utils.env_dual import pk_env
 import json
@@ -9,42 +9,42 @@ import time
 from pathlib import Path
 
 import requests
-from zapv2 import ZAPv2
-from core.errors import WiredError, ZapApiError
-from utils.paths import RUNS_DIR, zap_report_path
+from zapv2 import zapv2
+from core.errors import WiredError, scannerApiError
+from utils.paths import RUNS_DIR, scanner_report_path
 from .base_adapter import BaseAdapter
-from utils.reporter import attach_zap_html, coerce_attach_flag
+from utils.reporter import attach_scanner_html, coerce_attach_flag
 
 logger = logging.getLogger("orchestrator")
 
 # STAB-2: zapv2 session.request/urlopen без timeout → hang. Env переопределяет.
-DEFAULT_ZAP_API_TIMEOUT_SEC = 60.0
-# Host reports/runs mounted in ZAP container (docker-compose.zap.yml).
-DEFAULT_ZAP_HAR_CONTAINER_ROOT = "/zap/wrk/pk-runs"
+DEFAULT_scanner_API_TIMEOUT_SEC = 60.0
+# Host reports/runs mounted in scanner container (docker-compose.scanner.yml).
+DEFAULT_scanner_HAR_CONTAINER_ROOT = "/scanner/wrk/pk-runs"
 
 
-def zap_api_timeout_seconds() -> float:
-    raw = (pk_env("ZAP_API_TIMEOUT") or "").strip()
+def scanner_api_timeout_seconds() -> float:
+    raw = (pk_env("SCANNER_API_TIMEOUT") or "").strip()
     if not raw:
-        return DEFAULT_ZAP_API_TIMEOUT_SEC
+        return DEFAULT_scanner_API_TIMEOUT_SEC
     try:
         return max(1.0, float(raw))
     except (TypeError, ValueError):
-        return DEFAULT_ZAP_API_TIMEOUT_SEC
+        return DEFAULT_scanner_API_TIMEOUT_SEC
 
 
 def har_sequence_live_enabled() -> bool:
-    """IMP-HAR-4: live ZAP importHar + sequence activeScan (opt-in)."""
+    """IMP-HAR-4: live scanner importHar + sequence activeScan (opt-in)."""
     raw = (pk_env("HAR_SEQUENCE_LIVE") or "").strip().lower()
     return raw in {"1", "true", "yes", "on"}
 
 
-def zap_har_file_for_api(host_path: str) -> str:
+def scanner_har_file_for_api(host_path: str) -> str:
     """
-    Map host HAR path under reports/runs to the path ZAP Docker sees.
+    Map host HAR path under reports/runs to the path scanner Docker sees.
 
-    Env ``PK_ZAP_HAR_ROOT`` overrides container mount root (default
-    ``/zap/wrk/pk-runs``). Paths outside RUNS_DIR are returned unchanged.
+    Env ``PK_SCANNER_HAR_ROOT`` overrides container mount root (default
+    ``/scanner/wrk/pk-runs``). Paths outside RUNS_DIR are returned unchanged.
     """
     raw = (host_path or "").strip()
     if not raw:
@@ -57,13 +57,13 @@ def zap_har_file_for_api(host_path: str) -> str:
     if host == runs_root or host.startswith(runs_root + os.sep):
         rel = os.path.relpath(host, runs_root).replace("\\", "/")
         container_root = (
-            pk_env("ZAP_HAR_ROOT") or DEFAULT_ZAP_HAR_CONTAINER_ROOT
+            pk_env("SCANNER_HAR_ROOT") or DEFAULT_scanner_HAR_CONTAINER_ROOT
         ).rstrip("/")
         return f"{container_root}/{rel}"
     return host
 
 
-class ZapAdapter(BaseAdapter):
+class ScannerAdapter(BaseAdapter):
     def __init__(
         self,
         host="127.0.0.1",
@@ -77,13 +77,13 @@ class ZapAdapter(BaseAdapter):
         self.port = port
         self.api_key = api_key
         self.context_name = None
-        self._zap = None
+        self._scanner = None
         self._connected = False
         self.base_url = (base_url or "").strip()
         self.allowed_extra_domains = (allowed_extra_domains or "").strip()
-        self._api_timeout = zap_api_timeout_seconds()
-        self._run_manifest = None
-        self._manifest_dir = None
+        self._api_timeout = scanner_api_timeout_seconds()
+        self._active_run_wired = None
+        self._wired_dir = None
 
         self.spider_timeout = 10
         self.ajax_spider_timeout = 15
@@ -113,18 +113,18 @@ class ZapAdapter(BaseAdapter):
         return bool(default)
 
     @staticmethod
-    def _install_api_timeouts(zap, timeout: float) -> None:
+    def _install_api_timeouts(scanner, timeout: float) -> None:
         """Подставить timeout в zapv2._request_api / urlopen (без форка пакета)."""
-        proxies = zap._ZAPv2__proxies
-        apikey = zap._ZAPv2__apikey
-        validate = getattr(zap, "_ZAPv2__validate_status_code", False)
+        proxies = scanner._zapv2__proxies
+        apikey = scanner._zapv2__apikey
+        validate = getattr(scanner, "_zapv2__validate_status_code", False)
 
         def _request_api(url, query=None, method="GET", body=None):
-            if not url.startswith("http://zap/"):
-                raise ValueError("A non ZAP API url was specified " + url)
+            if not url.startswith("http://scanner/"):
+                raise ValueError("A non scanner API url was specified " + url)
             with requests.Session() as session:
                 if apikey is not None:
-                    session.headers["X-ZAP-API-Key"] = apikey
+                    session.headers["X-scanner-API-Key"] = apikey
                 response = session.request(
                     method,
                     url,
@@ -135,14 +135,14 @@ class ZapAdapter(BaseAdapter):
                     timeout=timeout,
                 )
             if validate and 300 <= response.status_code < 500:
-                raise ZapApiError(
-                    "Non-successful status code returned from ZAP, which indicates "
+                raise scannerApiError(
+                    "Non-successful status code returned from scanner, which indicates "
                     f"a bad request: {response.status_code} response: {response.text}"
                 )
             if validate and response.status_code >= 500:
-                raise ZapApiError(
-                    "Non-successful status code returned from ZAP, which indicates "
-                    f"a ZAP internal error: {response.status_code} response: {response.text}"
+                raise scannerApiError(
+                    "Non-successful status code returned from scanner, which indicates "
+                    f"a scanner internal error: {response.status_code} response: {response.text}"
                 )
             return response
 
@@ -152,41 +152,41 @@ class ZapAdapter(BaseAdapter):
             kwargs.setdefault("verify", False)
             return requests.get(url, *args, **kwargs).text
 
-        zap._request_api = _request_api
-        zap.urlopen = _urlopen
+        scanner._request_api = _request_api
+        scanner.urlopen = _urlopen
 
     def _ensure_connected(self):
         if self._connected:
             return
-        if self._zap is None:
+        if self._scanner is None:
             api = f"http://{self.host}:{self.port}"
-            # zapv2: API-вызовы идут через proxies на сам ZAP (не системный proxy ОС).
-            self._zap = ZAPv2(
+            # zapv2: API-вызовы идут через proxies на сам scanner (не системный proxy ОС).
+            self._scanner = zapv2(
                 apikey=self.api_key,
                 proxies={"http": api, "https": api},
             )
-            self._api_timeout = zap_api_timeout_seconds()
-            self._install_api_timeouts(self._zap, self._api_timeout)
-            logger.debug("ZAP API client timeout=%ss", self._api_timeout)
+            self._api_timeout = scanner_api_timeout_seconds()
+            self._install_api_timeouts(self._scanner, self._api_timeout)
+            logger.debug("scanner API client timeout=%ss", self._api_timeout)
         try:
-            self._zap.core.version
+            self._scanner.core.version
             self._connected = True
-            logger.info(f"Connected to ZAP at {self.host}:{self.port}")
+            logger.info(f"Connected to scanner at {self.host}:{self.port}")
         except Exception as e:
-            logger.error(f"Failed to connect to ZAP: {e}")
+            logger.error(f"Failed to connect to scanner: {e}")
             raise
 
     # ========== LOCAL SERVERS (Network add-on) ==========
 
     def add_local_server(self, port, address="0.0.0.0"):
         """
-        Поднимает дополнительный Local Server ZAP (Network API addLocalServer)
+        Поднимает дополнительный Local Server scanner (Network API addLocalServer)
         с API и Proxy на указанном порту.
 
         Main-порт раннера (по умолчанию 8080, для zapv2) не меняется.
         Штатный browser proxy — отдельный порт (по умолчанию 8099).
 
-        Keyword: zap|add_local_server|<port>[|<address>]
+        Keyword: scanner|add_local_server|<port>[|<address>]
         """
         self._ensure_connected()
         port = int(port)
@@ -198,21 +198,21 @@ class ZapAdapter(BaseAdapter):
             "proxy": "true",
         }
         try:
-            network = getattr(self._zap, "network", None)
+            network = getattr(self._scanner, "network", None)
             if network is not None and hasattr(network, "add_local_server"):
                 result = network.add_local_server(**params)
             else:
                 from urllib.parse import urlencode
 
-                result = self._zap.urlopen(
-                    f"http://zap/JSON/network/action/addLocalServer/?{urlencode(params)}"
+                result = self._scanner.urlopen(
+                    f"http://scanner/JSON/network/action/addLocalServer/?{urlencode(params)}"
                 )
         except Exception as e:
             # Повторный прогон / уже поднятый слушатель — не валим старт.
             msg = str(e).lower()
             if "already" in msg or "exist" in msg or "in use" in msg:
                 logger.warning(
-                    "ZAP local server %s:%s already present (%s); continue",
+                    "scanner local server %s:%s already present (%s); continue",
                     address,
                     port,
                     e,
@@ -225,20 +225,20 @@ class ZapAdapter(BaseAdapter):
                 e,
             )
             raise
-        logger.info("ZAP local server added: %s:%s (api+proxy)", address, port)
+        logger.info("scanner local server added: %s:%s (api+proxy)", address, port)
         return {"address": address, "port": port, "api": True, "proxy": True, "result": result}
 
     # ========== УПРАВЛЕНИЕ КОНТЕКСТОМ ==========
 
     def create_context(self, context_name, description=""):
         self._ensure_connected()
-        self._zap.context.new_context(context_name)
+        self._scanner.context.new_context(context_name)
         self.context_name = context_name
         return context_name
 
     def delete_context(self, context_name):
         self._ensure_connected()
-        self._zap.context.remove_context(context_name)
+        self._scanner.context.remove_context(context_name)
         if self.context_name == context_name:
             self.context_name = None
 
@@ -253,7 +253,7 @@ class ZapAdapter(BaseAdapter):
 
     def list_contexts(self):
         self._ensure_connected()
-        contexts = self._zap.context.context_list
+        contexts = self._scanner.context.context_list
         if contexts and isinstance(contexts[0], dict):
             return [ctx.get("name") for ctx in contexts]
         else:
@@ -261,7 +261,7 @@ class ZapAdapter(BaseAdapter):
 
     def archive_context(self, context_name):
         self._ensure_connected()
-        self._zap.context.remove_context(context_name)
+        self._scanner.context.remove_context(context_name)
         if self.context_name == context_name:
             self.context_name = None
         logger.info(f"Context '{context_name}' archived (removed)")
@@ -314,7 +314,7 @@ class ZapAdapter(BaseAdapter):
                 )
             regexes = self.domains_csv_to_include_regexes(base)
             for rx in regexes:
-                self._zap.context.include_in_context(context_name, rx)
+                self._scanner.context.include_in_context(context_name, rx)
             logger.info(
                 "Context %s include ← base_url (%s regex)",
                 context_name,
@@ -330,11 +330,11 @@ class ZapAdapter(BaseAdapter):
 
         if not self._context_include_allowed(raw):
             raise WiredError(ALLOWED_URL_DENY_MSG)
-        self._zap.context.include_in_context(context_name, raw)
+        self._scanner.context.include_in_context(context_name, raw)
 
     def set_context_exclude(self, context_name, regex):
         self._ensure_connected()
-        self._zap.context.exclude_from_context(context_name, regex)
+        self._scanner.context.exclude_from_context(context_name, regex)
 
     @staticmethod
     def domains_csv_to_include_regexes(domains_csv: str) -> list:
@@ -384,7 +384,7 @@ class ZapAdapter(BaseAdapter):
         regexes = self.domains_csv_to_include_regexes(domains_csv)
         self._ensure_connected()
         for rx in regexes:
-            self._zap.context.include_in_context(context_name, rx)
+            self._scanner.context.include_in_context(context_name, rx)
         logger.info(
             "Applied %s domain include(s) to context %s",
             len(regexes),
@@ -394,20 +394,20 @@ class ZapAdapter(BaseAdapter):
 
     def set_context_auth(self, context_name, login_url, login_post_data, logout_url=None, auth_method="formBasedAuthentication"):
         self._ensure_connected()
-        self._zap.authentication.set_authentication_method(
+        self._scanner.authentication.set_authentication_method(
             context_name,
             auth_method,
             f"loginUrl={login_url}&loginRequestData={login_post_data}"
         )
         if logout_url:
-            self._zap.authentication.set_logout_url(context_name, logout_url)
+            self._scanner.authentication.set_logout_url(context_name, logout_url)
 
     def set_http_authentication(self, context_name, hostname, realm="", port="80"):
         """Context auth method: HTTP Basic (Authentication API)."""
         self._ensure_connected()
         context_id = self._get_context_id(context_name)
         params = f"hostname={hostname}&realm={realm}&port={port}"
-        self._zap.authentication.set_authentication_method(
+        self._scanner.authentication.set_authentication_method(
             context_id, "httpAuthentication", params
         )
         logger.info(
@@ -426,7 +426,7 @@ class ZapAdapter(BaseAdapter):
     ):
         """
         Authentication Helper: browser-based login (G-36).
-        Требует add-on Authentication Helper в ZAP.
+        Требует add-on Authentication Helper в scanner.
         """
         self._ensure_connected()
         context_id = self._get_context_id(context_name)
@@ -435,7 +435,7 @@ class ZapAdapter(BaseAdapter):
             f"&loginPageWait={login_page_wait}"
             f"&browserId={browser_id}"
         )
-        self._zap.authentication.set_authentication_method(
+        self._scanner.authentication.set_authentication_method(
             context_id, "browserBasedAuthentication", params
         )
         logger.info(
@@ -451,11 +451,11 @@ class ZapAdapter(BaseAdapter):
         context_id = self._get_context_id(context_name)
         # zapv2: set_authentication_verification(contextid, method, …)
         try:
-            self._zap.authentication.set_authentication_verification(
+            self._scanner.authentication.set_authentication_verification(
                 context_id, "autodetect"
             )
         except TypeError:
-            self._zap.authentication.set_authentication_verification(
+            self._scanner.authentication.set_authentication_verification(
                 contextid=context_id,
                 method="autodetect",
             )
@@ -465,11 +465,11 @@ class ZapAdapter(BaseAdapter):
         self._ensure_connected()
         context_id = self._get_context_id(context_name)
         try:
-            self._zap.sessionManagement.set_session_management_method(
+            self._scanner.sessionManagement.set_session_management_method(
                 context_id, "autodetect", ""
             )
         except TypeError:
-            self._zap.sessionManagement.set_session_management_method(
+            self._scanner.sessionManagement.set_session_management_method(
                 contextid=context_id,
                 methodname="autodetect",
                 methodconfigparams="",
@@ -528,10 +528,10 @@ class ZapAdapter(BaseAdapter):
             return {}
         return json.loads(str(auth_details_json))
 
-    def _apply_manifest_auth_compose(
+    def _apply_wired_auth_compose(
         self, context_name, apps, resolve_notes, base_url=""
     ):
-        from core.auth_bootstrap import apply_zap_auth
+        from core.auth_bootstrap import apply_scanner_auth
 
         merged = {
             "applied": False,
@@ -542,8 +542,8 @@ class ZapAdapter(BaseAdapter):
         }
         any_ok = False
         for app in apps:
-            one = apply_zap_auth(
-                zap_adapter=self,
+            one = apply_scanner_auth(
+                scanner_adapter=self,
                 context_name=context_name,
                 auth_type=app.get("auth_type") or "",
                 auth_details=dict(app.get("auth_details") or {}),
@@ -563,7 +563,7 @@ class ZapAdapter(BaseAdapter):
                 any_ok = True
         merged["applied"] = any_ok
         if not any_ok and not merged["notes"]:
-            merged["notes"].append("compose: ни один ZAP-профиль не применён")
+            merged["notes"].append("compose: ни один scanner-профиль не применён")
         soft = any("только шагами" in n for n in merged["notes"])
         err = next((p.get("error") for p in merged["profiles"] if p.get("error")), None)
         if err and not any_ok and not soft:
@@ -572,7 +572,7 @@ class ZapAdapter(BaseAdapter):
             )
         return merged
 
-    def apply_manifest_auth(
+    def apply_wired_auth(
         self,
         context_name,
         auth_type="",
@@ -583,20 +583,20 @@ class ZapAdapter(BaseAdapter):
         auth_resolve_notes_json="",
     ):
         """
-        Явный шаг G-36: security_configuration / auth-модуль → ZAP.
-        MethodId: ``ZAP ПрименитьAuth <context> [module_id]``.
+        Явный шаг G-36: security_configuration / auth-модуль → scanner.
+        MethodId: ``scanner ПрименитьAuth <context> [module_id]``.
         Пустые auth_* обычно дополняет Controller (в т.ч. CSV/compose resolve).
         """
-        from core.auth_bootstrap import apply_zap_auth
+        from core.auth_bootstrap import apply_scanner_auth
 
-        del module_id  # enrichment in Controller._enrich_zap_manifest_params
+        del module_id  # enrichment in Controller._enrich_scanner_manifest_params
         self._ensure_connected()
         self._ensure_auth_context(context_name, base_url)
 
         resolve_notes = self._parse_auth_resolve_notes(auth_resolve_notes_json)
         apps = self._parse_auth_applications(auth_applications_json)
         if apps:
-            return self._apply_manifest_auth_compose(
+            return self._apply_wired_auth_compose(
                 context_name, apps, resolve_notes, base_url=base_url
             )
 
@@ -608,8 +608,8 @@ class ZapAdapter(BaseAdapter):
                 "context_name": context_name,
             }
 
-        result = apply_zap_auth(
-            zap_adapter=self,
+        result = apply_scanner_auth(
+            scanner_adapter=self,
             context_name=context_name,
             auth_type=auth_type,
             auth_details=self._auth_details_from_json(auth_details_json),
@@ -626,7 +626,7 @@ class ZapAdapter(BaseAdapter):
         return result
 
     @staticmethod
-    def _af_plan_overrides_from_manifest(wired, base_url, scan_policy):
+    def _af_plan_overrides_from_make_wired(wired, base_url, scan_policy):
         sec = wired.get("security_configuration") or {}
         infra = wired.get("infrastructure") or {}
         if not (base_url or "").strip():
@@ -649,7 +649,7 @@ class ZapAdapter(BaseAdapter):
         base_url="",
         context_name="pk_ctx",
         scan_policy="custom_policy",
-        manifest_json="",
+        wired_json="",
         wired_json="",
     ):
         """
@@ -660,19 +660,19 @@ class ZapAdapter(BaseAdapter):
 
         path = Path(str(output_path))
         wired = None
-        raw_json = manifest_json or wired_json
+        raw_json = wired_json or wired_json
         if (raw_json or "").strip():
             try:
                 wired = json.loads(raw_json)
             except json.JSONDecodeError as exc:
-                raise WiredError(f"СгенерироватьПлан: manifest_json: {exc}") from exc
-            base_url, scan_policy = self._af_plan_overrides_from_manifest(
+                raise WiredError(f"СгенерироватьПлан: wired_json: {exc}") from exc
+            base_url, scan_policy = self._af_plan_overrides_from_make_wired(
                 wired, base_url, scan_policy
             )
 
         if wired is None and not (base_url or "").strip():
             raise WiredError(
-                "СгенерироватьПлан: нужен base_url (или infrastructure / manifest_json)"
+                "СгенерироватьПлан: нужен base_url (или infrastructure / wired_json)"
             )
         out = write_af_plan(
             path,
@@ -693,7 +693,7 @@ class ZapAdapter(BaseAdapter):
         Работает как со списком словарей, так и со списком строк.
         """
         self._ensure_connected()
-        contexts = self._zap.context.context_list
+        contexts = self._scanner.context.context_list
 
         if contexts and isinstance(contexts[0], dict):
             for ctx in contexts:
@@ -719,7 +719,7 @@ class ZapAdapter(BaseAdapter):
                 raise ValueError(f"Context '{context_name}' not found")
         raise ValueError(f"Context '{context_name}' not found")
 
-    # ========== HTTP REQUEST THROUGH ZAP ==========
+    # ========== HTTP REQUEST THROUGH scanner ==========
 
     @staticmethod
     def _build_har_request(method, url, headers=None, body=None) -> dict:
@@ -746,17 +746,17 @@ class ZapAdapter(BaseAdapter):
                 response_har = json.loads(raw)
             except json.JSONDecodeError as exc:
                 raise WiredError(
-                    f"ZAP sendHarRequest: не JSON ({exc}): {raw[:200]!r}"
+                    f"scanner sendHarRequest: не JSON ({exc}): {raw[:200]!r}"
                 ) from exc
         elif isinstance(raw, dict):
             response_har = raw
         else:
             raise WiredError(
-                f"ZAP sendHarRequest: неожиданный тип {type(raw).__name__}"
+                f"scanner sendHarRequest: неожиданный тип {type(raw).__name__}"
             )
         if isinstance(response_har, dict) and response_har.get("code"):
             raise WiredError(
-                f"ZAP sendHarRequest: {response_har.get('code')} "
+                f"scanner sendHarRequest: {response_har.get('code')} "
                 f"{response_har.get('message') or ''}".strip()
             )
         return response_har
@@ -780,23 +780,23 @@ class ZapAdapter(BaseAdapter):
                 pass
         return status, resp_headers, body_text
 
-    def zap_http_request(self, method, url, headers=None, body=None, follow_redirects=True):
-        """HTTP через ZAP core.sendHarRequest (HAR entry JSON).
+    def scanner_http_request(self, method, url, headers=None, body=None, follow_redirects=True):
+        """HTTP через scanner core.sendHarRequest (HAR entry JSON).
 
-        ZAP 2.17 ждёт строку JSON ``{"request":{...}}``, не плоский dict.
+        scanner 2.17 ждёт строку JSON ``{"request":{...}}``, не плоский dict.
         Ответ — HAR log; тело часто ``encoding=base64``.
         """
         self._ensure_connected()
         request = self._build_har_request(method, url, headers=headers, body=body)
         follow = "true" if follow_redirects else "false"
-        raw = self._zap.core.send_har_request(json.dumps({"request": request}), follow)
+        raw = self._scanner.core.send_har_request(json.dumps({"request": request}), follow)
         response_har = self._parse_send_har_payload(raw)
         try:
             entry = response_har["log"]["entries"][0]
             resp = entry["response"]
         except (KeyError, IndexError, TypeError) as exc:
             raise WiredError(
-                f"ZAP sendHarRequest: нет response в HAR: {str(response_har)[:200]}"
+                f"scanner sendHarRequest: нет response в HAR: {str(response_har)[:200]}"
             ) from exc
         status, resp_headers, body_text = self._decode_har_response_body(resp)
         return {
@@ -806,9 +806,9 @@ class ZapAdapter(BaseAdapter):
             "raw": response_har,
         }
 
-    def zap_http_raw_request(self, raw_request, follow_redirects=True):
+    def scanner_http_raw_request(self, raw_request, follow_redirects=True):
         self._ensure_connected()
-        response_raw = self._zap.core.send_request(raw_request, follow_redirects)
+        response_raw = self._scanner.core.send_request(raw_request, follow_redirects)
         lines = response_raw.splitlines()
         status_line = lines[0] if lines else ""
         headers = {}
@@ -834,25 +834,25 @@ class ZapAdapter(BaseAdapter):
     # ========== HAR IMPORT ==========
 
     def import_har_sequence(self, name, har_file_path, assert_code=True, assert_length=None):
-        """Импорт последовательности HAR: путь в API ZAP, без полной загрузки файла в память."""
+        """Импорт последовательности HAR: путь в API scanner, без полной загрузки файла в память."""
         self._ensure_connected()
         try:
             if not os.path.isfile(har_file_path):
                 raise FileNotFoundError(har_file_path)
-            zap_path = zap_har_file_for_api(har_file_path)
+            scanner_path = scanner_har_file_for_api(har_file_path)
             payload = {
                 "name": name,
-                "harFile": zap_path,
+                "harFile": scanner_path,
                 "assertCode": "true" if assert_code else "false",
             }
             if assert_length is not None:
                 payload["assertLength"] = str(assert_length)
-            self._zap.urlopen("https://zap/json/sequence/action/importHar/", data=payload)
+            self._scanner.urlopen("https://scanner/json/sequence/action/importHar/", data=payload)
             logger.info(
-                "Imported HAR sequence: %s (host=%s zap=%s)",
+                "Imported HAR sequence: %s (host=%s scanner=%s)",
                 name,
                 har_file_path,
-                zap_path,
+                scanner_path,
             )
             return True
         except Exception as e:
@@ -888,8 +888,8 @@ class ZapAdapter(BaseAdapter):
             }
             if context_name:
                 payload["contextName"] = ctx
-            self._zap.urlopen(
-                "https://zap/json/sequence/action/activeScan/", data=payload
+            self._scanner.urlopen(
+                "https://scanner/json/sequence/action/activeScan/", data=payload
             )
             logger.info(
                 "Sequence active scan started via API: %s policy=%s",
@@ -965,19 +965,19 @@ class ZapAdapter(BaseAdapter):
 
     def _set_spider_logout_avoidance(self, enabled: bool) -> None:
         try:
-            self._zap.spider.set_option_logout_avoidance(enabled)
+            self._scanner.spider.set_option_logout_avoidance(enabled)
         except AttributeError:
-            self._zap.urlopen(
-                "https://zap/JSON/spider/action/setOptionLogoutAvoidance/",
+            self._scanner.urlopen(
+                "https://scanner/JSON/spider/action/setOptionLogoutAvoidance/",
                 data={"Boolean": "true" if enabled else "false"},
             )
 
     def _set_ajax_logout_avoidance(self, enabled: bool) -> None:
         try:
-            self._zap.ajaxSpider.set_option_logout_avoidance(enabled)
+            self._scanner.ajaxSpider.set_option_logout_avoidance(enabled)
         except AttributeError:
-            self._zap.urlopen(
-                "https://zap/JSON/ajaxSpider/action/setOptionLogoutAvoidance/",
+            self._scanner.urlopen(
+                "https://scanner/JSON/ajaxSpider/action/setOptionLogoutAvoidance/",
                 data={"Boolean": "true" if enabled else "false"},
             )
 
@@ -986,9 +986,9 @@ class ZapAdapter(BaseAdapter):
             return
         self.set_logout_avoidance(logout_avoidance, spider=True, ajax=True)
 
-    def _probe_zap_addon(self, component_names):
+    def _probe_scanner_addon(self, component_names):
         """
-        Честный probe ZAP add-on API.
+        Честный probe scanner add-on API.
         → {"available": bool, "component": str|None, "notes": [str]}
         """
         names = [str(n).strip() for n in (component_names or []) if str(n).strip()]
@@ -999,23 +999,23 @@ class ZapAdapter(BaseAdapter):
             return {
                 "available": False,
                 "component": names[0] if names else None,
-                "notes": ["PK_API_LAB_DRY — ZAP addon probe skipped"],
+                "notes": ["PK_API_LAB_DRY — scanner addon probe skipped"],
             }
         self._ensure_connected()
         for name in names:
             for path in (
-                f"https://zap/JSON/{name}/",
-                f"https://zap/json/{name}/",
-                f"https://zap/JSON/{name}/view/",
-                f"https://zap/json/{name}/view/",
+                f"https://scanner/JSON/{name}/",
+                f"https://scanner/json/{name}/",
+                f"https://scanner/JSON/{name}/view/",
+                f"https://scanner/json/{name}/view/",
             ):
                 try:
-                    self._zap.urlopen(path)
+                    self._scanner.urlopen(path)
                     return {"available": True, "component": name, "notes": notes}
                 except Exception as exc:  # noqa: BLE001 — probe
                     notes.append(f"{path}: {exc}")
             # zapv2 attribute (graphql / grpc)
-            attr = getattr(self._zap, name, None)
+            attr = getattr(self._scanner, name, None)
             if attr is not None:
                 return {
                     "available": True,
@@ -1027,18 +1027,48 @@ class ZapAdapter(BaseAdapter):
             "component": names[0] if names else None,
             "notes": notes
             + [
-                f"API дополнения ZAP недоступен ({', '.join(names)}) — "
-                "перечень операций в PK получен; импорт и скан в ZAP недоступны"
+                f"API дополнения scanner недоступен ({', '.join(names)}) — "
+                "перечень операций в PK получен; импорт и скан в scanner недоступны"
             ],
         }
 
-    def bind_run_wired(self, wired, manifest_dir=None) -> None:
-        """Передать Manifest прогона (+ dir) для модулей OpenAPI/GraphQL/Цепь."""
-        self._run_manifest = wired
-        if manifest_dir is not None:
-            self._manifest_dir = Path(manifest_dir)
-        elif getattr(self, "_manifest_dir", None) is None:
-            self._manifest_dir = None
+    @property
+    def _run_make_wired(self):
+        return getattr(self, "_active_run_wired", None)
+
+    @_run_wired.setter
+    def _run_make_wired(self, val):
+        self._active_run_wired = val
+
+    @property
+    def _run_wired(self):
+        return getattr(self, "_active_run_wired", None)
+
+    @_run_wired.setter
+    def _run_wired(self, val):
+        self._active_run_wired = val
+
+    @property
+    def _wired_dir(self):
+        return getattr(self, "_active_wired_dir", None)
+
+    @_wired_dir.setter
+    def _wired_dir(self, val):
+        self._active_wired_dir = Path(val) if val is not None else None
+
+    @property
+    def _wired_dir(self):
+        return getattr(self, "_active_wired_dir", None)
+
+    @_wired_dir.setter
+    def _wired_dir(self, val):
+        self._active_wired_dir = Path(val) if val is not None else None
+
+    def bind_run_wired(self, wired, wired_dir=None) -> None:
+        """Передать Wired прогона (+ dir) для модулей OpenAPI/GraphQL/Цепь."""
+        self._active_run_wired = wired
+        if wired_dir is not None:
+            self._active_wired_dir = Path(wired_dir)
 
     def prepare_and_import_chain(self, module_id, *, verb: str = "Цепь"):
         """
@@ -1050,11 +1080,10 @@ class ZapAdapter(BaseAdapter):
         mid = str(module_id or "").strip()
         if not mid:
             raise WiredError(f"{verb}: пустой id модуля / har as")
-        manifest_dir = getattr(self, "_manifest_dir", None)
         resolved = resolve_chain_arg(
-            getattr(self, "_run_manifest", None),
+            getattr(self, "_run_wired", None),
             mid,
-            manifest_dir=manifest_dir,
+            wired_dir=getattr(self, "_wired_dir", None),
         )
         if not resolved.from_module and resolved.har_path is None and not resolved.chain_fields:
             raise WiredError(
@@ -1062,7 +1091,7 @@ class ZapAdapter(BaseAdapter):
             )
         har_path = prepare_chain_har(
             resolved,
-            manifest_dir=manifest_dir,
+            wired_dir=getattr(self, "_wired_dir", None),
             bindings=(
                 dict(resolved.chain_fields.get("bindings") or {})
                 if resolved.chain_fields
@@ -1128,11 +1157,11 @@ class ZapAdapter(BaseAdapter):
         from utils.chain_ops import ChainError, dry_run_preconditions
         from utils.chain_runtime import resolve_chain_arg
 
-        manifest_dir = getattr(self, "_manifest_dir", None)
+        wired_dir = getattr(self, "_wired_dir", None)
         resolved = resolve_chain_arg(
-            getattr(self, "_run_manifest", None),
+            getattr(self, "_run_wired", None),
             mid,
-            manifest_dir=manifest_dir,
+            wired_dir=wired_dir,
         )
         fields = dict(resolved.chain_fields or {})
         if not fields and resolved.har_path is not None:
@@ -1158,11 +1187,11 @@ class ZapAdapter(BaseAdapter):
                 "ПодготовитьЦепь: пустой setup HAR — "
                 + "; ".join(dry.get("notes") or [])
             )
-        return resolved, fields, dry, setup, manifest_dir
+        return resolved, fields, dry, setup, wired_dir
 
-    def _write_chain_setup_har(self, har_as: str, setup: str, manifest_dir):
-        if manifest_dir is not None:
-            path = Path(manifest_dir) / "resources" / f"{har_as}_setup.har"
+    def _write_chain_setup_har(self, har_as: str, setup: str, wired_dir):
+        if wired_dir is not None:
+            path = Path(wired_dir) / "resources" / f"{har_as}_setup.har"
         else:
             from utils.paths import ensure_runs_dir
 
@@ -1178,10 +1207,10 @@ class ZapAdapter(BaseAdapter):
         mid = str(module_id or "").strip()
         if not mid:
             raise WiredError("ПодготовитьЦепь: пустой id модуля / har as")
-        resolved, fields, dry, setup, manifest_dir = self._chain_prepare_fields(mid)
+        resolved, fields, dry, setup, wired_dir = self._chain_prepare_fields(mid)
         har_as = str(fields.get("har_as") or mid).strip() or mid
         seq = f"{resolved.sequence_name or har_as}_setup"
-        path = self._write_chain_setup_har(har_as, setup, manifest_dir)
+        path = self._write_chain_setup_har(har_as, setup, wired_dir)
         if not self.import_har_sequence(seq, str(path), assert_code=False):
             raise WiredError(
                 f"ПодготовитьЦепь: importHar не удался sequence={seq!r}"
@@ -1221,7 +1250,7 @@ class ZapAdapter(BaseAdapter):
     def _investigate_apply_har_auth(
         self, ephemeral: str, har_path, seed_url, notes: list
     ) -> bool:
-        from core.auth_bootstrap import apply_zap_auth
+        from core.auth_bootstrap import apply_scanner_auth
         from utils.chain_investigate import extract_auth_from_har
 
         auth_hint = extract_auth_from_har(Path(har_path))
@@ -1229,8 +1258,8 @@ class ZapAdapter(BaseAdapter):
         if not auth_hint.get("found"):
             notes.append("auth_skipped")
             return False
-        auth_res = apply_zap_auth(
-            zap_adapter=self,
+        auth_res = apply_scanner_auth(
+            scanner_adapter=self,
             context_name=ephemeral,
             auth_type=str(auth_hint.get("auth_type") or ""),
             auth_details=dict(auth_hint.get("auth_details") or {}),
@@ -1292,12 +1321,12 @@ class ZapAdapter(BaseAdapter):
             "notes": list(notes),
         }
         ev_path = write_investigate_evidence(
-            manifest_dir=getattr(self, "_manifest_dir", None),
+            wired_dir=getattr(self, "_wired_dir", None),
             module_id=mid,
             payload=evidence,
         )
         notes.append(
-            f"evidence {ev_path.name}" if ev_path is not None else "evidence_skip (no manifest_dir)"
+            f"evidence {ev_path.name}" if ev_path is not None else "evidence_skip (no wired_dir)"
         )
 
         try:
@@ -1403,7 +1432,7 @@ class ZapAdapter(BaseAdapter):
         from utils.api_module_runtime import inventory_openapi, resolve_openapi_arg
 
         resolved = resolve_openapi_arg(
-            getattr(self, "_run_manifest", None),
+            getattr(self, "_run_wired", None),
             str(spec_url_or_file or ""),
         )
         payload = inventory_openapi(resolved.spec)
@@ -1417,22 +1446,22 @@ class ZapAdapter(BaseAdapter):
 
     def import_openapi_spec(self, spec_url_or_file):
         """
-        Импорт OpenAPI в ZAP. Для идентификатора модуля — флаг zap_import
+        Импорт OpenAPI в scanner. Для идентификатора модуля — флаг scanner_import
         (принудительно: переменная окружения). PK_API_LAB_DRY=1 — только перечень
-        операций без вызова ZAP. Нет дополнения — False и заметки.
+        операций без вызова scanner. Нет дополнения — False и заметки.
         """
         from utils.api_import_lab import api_lab_dry
-        from utils.api_module_runtime import allow_zap_import, resolve_openapi_arg
+        from utils.api_module_runtime import allow_scanner_import, resolve_openapi_arg
 
         resolved = resolve_openapi_arg(
-            getattr(self, "_run_manifest", None),
+            getattr(self, "_run_wired", None),
             str(spec_url_or_file or ""),
         )
         spec = resolved.spec
         inventory = self.list_openapi_operations(spec_url_or_file)
         if resolved.from_module:
-            allowed, gate_notes = allow_zap_import(
-                module_flag=resolved.zap_import, openapi=True
+            allowed, gate_notes = allow_scanner_import(
+                module_flag=resolved.scanner_import, openapi=True
             )
             if not allowed:
                 self._last_openapi_import = {
@@ -1445,7 +1474,7 @@ class ZapAdapter(BaseAdapter):
                 logger.info("OpenAPI import skipped (module gate): %s", resolved.module_id)
                 return True
         if api_lab_dry():
-            logger.info("OpenAPI lab dry import (no ZAP): %s", spec)
+            logger.info("OpenAPI lab dry import (no scanner): %s", spec)
             self._last_openapi_import = {
                 "ok": True,
                 "dry": True,
@@ -1453,9 +1482,9 @@ class ZapAdapter(BaseAdapter):
                 "inventory": inventory[:120],
             }
             return True
-        probe = self._probe_zap_addon(["openapi"])
+        probe = self._probe_scanner_addon(["openapi"])
         if not probe["available"]:
-            logger.warning("OpenAPI ZAP import skipped: %s", "; ".join(probe["notes"][-3:]))
+            logger.warning("OpenAPI scanner import skipped: %s", "; ".join(probe["notes"][-3:]))
             self._last_openapi_import = {
                 "ok": False,
                 "dry": False,
@@ -1465,13 +1494,13 @@ class ZapAdapter(BaseAdapter):
             return False
         try:
             if str(spec).startswith("http"):
-                self._zap.urlopen(
-                    "https://zap/json/openapi/action/importUrl/",
+                self._scanner.urlopen(
+                    "https://scanner/json/openapi/action/importUrl/",
                     data={"url": spec},
                 )
             else:
-                self._zap.urlopen(
-                    "https://zap/json/openapi/action/importFile/",
+                self._scanner.urlopen(
+                    "https://scanner/json/openapi/action/importFile/",
                     data={"file": spec},
                 )
             logger.info("Imported OpenAPI spec: %s (%s)", spec, inventory[:80])
@@ -1491,18 +1520,18 @@ class ZapAdapter(BaseAdapter):
             return False
 
     def scan_openapi(self, context_name=None):
-        """Скан OpenAPI: имя контекста или идентификатор модуля (нужен zap_import)."""
+        """Скан OpenAPI: имя контекста или идентификатор модуля (нужен scanner_import)."""
         from utils.api_import_lab import api_lab_dry
-        from utils.api_module_runtime import allow_zap_scan, resolve_openapi_arg
+        from utils.api_module_runtime import allow_scanner_scan, resolve_openapi_arg
 
         arg = context_name
         resolved = resolve_openapi_arg(
-            getattr(self, "_run_manifest", None),
+            getattr(self, "_run_wired", None),
             str(arg or ""),
         )
         if resolved.from_module:
-            allowed, gate_notes = allow_zap_scan(
-                module_flag=resolved.zap_import,
+            allowed, gate_notes = allow_scanner_scan(
+                module_flag=resolved.scanner_import,
                 openapi=True,
                 from_module=True,
             )
@@ -1519,16 +1548,16 @@ class ZapAdapter(BaseAdapter):
             context = arg or self.context_name
 
         if api_lab_dry():
-            logger.info("OpenAPI lab dry scan skipped (no ZAP)")
+            logger.info("OpenAPI lab dry scan skipped (no scanner)")
             self._last_openapi_scan = {
                 "ok": True,
                 "dry": True,
                 "notes": list(resolved.notes) + ["PK_API_LAB_DRY"],
             }
             return True
-        probe = self._probe_zap_addon(["openapi"])
+        probe = self._probe_scanner_addon(["openapi"])
         if not probe["available"]:
-            logger.warning("OpenAPI ZAP scan skipped: %s", "; ".join(probe["notes"][-3:]))
+            logger.warning("OpenAPI scanner scan skipped: %s", "; ".join(probe["notes"][-3:]))
             self._last_openapi_scan = {
                 "ok": False,
                 "notes": list(resolved.notes) + probe["notes"],
@@ -1536,12 +1565,12 @@ class ZapAdapter(BaseAdapter):
             return False
         try:
             if context:
-                self._zap.urlopen(
-                    "https://zap/json/openapi/action/runScan/",
+                self._scanner.urlopen(
+                    "https://scanner/json/openapi/action/runScan/",
                     data={"context": context},
                 )
             else:
-                self._zap.urlopen("https://zap/json/openapi/action/runScan/")
+                self._scanner.urlopen("https://scanner/json/openapi/action/runScan/")
             logger.info("OpenAPI scan started")
             self._last_openapi_scan = {"ok": True, "notes": list(resolved.notes)}
             return True
@@ -1561,7 +1590,7 @@ class ZapAdapter(BaseAdapter):
         from utils.api_module_runtime import inventory_graphql, resolve_graphql_arg
 
         resolved = resolve_graphql_arg(
-            getattr(self, "_run_manifest", None),
+            getattr(self, "_run_wired", None),
             str(schema_url_or_file or ""),
         )
         payload = inventory_graphql(resolved.schema)
@@ -1577,7 +1606,7 @@ class ZapAdapter(BaseAdapter):
         endurl = (resolved.endpoint or "").strip()
         if endurl:
             return endurl
-        man = getattr(self, "_run_manifest", None)
+        man = getattr(self, "_run_wired", None)
         base = ""
         if man is not None and hasattr(man, "scan_base_url"):
             try:
@@ -1590,9 +1619,9 @@ class ZapAdapter(BaseAdapter):
             return base.rstrip("/") + "/graphql"
         return ""
 
-    def _zap_import_graphql(self, schema: str, endurl: str) -> None:
-        graphql = getattr(self._zap, "graphql", None)
-        # ZAPv2 GraphQL addon: import_url(endurl, url=…) / import_file(endurl, file)
+    def _scanner_import_graphql(self, schema: str, endurl: str) -> None:
+        graphql = getattr(self._scanner, "graphql", None)
+        # zapv2 GraphQL addon: import_url(endurl, url=…) / import_file(endurl, file)
         if graphql is not None and hasattr(graphql, "import_url"):
             if str(schema).startswith("http"):
                 graphql.import_url(endurl or schema, url=schema)
@@ -1614,30 +1643,30 @@ class ZapAdapter(BaseAdapter):
             graphql.import_schema(schema)
             return
         if str(schema).startswith("http"):
-            self._zap.urlopen(
-                "https://zap/json/graphql/action/importUrl/",
+            self._scanner.urlopen(
+                "https://scanner/json/graphql/action/importUrl/",
                 data={"url": schema, "endurl": endurl or schema},
             )
             return
-        self._zap.urlopen(
-            "https://zap/json/graphql/action/importFile/",
+        self._scanner.urlopen(
+            "https://scanner/json/graphql/action/importFile/",
             data={"file": schema, "endurl": endurl},
         )
 
     def import_graphql_schema(self, schema_url_or_file):
-        """Импорт GraphQL в ZAP; для идентификатора модуля нужен флаг zap_import."""
+        """Импорт GraphQL в scanner; для идентификатора модуля нужен флаг scanner_import."""
         from utils.api_import_lab import api_lab_dry
-        from utils.api_module_runtime import allow_zap_import, resolve_graphql_arg
+        from utils.api_module_runtime import allow_scanner_import, resolve_graphql_arg
 
         resolved = resolve_graphql_arg(
-            getattr(self, "_run_manifest", None),
+            getattr(self, "_run_wired", None),
             str(schema_url_or_file or ""),
         )
         schema = resolved.schema
         inventory = self.list_graphql_operations(schema_url_or_file)
         if resolved.from_module:
-            allowed, gate_notes = allow_zap_import(
-                module_flag=resolved.zap_import, openapi=False
+            allowed, gate_notes = allow_scanner_import(
+                module_flag=resolved.scanner_import, openapi=False
             )
             if not allowed:
                 self._last_graphql_import = {
@@ -1650,7 +1679,7 @@ class ZapAdapter(BaseAdapter):
                 logger.info("GraphQL import skipped (module gate): %s", resolved.module_id)
                 return True
         if api_lab_dry():
-            logger.info("GraphQL lab dry import (no ZAP): %s", schema)
+            logger.info("GraphQL lab dry import (no scanner): %s", schema)
             self._last_graphql_import = {
                 "ok": True,
                 "dry": True,
@@ -1658,9 +1687,9 @@ class ZapAdapter(BaseAdapter):
                 "inventory": inventory[:120],
             }
             return True
-        probe = self._probe_zap_addon(["graphql"])
+        probe = self._probe_scanner_addon(["graphql"])
         if not probe["available"]:
-            logger.warning("GraphQL ZAP import skipped: %s", "; ".join(probe["notes"][-3:]))
+            logger.warning("GraphQL scanner import skipped: %s", "; ".join(probe["notes"][-3:]))
             self._last_graphql_import = {
                 "ok": False,
                 "notes": list(resolved.notes) + probe["notes"],
@@ -1668,7 +1697,7 @@ class ZapAdapter(BaseAdapter):
             }
             return False
         try:
-            self._zap_import_graphql(schema, self._graphql_endurl(resolved, schema))
+            self._scanner_import_graphql(schema, self._graphql_endurl(resolved, schema))
             logger.info("Imported GraphQL schema: %s (%s)", schema, inventory[:80])
             self._last_graphql_import = {
                 "ok": True,
@@ -1686,18 +1715,18 @@ class ZapAdapter(BaseAdapter):
             return False
 
     def scan_graphql_api(self, context_name=None):
-        """Скан GraphQL: имя контекста или идентификатор модуля (нужен zap_scan)."""
+        """Скан GraphQL: имя контекста или идентификатор модуля (нужен scanner_scan)."""
         from utils.api_import_lab import api_lab_dry
-        from utils.api_module_runtime import allow_zap_scan, resolve_graphql_arg
+        from utils.api_module_runtime import allow_scanner_scan, resolve_graphql_arg
 
         arg = context_name
         resolved = resolve_graphql_arg(
-            getattr(self, "_run_manifest", None),
+            getattr(self, "_run_wired", None),
             str(arg or ""),
         )
         if resolved.from_module:
-            allowed, gate_notes = allow_zap_scan(
-                module_flag=resolved.zap_scan,
+            allowed, gate_notes = allow_scanner_scan(
+                module_flag=resolved.scanner_scan,
                 openapi=False,
                 from_module=True,
             )
@@ -1714,23 +1743,23 @@ class ZapAdapter(BaseAdapter):
             context = arg or self.context_name
 
         if api_lab_dry():
-            logger.info("GraphQL lab dry scan skipped (no ZAP)")
+            logger.info("GraphQL lab dry scan skipped (no scanner)")
             self._last_graphql_scan = {
                 "ok": True,
                 "dry": True,
                 "notes": list(resolved.notes) + ["PK_API_LAB_DRY"],
             }
             return True
-        probe = self._probe_zap_addon(["graphql"])
+        probe = self._probe_scanner_addon(["graphql"])
         if not probe["available"]:
-            logger.warning("GraphQL ZAP scan skipped: %s", "; ".join(probe["notes"][-3:]))
+            logger.warning("GraphQL scanner scan skipped: %s", "; ".join(probe["notes"][-3:]))
             self._last_graphql_scan = {
                 "ok": False,
                 "notes": list(resolved.notes) + probe["notes"],
             }
             return False
         try:
-            graphql = getattr(self._zap, "graphql", None)
+            graphql = getattr(self._scanner, "graphql", None)
             if graphql is not None and hasattr(graphql, "scan"):
                 if context:
                     graphql.scan(context=context)
@@ -1738,8 +1767,8 @@ class ZapAdapter(BaseAdapter):
                     graphql.scan()
             else:
                 data = {"context": context} if context else None
-                self._zap.urlopen(
-                    "https://zap/json/graphql/action/scan/",
+                self._scanner.urlopen(
+                    "https://scanner/json/graphql/action/scan/",
                     data=data,
                 )
             logger.info("GraphQL scan started")
@@ -1759,17 +1788,17 @@ class ZapAdapter(BaseAdapter):
         if api_lab_dry():
             logger.info("GraphQL lab dry set_option_request_method=%s", method)
             return True
-        probe = self._probe_zap_addon(["graphql"])
+        probe = self._probe_scanner_addon(["graphql"])
         if not probe["available"]:
             logger.warning("GraphQL set method skipped: addon missing")
             return False
         try:
-            graphql = getattr(self._zap, "graphql", None)
+            graphql = getattr(self._scanner, "graphql", None)
             if graphql is not None and hasattr(graphql, "set_option_request_method"):
                 graphql.set_option_request_method(method)
             else:
-                self._zap.urlopen(
-                    "https://zap/json/graphql/action/setOptionRequestMethod/",
+                self._scanner.urlopen(
+                    "https://scanner/json/graphql/action/setOptionRequestMethod/",
                     data={"Boolean": str(method)},
                 )
             logger.info(f"GraphQL request method set to: {method}")
@@ -1836,28 +1865,28 @@ class ZapAdapter(BaseAdapter):
 
     def import_grpc_proto(self, proto_file_or_dir):
         """
-        Импорт gRPC: перечень сервисов в PK; при отсутствии API дополнения ZAP —
+        Импорт gRPC: перечень сервисов в PK; при отсутствии API дополнения scanner —
         заметки, трафик через прокси остаётся. MethodId: ИмпортgRPC.
         """
         from utils.api_import_lab import api_lab_dry
 
         inventory = self.list_grpc_services(proto_file_or_dir)
         if api_lab_dry():
-            logger.info("gRPC lab dry import (no ZAP): %s", proto_file_or_dir)
+            logger.info("gRPC lab dry import (no scanner): %s", proto_file_or_dir)
             self._last_grpc_import = {
                 "ok": True,
                 "dry": True,
                 "notes": [
-                    "PK_API_LAB_DRY — только перечень сервисов; трафик через прокси ZAP"
+                    "PK_API_LAB_DRY — только перечень сервисов; трафик через прокси scanner"
                 ],
                 "inventory": inventory[:120],
             }
             return True
         # gRPC Support add-on historically exposes grpc / grpcSupport
-        probe = self._probe_zap_addon(["grpc", "grpcSupport", "grpcsupport"])
+        probe = self._probe_scanner_addon(["grpc", "grpcSupport", "grpcsupport"])
         if not probe["available"]:
             note = (
-                "API импорта gRPC в ZAP нет — перечень сервисов в PK сохранён; "
+                "API импорта gRPC в scanner нет — перечень сервисов в PK сохранён; "
                 "одиночные вызовы через прокси по-прежнему можно сканировать активно"
             )
             logger.warning(note)
@@ -1869,12 +1898,12 @@ class ZapAdapter(BaseAdapter):
             }
             return False
         try:
-            grpc_api = getattr(self._zap, "grpc", None) or getattr(self._zap, "grpcSupport", None)
+            grpc_api = getattr(self._scanner, "grpc", None) or getattr(self._scanner, "grpcSupport", None)
             if grpc_api is not None and hasattr(grpc_api, "import_proto"):
                 grpc_api.import_proto(proto_file_or_dir)
             else:
-                self._zap.urlopen(
-                    f"https://zap/json/{probe['component']}/action/importProto/",
+                self._scanner.urlopen(
+                    f"https://scanner/json/{probe['component']}/action/importProto/",
                     data={"file": proto_file_or_dir},
                 )
             logger.info("Imported gRPC proto: %s (%s)", proto_file_or_dir, inventory[:80])
@@ -1894,14 +1923,14 @@ class ZapAdapter(BaseAdapter):
         from utils.api_import_lab import api_lab_dry
 
         if api_lab_dry():
-            logger.info("gRPC lab dry scan skipped (no ZAP)")
+            logger.info("gRPC lab dry scan skipped (no scanner)")
             self._last_grpc_scan = {"ok": True, "dry": True, "notes": ["PK_API_LAB_DRY"]}
             return True
-        probe = self._probe_zap_addon(["grpc", "grpcSupport", "grpcsupport"])
+        probe = self._probe_scanner_addon(["grpc", "grpcSupport", "grpcsupport"])
         if not probe["available"]:
             note = (
-                "API скана gRPC в ZAP нет — используйте активное сканирование по URL/хостам "
-                "после одиночных вызовов через прокси ZAP"
+                "API скана gRPC в scanner нет — используйте активное сканирование по URL/хостам "
+                "после одиночных вызовов через прокси scanner"
             )
             logger.warning(note)
             self._last_grpc_scan = {
@@ -1912,7 +1941,7 @@ class ZapAdapter(BaseAdapter):
             return False
         context = context_name or self.context_name
         try:
-            grpc_api = getattr(self._zap, "grpc", None)
+            grpc_api = getattr(self._scanner, "grpc", None)
             if grpc_api is not None and hasattr(grpc_api, "scan"):
                 if context:
                     grpc_api.scan(context)
@@ -1920,8 +1949,8 @@ class ZapAdapter(BaseAdapter):
                     grpc_api.scan()
             else:
                 data = {"context": context} if context else None
-                self._zap.urlopen(
-                    f"https://zap/json/{probe['component']}/action/scan/",
+                self._scanner.urlopen(
+                    f"https://scanner/json/{probe['component']}/action/scan/",
                     data=data,
                 )
             logger.info("gRPC scan started")
@@ -2084,10 +2113,10 @@ class ZapAdapter(BaseAdapter):
             "max_children": int(max_children),
             "thread_count": int(thread_count),
         }
-        self._zap.spider.set_option_max_depth(max_depth)
-        self._zap.spider.set_option_max_children(max_children)
-        self._zap.spider.set_option_thread_count(thread_count)
-        self._zap.spider.set_option_handle_parameters(handle_parameters)
+        self._scanner.spider.set_option_max_depth(max_depth)
+        self._scanner.spider.set_option_max_children(max_children)
+        self._scanner.spider.set_option_thread_count(thread_count)
+        self._scanner.spider.set_option_handle_parameters(handle_parameters)
 
     def _poll_percent_scan(
         self,
@@ -2133,8 +2162,8 @@ class ZapAdapter(BaseAdapter):
 
     def _spider_scan_impl(self, url, context_name=None, timeout_minutes=None):
         timeout_minutes = self._as_timeout_minutes(timeout_minutes, self.spider_timeout)
-        # ZAP maxDuration — целые минуты; для 0.5 ставим 1 и режем сами по wall-clock.
-        zap_max_duration = max(1, int(timeout_minutes + 0.999))
+        # scanner maxDuration — целые минуты; для 0.5 ставим 1 и режем сами по wall-clock.
+        scanner_max_duration = max(1, int(timeout_minutes + 0.999))
         logger.info(
             "Starting spider_scan on %s context=%s timeout=%.2f min stall=%ss",
             url,
@@ -2142,39 +2171,39 @@ class ZapAdapter(BaseAdapter):
             timeout_minutes,
             self.spider_stall_seconds,
         )
-        self._zap.spider.set_option_max_duration(zap_max_duration)
+        self._scanner.spider.set_option_max_duration(scanner_max_duration)
 
         context = context_name or self.context_name
         if context:
-            scan_id = self._zap.spider.scan(url, contextname=context)
+            scan_id = self._scanner.spider.scan(url, contextname=context)
         else:
-            scan_id = self._zap.spider.scan(url)
+            scan_id = self._scanner.spider.scan(url)
         logger.info(f"Spider scan started with ID: {scan_id}")
 
         self._poll_percent_scan(
             label="Spider",
-            status_fn=self._zap.spider.status,
-            stop_fn=self._zap.spider.stop,
+            status_fn=self._scanner.spider.status,
+            stop_fn=self._scanner.spider.stop,
             timeout_minutes=timeout_minutes,
             scan_id=scan_id,
         )
-        results = self._zap.spider.results(scan_id)
+        results = self._scanner.spider.results(scan_id)
         logger.info(f"Spider found {len(results) if results else 0} URLs")
         return len(results) if results else 0
 
     def spider_status(self, scan_id):
         self._ensure_connected()
-        return float(self._zap.spider.status(scan_id))
+        return float(self._scanner.spider.status(scan_id))
 
     def stop_spider(self, scan_id):
         self._ensure_connected()
-        self._zap.spider.stop(scan_id)
+        self._scanner.spider.stop(scan_id)
 
     def stop_all_spiders(self):
         """Best-effort: погасить все traditional spider scans (GATHER / orphan)."""
         self._ensure_connected()
         try:
-            self._zap.spider.stop_all_scans()
+            self._scanner.spider.stop_all_scans()
         except Exception as e:
             logger.debug("stop_all_scans: %s", e)
 
@@ -2222,17 +2251,17 @@ class ZapAdapter(BaseAdapter):
     def _set_ajax_spider_options(self, max_depth=3, number_of_browsers=1, event_wait=100,
                                 click_elems_once=False, random_inputs=True, click_default_elems=False):
         self._ensure_connected()
-        self._zap.ajaxSpider.set_option_max_crawl_depth(max_depth)
-        self._zap.ajaxSpider.set_option_number_of_browsers(number_of_browsers)
-        self._zap.ajaxSpider.set_option_event_wait(event_wait)
-        self._zap.ajaxSpider.set_option_click_elems_once(click_elems_once)
-        self._zap.ajaxSpider.set_option_random_inputs(random_inputs)
-        self._zap.ajaxSpider.set_option_click_default_elems(click_default_elems)
+        self._scanner.ajaxSpider.set_option_max_crawl_depth(max_depth)
+        self._scanner.ajaxSpider.set_option_number_of_browsers(number_of_browsers)
+        self._scanner.ajaxSpider.set_option_event_wait(event_wait)
+        self._scanner.ajaxSpider.set_option_click_elems_once(click_elems_once)
+        self._scanner.ajaxSpider.set_option_random_inputs(random_inputs)
+        self._scanner.ajaxSpider.set_option_click_default_elems(click_default_elems)
 
     def _ajax_wait_until_running(self, max_wait: int = 10) -> str:
         status = "stopped"
         for _ in range(max_wait):
-            status = self._zap.ajaxSpider.status
+            status = self._scanner.ajaxSpider.status
             logger.debug(f"AJAX Spider status: {status}")
             if status != "stopped":
                 return status
@@ -2245,9 +2274,9 @@ class ZapAdapter(BaseAdapter):
         last_change = start_time
         results_count = 0
         while True:
-            status = self._zap.ajaxSpider.status
+            status = self._scanner.ajaxSpider.status
             try:
-                results_count = int(self._zap.ajaxSpider.number_of_results)
+                results_count = int(self._scanner.ajaxSpider.number_of_results)
             except (TypeError, ValueError):
                 results_count = last_results if last_results >= 0 else 0
             if results_count != last_results:
@@ -2261,7 +2290,7 @@ class ZapAdapter(BaseAdapter):
                 logger.warning(
                     "AJAX Spider timed out after %.2f minutes, stopping", timeout_minutes
                 )
-                self._zap.ajaxSpider.stop()
+                self._scanner.ajaxSpider.stop()
                 break
             if now - last_change >= float(self.spider_stall_seconds):
                 logger.warning(
@@ -2269,16 +2298,16 @@ class ZapAdapter(BaseAdapter):
                     self.spider_stall_seconds,
                     results_count,
                 )
-                self._zap.ajaxSpider.stop()
+                self._scanner.ajaxSpider.stop()
                 break
             time.sleep(2)
-        return int(self._zap.ajaxSpider.number_of_results)
+        return int(self._scanner.ajaxSpider.number_of_results)
 
     def _ajax_spider_scan_impl(self, url, timeout_minutes=None):
         timeout_minutes = self._as_timeout_minutes(timeout_minutes, self.ajax_spider_timeout)
-        zap_max_duration = max(1, int(timeout_minutes + 0.999))
-        self._zap.ajaxSpider.set_option_max_duration(zap_max_duration)
-        self._zap.ajaxSpider.scan(url)
+        scanner_max_duration = max(1, int(timeout_minutes + 0.999))
+        self._scanner.ajaxSpider.set_option_max_duration(scanner_max_duration)
+        self._scanner.ajaxSpider.scan(url)
         logger.info(
             "AJAX Spider started on %s timeout=%.2f min stall=%ss",
             url,
@@ -2294,7 +2323,7 @@ class ZapAdapter(BaseAdapter):
 
     def ajax_spider_status(self):
         self._ensure_connected()
-        return self._zap.ajaxSpider.status
+        return self._scanner.ajaxSpider.status
 
     # ========== CLIENT SPIDER (G-45) ==========
 
@@ -2320,19 +2349,19 @@ class ZapAdapter(BaseAdapter):
         page_load_time=None,
     ):
         self._ensure_connected()
-        self._zap.clientSpider.set_option_max_depth(max_depth)
-        self._zap.clientSpider.set_option_thread_count(number_of_browsers)
+        self._scanner.clientSpider.set_option_max_depth(max_depth)
+        self._scanner.clientSpider.set_option_thread_count(number_of_browsers)
         if browser_id:
-            self._zap.clientSpider.set_option_browser_id(browser_id)
+            self._scanner.clientSpider.set_option_browser_id(browser_id)
         if page_load_time is not None:
-            self._zap.clientSpider.set_option_page_load_time_in_secs(page_load_time)
+            self._scanner.clientSpider.set_option_page_load_time_in_secs(page_load_time)
 
     def _client_spider_scan_impl(self, url, context_name=None, timeout_minutes=None):
         timeout_minutes = self._as_timeout_minutes(
             timeout_minutes, self.client_spider_timeout
         )
-        zap_max_duration = max(1, int(timeout_minutes + 0.999))
-        self._zap.clientSpider.set_option_max_duration(zap_max_duration)
+        scanner_max_duration = max(1, int(timeout_minutes + 0.999))
+        self._scanner.clientSpider.set_option_max_duration(scanner_max_duration)
 
         kwargs = {}
         if url:
@@ -2347,13 +2376,13 @@ class ZapAdapter(BaseAdapter):
             timeout_minutes,
             self.spider_stall_seconds,
         )
-        scan_id = self._zap.clientSpider.scan(**kwargs)
+        scan_id = self._scanner.clientSpider.scan(**kwargs)
         logger.info("Client Spider scan id: %s", scan_id)
 
         last_progress = self._poll_percent_scan(
             label="Client Spider",
-            status_fn=self._zap.clientSpider.status,
-            stop_fn=self._zap.clientSpider.stop,
+            status_fn=self._scanner.clientSpider.status,
+            stop_fn=self._scanner.clientSpider.stop,
             timeout_minutes=timeout_minutes,
             scan_id=scan_id,
         )
@@ -2362,11 +2391,11 @@ class ZapAdapter(BaseAdapter):
 
     def client_spider_status(self, scan_id):
         self._ensure_connected()
-        return float(self._zap.clientSpider.status(scan_id))
+        return float(self._scanner.clientSpider.status(scan_id))
 
     def stop_client_spider(self, scan_id):
         self._ensure_connected()
-        self._zap.clientSpider.stop(scan_id)
+        self._scanner.clientSpider.stop(scan_id)
 
     # ========== АКТИВНОЕ СКАНИРОВАНИЕ ==========
 
@@ -2388,9 +2417,9 @@ class ZapAdapter(BaseAdapter):
         if context:
             context_id = self._get_context_id(context)
             logger.info(f"Active scan with context: {context} (ID: {context_id})")
-            scan_id = self._zap.ascan.scan(url, contextid=context_id, recurse=True)
+            scan_id = self._scanner.ascan.scan(url, contextid=context_id, recurse=True)
         else:
-            scan_id = self._zap.ascan.scan(url)
+            scan_id = self._scanner.ascan.scan(url)
 
         if not str(scan_id).isdigit():
             logger.error(f"Active scan failed: {scan_id}")
@@ -2404,13 +2433,13 @@ class ZapAdapter(BaseAdapter):
             if time.time() - start_time > timeout_minutes * 60:
                 logger.warning(f"Active scan timed out after {timeout_minutes} minutes, stopping scan")
                 try:
-                    self._zap.ascan.stop(scan_id)
+                    self._scanner.ascan.stop(scan_id)
                 except Exception as e:
                     logger.debug(f"Stop error: {e}")
                 break
             
             try:
-                status = int(self._zap.ascan.status(scan_id))
+                status = int(self._scanner.ascan.status(scan_id))
                 if status >= 100:
                     break
             except Exception as e:
@@ -2425,11 +2454,11 @@ class ZapAdapter(BaseAdapter):
 
     def active_scan_status(self, scan_id):
         self._ensure_connected()
-        return int(self._zap.ascan.status(scan_id))
+        return int(self._scanner.ascan.status(scan_id))
 
     def stop_active_scan(self, scan_id):
         self._ensure_connected()
-        self._zap.ascan.stop(scan_id)
+        self._scanner.ascan.stop(scan_id)
 
     # ========== ПАССИВНОЕ СКАНИРОВАНИЕ ==========
 
@@ -2448,9 +2477,9 @@ class ZapAdapter(BaseAdapter):
         start_time = time.time()
         while True:
             try:
-                # ZAP API отдаёт число строкой: без int() сравнение с нулём никогда
+                # scanner API отдаёт число строкой: без int() сравнение с нулём никогда
                 # не срабатывает и ожидание всегда выкручивается в полный таймаут.
-                remaining = int(self._zap.pscan.records_to_scan)
+                remaining = int(self._scanner.pscan.records_to_scan)
                 logger.debug(f"Passive scan remaining: {remaining}")
                 if remaining == 0:
                     logger.info("Passive scan completed")
@@ -2465,7 +2494,7 @@ class ZapAdapter(BaseAdapter):
 
     def passive_records_to_scan(self) -> int:
         self._ensure_connected()
-        return int(self._zap.pscan.records_to_scan)
+        return int(self._scanner.pscan.records_to_scan)
 
     def passive_scan_wait_seconds(self, timeout_seconds=60):
         """Пассив с капом в секундах (GATHER final wait)."""
@@ -2477,7 +2506,7 @@ class ZapAdapter(BaseAdapter):
         start_time = time.time()
         while True:
             try:
-                remaining = int(self._zap.pscan.records_to_scan)
+                remaining = int(self._scanner.pscan.records_to_scan)
                 if remaining == 0:
                     logger.info("Passive scan completed")
                     return True
@@ -2496,41 +2525,41 @@ class ZapAdapter(BaseAdapter):
     def enable_all_passive_scanners(self):
         """Включает все пассивные сканеры (GATHER start)."""
         self._ensure_connected()
-        self._zap.pscan.enable_all_scanners()
+        self._scanner.pscan.enable_all_scanners()
         logger.info("All passive scanners enabled")
 
     # ========== HTTP SESSIONS ==========
 
     def get_sessions_sites(self):
-        """Возвращает список сайтов, для которых ZAP обнаружил HTTP-сессии."""
+        """Возвращает список сайтов, для которых scanner обнаружил HTTP-сессии."""
         self._ensure_connected()
-        return self._zap.http_sessions.sites
+        return self._scanner.http_sessions.sites
 
     def get_site_sessions(self, site, session_name=None):
         """Возвращает список сессий для указанного сайта."""
         self._ensure_connected()
         if session_name:
-            return self._zap.http_sessions.sessions(site, session=session_name)
+            return self._scanner.http_sessions.sessions(site, session=session_name)
         else:
-            return self._zap.http_sessions.sessions(site)
+            return self._scanner.http_sessions.sessions(site)
 
     # ========== УПРАВЛЕНИЕ ПАССИВНЫМИ СКАНЕРАМИ ==========
 
     def get_passive_scanners(self):
         """Возвращает список всех пассивных сканеров с их параметрами."""
         self._ensure_connected()
-        return self._zap.pscan.scanners
+        return self._scanner.pscan.scanners
 
     def enable_passive_scanners(self, ids):
         """Включает пассивные сканеры по списку ID."""
         self._ensure_connected()
-        self._zap.pscan.enable_scanners(ids)
+        self._scanner.pscan.enable_scanners(ids)
         logger.info(f"Passive scanners enabled: {ids}")
 
     def disable_all_passive_scanners(self):
         """Отключает все пассивные сканеры."""
         self._ensure_connected()
-        self._zap.pscan.disable_all_scanners()
+        self._scanner.pscan.disable_all_scanners()
         logger.info("All passive scanners disabled")
 
     # ========== УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ ==========
@@ -2542,7 +2571,7 @@ class ZapAdapter(BaseAdapter):
         """
         self._ensure_connected()
         context_id = self._get_context_id(context_name)
-        result = self._zap.users.new_user(contextid=context_id, name=username)
+        result = self._scanner.users.new_user(contextid=context_id, name=username)
         
         # Если result — словарь, извлекаем userId/id
         if isinstance(result, dict):
@@ -2565,7 +2594,7 @@ class ZapAdapter(BaseAdapter):
         context_id = self._get_context_id(context_name)
         # В некоторых версиях этот метод может возвращать строку или словарь, игнорируем результат
         try:
-            self._zap.users.set_authentication_credentials(
+            self._scanner.users.set_authentication_credentials(
                 contextid=context_id,
                 userid=user_id,
                 authcredentialsconfigparams={
@@ -2585,7 +2614,7 @@ class ZapAdapter(BaseAdapter):
         self._ensure_connected()
         context_id = self._get_context_id(context_name)
         try:
-            self._zap.users.set_user_enabled(contextid=context_id, userid=user_id, enabled=True)
+            self._scanner.users.set_user_enabled(contextid=context_id, userid=user_id, enabled=True)
             logger.info(f"User ID: {user_id} enabled")
         except Exception as e:
             logger.error(f"Failed to enable user {user_id}: {e}")
@@ -2598,7 +2627,7 @@ class ZapAdapter(BaseAdapter):
         self._ensure_connected()
         context_id = self._get_context_id(context_name)
         try:
-            self._zap.users.set_user_enabled(contextid=context_id, userid=user_id, enabled=False)
+            self._scanner.users.set_user_enabled(contextid=context_id, userid=user_id, enabled=False)
             logger.info(f"User ID: {user_id} disabled")
         except Exception as e:
             logger.error(f"Failed to disable user {user_id}: {e}")
@@ -2610,7 +2639,7 @@ class ZapAdapter(BaseAdapter):
         """
         self._ensure_connected()
         context_id = self._get_context_id(context_name)
-        result = self._zap.users.users_list(contextid=context_id)
+        result = self._scanner.users.users_list(contextid=context_id)
         # result может быть словарем со списком или строкой, проверяем
         if isinstance(result, dict):
             return result.get("usersList", [])
@@ -2645,7 +2674,7 @@ class ZapAdapter(BaseAdapter):
         self._ensure_connected()
         context_id = self._get_context_id(context_name)
         try:
-            self._zap.forcedUser.set_forced_user(context_id, user_id)
+            self._scanner.forcedUser.set_forced_user(context_id, user_id)
             logger.info(f"Forced user set: context={context_name}, user={user_id}")
         except Exception as e:
             logger.error(f"Failed to set forced user: {e}")
@@ -2658,7 +2687,7 @@ class ZapAdapter(BaseAdapter):
         self._ensure_connected()
         context_id = self._get_context_id(context_name)
         try:
-            self._zap.forcedUser.set_forced_user_mode_enabled(context_id, True)
+            self._scanner.forcedUser.set_forced_user_mode_enabled(context_id, True)
             logger.info(f"Forced user mode enabled for context: {context_name}")
         except Exception as e:
             logger.error(f"Failed to enable forced user mode: {e}")
@@ -2671,7 +2700,7 @@ class ZapAdapter(BaseAdapter):
         self._ensure_connected()
         context_id = self._get_context_id(context_name)
         try:
-            self._zap.forcedUser.set_forced_user_mode_enabled(context_id, False)
+            self._scanner.forcedUser.set_forced_user_mode_enabled(context_id, False)
             logger.info(f"Forced user mode disabled for context: {context_name}")
         except Exception as e:
             logger.error(f"Failed to disable forced user mode: {e}")
@@ -2687,7 +2716,7 @@ class ZapAdapter(BaseAdapter):
 
     def get_scan_policies(self):
         self._ensure_connected()
-        return self._zap.ascan.scan_policies()
+        return self._scanner.ascan.scan_policies()
 
     def set_scan_policy(self, policy_name, depth_profile=None):
         """
@@ -2698,7 +2727,7 @@ class ZapAdapter(BaseAdapter):
         policy = str(policy_name or "").strip()
         if not policy:
             raise WiredError("ПолитикаСканирования: пустое имя политики")
-        self._zap.ascan.set_scan_policy(policy)
+        self._scanner.ascan.set_scan_policy(policy)
         if depth_profile not in (None, ""):
             self.apply_scan_depth_profile(depth_profile, scan_policy_name=policy)
         else:
@@ -2723,7 +2752,7 @@ class ZapAdapter(BaseAdapter):
         strength = spec["defaultStrength"]
         threshold = spec["defaultThreshold"]
         self._ensure_connected()
-        self._zap.ascan.set_scan_policy(policy)
+        self._scanner.ascan.set_scan_policy(policy)
         self._set_policy_defaults(policy, strength, threshold)
         logger.info(
             "Scan depth profile %s → policy=%s strength=%s threshold=%s",
@@ -2738,8 +2767,8 @@ class ZapAdapter(BaseAdapter):
         """Выставить default strength/threshold для всех правил политики."""
         rule_id = "-1"
         for setter, value, kw in (
-            (getattr(self._zap.ascan, "set_policy_attack_strength", None), strength, "attackStrength"),
-            (getattr(self._zap.ascan, "set_policy_alert_threshold", None), threshold, "alertThreshold"),
+            (getattr(self._scanner.ascan, "set_policy_attack_strength", None), strength, "attackStrength"),
+            (getattr(self._scanner.ascan, "set_policy_alert_threshold", None), threshold, "alertThreshold"),
         ):
             if setter is None:
                 continue
@@ -2757,8 +2786,8 @@ class ZapAdapter(BaseAdapter):
 
     def _fetch_alerts_paginated(self, *, riskid=None, page_size=200):
         """
-        ZAP core.alerts() без start/count отдаёт мегабайты JSON → IncompleteRead.
-        Тянем страницами; riskid (0..3) сужает выборку на стороне ZAP.
+        scanner core.alerts() без start/count отдаёт мегабайты JSON → IncompleteRead.
+        Тянем страницами; riskid (0..3) сужает выборку на стороне scanner.
         """
         self._ensure_connected()
         out = []
@@ -2769,10 +2798,10 @@ class ZapAdapter(BaseAdapter):
             if riskid is not None:
                 kwargs["riskid"] = str(riskid)
             try:
-                batch = self._zap.core.alerts(**kwargs)
+                batch = self._scanner.core.alerts(**kwargs)
             except TypeError:
                 # Старые биндинги без riskid
-                batch = self._zap.core.alerts(start=start, count=size)
+                batch = self._scanner.core.alerts(start=start, count=size)
             if not batch:
                 break
             if not isinstance(batch, list):
@@ -2782,7 +2811,7 @@ class ZapAdapter(BaseAdapter):
                 break
             start += len(batch)
             if start > 100_000:
-                logger.warning("ZAP alerts: обрезка после %s (защита от цикла)", start)
+                logger.warning("scanner alerts: обрезка после %s (защита от цикла)", start)
                 break
         return out
 
@@ -2828,7 +2857,7 @@ class ZapAdapter(BaseAdapter):
 
     @staticmethod
     def _alert_filter_level(new_level) -> str:
-        """ZAP newlevel: -1 False Positive, 0–3 risk. Accepts labels."""
+        """scanner newlevel: -1 False Positive, 0–3 risk. Accepts labels."""
         raw = str(new_level).strip()
         key = raw.lower().replace(" ", "")
         labels = {
@@ -2860,7 +2889,7 @@ class ZapAdapter(BaseAdapter):
         level = self._alert_filter_level(new_level)
         url_flag = "true" if str(url_is_regex).lower() in ("1", "true", "yes") else "false"
         en_flag = "true" if str(enabled).lower() in ("1", "true", "yes") else "false"
-        self._zap.alertFilter.add_alert_filter(
+        self._scanner.alertFilter.add_alert_filter(
             contextid=str(context_id),
             ruleid=str(rule_id),
             newlevel=str(level),
@@ -2891,7 +2920,7 @@ class ZapAdapter(BaseAdapter):
         level = self._alert_filter_level(new_level)
         url_flag = "true" if str(url_is_regex).lower() in ("1", "true", "yes") else "false"
         en_flag = "true" if str(enabled).lower() in ("1", "true", "yes") else "false"
-        self._zap.alertFilter.add_global_alert_filter(
+        self._scanner.alertFilter.add_global_alert_filter(
             ruleid=str(rule_id),
             newlevel=str(level),
             url=str(url or ".*"),
@@ -2956,7 +2985,7 @@ class ZapAdapter(BaseAdapter):
 
     def log_attack(self, message: str) -> None:
         """
-        Маркер атаки для Live «Проверки безопасности» (channel=zap, kind=LOG).
+        Маркер атаки для Live «Проверки безопасности» (channel=scanner, kind=LOG).
 
         message — готовый текст после «ЛогАтаки | », например
         ``Замена: payload:'${x}'`` или ``вошли как user@x, cookies 12``.
@@ -2991,7 +3020,7 @@ class ZapAdapter(BaseAdapter):
         logger.info(
             "AF runPlan %s timeout=%.2f min", abs_path, timeout_minutes
         )
-        raw = self._zap.automation.run_plan(abs_path)
+        raw = self._scanner.automation.run_plan(abs_path)
         plan_id = self._extract_plan_id(raw)
         if not plan_id:
             raise WiredError(f"AF runPlan: empty planId from {raw!r}")
@@ -3001,12 +3030,12 @@ class ZapAdapter(BaseAdapter):
     def automation_plan_progress(self, plan_id):
         """Сырой planProgress для диагностики."""
         self._ensure_connected()
-        return self._zap.automation.plan_progress(planid=str(plan_id))
+        return self._scanner.automation.plan_progress(planid=str(plan_id))
 
     def stop_automation_plan(self, plan_id):
         self._ensure_connected()
         try:
-            self._zap.automation.stop_plan(planid=str(plan_id))
+            self._scanner.automation.stop_plan(planid=str(plan_id))
         except Exception as exc:
             # Старые add-on без stopPlan — best-effort.
             logger.warning("AF stopPlan failed: %s", exc)
@@ -3089,7 +3118,7 @@ class ZapAdapter(BaseAdapter):
     def _summarize_gate_alerts(self, risks=None, limit=30):
         """
         Уникальные алерты для quality gate: имя + URL, без дублей.
-        risks — уровни ZAP (High/Medium/…); None → PK_GATE_SEVERITY и выше.
+        risks — уровни scanner (High/Medium/…); None → PK_GATE_SEVERITY и выше.
         Не keyword (leading _).
         """
         if risks is None:
@@ -3157,7 +3186,7 @@ class ZapAdapter(BaseAdapter):
         limit=None,
     ):
         """
-        Все риски ZAP для Live channel=zap (паук/скан/пейлоад/скрипт — по имени алерта).
+        Все риски scanner для Live channel=scanner (паук/скан/пейлоад/скрипт — по имени алерта).
         limit=None — без обрезки.
         """
         items = []
@@ -3184,7 +3213,7 @@ class ZapAdapter(BaseAdapter):
 
     @staticmethod
     def _short_confidence(raw) -> str:
-        """ZAP confidence → короткий код: C:H / C:M / C:L / C:! (confirmed)."""
+        """scanner confidence → короткий код: C:H / C:M / C:L / C:! (confirmed)."""
         s = str(raw or "").strip().lower()
         if not s:
             return ""
@@ -3242,7 +3271,7 @@ class ZapAdapter(BaseAdapter):
     def get_messages(self, context_name=None, start=None, count=None):
         """Сообщения History (для fuzz Campaign source=history).
 
-        Читаем JSON API напрямую (не через zapv2 proxies→http://zap/…): на больших
+        Читаем JSON API напрямую (не через zapv2 proxies→http://scanner/…): на больших
         лентах proxy-путь часто рвётся RemoteDisconnected. По умолчанию — хвост
         истории (до 200), этого хватает для pick после login/seed.
         """
@@ -3278,7 +3307,7 @@ class ZapAdapter(BaseAdapter):
                 "get_messages direct API failed (%s); fallback zapv2.core.messages",
                 exc,
             )
-            messages = self._zap.core.messages()
+            messages = self._scanner.core.messages()
         if context_name:
             return [m for m in messages if m.get("contextId") == context_name]
         return messages
@@ -3292,71 +3321,71 @@ class ZapAdapter(BaseAdapter):
         else:
             with open(payload_list_or_file, 'r', encoding='utf-8') as f:
                 payloads = [line.strip() for line in f if line.strip()]
-        self._zap.custompayloads.load_payloads(name, payloads)
+        self._scanner.custompayloads.load_payloads(name, payloads)
         logger.info(f"Loaded {len(payloads)} payloads as '{name}'")
         return True
 
     def get_payloads(self):
         self._ensure_connected()
-        return self._zap.custompayloads.get_payloads()
+        return self._scanner.custompayloads.get_payloads()
 
     def remove_payload(self, name):
         self._ensure_connected()
-        self._zap.custompayloads.remove_payload(name)
+        self._scanner.custompayloads.remove_payload(name)
 
     # ========== OAST ==========
 
     def start_oast_server(self):
         self._ensure_connected()
-        self._zap.oast.start()
+        self._scanner.oast.start()
         logger.info("OAST server started")
         return True
 
     def stop_oast_server(self):
         self._ensure_connected()
-        self._zap.oast.stop()
+        self._scanner.oast.stop()
         logger.info("OAST server stopped")
         return True
 
     def get_oast_alerts(self):
         self._ensure_connected()
-        return self._zap.oast.get_alerts()
+        return self._scanner.oast.get_alerts()
 
     # ========== LIFECYCLE: полный стоп ==========
 
     def shutdown_all(self):
         """
-        Гасит ZAP целиком: API core.shutdown + stop-команды демона/Webswing (env).
+        Гасит scanner целиком: API core.shutdown + stop-команды демона/Webswing (env).
 
         Keyword: внутренний (не MethodId). Вызов из Controller по idle/work timeout.
         Env (опционально, best-effort после API):
-          PK_ZAP_STOP_DAEMON_CMD
-          PK_ZAP_STOP_WEBSWING_CMD
+          PK_SCANNER_STOP_DAEMON_CMD
+          PK_SCANNER_STOP_WEBSWING_CMD
         """
         api_ok = False
         try:
             self._ensure_connected()
-            self._zap.core.shutdown()
+            self._scanner.core.shutdown()
             api_ok = True
-            logger.info("ZAP core.shutdown() sent")
+            logger.info("scanner core.shutdown() sent")
         except Exception as e:
-            logger.warning("ZAP core.shutdown failed (продолжаем stop-команды): %s", e)
+            logger.warning("scanner core.shutdown failed (продолжаем stop-команды): %s", e)
 
         # Клиент больше не валиден после shutdown.
-        self._zap = None
+        self._scanner = None
         self._connected = False
 
         daemon_stopped = self._try_external_stop(
-            "PK_ZAP_STOP_DAEMON_CMD", "stop ZAP daemon"
+            "PK_SCANNER_STOP_DAEMON_CMD", "stop scanner daemon"
         )
         swing_stopped = self._try_external_stop(
-            "PK_ZAP_STOP_WEBSWING_CMD", "stop Webswing"
+            "PK_SCANNER_STOP_WEBSWING_CMD", "stop Webswing"
         )
         if not api_ok and not daemon_stopped and not swing_stopped:
             raise WiredError(
-                "shutdown_all: не удалось погасить ZAP — "
+                "shutdown_all: не удалось погасить scanner — "
                 "API shutdown не прошёл и не заданы "
-                "PK_ZAP_STOP_DAEMON_CMD / PK_ZAP_STOP_WEBSWING_CMD"
+                "PK_SCANNER_STOP_DAEMON_CMD / PK_SCANNER_STOP_WEBSWING_CMD"
             )
         return True
 
@@ -3375,21 +3404,21 @@ class ZapAdapter(BaseAdapter):
 
     # ========== DEV-ONLY: demon → webswing ==========
     # НЕ MethodId / НЕ в keywords.json. Банку не светим: webswing заказывают с старта.
-    # Личный wire Максима: zap|start_webswing / zap|stop_daemon_start_webswing
-    #   PK_ZAP_STOP_DAEMON_CMD / PK_ZAP_START_WEBSWING_CMD
+    # Личный wire Максима: scanner|start_webswing / scanner|stop_daemon_start_webswing
+    #   PK_SCANNER_STOP_DAEMON_CMD / PK_SCANNER_START_WEBSWING_CMD
 
     def start_webswing(self):
-        """Dev: старт Webswing (env PK_ZAP_START_WEBSWING_CMD)."""
+        """Dev: старт Webswing (env PK_SCANNER_START_WEBSWING_CMD)."""
         return self._run_external_mode_cmd(
-            "PK_ZAP_START_WEBSWING_CMD",
+            "PK_SCANNER_START_WEBSWING_CMD",
             "start Webswing",
         )
 
     def stop_daemon_start_webswing(self):
         """Dev: погасить demon → Webswing. Не для портала/банка."""
         self._run_external_mode_cmd(
-            "PK_ZAP_STOP_DAEMON_CMD",
-            "stop ZAP daemon",
+            "PK_SCANNER_STOP_DAEMON_CMD",
+            "stop scanner daemon",
         )
         return self.start_webswing()
 
@@ -3403,9 +3432,9 @@ class ZapAdapter(BaseAdapter):
             raise WiredError(
                 f"{label}: не задан {env_name}. "
                 "Укажи команду раннера (пример: "
-                f'{env_name}=\"zap.bat -host 0.0.0.0 -port 8080\").'
+                f'{env_name}=\"scanner.bat -host 0.0.0.0 -port 8080\").'
             )
-        logger.info("ZAP mode cmd (%s): %s", label, raw)
+        logger.info("scanner mode cmd (%s): %s", label, raw)
         # shell=True на Windows для .bat; на *nix — список токенов безопаснее
         if os.name == "nt":
             completed = subprocess.run(raw, shell=True, check=False)
@@ -3416,7 +3445,7 @@ class ZapAdapter(BaseAdapter):
                 f"{label}: команда завершилась с кодом {completed.returncode}: {raw}"
             )
         # Сбросить клиент — следующий вызов _ensure_connected подхватит новый процесс.
-        self._zap = None
+        self._scanner = None
         self._connected = False
         return True
 
@@ -3425,12 +3454,12 @@ class ZapAdapter(BaseAdapter):
     def generate_report(
         self,
         format="html",
-        output_file="zap_report.html",
+        output_file="scanner_report.html",
         attach_to_allure=False,
         template=None,
     ):
         """
-        Генерирует отчёт ZAP и сохраняет его.
+        Генерирует отчёт scanner и сохраняет его.
         format/template: html/traditional-html, sarif/sarif-json (Report Generation add-on),
         xml/json/md — legacy core.*report (Dojo XML через format=xml).
         attach_to_allure: только для html; по умолчанию false (отчёт тяжёлый).
@@ -3444,7 +3473,7 @@ class ZapAdapter(BaseAdapter):
         fmt = str(format or "html").strip().lower()
         template_id = normalize_report_template(template or fmt)
 
-        output_path = zap_report_path(output_file)
+        output_path = scanner_report_path(output_file)
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         addon_templates = {
@@ -3470,29 +3499,29 @@ class ZapAdapter(BaseAdapter):
             return str(path)
 
         if fmt == "html":
-            report = self._zap.core.htmlreport()
+            report = self._scanner.core.htmlreport()
         elif fmt == "json":
-            report = self._zap.core.jsonreport()
+            report = self._scanner.core.jsonreport()
         elif fmt == "xml":
-            report = self._zap.core.xmlreport()
+            report = self._scanner.core.xmlreport()
         elif fmt == "md":
-            report = self._zap.core.mdreport()
+            report = self._scanner.core.mdreport()
         else:
             raise ValueError(f"Unsupported report format: {format}")
 
         output_path.write_text(report, encoding="utf-8")
 
         if attach_to_allure and fmt == "html":
-            attach_zap_html(report, name=output_path.name)
+            attach_scanner_html(report, name=output_path.name)
 
         return str(output_path)
 
     def _generate_report_via_addon(self, template_id, output_path, attach_to_allure=False):
         """Report Generation add-on (G-46): reports.generate / urlopen fallback."""
-        title = output_path.stem or "ZAP Report"
+        title = output_path.stem or "scanner Report"
         report_dir = str(output_path.parent.resolve())
         report_file = output_path.name
-        reports = getattr(self._zap, "reports", None)
+        reports = getattr(self._scanner, "reports", None)
         if reports is not None and hasattr(reports, "generate"):
             try:
                 reports.generate(
@@ -3511,8 +3540,8 @@ class ZapAdapter(BaseAdapter):
                     reportfilename=report_file,
                 )
         else:
-            self._zap.urlopen(
-                "https://zap/JSON/reports/action/generate/",
+            self._scanner.urlopen(
+                "https://scanner/JSON/reports/action/generate/",
                 data={
                     "title": title,
                     "template": template_id,
@@ -3534,7 +3563,7 @@ class ZapAdapter(BaseAdapter):
 
         if attach_to_allure and output_path.is_file():
             try:
-                attach_zap_html(
+                attach_scanner_html(
                     output_path.read_text(encoding="utf-8", errors="replace"),
                     name=output_path.name,
                 )
@@ -3547,18 +3576,18 @@ class ZapAdapter(BaseAdapter):
 
     def save_session(self, session_name):
         self._ensure_connected()
-        self._zap.core.save_session(session_name)
+        self._scanner.core.save_session(session_name)
 
     def load_session(self, session_name):
         self._ensure_connected()
-        self._zap.core.load_session(session_name)
+        self._scanner.core.load_session(session_name)
 
     # ========== СКРИПТЫ / HttpSender ==========
 
     _HTTP_SENDER_ENGINE = "Graal.js"
 
     def _script_file_arg(self, script_code_or_path: str) -> str:
-        """ZAP script.load ждёт путь к файлу. Код → tempfile."""
+        """scanner script.load ждёт путь к файлу. Код → tempfile."""
         import os
         import tempfile
         from pathlib import Path
@@ -3581,7 +3610,7 @@ class ZapAdapter(BaseAdapter):
 
     def _script_enable(self, name: str, enabled: bool = True) -> None:
         """enable/disable — канон API; set_enabled — fallback старых клиентов."""
-        script = self._zap.script
+        script = self._scanner.script
         if enabled:
             if hasattr(script, "enable"):
                 script.enable(name)
@@ -3596,19 +3625,19 @@ class ZapAdapter(BaseAdapter):
     def load_script(self, name, script_type, engine, code):
         self._ensure_connected()
         path = self._script_file_arg(code)
-        self._zap.script.load(name, script_type, engine, path)
+        self._scanner.script.load(name, script_type, engine, path)
 
     def run_script(self, name):
         self._ensure_connected()
-        self._zap.script.run(name)
+        self._scanner.script.run(name)
 
     def remove_script(self, name):
         self._ensure_connected()
-        self._zap.script.remove(name)
+        self._scanner.script.remove(name)
 
     def list_scripts(self):
         self._ensure_connected()
-        script = self._zap.script
+        script = self._scanner.script
         if hasattr(script, "list_scripts"):
             return script.list_scripts()
         return script.list_engines()
@@ -3618,7 +3647,7 @@ class ZapAdapter(BaseAdapter):
         self._ensure_connected()
         path = self._script_file_arg(script_code)
         try:
-            self._zap.script.load(
+            self._scanner.script.load(
                 name, "httpsender", self._HTTP_SENDER_ENGINE, path
             )
             self._script_enable(name, True)
@@ -3652,15 +3681,15 @@ class ZapAdapter(BaseAdapter):
         except Exception:
             pass
         try:
-            self._zap.script.remove(name)
+            self._scanner.script.remove(name)
         except Exception as e:
             raise WiredError(f"remove_http_sender_script({name!r}): {e}") from e
         return True
 
     def set_script_global_var(self, key, value):
-        """ZAP ScriptVars global — пейлоад для масочного httpsender."""
+        """scanner ScriptVars global — пейлоад для масочного httpsender."""
         self._ensure_connected()
-        script = self._zap.script
+        script = self._scanner.script
         try:
             if hasattr(script, "set_global_var"):
                 script.set_global_var(str(key), str(value))
@@ -3687,12 +3716,12 @@ class ZapAdapter(BaseAdapter):
         """Сгенерировать масочный httpsender, load+enable, опционально initial пейлоад.
 
         Пример:
-          ZAP HttpSender fuzz_mask §FUZZ§
+          scanner HttpSender fuzz_mask §FUZZ§
           ДляКаждого ${p} В ${payloads} {
-            ZAP ПейлоадПодмены ${p}
+            scanner ПейлоадПодмены ${p}
             HTTP GET https://target/?q=§FUZZ§
           }
-          ZAP ВыключитьHttpSender fuzz_mask
+          scanner ВыключитьHttpSender fuzz_mask
         """
         from core.fuzz_sender import DEFAULT_VAR_KEY, render_mask_httpsender
 
@@ -3707,7 +3736,7 @@ class ZapAdapter(BaseAdapter):
 
     def add_replacer_rule(self, description, match_type, match_string, replacement, match_regex=False):
         self._ensure_connected()
-        self._zap.replacer.add_rule(
+        self._scanner.replacer.add_rule(
             description,
             True,
             match_type,
@@ -3718,15 +3747,15 @@ class ZapAdapter(BaseAdapter):
 
     def remove_replacer_rule(self, rule_id):
         self._ensure_connected()
-        self._zap.replacer.remove_rule(rule_id)
+        self._scanner.replacer.remove_rule(rule_id)
 
     def clear_replacer_rules(self):
         self._ensure_connected()
-        self._zap.replacer.remove_all_rules()
+        self._scanner.replacer.remove_all_rules()
 
     def list_replacer_rules(self):
         self._ensure_connected()
-        return self._zap.replacer.get_rules()
+        return self._scanner.replacer.get_rules()
 
     # ========== ИМПОРТ СЕРТИФИКАТА ==========
 
@@ -3734,7 +3763,7 @@ class ZapAdapter(BaseAdapter):
         self._ensure_connected()
         with open(cert_path, 'rb') as f:
             cert_data = f.read()
-        self._zap.core.import_certificate(cert_data)
+        self._scanner.core.import_certificate(cert_data)
 
     # ========== ЗАКОММЕНТИРОВАННЫЕ МЕТОДЫ ==========
     # def run_zest_script(...):
@@ -3744,7 +3773,7 @@ class ZapAdapter(BaseAdapter):
 # ========== БЛОК ДОКУМЕНТАЦИИ ==========
 """
 ================================================================================
-Адаптер для OWASP ZAP API (v2.17.0)
+Адаптер для OWASP scanner API (v2.17.0)
 ================================================================================
 
 Методы управления контекстом:
@@ -3758,9 +3787,9 @@ class ZapAdapter(BaseAdapter):
 - set_context_exclude(context, regex) — добавить правило исключения из контекста
 - set_context_auth(context, login_url, post_data, logout_url, method) — настроить авторизацию
 
-Методы HTTP через ZAP:
-- zap_http_request(method, url, headers, body, follow_redirects) — отправить HAR-запрос
-- zap_http_raw_request(raw_request, follow_redirects) — отправить сырой HTTP-запрос
+Методы HTTP через scanner:
+- scanner_http_request(method, url, headers, body, follow_redirects) — отправить HAR-запрос
+- scanner_http_raw_request(raw_request, follow_redirects) — отправить сырой HTTP-запрос
 
 Импорт спецификаций:
 - import_har_sequence(name, file_path, assert_code, assert_length) — импорт HAR
@@ -3844,7 +3873,7 @@ OAST (Out-of-Band):
 Отчёты:
 - generate_report(format, output_file) — scanner-results/ (голое имя) или явный путь
 
-Управление сессией ZAP:
+Управление сессией scanner:
 - save_session(name) — сохранить сессию
 - load_session(name) — загрузить сессию
 

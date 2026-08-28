@@ -39,7 +39,7 @@ Live :8767  — временный compatibility facade, затем удаляе
 | `reports/runs/<run_id>/` | local filesystem | Wired, runner logs, cuts, summaries, resources | PG metadata + MinIO objects |
 | `reports/video/` | local filesystem / mounted volume | browser recordings | MinIO object |
 | `reports/allure-results/` | local filesystem / mounted volume | Allure raw results | MinIO object or Allure-owned storage |
-| `reports/scanner-results/` | local filesystem | ZAP reports/XML | MinIO object |
+| `reports/scanner-results/` | local filesystem | scanner reports/XML | MinIO object |
 
 ### Важное ограничение текущего Live
 
@@ -154,7 +154,7 @@ pk/<tenant-or-domain>/<run_id>/
   evidence/<evidence_id>/raw-response.bin
   logs/diary.ndjson
   logs/runner.log
-  reports/zap.xml
+  reports/scanner.xml
   reports/allure-results/<file>
   discovery/<session_id>.json
 ```
@@ -206,7 +206,7 @@ S3ArtifactStore     — Enterprise / MinIO / Ceph / внешний S3
 - зафиксировать `run_id`, `check_id`, `instance_id`, `session_name` и их различия;
 - определить, какие файлы являются источником, а какие UI-проекцией;
 - определить retention/legal hold для каждого класса данных;
-- написать migration manifest.
+- написать migration wired.
 
 ### Шаг 2 — ArtifactStore с Local backend
 

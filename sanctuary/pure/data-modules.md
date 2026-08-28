@@ -1,7 +1,7 @@
 # Data modules — поток данных
 
 > **CANON** — hub topic. Slice: **11 августа 2026** (CULT-1).  
-> Narrative: [`../manifest.md`](../manifest.md) § модули / resources.  
+> Narrative: [`../wired.md`](../wired.md) § модули / resources.  
 > Create: [`studio-hub.md`](studio-hub.md) (`create-module`).  
 > Не путать с: [`connectors.md`](connectors.md) · [`auth-module.md`](auth-module.md) · [`dast-wave.md`](dast-wave.md).  
 > Реестр: [`INDEX.md`](INDEX.md). Код: `Controller._export_data_modules`.
@@ -31,7 +31,7 @@ flowchart LR
 | `constructor` / `editor` | properties-модуль | apply properties → ключи |
 | то же | URL line-list (G-65) | `list[str]` + пометка url-list |
 | то же | PrettyK `Пусть ${id} = …` | значение после apply context |
-| иначе | нет `${id}` после apply | **ManifestError** (не тихий skip) |
+| иначе | нет `${id}` после apply | **WiredError** (не тихий skip) |
 
 1. SoT список: `test_suites.test_data_constructor[]`; create через Hub.  
 2. Export только `_DATA_EXPORT_MODULE_TYPES`; auth/conn/fuzz — **не** сюда.  
@@ -45,7 +45,7 @@ flowchart LR
 | Состояние | Формулировка |
 |---|---|
 | `additional_urls` + известный process | «Работает» (есть тесты export) |
-| неизвестный `process_id` / `source_type` | слот или ManifestError — не «готово» |
+| неизвестный `process_id` / `source_type` | слот или WiredError — не «готово» |
 | UI без export-ветки | authoring only ([`honest-contract.md`](honest-contract.md)) |
 
 Residual QUEUE (не блок основы): полный каталог `source_type`/`process_id` · FE↔runtime parity checklist · bank examples.

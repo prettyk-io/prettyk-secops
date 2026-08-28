@@ -6,9 +6,9 @@
     "scheduled_info": "Seed for gen_af_plan → plans/juice-from-wired.yaml"
   },
   "infrastructure": {
-    "zap_mode": "demon",
+    "scanner_mode": "demon",
     "browser_type": "chrome-headless",
-    "zap_work_timeout_min": 60,
+    "scanner_work_timeout_min": 60,
     "idle_timeout_min": 10
   },
   "security_configuration": {

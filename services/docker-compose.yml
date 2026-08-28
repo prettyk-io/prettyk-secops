@@ -1,5 +1,5 @@
 ﻿# Долгоживущие сервисы PK (данные / пульты).
-# Эфемерные (ZAP в пайпе) сюда не входят.
+# Эфемерные (scanner в пайпе) сюда не входят.
 #
 # Запуск из корня репозитория:
 #   docker compose -f services/docker-compose.yml up -d
@@ -7,19 +7,15 @@
 #   docker compose up -d
 #
 # Порты:
-#   4444 — Selenium Grid (WebDriver + UI)
-#   7900 — noVNC Chrome node (Selenium)
-#   7901 — noVNC Firefox node (Selenium)
 #   7902 — noVNC Chromium (Playwright authoring, headed под Xvfb)   ← PW-A1
 #   5050 — allure3-secops (Allure 3 Awesome: dark/ru/SecOps logo, канон)
 #   5051 — allure-light-secops (Allure 2 legacy, запасной контур)
 #   8766 — LLM server (llama.cpp Qwen3-1.7B Q5_K_M, CPU inference)
 #   EXP-01: PK_AI_ASSISTANT_ENABLED=0 toggles AI off for baseline runs
 #
-# UI: открывать http://127.0.0.1:4444/ или http://127.0.0.1:4444/ui/
-#     (без завершающего слэша /ui — blank page: index.js 404, SeleniumHQ#13757)
-# Live view: noVNC http://127.0.0.1:7900/?autoconnect=1&resize=scale (не вкладка
-# session в Grid UI). Пустой desktop до сессии или при chrome-headless — нормально.
+# PW-C1 (cutover): Selenium Grid (selenium-hub/chrome/firefox/chrome-video)
+# выпилен — единственный браузерный рантайм теперь Playwright (playwright-authoring).
+# WebDriverAdapter остаётся импортируемым для parity-тестов, но Grid не поднимается.
 #
 # Тома артефактов — ../reports (совпадает с orchestrator/utils/paths.py).
 # Docker socket хоста не монтируется (в отличие от бывшего Selenoid).
@@ -28,86 +24,13 @@ include:
   - docker-compose.defectdojo.yml
   - docker-compose.sonarqube.yml
   - docker-compose.target.yml
-  - docker-compose.zap.yml
   - docker-compose.api-lab.yml
 
 services:
-  selenium-hub:
-    image: selenium/hub:4.34.0-20250717
-    container_name: selenium-hub
-    restart: unless-stopped
-    ports:
-      - "4444:4444"
-    environment:
-      - SE_SESSION_TIMEOUT=600
-      # Не отклонять неизвестные caps (напр. устаревшие selenoid:options от PK).
-      - SE_REJECT_UNSUPPORTED_CAPS=false
-
-  chrome:
-    image: selenium/node-chrome:4.34.0-20250717
-    container_name: selenium-chrome
-    restart: unless-stopped
-    shm_size: 2gb
-    depends_on:
-      - selenium-hub
-    ports:
-      - "7900:7900"
-    environment:
-      - SE_EVENT_BUS_HOST=selenium-hub
-      - SE_EVENT_BUS_PUBLISH_PORT=4442
-      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
-      - SE_NODE_SESSION_TIMEOUT=600
-      # Публичный URL Grid с хоста — корректные ссылки в UI / session info.
-      - SE_NODE_GRID_URL=http://127.0.0.1:4444
-      - SE_VNC_NO_PASSWORD=1
-      - SE_SCREEN_WIDTH=1920
-      - SE_SCREEN_HEIGHT=1080
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
-  firefox:
-    image: selenium/node-firefox:4.34.0-20250717
-    container_name: selenium-firefox
-    restart: unless-stopped
-    shm_size: 2gb
-    depends_on:
-      - selenium-hub
-    ports:
-      - "7901:7900"
-    environment:
-      - SE_EVENT_BUS_HOST=selenium-hub
-      - SE_EVENT_BUS_PUBLISH_PORT=4442
-      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
-      - SE_NODE_SESSION_TIMEOUT=600
-      - SE_NODE_GRID_URL=http://127.0.0.1:4444
-      - SE_VNC_NO_PASSWORD=1
-      - SE_SCREEN_WIDTH=1920
-      - SE_SCREEN_HEIGHT=1080
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
-  # Запись видео Chrome (1:1 к node). Клиент: se:recordVideo (по умолчанию вкл.;
-  # выкл. — PK_SELENIUM_VIDEO=0). Файлы → ../reports/video.
-  chrome-video:
-    image: selenium/video:ffmpeg-7.1-20250717
-    container_name: selenium-chrome-video
-    restart: unless-stopped
-    depends_on:
-      - chrome
-    environment:
-      DISPLAY_CONTAINER_NAME: selenium-chrome
-      SE_NODE_GRID_URL: http://selenium-hub:4444
-      SE_VIDEO_FILE_NAME: auto
-    volumes:
-      - ../reports/video:/videos
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
   # PW-A1: Airgap Playwright container — headed Chromium под Xvfb + noVNC стрим.
   # Авторинг-браузер живёт в контейнере, на десктопе оператора — ноль окон.
   # CDP :9222 (внутренний) → browser_service подключается через connect_over_cdp.
-  # После parity (PW-E5) и cutover (PW-C1) Selenium Grid уходит, этот контейнер
-  # остаётся единственным браузерным рантаймом.
+  # После cutover (PW-C1) это единственный браузерный рантайм.
   playwright-authoring:
     build:
       context: ./playwright-authoring
@@ -118,6 +41,13 @@ services:
     ports:
       - "7902:7902"   # noVNC stream (live Chromium under Xvfb)
       - "9223:9223"   # CDP socat relay (0.0.0.0:9223 → 127.0.0.1:9222) для connect_over_cdp
+    # HEALTH-2: контейнер жив = CDP принимает соединения (curl version endpoint)
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:9222/json/version || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -256,6 +186,6 @@ services:
 networks:
   default:
     name: pk-net
-    # Общая сеть с docker-compose.zap.yml и browser nodes.
+    # Общая сеть с docker-compose.scanner.yml и browser nodes.
     # Создаётся один раз: docker network create pk-net
     external: true

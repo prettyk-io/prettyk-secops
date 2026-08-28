@@ -4,7 +4,7 @@
 
 > **Не CANON.** Очередь эпика **PAL**.  
 > Голос: фиксация фактов контура + эмпатия роли ИБ. Без pitch продукта. Без героизма.  
-> Артефакты (вне репо): `ci-dast-test.yml` / `vars.md` / `zap.md` · salvage: `gitlab-ci-dast-custom-zap.yml` · `zap-script-based.yaml` · `auth.js`.  
+> Артефакты (вне репо): `ci-dast-test.yml` / `vars.md` / `scanner.md` · salvage: `gitlab-ci-dast-custom-scanner.yml` · `scanner-script-based.yaml` · `auth.js`.  
 > Сосед: Stage 2 [`../proof_of_concept/06-stage2-platform-as-is.md`](../proof_of_concept/06-stage2-platform-as-is.md) · pipe-vs-box [`2026-08-12-cosmo-pipe-vs-box.md`](2026-08-12-cosmo-pipe-vs-box.md).
 
 ---
@@ -24,8 +24,8 @@
 | Слой | Факт |
 |---|---|
 | Носитель | Job в чужом BRPO / child после generate |
-| Параметры | Модалка / CI Variables: `TARGET_URL`, тип скана, опц. bearer (`vars` / `zap` notes) |
-| План скана | Генерация autorun в job (`zap_universal` / baseline-семейство) |
+| Параметры | Модалка / CI Variables: `TARGET_URL`, тип скана, опц. bearer (`vars` / `scanner` notes) |
+| План скана | Генерация autorun в job (`scanner_universal` / baseline-семейство) |
 | Auth | Часто «с улицы» или bearer в переменной; глубокий логин формой — не язык оператора |
 | Сток | SARIF → AppSecHub (+ hook) |
 | Сопровождение | Зависит от merge шаблона и переменных vault/ЦУП |
@@ -34,7 +34,7 @@
 Со стороны платформы (карточка, ЖЦ, галочки сканеров, hub) это выглядит зрело.  
 С места роли «мне нужна проверка» — это **пассажирство**: ты не ведёшь контур, ты надеешься, что чужой пайп и чужой merge совпали.
 
-Отдельно: артефакты автотестов и файлы под ZAP в **репе релиза** — смешение релиза и расходников прогона (якорь Stage 2). Для ИБ это ещё один признак, что «проверка» не выделена как дисциплина.
+Отдельно: артефакты автотестов и файлы под scanner в **репе релиза** — смешение релиза и расходников прогона (якорь Stage 2). Для ИБ это ещё один признак, что «проверка» не выделена как дисциплина.
 
 Винить «кого-то одного» здесь бессмысленно. Так **просили** — через пайп, через галочки ЖЦ, через SARIF в hub. Получили ровно форму запроса: трубопровод, не инструмент. Залупа не от злости поставщика; она от формы заказа.
 
@@ -46,11 +46,11 @@
 
 | Было (опцион universal) | Стало на спасении |
 |---|---|
-| Генерация AF в job под `ZAP_SCAN_TYPE` | Явный AF YAML (`zap-script-based`) в контуре прогона |
+| Генерация AF в job под `scanner_SCAN_TYPE` | Явный AF YAML (`scanner-script-based`) в контуре прогона |
 | Auth ≈ bearer / no-auth ветка | `authentication.method: script` + `auth.js` (Selenium через ExtensionSelenium, firefox-headless, cookie session) |
 | Паук/глубина по пресету типа скана | Явные jobs: import URL list · spider · spiderAjax · requestor (цепочка API) · alertFilter · passive · active · несколько report · exitStatus |
 | Один «универсальный» сценарий | Сценарий под конкретное demo-приложение (login/register/notes/profile, exclude logout/oauth) |
-| Зависимость от смерженного шаблона | Свой `gitlab-ci-dast-custom-zap.yml`: vault → BlackBox stage → `zap_universal_ci` с веткой на найденный `zap.yaml` / alt autorun / script location |
+| Зависимость от смерженного шаблона | Свой `gitlab-ci-dast-custom-scanner.yml`: vault → BlackBox stage → `scanner_universal_ci` с веткой на найденный `scanner.yaml` / alt autorun / script location |
 
 **Чуть лучше** значит:
 
@@ -61,7 +61,7 @@
 **Не значит:**
 
 - что появился операторский инструмент проверки;
-- что auth больше не хрупкий (DOM-селекторы в `auth.js`, headless Firefox внутри ZAP);
+- что auth больше не хрупкий (DOM-селекторы в `auth.js`, headless Firefox внутри scanner);
 - что ИБ перестали быть пассажирами CI;
 - что репа релиза перестала быть помойкой расходников.
 
@@ -90,7 +90,7 @@
 
 | ID | Что вынести |
 |---|---|
-| PAL-5 | Репа релиза как носитель ZAP/allure — зафиксировать как системный запах, не как разовую глупость |
+| PAL-5 | Репа релиза как носитель scanner/allure — зафиксировать как системный запах, не как разовую глупость |
 | PAL-6 | Матрица: universal AF (bearer/baseline*) ↔ script-based salvage (jobs + auth.js) — **landed** этим файлом как narrative; числа/поля — добить с vars |
 | PAL-3 | Сущности не из боли: Project, LcStep, CustomPipeline, Deploy→URL, NotificationRule; «план проверки» в as-is = файлы в CI, не объект портала |
 | Стена | Не подменять BRPO job «правильным продуктом» в их пайпе как долг сдачи |

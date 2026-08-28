@@ -43,7 +43,7 @@ export function defaultWired(): Wired {
   return {
     regulation: {
       meta: {
-        project_id: 'owasp-zap-tests',
+        project_id: 'owasp-scanner-tests',
         initiator_name: '',
         app_leader: '',
         assessment_purpose: 'scheduled',
@@ -52,7 +52,7 @@ export function defaultWired(): Wired {
       infrastructure: {
         base_url_override: 'http://runner01.dev.spaceport.ru:8080',
         allowed_extra_domains: '',
-        zap_mode: 'demon',
+        scanner_mode: 'demon',
         browser_type: 'chrome',
         debug_mode: false,
       },

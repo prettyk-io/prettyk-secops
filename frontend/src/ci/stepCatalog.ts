@@ -75,11 +75,11 @@ export const STEP_CATALOG: CatalogStep[] = [
     },
   },
   {
-    id: 'zap-active-scan',
-    name: 'ZAP Active Scan',
-    description: 'Активное сканирование OWASP ZAP: SQLi, XSS, SSRF, misconfig и другие активные проверки.',
+    id: 'scanner-active-scan',
+    name: 'scanner Active Scan',
+    description: 'Активное сканирование OWASP scanner: SQLi, XSS, SSRF, misconfig и другие активные проверки.',
     version: '2.15.0',
-    digest: 'sha256:zap...',
+    digest: 'sha256:scanner...',
     capability: {
       purpose: 'Активное обнаружение уязвимостей по OWASP Top-10.',
       risk: 'high',
@@ -89,7 +89,7 @@ export const STEP_CATALOG: CatalogStep[] = [
         { name: 'policy', label: 'Scan policy', kind: 'string', required: true },
       ],
       outputs: [
-        { name: 'zap_report', label: 'ZAP report', evidenceType: 'scan_report' },
+        { name: 'scanner_report', label: 'scanner report', evidenceType: 'scan_report' },
         { name: 'findings', label: 'Normalized findings', evidenceType: 'finding' },
       ],
       targetRestrictions: ['https only', 'inside scope'],

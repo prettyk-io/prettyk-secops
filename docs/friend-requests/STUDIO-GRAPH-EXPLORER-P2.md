@@ -3,7 +3,7 @@
 > **ID:** `STUDIO-GRAPH-EXPLORER-P2`
 > **Статус:** `ready` (handoff на Flash)
 > **Роль / Исполнитель:** Flash
-> **Слой:** Frontend (`cosmo/src/studio/graph/`) ↔ JSON Manifest
+> **Слой:** Frontend (`cosmo/src/studio/graph/`) ↔ JSON Wired
 > **Предшественник:** [`STUDIO-GRAPH-EXPLORER.md`](STUDIO-GRAPH-EXPLORER.md) (LANDED)
 
 ---

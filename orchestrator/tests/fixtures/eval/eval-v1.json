@@ -21,7 +21,7 @@
       {
         "id": "D03",
         "name": "Genuinely new finding",
-        "scenario": "New ZAP pluginid+alertRef appears in current run",
+        "scenario": "New scanner pluginid+alertRef appears in current run",
         "expected": "1 newly_observed, correct finding_id, evidence_refs present",
         "category": "deterministic"
       },
@@ -35,7 +35,7 @@
       {
         "id": "D05",
         "name": "Severity changed — same fingerprint",
-        "scenario": "Same pluginid+alertref+path, different ZAP severity",
+        "scenario": "Same pluginid+alertref+path, different scanner severity",
         "expected": "1 changed, before/after documented, no causal claim",
         "category": "deterministic"
       },
@@ -55,7 +55,7 @@
       },
       {
         "id": "D08",
-        "name": "Incompatible manifest",
+        "name": "Incompatible wired",
         "scenario": "Different wired_hash or target_scope_hash",
         "expected": "comparison_status=incomparable, no FIXED badge",
         "category": "deterministic"

@@ -26,7 +26,7 @@ class _FakeBrowser:
         return self._session
 
 
-class _EmptyZap:
+class _Emptyscanner:
     def get_messages(self):
         return []
 
@@ -36,7 +36,7 @@ def test_suite_wave_storage_replay_fills_authorization():
     browser = _FakeBrowser([["token", token], ["theme", "dark"]])
     runner = SuiteFuzzerRunner(
         wired=None,
-        zap=_EmptyZap(),
+        scanner=_Emptyscanner(),
         stream=None,
         browser=browser,
     )

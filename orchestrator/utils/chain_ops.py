@@ -1,7 +1,7 @@
 ﻿# -*- coding: utf-8 -*-
 """IMP-CHAIN: record HAR → token slots → materialize → play (sequence/fuzz).
 
-Industry: ZAP Sequence + Burp Stepper-style extract/replace. No silent scan.
+Industry: scanner Sequence + Burp Stepper-style extract/replace. No silent scan.
 """
 from __future__ import annotations
 
@@ -457,7 +457,7 @@ def _suggest_slots_from_query_body(
 
 
 def suggest_slots(steps: Sequence[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Heuristic token candidates (Burp/ZAP style — operator confirms)."""
+    """Heuristic token candidates (Burp/scanner style — operator confirms)."""
     seen: Dict[str, Dict[str, Any]] = {}
     for step in steps:
         idx = int(step.get("index") or 0)
@@ -705,7 +705,7 @@ def materialize_har(
     """
     Fill {{slot_id}} from bindings.
 
-    Missing binding → keep placeholder (honest; ZAP will fail loudly) unless
+    Missing binding → keep placeholder (honest; scanner will fail loudly) unless
     slot has recorded_value fallback when bindings explicitly pass None? No —
     only bindings win; empty string allowed.
     """
@@ -1161,7 +1161,7 @@ def _chain_materialize_notes(
         notes.append(f"precondition_steps={len(pre_steps)}")
     if atk_steps:
         notes.append(f"attack_steps={len(atk_steps)}")
-    notes.append("materialize only — ZAP scan не запущен")
+    notes.append("materialize only — scanner scan не запущен")
     return notes
 
 
@@ -1254,7 +1254,7 @@ def dry_run_preconditions(
     wired: Any = None,
 ) -> Dict[str, Any]:
     """
-    PRE-3: extract + materialize setup HAR only. No ZAP.
+    PRE-3: extract + materialize setup HAR only. No scanner.
     Honest notes if extracts empty or no precondition steps.
     """
     slots = list(fields.get("slots") or [])

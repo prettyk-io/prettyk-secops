@@ -190,18 +190,18 @@ export function GraphqlModuleForm({
         />
       </label>
       <Checkbox
-        checked={fields.zap_import}
+        checked={fields.scanner_import}
         style={{ marginBottom: 8 }}
-        onChange={(e) => onChange({ zap_import: e.target.checked })}
+        onChange={(e) => onChange({ scanner_import: e.target.checked })}
       >
-        Разрешить ИмпортGraphQL в ZAP (только по шагу сценария)
+        Разрешить ИмпортGraphQL в scanner (только по шагу сценария)
       </Checkbox>
       <Checkbox
-        checked={fields.zap_scan}
+        checked={fields.scanner_scan}
         style={{ marginBottom: 12, display: 'block' }}
-        onChange={(e) => onChange({ zap_scan: e.target.checked })}
+        onChange={(e) => onChange({ scanner_scan: e.target.checked })}
       >
-        Разрешить СканGraphQL в ZAP (только по шагу сценария)
+        Разрешить СканGraphQL в scanner (только по шагу сценария)
       </Checkbox>
       <Button
         type="primary"

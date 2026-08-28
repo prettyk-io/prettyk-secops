@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """diary_bus NDJSON + PK Live SSE by channel (no browser)."""
 from __future__ import annotations
 
@@ -58,17 +58,17 @@ def test_set_meta_preserves_disk_generate_act_across_memory_reset():
 
 def test_publish_writes_ndjson_with_channel():
     diary_bus.publish("STEP", "webdriver|open|http://example.com", channel="diary")
-    diary_bus.publish("HIGH", "xss|/api", channel="zap")
+    diary_bus.publish("HIGH", "xss|/api", channel="scanner")
     text = diary_bus.DIARY_NDJSON.read_text(encoding="utf-8")
     lines = [json.loads(x) for x in text.splitlines() if x.strip()]
     assert len(lines) == 2
     assert lines[0]["channel"] == "diary"
     assert lines[0]["kind"] == "STEP"
-    assert lines[1]["channel"] == "zap"
+    assert lines[1]["channel"] == "scanner"
     diary = diary_bus.read_file_backlog("diary")
-    zap = diary_bus.read_file_backlog("zap")
+    scanner = diary_bus.read_file_backlog("scanner")
     assert len(diary) == 1 and "example.com" in diary[0]["text"]
-    assert len(zap) == 1 and zap[0]["text"] == "xss|/api"
+    assert len(scanner) == 1 and scanner[0]["text"] == "xss|/api"
 
 
 def test_live_cors_preflight_allows_x_PK_USER():
@@ -94,7 +94,7 @@ def test_live_cors_preflight_allows_x_PK_USER():
 
 def test_live_sse_backlog_filtered_by_channel():
     diary_bus.publish("NOTE", "hello-diary", channel="diary")
-    diary_bus.publish("HIGH", "hello-zap", channel="zap")
+    diary_bus.publish("HIGH", "hello-scanner", channel="scanner")
     url = start_live_server(session_name="unit-live")
     assert url == "http://127.0.0.1:18767/"
 
@@ -107,7 +107,7 @@ def test_live_sse_backlog_filtered_by_channel():
     assert "SecOps Lab Monitoring" in html
     assert "Фильтр / regExp" in html
     assert 'id="focusKindChips"' in html
-    assert 'data-kind="ZAP"' in html
+    assert 'data-kind="scanner"' in html
     assert "как Dozzle" not in html
 
     got = {}
@@ -128,15 +128,15 @@ def test_live_sse_backlog_filtered_by_channel():
                         break
 
     t1 = threading.Thread(target=reader, args=("diary", "diary"), daemon=True)
-    t2 = threading.Thread(target=reader, args=("zap", "zap"), daemon=True)
+    t2 = threading.Thread(target=reader, args=("scanner", "scanner"), daemon=True)
     t1.start()
     t2.start()
     t1.join(timeout=5)
     t2.join(timeout=5)
     assert got["diary"]["text"] == "hello-diary"
     assert got["diary"]["channel"] == "diary"
-    assert got["zap"]["text"] == "hello-zap"
-    assert got["zap"]["channel"] == "zap"
+    assert got["scanner"]["text"] == "hello-scanner"
+    assert got["scanner"]["channel"] == "scanner"
 
 
 def test_results_hooks_post_and_get():
@@ -304,7 +304,7 @@ def test_run_ended_export_and_latest():
     from urllib.request import Request
 
     diary_bus.publish("STEP", "before-export", channel="diary")
-    diary_bus.publish("HIGH", "zap-line", channel="zap")
+    diary_bus.publish("HIGH", "scanner-line", channel="scanner")
     url = start_live_server(session_name="export-live")
     assert url == "http://127.0.0.1:18767/"
 
@@ -383,40 +383,40 @@ def test_live_disabled(monkeypatch):
     assert start_live_server() is None
 
 
-def test_log_attack_zap_channel_without_step(monkeypatch):
-    """log_attack → zap LOG «ЛогАтаки | …»; log_message не попадает в zap."""
+def test_log_attack_scanner_channel_without_step(monkeypatch):
+    """log_attack → scanner LOG «ЛогАтаки | …»; log_message не попадает в scanner."""
     from adapters.data_processor import DataProcessor
 
     diary_bus.publish("STEP", "should-stay-diary", channel="diary")
     DataProcessor.log_message("diary-only marker")
-    zap_before = diary_bus.read_file_backlog("zap")
-    assert not any("diary-only" in e.get("text", "") for e in zap_before)
+    scanner_before = diary_bus.read_file_backlog("scanner")
+    assert not any("diary-only" in e.get("text", "") for e in scanner_before)
 
     from core.controller import Controller
 
     ctrl = Controller.__new__(Controller)
     ctrl._publish_log_attack_live({"message": "Замена: payload:'${x}'"})
-    zap = diary_bus.read_file_backlog("zap")
+    scanner = diary_bus.read_file_backlog("scanner")
     assert any(
         e.get("kind") == "LOG" and e.get("text") == "ЛогАтаки | Замена: payload:'${x}'"
-        for e in zap
+        for e in scanner
     )
     diary = diary_bus.read_file_backlog("diary")
     assert not any("ЛогАтаки" in e.get("text", "") for e in diary)
 
 
-def test_scan_completion_is_published_to_zap_channel():
+def test_scan_completion_is_published_to_scanner_channel():
     from core.controller import Controller
 
     ctrl = Controller.__new__(Controller)
     ctrl.adapters = {}
-    ctrl._publish_zap_live("active_scan", {}, 17)
+    ctrl._publish_scanner_live("active_scan", {}, 17)
 
-    zap = diary_bus.read_file_backlog("zap")
+    scanner = diary_bus.read_file_backlog("scanner")
     assert any(
-        event["kind"] == "ZAP"
+        event["kind"] == "scanner"
         and event["text"] == "Active scan completed — found 17 vulnerabilities"
-        for event in zap
+        for event in scanner
     )
 
 
@@ -426,12 +426,12 @@ def test_scan_completion_is_trace_event_not_allure_attachment(monkeypatch):
     events = []
     monkeypatch.setattr(
         Controller,
-        "_record_zap_trace_event",
+        "_record_scanner_trace_event",
         lambda _self, text, *, kind: events.append((kind, text)),
     )
     ctrl = Controller.__new__(Controller)
     ctrl.adapters = {}
-    ctrl._publish_zap_live("ajax_spider_scan", {}, 200)
+    ctrl._publish_scanner_live("ajax_spider_scan", {}, 200)
 
     assert events == [("scan_result", "AJAX Spider found 200 URLs")]
 
@@ -442,14 +442,14 @@ def test_scan_start_is_trace_event(monkeypatch):
     events = []
     monkeypatch.setattr(
         Controller,
-        "_record_zap_trace_event",
+        "_record_scanner_trace_event",
         lambda _self, text, *, kind: events.append((kind, text)),
     )
     ctrl = Controller.__new__(Controller)
 
-    ctrl._publish_zap_scan_started("ajax_spider_scan")
-    ctrl._publish_zap_scan_started("active_scan")
-    ctrl._publish_zap_scan_started("create_context")
+    ctrl._publish_scanner_scan_started("ajax_spider_scan")
+    ctrl._publish_scanner_scan_started("active_scan")
+    ctrl._publish_scanner_scan_started("create_context")
 
     assert events == [
         ("scan_started", "AJAX Spider started"),
@@ -457,18 +457,18 @@ def test_scan_start_is_trace_event(monkeypatch):
     ]
 
 
-def test_non_scan_zap_action_does_not_create_duplicate_trace_event(monkeypatch):
+def test_non_scan_scanner_action_does_not_create_duplicate_trace_event(monkeypatch):
     from core.controller import Controller
 
     events = []
     monkeypatch.setattr(
         Controller,
-        "_record_zap_trace_event",
+        "_record_scanner_trace_event",
         lambda _self, text, *, kind: events.append((kind, text)),
     )
     ctrl = Controller.__new__(Controller)
 
-    ctrl._publish_zap_live("create_context", {"context_name": "juice_ctx"}, "juice_ctx")
+    ctrl._publish_scanner_live("create_context", {"context_name": "juice_ctx"}, "juice_ctx")
 
     assert events == []
 
@@ -541,8 +541,8 @@ def test_should_publish_live_step_filters_noise():
         "Открыть http://x",
     )
     assert ctrl._should_publish_live_step(
-        SimpleNamespace(description=None, constructor="webdriver|crawl_urls|urls"),
-        "webdriver|crawl_urls",
+        SimpleNamespace(description=None, constructor="webdriver|open|https://example.com"),
+        "webdriver|open",
         "ОбойтиСтраницы urls",
     )
     assert not ctrl._should_publish_live_step(
@@ -566,8 +566,8 @@ def test_should_publish_live_step_filters_noise():
         "КоличествоCookies",
     )
     assert not ctrl._should_publish_live_step(
-        SimpleNamespace(description=None, constructor="zap|active_scan"),
-        "zap|active_scan",
+        SimpleNamespace(description=None, constructor="scanner|active_scan"),
+        "scanner|active_scan",
         "active_scan",
     )
 
@@ -669,26 +669,26 @@ def test_session_diary_live_false_skips_ndjson():
     assert len(diary) == 1 and diary[0]["kind"] == "ERROR"
 
 
-def test_zap_high_alert_is_trace_event_once(monkeypatch):
+def test_scanner_high_alert_is_trace_event_once(monkeypatch):
     from core.controller import Controller
 
     events = []
     monkeypatch.setattr(
         Controller,
-        "_record_zap_trace_event",
+        "_record_scanner_trace_event",
         lambda _self, text, *, kind: events.append((kind, text)),
     )
 
-    class Zap:
+    class scanner:
         @staticmethod
-        def summarize_alerts_for_live(*, risks):
+        def summarize_alerts_for_live(*args, **kwargs):
             return {"items": [{"kind": "ALERT", "line": "High: SQL Injection"}]}
 
     ctrl = Controller.__new__(Controller)
-    ctrl.adapters = {"zap": Zap()}
+    ctrl.adapters = {"scanner": scanner()}
 
-    ctrl._diary_zap_alerts()
-    ctrl._diary_zap_alerts()
+    ctrl._diary_scanner_alerts()
+    ctrl._diary_scanner_alerts()
 
     assert events == [("alert", "High: SQL Injection")]
 
@@ -948,7 +948,7 @@ def test_get_results_hooks_filters_by_run_id(monkeypatch, tmp_path: Path):
     hooks_path.write_text(json.dumps({
         "allure": {"report_url": "http://127.0.0.1:5050/", "run_id": "alpha", "allure_project_id": "default"},
         "dojo": {"report_url": "http://127.0.0.1:8081/", "run_id": "beta", "engagement_id": "123"},
-        "zap": {"report_url": "http://127.0.0.1:8080/", "run_id": None},
+        "scanner": {"report_url": "http://127.0.0.1:8080/", "run_id": None},
     }), encoding="utf-8")
 
     # No filter — all hooks returned
@@ -968,13 +968,13 @@ def test_get_results_hooks_filters_by_run_id(monkeypatch, tmp_path: Path):
     assert beta_hooks["dojo"] is not None
     assert beta_hooks["dojo"]["run_id"] == "beta"
 
-    # zap has no run_id — passes through any filter
-    assert beta_hooks["zap"] is not None
+    # scanner has no run_id — passes through any filter
+    assert beta_hooks["scanner"] is not None
 
     # Filter to unknown run — all filtered out (except hook without run_id)
     unknown_hooks = diary_bus.get_results_hooks(run_id="unknown")
     assert unknown_hooks["allure"] is None
     assert unknown_hooks["dojo"] is None
-    assert unknown_hooks["zap"] is not None  # no run_id — passes
+    assert unknown_hooks["scanner"] is not None  # no run_id — passes
 
 

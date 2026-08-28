@@ -15,7 +15,7 @@ def test_read_and_filter_journal(tmp_path: Path):
     nd = tmp_path / "run.ndjson"
     rows = [
         {"ts": 1, "kind": "NOTE", "channel": "diary", "text": "start"},
-        {"ts": 2, "kind": "HIGH", "channel": "zap", "text": "SQLi"},
+        {"ts": 2, "kind": "HIGH", "channel": "scanner", "text": "SQLi"},
         {"ts": 3, "kind": "ERROR", "channel": "diary", "text": "wd fail"},
         {"ts": 4, "kind": "LOG", "channel": "diary", "text": "noise"},
         {"ts": 5, "kind": "HEAL", "channel": "diary", "text": "locator heal OK"},

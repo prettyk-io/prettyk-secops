@@ -2,7 +2,7 @@
 COS-L20: End-to-end: Domain → Run → Evidence → ГОСТ-Акт.
 
 Полный сквозной сценарий с моками ForgeAdapter, ExecutionAdapter,
-ZAP, Playwright.
+scanner, Playwright.
 """
 import json
 import pytest
@@ -83,7 +83,7 @@ class TestE2ECosmo:
             PipelineBrick(id="b-sast", name="SAST", type="sast", source="e2e/frontend",
                           definition=BrickDefinition(image="sonarsource/sonar-scanner-cli:latest")),
             PipelineBrick(id="b-dast", name="DAST", type="dast", source="e2e/frontend",
-                          definition=BrickDefinition(image="owasp/zap2docker-stable:latest")),
+                          definition=BrickDefinition(image="owasp/scanner2docker-stable:latest")),
             PipelineBrick(id="b-gate", name="Security Gate", type="gate", source="internal",
                           definition=BrickDefinition(image="internal/gate-checker:latest")),
         ]
@@ -117,7 +117,7 @@ class TestE2ECosmo:
                                       "rule": "S3649", "message": "SQL Injection"},
                          "run-e2e/batch-sast/step-scan")
         # DAST findings
-        ledger.add_entry("finding", {"tool": "OWASP ZAP", "severity": "High",
+        ledger.add_entry("finding", {"tool": "OWASP scanner", "severity": "High",
                                       "alert": "XSS", "url": "https://app/search"},
                          "run-e2e/batch-dast/step-scan")
         # Logs
@@ -194,7 +194,7 @@ class TestE2ECosmo:
             PipelineBrick(id="b-sast", name="SAST", type="sast", source="org/main",
                           definition=BrickDefinition(image="sonarsource/sonar-scanner-cli:latest")),
             PipelineBrick(id="b-dast", name="DAST", type="dast", source="org/main",
-                          definition=BrickDefinition(image="owasp/zap2docker-stable:latest")),
+                          definition=BrickDefinition(image="owasp/scanner2docker-stable:latest")),
         ]
 
         # 4. Run

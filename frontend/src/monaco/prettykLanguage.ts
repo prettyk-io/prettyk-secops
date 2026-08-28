@@ -48,7 +48,7 @@ function labelsForComponents(components: ReadonlySet<string>): string[] {
   return [...ids];
 }
 
-/** Как Пусть: core/allure-хром, не попадающий в zap/selenium MethodId. */
+/** Как Пусть: core/allure-хром, не попадающий в scanner/selenium MethodId. */
 const CHROME_KEYWORD_EXTRA = [
   'Пауза',
   'Скриншот',
@@ -83,19 +83,19 @@ const KEYWORD_WORDS = [
 ];
 
 const CHROME_SET = new Set<string>(CHROME_KEYWORD_EXTRA);
-const ZAP_WORDS = labelsForComponents(new Set(['zap']));
+const scanner_WORDS = labelsForComponents(new Set(['scanner']));
 const FUZZ_WORDS = labelsForComponents(new Set(['fuzz']));
 const SELENIUM_WORDS = labelsForComponents(new Set(['webdriver', 'inspector'])).filter(
   (name) => !CHROME_SET.has(name),
 );
 
 const KEYWORD_RE = new RegExp(wordGroup(KEYWORD_WORDS));
-const ZAP_METHOD_RE = ZAP_WORDS.length > 0 ? new RegExp(wordGroup(ZAP_WORDS)) : null;
+const scanner_METHOD_RE = scanner_WORDS.length > 0 ? new RegExp(wordGroup(scanner_WORDS)) : null;
 const FUZZ_METHOD_RE = FUZZ_WORDS.length > 0 ? new RegExp(wordGroup(FUZZ_WORDS)) : null;
 const SELENIUM_METHOD_RE =
   SELENIUM_WORDS.length > 0 ? new RegExp(wordGroup(SELENIUM_WORDS)) : null;
 
-const FACADE_ZAP_RE = /(?:^|[\s{(\[])ZAP(?![A-Za-zА-Яа-яЁё0-9_])/;
+const FACADE_scanner_RE = /(?:^|[\s{(\[])scanner(?![A-Za-zА-Яа-яЁё0-9_])/;
 const FACADE_RE = /(?:^|[\s{(\[])(?:HTTP|Сессия|Драйвер|CDP|WD|Браузер)(?![A-Za-zА-Яа-яЁё0-9_])/;
 
 const rootRules: languages.IMonarchLanguageRule[] = [
@@ -104,7 +104,7 @@ const rootRules: languages.IMonarchLanguageRule[] = [
     /\b(?:xpath|id|name|class|class_name|tag|tag_name|link|link_text|partial_link|partial_link_text|text|contains_text|text_contains)\b/,
     'pk.locator',
   ],
-  // Отчёт / ZAP Отчёт: format|template (как css/xpath).
+  // Отчёт / scanner Отчёт: format|template (как css/xpath).
   [
     /\b(?:traditional-html-plus|traditional-json-plus|traditional-xml-plus|traditional-html|traditional-json|traditional-xml|traditional-md|traditional-pdf|risk-confidence-html|high-level-report|sarif-json|sarif|modern|xml|json|html|md)\b/,
     'pk.locator',
@@ -115,7 +115,7 @@ const rootRules: languages.IMonarchLanguageRule[] = [
   // До общего argument, чтобы `host/#/x` не съел `/` и не оставил `#…` комментарием.
   [/\/#[^\s]*/, 'pk.argument'],
   // $ / ${…}: `$` синий (WD); `{`/`}` — delimiter (чёрные в теме), не selenium.
-  // Имя — локатор/ZAP. В строках — те же правила (@string*).
+  // Имя — локатор/scanner. В строках — те же правила (@string*).
   [/\$(?=\{)/, { token: 'pk.method.selenium', next: '@varBraceOpen' }],
   [/\$(?=[A-Za-z_])/, { token: 'pk.method.selenium', next: '@varDollar' }],
   [/\$/, 'pk.variable.invalid'],
@@ -124,18 +124,18 @@ const rootRules: languages.IMonarchLanguageRule[] = [
   [/^\s*>!/, 'pk.keyword'],
   [/^\s*>/, 'pk.keyword'],
   [/^\s*\?/, 'pk.keyword'],
-  [FACADE_ZAP_RE, 'pk.method.zap'],
+  [FACADE_scanner_RE, 'pk.method.scanner'],
   // Сессия / HTTP / … — тот же keyword, что Пусть (не серый facade).
   [FACADE_RE, 'pk.keyword'],
   [KEYWORD_RE, 'pk.keyword'],
 ];
 
-if (ZAP_METHOD_RE) {
-  rootRules.push([ZAP_METHOD_RE, 'pk.method.zap']);
+if (scanner_METHOD_RE) {
+  rootRules.push([scanner_METHOD_RE, 'pk.method.scanner']);
 }
 if (FUZZ_METHOD_RE) {
-  // Тот же акцент, что ZAP: сценарный Intruder-слой, не серый argument.
-  rootRules.push([FUZZ_METHOD_RE, 'pk.method.zap']);
+  // Тот же акцент, что scanner: сценарный Intruder-слой, не серый argument.
+  rootRules.push([FUZZ_METHOD_RE, 'pk.method.scanner']);
 }
 if (SELENIUM_METHOD_RE) {
   rootRules.push([SELENIUM_METHOD_RE, 'pk.method.selenium']);

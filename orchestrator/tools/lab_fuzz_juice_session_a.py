@@ -2,7 +2,7 @@
 """POC-A lab: seed History с Cookie → Campaign(source=history) → evidence session-bound.
 
 Бэкенд harness, не PrettyK. Сценарий:
-  1) GET search через ZAP с Cookie (попадает в History);
+  1) GET search через scanner с Cookie (попадает в History);
   2) Campaign берёт последнее matching сообщение и replay headers;
   3) Live: заголовок с пометкой session-bound; evidence без значений Cookie.
 
@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from adapters.zap_adapter import ZapAdapter
+from adapters.scanner_adapter import ScannerAdapter
 from core.errors import WiredError
 from core.fuzzing import (
     Campaign,
@@ -31,7 +31,7 @@ from core.fuzzing import (
     live_projection_titles,
     load_corpus_file,
 )
-from core.gate_policy import zap_api_key_from_env
+from core.gate_policy import scanner_api_key_from_env
 from utils.diary_bus import publish, set_meta
 
 BASE_URL = "http://juice-shop:3000"
@@ -53,11 +53,11 @@ def _publish_live(summary: dict) -> list[str]:
 def main() -> int:
     parser = argparse.ArgumentParser(description="POC-A Juice session-bound fuzz harness")
     parser.add_argument("--corpus", type=Path, default=DEFAULT_CORPUS)
-    parser.add_argument("--zap-host", default=pk_env("ZAP_HOST", "127.0.0.1"))
+    parser.add_argument("--scanner-host", default=pk_env("SCANNER_HOST", "127.0.0.1"))
     parser.add_argument(
-        "--zap-port",
+        "--scanner-port",
         type=int,
-        default=int(pk_env("ZAP_PORT", "8080")),
+        default=int(pk_env("SCANNER_PORT", "8080")),
     )
     parser.add_argument("--no-live", action="store_true")
     parser.add_argument(
@@ -71,18 +71,18 @@ def main() -> int:
         payloads = load_corpus_file(args.corpus)
     except WiredError as exc:
         raise SystemExit(str(exc)) from exc
-    zap = ZapAdapter(
-        host=args.zap_host,
-        port=args.zap_port,
-        api_key=zap_api_key_from_env(),
+    scanner = ScannerAdapter(
+        host=args.scanner_host,
+        port=args.scanner_port,
+        api_key=scanner_api_key_from_env(),
         base_url=BASE_URL,
     )
 
     print(
-        f"POC-A seed: GET {SEARCH_URL} via ZAP with Cookie (value redacted)",
+        f"POC-A seed: GET {SEARCH_URL} via scanner with Cookie (value redacted)",
         flush=True,
     )
-    zap.zap_http_request(
+    scanner.scanner_http_request(
         "GET",
         SEARCH_URL,
         headers={"Cookie": args.cookie, "Accept": "application/json"},
@@ -101,10 +101,10 @@ def main() -> int:
         module_id="juice_session_a",
     )
     print(
-        f"POC-A run: History → Campaign ZAP {args.zap_host}:{args.zap_port}",
+        f"POC-A run: History → Campaign scanner {args.scanner_host}:{args.scanner_port}",
         flush=True,
     )
-    summary = FuzzCampaignRunner(zap).run(campaign, base_url=BASE_URL)
+    summary = FuzzCampaignRunner(scanner).run(campaign, base_url=BASE_URL)
     evidence_path = summary.get("evidence_path") or ""
     digest_path = summary.get("digest_path") or ""
     print(
@@ -125,7 +125,7 @@ def main() -> int:
     if not summary.get("has_cookie"):
         print(
             "WARN: has_cookie=false — History, возможно, не вернул Cookie "
-            "(версия ZAP / формат messages). Ядро unit-тестами покрыто.",
+            "(версия scanner / формат messages). Ядро unit-тестами покрыто.",
             flush=True,
         )
 

@@ -335,7 +335,7 @@ export function AppShell(): React.JSX.Element {
     go({ kind: 'setup' });
   }, [go]);
 
-  const startWithManifest = useCallback(
+  const startWithWired = useCallback(
     (wired: unknown, title: string) => {
       const trimmed = title.trim();
       returnToRef.current = { kind: 'home' };
@@ -507,7 +507,7 @@ export function AppShell(): React.JSX.Element {
       <StudioSetupPage
         onBackHome={() => go({ kind: 'home' })}
         onProceedToStudio={(wired, title) => {
-          startWithManifest(wired, title);
+          startWithWired(wired, title);
         }}
         onLogout={handleLogout}
         roleLabel={roleLabel}
@@ -564,7 +564,7 @@ export function AppShell(): React.JSX.Element {
         // между проверками App пересоздаётся, чужой контекст не утекает.
         key={`${workspaceKey}:${item.check_id}`}
         checkId={item.check_id}
-        initialManifest={item.wired}
+        initialWired={item.wired}
         initialResources={item.resource_contents ?? {}}
         initialView={route.view}
         onRegisterGuard={(guard) => {

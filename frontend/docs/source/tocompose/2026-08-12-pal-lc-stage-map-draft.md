@@ -24,7 +24,7 @@
 | 11 | `deployment` | Развёртывание ПО | custom deploy | отдельный пайп | required |
 | 12 | `autotests` | Выполнение автотестов | | | не = DAST |
 | 13 | `blackbox` | Blackbox | `WHEN_BLACKBOX` | dast-include | |
-| 14 | `owasp_dast` | OWASP ZAP | `WHEN_OWASP_DAST` | dast-include | наш якорь коробки |
+| 14 | `owasp_dast` | OWASP scanner | `WHEN_OWASP_DAST` | dast-include | наш якорь коробки |
 
 `APPCODE` ← `PPOD_PROJECT_NAME` (в build-include).
 

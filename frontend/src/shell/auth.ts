@@ -39,7 +39,7 @@ export type RoleCaps = {
   canOverrideScanUrl: boolean;
   /** infrastructure.debug_mode (операторский VOID). */
   canUseDebugMode: boolean;
-  /** infrastructure.zap_mode = webswing (expert — только demon). */
+  /** infrastructure.scanner_mode = webswing (expert — только demon). */
   canSelectWebswing: boolean;
   /**
    * Home: загрузка JSON-манифеста как болванки.

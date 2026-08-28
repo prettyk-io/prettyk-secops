@@ -73,7 +73,7 @@ const DEFAULT_CATEGORIES: StorageCategory[] = [
     label: 'Временные дампы',
     bytes: 0,
     items_count: 0,
-    description: 'Сырые дампы трафика ZAP, interim-артефакты сканирования',
+    description: 'Сырые дампы трафика scanner, interim-артефакты сканирования',
   },
   {
     key: 'runs_index',
@@ -356,7 +356,7 @@ export function RetentionPanel(): React.JSX.Element {
               <Typography.Text strong>Глубокая чистка временных дампов</Typography.Text>
               <br />
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                Удаляет незавершённые сессионные дампы, ZAP scratchpad и кеши без изменения истории прогонов
+                Удаляет незавершённые сессионные дампы, scanner scratchpad и кеши без изменения истории прогонов
               </Typography.Text>
             </div>
 

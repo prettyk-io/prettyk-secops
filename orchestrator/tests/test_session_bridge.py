@@ -114,15 +114,15 @@ def test_http_sessions_meta_names_not_tokens():
     assert "token=" not in blob
 
 
-def test_read_http_sessions_snapshot_from_fake_zap():
-    class _Zap:
+def test_read_http_sessions_snapshot_from_fake_scanner():
+    class _scanner:
         def get_sessions_sites(self):
             return ["http://target.local"]
 
         def get_site_sessions(self, site, session_name=None):
             return [{"name": "auth-session", "token": "SECRET"}]
 
-    meta = read_http_sessions_snapshot(_Zap(), base_url="http://target.local/app")
+    meta = read_http_sessions_snapshot(_scanner(), base_url="http://target.local/app")
     assert meta["http_sessions_sites"] == ["http://target.local"]
     assert meta["http_session_names"] == ["auth-session"]
     assert "SECRET" not in json.dumps(meta)

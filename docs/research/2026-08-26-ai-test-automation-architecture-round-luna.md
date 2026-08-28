@@ -39,7 +39,7 @@ Orchestration / Governance
 ```text
 prettyK DSL + Studio + Editor
   → Buddy intent / proposal
-  → Playwright + CDP + ZAP + Fuzzer
+  → Playwright + CDP + scanner + Fuzzer
   → Live + Allure + Dojo + Evidence Chain
   → baseline delta + gates + Admin
 ```
@@ -231,7 +231,7 @@ step failed
 - comparison with last successful run;
 - reproducible step sequence.
 
-У PrettyK этот слой уже имеет хороший security-уклон: Allure, ZAP, DefectDojo, Live, baseline delta и Evidence Chain.
+У PrettyK этот слой уже имеет хороший security-уклон: Allure, scanner, DefectDojo, Live, baseline delta и Evidence Chain.
 
 ### 3.7. Слой Orchestration / Governance
 
@@ -442,7 +442,7 @@ extract
 - prettyK DSL;
 - WireK как derived view;
 - Action Hub с явным Submit;
-- manifest/Pydantic contract;
+- wired/Pydantic contract;
 - data modules, auth modules, connectors, chain.
 
 Сильная сторона — явная семантика, а не свободный текст, который каждый раз трактуется заново.
@@ -457,7 +457,7 @@ extract
 - multi-context;
 - headless/headed;
 - Browser Stage;
-- ZAP MITM;
+- scanner MITM;
 - Fast Fuzzer;
 - DAST waves;
 - bounded run;
@@ -488,7 +488,7 @@ extract
 - Live :8767;
 - diary/NDJSON;
 - Allure;
-- ZAP;
+- scanner;
 - DefectDojo;
 - Evidence Chain;
 - fingerprints;
@@ -511,7 +511,7 @@ extract
 | Intent | Buddy, prettyK, Studio, Editor | Явный immutable Run Plan |
 | App context | DOM/AX/network/console discovery | Persistent AUT knowledge graph |
 | Planning | Intent → skeleton → proposal | Отдельный plan artifact и plan diff |
-| Execution | Playwright, CDP, ZAP, fuzz, contexts | Промышленный worker/VM scale и device grid |
+| Execution | Playwright, CDP, scanner, fuzz, contexts | Промышленный worker/VM scale и device grid |
 | Recovery | Weighted heal, failsafe, soft/hard | Полная recovery state machine, restore points, outcome reviewer |
 | Evidence | Live, Allure, Dojo, baseline, chain | Единый failure taxonomy и RCA workflow |
 | Orchestration | Admin, gates, runs, retention | Полный scheduler, impact selection, quarantine/flaky registry |
@@ -730,7 +730,7 @@ changed file/module/endpoint
 Первый слой должен быть deterministic:
 
 - tags;
-- manifest references;
+- wired references;
 - connector dependencies;
 - auth dependencies;
 - chain slots;
@@ -795,7 +795,7 @@ Data Preparation
 Browser Discovery
 API Probe
 Chain Setup
-ZAP Scan
+scanner Scan
 Finding Normalization
 Evidence Pack
 Quality Gate
@@ -921,7 +921,7 @@ Visual layer полезен, но должен быть optional и isolated. Se
        ┌─────────────────────────────┴─────────────────────────────┐
        ↓                                                           ↓
 ┌───────────────┐                                         ┌────────────────┐
-│ Playwright    │                                         │ ZAP / Fuzzer   │
+│ Playwright    │                                         │ scanner / Fuzzer   │
 │ Browser Core  │                                         │ Security plane │
 └───────┬───────┘                                         └───────┬────────┘
         └──────────────────────┬──────────────────────────────────┘
@@ -1101,7 +1101,7 @@ Policy ограничивает.
 
 - реализация любого из концептов;
 - изменение prettyK DSL;
-- замена manifest/Pydantic-контрактов;
+- замена wired/Pydantic-контрактов;
 - замена Playwright Browser Core;
 - перенос системы на plain English или YAML;
 - построение generic CI;

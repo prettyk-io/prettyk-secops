@@ -44,7 +44,7 @@ Cosmoport (portal, ЦБ)
 ## Куда дозреет
 
 - Секция FRIEND `product-forks` / admin-integrations — при promote.  
-- SoT: не расширять `manifest.json` без приказа; stub на `project_id` / `base_url_override`.
+- SoT: не расширять `wired.json` без приказа; stub на `project_id` / `base_url_override`.
 
 ## Не обещаем
 

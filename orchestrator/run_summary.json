@@ -11,17 +11,17 @@
     "allure_results": "D:\\prettyk-dev\\reports\\allure-results\\9d56e65d",
     "allure_report": "D:\\prettyk-dev\\reports\\allure-report",
     "allure_project_id": "9d56e65d",
-    "zap_html": "D:\\prettyk-dev\\reports\\scanner-results\\zap-final.html",
-    "zap_xml": "D:\\prettyk-dev\\reports\\scanner-results\\juice_dojo.xml",
+    "scanner_html": "D:\\prettyk-dev\\reports\\scanner-results\\scanner-final.html",
+    "scanner_xml": "D:\\prettyk-dev\\reports\\scanner-results\\juice_dojo.xml",
     "live": "http://127.0.0.1:8767/"
   },
-  "zap_mode": "demon",
-  "zap_api_port": 8080,
-  "zap_proxy_port": 8099,
+  "scanner_mode": "demon",
+  "scanner_api_port": 8080,
+  "scanner_proxy_port": 8099,
   "honest_contract_notes": [
-    "scan_policy='custom_policy' (нет авто spider/active; явный AF: ZAP СгенерироватьПлан / ZAP План)",
+    "scan_policy='custom_policy' (нет авто spider/active; явный AF: scanner СгенерироватьПлан / scanner План)",
     "base_url_override → ${base_url} в stream (авто-Открыть нет)",
-    "auth_type='??? ???????????' (Http bootstrap не применён; ZAP — ZAP ПрименитьAuth)"
+    "auth_type='??? ???????????' (Http bootstrap не применён; scanner — scanner ПрименитьAuth)"
   ],
   "admission_void": true,
   "finding_collapse": {
@@ -629,7 +629,7 @@
       "low": 12,
       "info": 6
     },
-    "source": "zap_xml",
+    "source": "scanner_xml",
     "execution_fault": false
   },
   "allure_summary": {

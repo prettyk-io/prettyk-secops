@@ -125,7 +125,6 @@ const ACTION_VERB_MAP: Record<string, ActionKind> = {
   'получитьатрибут': 'Check',
   'пусть': 'Let',
   'секрет': 'Secret',
-  'паук': 'Spider',
   'сканировать': 'ActiveScan',
   'фазз': 'FuzzWave',
   'мутировать': 'Mutate',
@@ -146,8 +145,7 @@ const ACTION_VERB_MAP: Record<string, ActionKind> = {
   'select_by_value': 'Select',
   'presskey': 'PressKey',
   'check': 'Check',
-  'spider': 'Spider',
-  'spiderscan': 'Spider',
+  'crawl': 'Crawl',
   'activescan': 'ActiveScan',
   'fuzzwave': 'FuzzWave',
   'mutate': 'Mutate',
@@ -156,7 +154,7 @@ const ACTION_VERB_MAP: Record<string, ActionKind> = {
   'secret': 'Secret',
   'generateemail': 'GenerateEmail',
   'generatephone': 'GeneratePhone',
-  'zapreport': 'ZapReport',
+  'scannerreport': 'scannerReport',
 };
 
 function normalizeStrategy(rawStrat: string): StrategyKind {
@@ -314,7 +312,7 @@ function parsePrimaryAction(primaryStr: string, id: string): ScenarioStepModel |
       strategyValue = (args[0] || '').replace(/^\$/, '');
       payload = (args[1] || '').replace(/^["']|["']$/g, '');
     }
-  } else if (action === 'Spider' || action === 'ActiveScan') {
+  } else if (action === 'Crawl' || action === 'ActiveScan') {
     payload = args.join(' ');
   } else {
     // Actions: Click, Type, Hover, Select, PressKey, Check, etc.

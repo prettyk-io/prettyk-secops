@@ -49,10 +49,6 @@ class _BrowserWorker:
         self._observed_events: list[dict] = []
         self._observe_last_event_id = 0
         self._binding_registered = False
-        # WIRE-SYNC-L1: CDP screencast — live JPEG stream
-        self._screencast_active = False
-        self._last_frame: str | None = None
-        self._cdp_session: object | None = None
 
     # ── public dispatch API ──
 
@@ -125,6 +121,18 @@ class _BrowserWorker:
 
         try:
             from browser.playwright_runtime import PlaywrightBrowserRuntime
+            # VP-FIX: перед переподключением закрыть старый runtime.
+            # Иначе второй sync_playwright() в том же worker-потоке кидает
+            # "Playwright Sync API inside asyncio loop" → "browser not available".
+            if self._pw is not None:
+                try:
+                    self._pw.close()
+                except Exception:
+                    pass
+                self._pw = None
+                self._browser = None
+                self._page = None
+                self._binding_registered = False
             runtime = PlaywrightBrowserRuntime()
             self._page = runtime.connect_over_cdp(cdp_endpoint)
             self._browser = runtime.browser
@@ -132,7 +140,6 @@ class _BrowserWorker:
             self._browser_id = f"container-{uuid.uuid4().hex[:12]}"
             self._last_cdp_error = None
             self._binding_registered = False  # новая страница — binding нужно регистрировать заново
-            self._start_screencast()
             logger.info("browser_service: connected to CDP container %s", cdp_endpoint)
             return self._page
         except Exception as e:
@@ -211,54 +218,6 @@ class _BrowserWorker:
             return {"ok": True, "screenshot": base64.b64encode(data).decode("utf-8"), "format": "png"}
         except Exception as e:
             return {"ok": False, "error": f"{type(e).__name__}: {e}"}
-
-    # ── WIRE-SYNC-L1: CDP screencast (live JPEG stream 10+ fps) ──
-
-    def _start_screencast(self) -> None:
-        """Start Page.startScreencast on the CDP session.
-        Called from _ensure_browser() after browser is launched/connected.
-        """
-        if self._screencast_active or self._page is None:
-            return
-        try:
-            ctx = self._page.context if hasattr(self._page, 'context') else None
-            if ctx is None:
-                ctx = getattr(self._page, '_context', None)
-            if ctx is None and self._context is not None:
-                ctx = self._context
-            if ctx is None:
-                return
-            self._cdp_session = ctx.new_cdp_session(self._page)
-            # Subscribe before starting the stream so the first frame cannot be lost.
-            def _on_frame(params: dict) -> None:
-                data = params.get("data", "")
-                if data:
-                    self._last_frame = data
-                try:
-                    self._cdp_session.send("Page.screencastFrameAck", {"sessionId": params.get("sessionId", 0)})
-                except Exception:
-                    pass
-
-            self._cdp_session.on("Page.screencastFrame", _on_frame)
-            self._cdp_session.send("Page.startScreencast", {
-                "format": "jpeg",
-                "quality": 80,
-                "maxWidth": 1280,
-                "maxHeight": 800,
-                "everyNthFrame": 1,
-            })
-            self._screencast_active = True
-            logger.info("browser_service: CDP screencast started (JPEG 1280x800 q=80)")
-        except Exception as e:
-            logger.warning("browser_service: screencast start failed: %s", e)
-
-    def _cmd_screencast_frame(self) -> dict:
-        """Return the most recent JPEG frame from CDP screencast."""
-        if not self._screencast_active or self._page is None:
-            return {"ok": False, "error": "screencast not active"}
-        if self._last_frame is None:
-            return {"ok": True, "frame": None, "waiting": True}
-        return {"ok": True, "frame": self._last_frame, "format": "jpeg"}
 
     def _cmd_back(self) -> dict:
         page = self._ensure_browser()
@@ -431,19 +390,23 @@ class _BrowserWorker:
         try:
             # VP-L2 hit-test fix: page.mouse.click(x,y) полагается на физический
             # hit-test браузера и уязвим к Angular Material backdrop/snackbar overlay.
-            # Между mousedown и mouseup Angular показывает snackbar с
-            # div.cdk-overlay-backdrop, поэтому mousedown ложится на кнопку, а
-            # mouseup уже на backdrop → браузер не формирует click на кнопке
-            # (down и up на разных узлах), а observe ловит backdrop.
-            #
             # Фиксируем DOM-элемент под координатами ДО клика через
             # document.elementFromPoint и диспатчим mousedown/mouseup/click на
             # него напрямую — обходит физический hit-test и гонку появления overlay.
+            #
+            # Playwright page.evaluate(expression, arg) принимает ОДИН arg —
+            # передаём [x, y] списком, а не двумя позиционными (иначе TypeError).
             page.evaluate(
                 """
-                (x, y) => {
-                    const el = document.elementFromPoint(x, y);
+                ([x, y]) => {
+                    let el = document.elementFromPoint(x, y);
                     if (!el) return false;
+                    // Подняться к ближайшему интерактивному элементу —
+                    // клик по span/внутреннему тексту кнопки должен стать
+                    // кликом по самой кнопке (иначе e.target = span, а Angular
+                    // ripple/snackbar перехватывает и observe ловит div).
+                    const interactive = el.closest('button, a, input, select, textarea, [role="button"], [role="link"]');
+                    if (interactive) el = interactive;
                     const opts = { bubbles: true, cancelable: true, composed: true, view: window };
                     const mk = (type, button, buttons) => new MouseEvent(type, {
                         ...opts, clientX: x, clientY: y, button, buttons
@@ -454,8 +417,7 @@ class _BrowserWorker:
                     return true;
                 }
                 """,
-                float(x),
-                float(y),
+                [float(x), float(y)],
             )
             logger.info("browser_observe_click at (%.1f,%.1f)", x, y)
             deadline = time.time() + 2.0
@@ -650,9 +612,6 @@ def browser_navigate(url: str) -> dict:
 
 def browser_screenshot() -> dict:
     return _worker.dispatch("screenshot")
-
-def browser_screencast_frame() -> dict:
-    return _worker.dispatch("screencast_frame")
 
 def browser_back() -> dict:
     return _worker.dispatch("back")

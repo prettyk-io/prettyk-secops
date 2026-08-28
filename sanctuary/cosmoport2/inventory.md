@@ -7,7 +7,7 @@
 | **SecOps Runtime** | Playwright Adapter (55+ методов) | � Боевое, 8/8 тестов | Bоss (DSL-B1) | Полный паритет с Selenium |
 | | Smart Locator Engine (11 стратегий) | � Боевое | Bоss (DSL-B2) | css/id/name/class/text/xpath/role/test_id/label/placeholder/qa |
 | | Sugar Parser (16 алиасов) | � Боевое | Bоss (DSL-B3) | Клик→Нажать, Вставить→ВставитьЗначение, etc |
-| | ZAP Demon API (:8080) | � Боевое | legacy | Фоновый DAST-сканер |
+| | scanner Demon API (:8080) | � Боевое | legacy | Фоновый DAST-сканер |
 | | Fuzzer Engine | � Боевое | legacy | Словарный фаззер SQLi/XSS/CMDi |
 | | Discovеry Engine | � Боевое | legacy | Обход сайта, карта эндпоинтов |
 | **DSL & Sugar** | MеthodId + wirе-parser | � Боевое | Bоss | Канонический контракт |

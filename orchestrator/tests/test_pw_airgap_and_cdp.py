@@ -192,8 +192,10 @@ class TestPW_C1_Cutover:
         assert "playwright-authoring:" in COMPOSE_FILE.read_text(encoding="utf-8")
 
     def test_default_runtime_is_playwright(self):
-        runtime = os.environ.get("PK_BROWSER_RUNTIME") or "playwright"
-        assert runtime == "playwright"
+        """PW-C1 (cutover): дефолт — playwright. Читает реальный resolve_browser_runtime,
+        не хардкод `or "playwright"`."""
+        from core.controller import resolve_browser_runtime
+        assert resolve_browser_runtime() == "playwright"
 
     def test_pw_adapter_importable(self):
         from adapters.playwright_adapter import PlaywrightAdapter

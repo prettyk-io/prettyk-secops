@@ -22,7 +22,7 @@ docker compose -f services/docker-compose.yml build llm-server
 docker compose -f services/docker-compose.yml up -d llm-server
 ```
 
-**Важно:** Базовый compose поднимает Juice Shop, ZAP, Grid, Chrome, Firefox, Allure, llama 1.7B (`:8768`), llama 4B (`:8769`) и llm-server (`:8766`). DefectDojo — отдельным файлом. После первого `git pull` с новым `llm_server.py` нужен `build llm-server`.
+**Важно:** Базовый compose поднимает Juice Shop, scanner, Grid, Chrome, Firefox, Allure, llama 1.7B (`:8768`), llama 4B (`:8769`) и llm-server (`:8766`). DefectDojo — отдельным файлом. После первого `git pull` с новым `llm_server.py` нужен `build llm-server`.
 
 ### 0.2 Host-процессы (Python, вне Docker)
 
@@ -82,7 +82,7 @@ docker compose -f services/docker-compose.defectdojo.yml down
 | Порт | Сервис | Где | Env |
 |---|---|---|---|
 | `:3000` | Juice Shop | Docker compose базовый | — |
-| `:8080` | ZAP demon | Docker compose базовый | — |
+| `:8080` | scanner demon | Docker compose базовый | — |
 | `:8081` | DefectDojo | Docker compose defectdojo | — |
 | `:4444` | Selenium Grid + Chrome | Docker compose базовый | — |
 | `:8765` | Playground API | Host: `data_playground.py` | — |
@@ -101,7 +101,7 @@ docker compose -f services/docker-compose.defectdojo.yml down
 - [ ] Выставить `KDT_AI_ASSISTANT_ENABLED=0`
 - [ ] Перезапустить Live idle
 - [ ] Открыть Студию `http://localhost:5173`
-- [ ] Загрузить `exp01_reference/manifest.json`
+- [ ] Загрузить `exp01_reference/wired.json`
 - [ ] Нажать «Запустить пайплайн»
 - [ ] Убедиться что прогон завершён без AI-колонок в DojoFindingsTable
 - [ ] Убедиться что `/api/ai/status` → `{"enabled": false}`
@@ -127,7 +127,7 @@ docker compose -f services/docker-compose.defectdojo.yml down
 - [ ] `/api/ai/status` → `{"enabled": true}`
 - [ ] Вкладка «Находки» в Admin — колонка AI видна
 - [ ] Нажать «Classify All» — для каждой находки появляется AI severity и FP confidence
-- [ ] Severity от Qwen совпадает с ZAP severity минимум на 90% (калибровка показала 100%)
+- [ ] Severity от Qwen совпадает с scanner severity минимум на 90% (калибровка показала 100%)
 - [ ] Кнопка «AI Diff» открывает reasoning в модалке
 - [ ] Latency на classify: ~4-5s на finding
 

@@ -64,7 +64,7 @@ async function waitHooks(pred, label, ms) {
   throw new Error(`${label}: last=${JSON.stringify(last)}`);
 }
 
-function loadE2eManifest() {
+function loadE2eWired() {
   const raw = JSON.parse(
     fs.readFileSync(
       path.join(ROOT, 'orchestrator/fixtures/validate_ok.json'),
@@ -83,7 +83,7 @@ async function main() {
   if (!fs.existsSync(EDGE)) {
     throw new Error(`Edge not found: ${EDGE}`);
   }
-  const manifest = loadE2eManifest();
+  const wired = loadE2eWired();
   const checkId = 'e2e-hooks-' + Date.now().toString(36);
 
   await fetch(`${LIVE}/api/results/hooks`, {
@@ -158,7 +158,7 @@ async function main() {
           updated_at: now,
           opened_at: now,
           view: 'results',
-          manifest,
+          wired,
           resource_contents: {},
         },
       ],

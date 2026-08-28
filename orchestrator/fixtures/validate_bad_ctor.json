@@ -11,11 +11,11 @@
     "release_manager": "rm@example.test"
   },
   "infrastructure": {
-    "zap_mode": "demon",
+    "scanner_mode": "demon",
     "browser_type": "chrome",
     "additional_local_server_port": 8085,
     "start_with_webswing": false,
-    "zap_work_timeout_min": 10,
+    "scanner_work_timeout_min": 10,
     "idle_timeout_min": 5,
     "webswing_session_timeout_min": 60,
     "gui_extra_configs": ""
@@ -39,7 +39,7 @@
           {
             "depends_on": [],
             "description": "unknown method",
-            "constructor": "ZAP НетТакогоМетода foo",
+            "constructor": "scanner НетТакогоМетода foo",
             "failsafe": false,
             "retry": 0,
             "retry_delay": 2,

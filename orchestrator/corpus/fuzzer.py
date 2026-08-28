@@ -1,7 +1,7 @@
 ﻿# -*- coding: utf-8 -*-
 """CD-7: Собственный фаззер мутаций (Burp-killer core).
 
-Чистый Python, без ZAP: генерирует boundary payloads, спецсимволы,
+Чистый Python, без scanner: генерирует boundary payloads, спецсимволы,
 инъекционные сигналы и мутирует ``RequestTemplate`` подстановкой
 в query/body/JSON.
 

@@ -269,7 +269,7 @@ LabWorkspace (корень, управляет режимом: single | suite)
 - Request timeout (сек, сейчас 8)
 - Follow redirects (да/нет)
 - Auto-update Host header (да/нет)
-- Прокси-цепочка (отправить через ZAP / upstream proxy)
+- Прокси-цепочка (отправить через scanner / upstream proxy)
 
 ---
 
@@ -286,7 +286,7 @@ LabWorkspace (корень, управляет режимом: single | suite)
 ## Границы (out of scope — НЕ делать)
 
 - Не писать свою БД для истории сессий — только localStorage и память
-- Не интегрировать Lab с ZAP Proxy напрямую — Lab работает через RAW HTTP автономно
+- Не интегрировать Lab с scanner Proxy напрямую — Lab работает через RAW HTTP автономно
 - Не трогать бэкенд-движок `intruder_engine.py` без крайней необходимости
 - Не трогать API `live_server.py` `/api/lab/intruder/*` без крайней необходимости
 - Не менять существующие тесты Lab (`LabWorkspace.test.tsx`, `test_intruder_engine.py`)

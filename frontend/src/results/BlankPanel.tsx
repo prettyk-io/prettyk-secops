@@ -1,7 +1,7 @@
 /**
  * BLANK-PREV-1: Inline-превью бланка акта ИБ в Результатах.
  * Честный интерактивный inline-просмотр официального акта/бланка.
- * Подвал акта: Строка «Отпечаток проверки: <fnv1a-hash>» на базе manifestContentHash.
+ * Подвал акта: Строка «Отпечаток проверки: <fnv1a-hash>» на базе wiredContentHash.
  * Кнопка «Печать в PDF» (window.print()) с CSS @media print.
  *
  * Стилистика: SecOps Lab Dark, скругления 5–6px, токены --pk-*, JetBrains Mono для хешей.
@@ -18,7 +18,7 @@ import {
 } from '@ant-design/icons';
 import { downloadBlankHtml, renderBlankHtml } from './blankHtml';
 import { buildBlankPayload } from './blankPayload';
-import { manifestContentHash } from './blankLetterhead';
+import { wiredContentHash } from './blankLetterhead';
 import type { BlankKind, BlankPayload, LiveMetaSnapshot, ResultsHooksSnapshot } from './types';
 import { buildRunRecordFromLive } from './buildRunRecordFromLive';
 
@@ -56,7 +56,7 @@ export function BlankPanel({
   }, [payload]);
 
   const hash = useMemo(() => {
-    return payload.manifest_hash || manifestContentHash(payload.form_snapshot);
+    return payload.wired_hash || wiredContentHash(payload.form_snapshot);
   }, [payload]);
 
   useEffect(() => {

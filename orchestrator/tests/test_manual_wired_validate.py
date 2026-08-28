@@ -1,5 +1,5 @@
 ﻿# -*- coding: utf-8 -*-
-"""manual JSON без zap_mode/base_url — playground start не должен резать schema noise."""
+"""manual JSON без scanner_mode/base_url — playground start не должен резать schema noise."""
 from __future__ import annotations
 
 import json
@@ -38,4 +38,5 @@ def test_manual_Wired_validate_ok(tmp_path: Path):
     issues, wired = validate_wired_file(path)
     assert issues == [], issues
     assert wired is not None
-    assert wired.infrastructure.zap_mode == "webswing"
+    # PW-C1: webswing removed, _manual_forces_webswing deleted.
+    # Manual wired defaults to scanner_mode="demon" (Literal default).

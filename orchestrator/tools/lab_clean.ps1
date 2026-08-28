@@ -116,7 +116,7 @@ function Invoke-LiveClean {
         live_url     = 'http://127.0.0.1:8767/'
     } | ConvertTo-Json -Compress
     Set-LiveFileContent -Path $meta -Value $idleMeta
-    Set-LiveFileContent -Path $hooks -Value '{"allure":null,"dojo":null,"zap":null}'
+    Set-LiveFileContent -Path $hooks -Value '{"allure":null,"dojo":null,"scanner":null}'
     if (Test-Path $uiSummary) { Remove-Item -Force $uiSummary -ErrorAction SilentlyContinue }
     if (Test-Path $trend) { Remove-Item -Force $trend -ErrorAction SilentlyContinue }
     if (Test-Path $evidence) { Remove-Item -Force $evidence -ErrorAction SilentlyContinue }
@@ -141,7 +141,7 @@ function Show-DojoCleanHint {
 DefectDojo (lab): HTTP bulk-clean в репо нет — только локальный ручной сброс.
   UI: http://127.0.0.1:8081/  admin/admin — удалить Findings/Engagements в продукте.
   Ядерно (сотрёт БД Dojo): docker compose -f services\docker-compose.defectdojo.yml down -v
-  ZAP XML на диске (reports/scanner-results/) — отдельно, не трогаем здесь.
+  scanner XML на диске (reports/scanner-results/) — отдельно, не трогаем здесь.
 "@
 }
 

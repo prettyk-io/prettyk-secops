@@ -3,7 +3,7 @@
 
 
 > **Не CANON.** Мысли по наблюдаемому контуру + narrative оператора.  
-> Без pitch продукта. Без «совы». Связь: Stage 2 · PI salvage · [ZAP in repo](2026-08-12-pal-release-repo-zap-anchor.md).
+> Без pitch продукта. Без «совы». Связь: Stage 2 · PI salvage · [scanner in repo](2026-08-12-pal-release-repo-scanner-anchor.md).
 
 ---
 
@@ -32,7 +32,7 @@ AppSecHub в контуре — принятый **сток** (SARIF/import/hook
 
 ## 3. Скрипты и отладка в репе приложения
 
-Задумка as-is: `ZAP/`, `auth.js`, targets, autorun — **в дереве репозитория карточки**; job checkout’ит и гоняет. Отлаживать script-auth = commit/MR в **репу приложения** (или ждать, пока положат).
+Задумка as-is: `scanner/`, `auth.js`, targets, autorun — **в дереве репозитория карточки**; job checkout’ит и гоняет. Отлаживать script-auth = commit/MR в **репу приложения** (или ждать, пока положат).
 
 Это выглядит как архитектурный тупик с точки зрения роли проверки:
 

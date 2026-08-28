@@ -103,11 +103,65 @@ class CdpViewportRelay:
     # ── Public API ──
 
     async def start(self) -> None:
-        """Запустить relay: CDP connect → screencast → WS server."""
+        """Запустить relay: CDP connect (с реконнектом) → screencast → WS server."""
         logger.info("Starting CDP viewport relay ws://%s:%s", self._ws_host, self._ws_port)
+        # VP-FIX-L1: relay должен стартовать даже если контейнер ещё не поднят.
+        # WS-сервер поднимается в любом случае; CDP догоняется watch-догом.
         await self._connect_to_browser()
-        await self._start_screencast()
-        await self._serve_ws()
+        if self._browser_connected:
+            try:
+                await self._start_screencast()
+            except Exception:
+                logger.exception("Initial screencast failed, will retry via reconnect loop")
+        # Фоновый watch-дог: если браузер упал — реконнект без смерти процесса.
+        reconnect_task = asyncio.create_task(self._reconnect_loop())
+        try:
+            await self._serve_ws()
+        finally:
+            reconnect_task.cancel()
+            try:
+                await reconnect_task
+            except asyncio.CancelledError:
+                pass
+
+    async def _reconnect_loop(self) -> None:
+        """VP-FIX-L1: реконнект при падении контейнера без смерти процесса.
+
+        Периодически проверяет живость браузера. При обрыве — закрывает старый
+        browser/session и переподключается, снова запуская screencast.
+        """
+        while not self._shutting_down:
+            await asyncio.sleep(5.0)
+            if self._browser_connected:
+                continue
+
+            # Браузер отвалился — пробуем переподключиться
+            try:
+                logger.info("Reconnect: browser lost, retrying CDP connect…")
+                await self._teardown_browser()
+                await self._connect_to_browser()
+                await self._start_screencast()
+                logger.info("Reconnect: CDP reconnected, screencast restarted")
+            except Exception:
+                # Не умираем — просто ждём следующую попытку
+                logger.warning("Reconnect attempt failed, will retry in 5s")
+
+    async def _teardown_browser(self) -> None:
+        """Закрыть текущий browser/session перед переподключением."""
+        if self._cdp_session:
+            try:
+                await self._cdp_session.detach()
+            except Exception:
+                pass
+            self._cdp_session = None
+        if self._browser:
+            try:
+                await self._browser.close()
+            except Exception:
+                pass
+            self._browser = None
+        self._page = None
+        self._browser_connected = False
 
     async def shutdown(self) -> None:
         """Остановить relay."""
@@ -147,7 +201,10 @@ class CdpViewportRelay:
         except Exception as exc:
             logger.error("CDP connect failed: %s", exc)
             self._browser_connected = False
-            raise
+            # VP-FIX-L1: НЕ кидаем — watch-дог переподключит позже.
+            # Процесс relay должен переживать падение контейнера.
+            self._browser = None
+            self._page = None
 
     # ── Screencast ──
 
@@ -155,7 +212,10 @@ class CdpViewportRelay:
         if not self._browser or not self._page:
             raise RuntimeError("Browser not connected")
 
-        cdp = await self._browser.new_browser_cdp_session()
+        # VP-FIX: Page.startScreencast — домен ПЕЙДЖА, а не браузера.
+        # new_browser_cdp_session() даёт browser-level сессию, где Page.* нет
+        # (ошибка "'Page.startScreencast' wasn't found"). Нужна page-level сессия.
+        cdp = await self._page.context.new_cdp_session(self._page)
         self._cdp_session = cdp
 
         async def _on_frame(params: dict) -> None:
@@ -165,10 +225,20 @@ class CdpViewportRelay:
                 if not data_b64:
                     return
                 jpeg = base64.b64decode(data_b64)
-                metadata = params.get("metadata", {})
+                metadata = params.get("metadata", {}) or {}
                 self._latest.push(jpeg, metadata)
-                self._latest_width = int(metadata.get("width", 0) or 0)
-                self._latest_height = int(metadata.get("height", 0) or 0)
+                # VP-FIX: CDP отдаёт размеры в metadata.deviceWidth/deviceHeight,
+                # а НЕ width/height. Fallback на канон 1280×800 если metadata пустой.
+                self._latest_width = int(
+                    metadata.get("deviceWidth")
+                    or metadata.get("width")
+                    or 1280
+                )
+                self._latest_height = int(
+                    metadata.get("deviceHeight")
+                    or metadata.get("height")
+                    or 800
+                )
                 self._latest_dpr = float(metadata.get("deviceScaleFactor", 1.0))
 
                 session_id = params.get("sessionId", 0)
@@ -220,10 +290,22 @@ class CdpViewportRelay:
 
         Канал чисто бинарный (VP-F1 контракт): никаких текстовых "ready"/"error".
         Статус браузера — через HTTP /api/browser/status.
+
+        VP-FIX-L1: при подключении сразу шлём последний кадр (если уже есть),
+        чтобы клиент не ждал нового repaint на статичной странице.
         """
         self._clients.add(ws)
         logger.info("WS client connected (%d total)", len(self._clients))
         try:
+            # Немедленно отдать текущий кадр — иначе клиент на статичной
+            # странице (Juice Shop главная) не дождётся нового screencast-кадра.
+            jpeg, _seq = self._latest.snapshot()
+            if jpeg is not None:
+                packed = _pack_frame(
+                    jpeg, self._latest_width, self._latest_height
+                )
+                await ws.send(packed)
+
             async for message in ws:
                 if isinstance(message, bytes):
                     continue

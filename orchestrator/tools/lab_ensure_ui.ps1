@@ -45,6 +45,15 @@ if (-not $lv) {
     Write-Host "live :8767 alive"
 }
 
+# CDP viewport relay :9224 (VP-FIX: async screencast → WebSocket бинарный канал)
+$rl = netstat -ano | Select-String ":9224 .*LISTENING"
+if (-not $rl) {
+    Start-Process -FilePath $Py -ArgumentList "-u","-m","browser.cdp_viewport_relay" -WorkingDirectory $Or -WindowStyle Hidden
+    Write-Host "cdp relay :9224 launched"
+} else {
+    Write-Host "cdp relay :9224 alive"
+}
+
 if (-not $SkipHealth) {
     Start-Sleep 6
     $edChk = try { (Invoke-WebRequest -Uri http://localhost:5173/ -UseBasicParsing -TimeoutSec 5).StatusCode }

@@ -1,4 +1,4 @@
-﻿# PAL-5 — якорь: ZAP/расходники в репозитории проекта (релизный контур)
+﻿# PAL-5 — якорь: scanner/расходники в репозитории проекта (релизный контур)
 <!-- compose-request_50 -->
 
 
@@ -7,17 +7,17 @@
 
 ## Что видно в пайпе
 
-В `gitlab-ci-dast-custom-zap.yml` / родственных include job `zap_universal_ci`:
+В `gitlab-ci-dast-custom-scanner.yml` / родственных include job `scanner_universal_ci`:
 
-- `ZAP_DIR` = `${CI_PROJECT_DIR}/ZAP`
+- `scanner_DIR` = `${CI_PROJECT_DIR}/scanner`
 - перед сканом: `git fetch` / `checkout` ветки репо карточки
-- если есть `${ZAP_DIR}/zap.yaml` или alt autorun — **не** генерировать сценарий, взять файл из репо
-- script-auth: `${CI_PROJECT_DIR}/ZAP/scripts/auth.js`
-- targets: `${CI_PROJECT_DIR}/ZAP/targets/…`
+- если есть `${scanner_DIR}/scanner.yaml` или alt autorun — **не** генерировать сценарий, взять файл из репо
+- script-auth: `${CI_PROJECT_DIR}/scanner/scripts/auth.js`
+- targets: `${CI_PROJECT_DIR}/scanner/targets/…`
 
-То есть рабочий контур DAST **ожидает** каталог `ZAP/` (планы, скрипты, targets) **внутри репозитория приложения**, который живёт в ЖЦ portal (сборка/релиз/артефакты).
+То есть рабочий контур DAST **ожидает** каталог `scanner/` (планы, скрипты, targets) **внутри репозитория приложения**, который живёт в ЖЦ portal (сборка/релиз/артефакты).
 
-Это согласуется с narrative: автотесты/файлы под ZAP «подкладывают в репу релиза» — не как метафора, а как способ доставить AF/script до job.
+Это согласуется с narrative: автотесты/файлы под scanner «подкладывают в репу релиза» — не как метафора, а как способ доставить AF/script до job.
 
 ## Что видно в UI
 
@@ -30,5 +30,5 @@
 
 ## Open
 
-- Кто именно commit’ит `ZAP/` (job автотестов vs ручной MR) — вопрос владельцу (эпик §C).  
+- Кто именно commit’ит `scanner/` (job автотестов vs ручной MR) — вопрос владельцу (эпик §C).  
 - Связь «релиз» portal vs tag/raw repo (`PPOD_RELEASE_TAG` в build.yml) — later.

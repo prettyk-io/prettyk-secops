@@ -62,6 +62,12 @@ class PlaywrightBrowserRuntime:
 
         self._playwright = sync_playwright().start()
 
+        # PW-C1: wired browser_type приходит в Selenium-именах ("chrome"/"firefox"),
+        # Playwright ждёт "chromium"/"firefox"/"webkit". Одна точка маппинга —
+        # чтобы боевой wired не требовал переписывания при cutover.
+        _SELENIUM_TO_PW = {"chrome": "chromium", "firefox": "firefox", "webkit": "webkit"}
+        browser_type = _SELENIUM_TO_PW.get(browser_type, browser_type)
+
         browser_launcher = getattr(self._playwright, browser_type, None)
         if browser_launcher is None:
             supported = ["chromium", "firefox", "webkit"]

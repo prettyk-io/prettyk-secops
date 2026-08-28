@@ -1,4 +1,4 @@
-# Rebranding: KDT / zap-kdt → PrettyK
+# Rebranding: KDT / scanner-kdt → PrettyK
 
 > **CANON** — hub topic. Slice: **22 августа 2026** (2FA sealed: рейнеминг выполнен, zero regressions, канонизировано в pure).
 
@@ -6,7 +6,7 @@
 
 ## Исход
 
-`zap-kdt` — имя старого репозитория и рабочее название фреймворка. KDT (Key-Driven Testing) устарел; ZAP в имени создавал ложное впечатление, что продукт — обёртка над OWASP ZAP.
+`scanner-kdt` — имя старого репозитория и рабочее название фреймворка. KDT (Key-Driven Testing) устарел; scanner в имени создавал ложное впечатление, что продукт — обёртка над OWASP scanner.
 
 **Решение (2FA: 21 авг 2026):** новый канон `prettyk-io/prettyk-dev`. Продукт — **PrettyK** (DSL + SecOps-платформа).
 
@@ -18,13 +18,13 @@
 |---|---|---|
 | **Продукт** | KDT Framework | **PrettyK** |
 | **DSL** | KDT (Key-Driven Testing) | **PrettyK** (DSL) |
-| **Репозиторий** | `failed1/zap-kdt` | **`prettyk-io/prettyk-dev`** |
+| **Репозиторий** | `failed1/scanner-kdt` | **`prettyk-io/prettyk-dev`** |
 | **Организация** | — | **`github.com/prettyk-io`** |
-| **Package FE** | `kdt-manifest-editor` | **`prettyk-editor`** |
-| **Сканер** (публично) | ZAP демон, ZAP Webswing | **сканер, Scanner Webswing** |
-| **Сканер** (Allure) | `ZAP / security`, `ZAP + Selenium` | **`Scanner / security`**, **`Scanner + Selenium`** |
+| **Package FE** | `kdt-wired-editor` | **`prettyk-editor`** |
+| **Сканер** (публично) | scanner демон, scanner Webswing | **сканер, Scanner Webswing** |
+| **Сканер** (Allure) | `scanner / security`, `scanner + Selenium` | **`Scanner / security`**, **`Scanner + Selenium`** |
 | **Монитор** | KDT Live | **PrettyK Live** |
-| **MethodId display** | `"ZAP"` (category) | **`"Сканер"`** |
+| **MethodId display** | `"scanner"` (category) | **`"Сканер"`** |
 
 ---
 
@@ -32,13 +32,13 @@
 
 | Слой | Что | Почему |
 |---|---|---|
-| **Wire component** | `"zap"` | Честное internal имя адаптера OWASP ZAP. Переименование — отдельный RFC с compatibility layer. |
-| **Файл адаптера** | `zap_adapter.py` / `ZapAdapter` | Конкретная реализация OWASP ZAP. Не прячем. |
-| **Docker DNS** | `https://zap/JSON/...` | Имя контейнера OWASP ZAP, не наш брендинг. |
-| **Webswing URL** | `/zap` | Путь Webswing-приложения, не наш. |
-| **Attribution** | «на базе OWASP ZAP» | Честно указываем в README/доках. |
+| **Wire component** | `"scanner"` | Честное internal имя адаптера OWASP scanner. Переименование — отдельный RFC с compatibility layer. |
+| **Файл адаптера** | `scanner_adapter.py` / `scannerAdapter` | Конкретная реализация OWASP scanner. Не прячем. |
+| **Docker DNS** | `https://scanner/JSON/...` | Имя контейнера OWASP scanner, не наш брендинг. |
+| **Webswing URL** | `/scanner` | Путь Webswing-приложения, не наш. |
+| **Attribution** | «на базе OWASP scanner» | Честно указываем в README/доках. |
 | **History docs** | `sanctuary/history/`, acceptance evidence | Не переписываем механически — это фактические старые названия. |
-| **User scenarios** | `zap\|spider_scan` | Сценарии пользователей не ломаются. `"ZAP"` алиасится на `"Сканер"` в facade. |
+| **User scenarios** | `scanner\|spider_scan` | Сценарии пользователей не ломаются. `"scanner"` алиасится на `"Сканер"` в facade. |
 
 ---
 
@@ -71,16 +71,16 @@ pk_env_int("ELEMENT_TIMEOUT")  # int
 
 ### MethodId (display only)
 
-Wire `"zap"` не тронут. Обновлены display-слои:
+Wire `"scanner"` не тронут. Обновлены display-слои:
 
-- `_STEP_DESCRIPTORS` — category `"ZAP"` → `"Сканер"`
-- `_CATEGORY_LABELS` — `"zap": "Сканер"`
-- `_FACADES` — ключ `"ZAP"` → `"Сканер"`; `"ZAP"` добавлен как алиас в `_FACADE_ALIASES`
+- `_STEP_DESCRIPTORS` — category `"scanner"` → `"Сканер"`
+- `_CATEGORY_LABELS` — `"scanner": "Сканер"`
+- `_FACADES` — ключ `"scanner"` → `"Сканер"`; `"scanner"` добавлен как алиас в `_FACADE_ALIASES`
 
 ### Allure
 
-- `allure_report_meta.py`: executor name `"KDT"` → `"PrettyK"`, category `"ZAP / security"` → `"Scanner / security"`
-- `wired_runner.py`: feature `"ZAP + Selenium"` → `"Scanner + Selenium"`, attachment `"ZAP Alerts"` → `"Scanner Alerts"`
+- `allure_report_meta.py`: executor name `"KDT"` → `"PrettyK"`, category `"scanner / security"` → `"Scanner / security"`
+- `wired_runner.py`: feature `"scanner + Selenium"` → `"Scanner + Selenium"`, attachment `"scanner Alerts"` → `"Scanner Alerts"`
 
 ### Инфраструктура и мета
 
@@ -89,11 +89,11 @@ Wire `"zap"` не тронут. Обновлены display-слои:
 | `kdt-net` | `prettyk-net` |
 | `kdt-api-lab` | `prettyk-api-lab` |
 | `kdt-editor-api` | `prettyk-editor-api` |
-| `reports/zap-results` | `reports/scanner-results` |
-| Sonar: `zap-kdt-backend` | `prettyk-backend` |
-| Sonar: `zap-kdt-frontend` | `prettyk-frontend` |
-| `KDTZaproxy.md` | `prettyk.md` |
-| `docker-compose.zap.yml` (ref) | `docker-compose.scanner.yml` (ref) |
+| `reports/scanner-results` | `reports/scanner-results` |
+| Sonar: `scanner-kdt-backend` | `prettyk-backend` |
+| Sonar: `scanner-kdt-frontend` | `prettyk-frontend` |
+| `KDTzaproxy.md` | `prettyk.md` |
+| `docker-compose.scanner.yml` (ref) | `docker-compose.scanner.yml` (ref) |
 
 ---
 
@@ -106,7 +106,7 @@ Wire `"zap"` не тронут. Обновлены display-слои:
 | MethodId vocabulary | 5 | 55/55 |
 | Docs/infra/tails | 40+ | 72/72 |
 
-**Zero regressions.** Wire `zap` не тронут — сценарии пользователей не ломаются.
+**Zero regressions.** Wire `scanner` не тронут — сценарии пользователей не ломаются.
 
 ---
 

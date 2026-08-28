@@ -303,7 +303,7 @@ def test_controller_failsafe_marker(monkeypatch):
     )()
     ctrl.adapters = {"data": None}
     ctrl._wired_problems = []
-    ctrl.last_zap_report = None
+    ctrl.last_scanner_report = None
 
     def fake_parse(raw):
         return "core", "boom", {}
@@ -350,7 +350,7 @@ def test_controller_recover_retry(monkeypatch):
     ctrl.action_factory = type("F", (), {"execute": staticmethod(execute)})()
     ctrl.adapters = {"data": None}
     ctrl._wired_problems = []
-    ctrl.last_zap_report = None
+    ctrl.last_scanner_report = None
 
     def parse(raw):
         parts = raw.split("|")

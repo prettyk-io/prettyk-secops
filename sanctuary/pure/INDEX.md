@@ -2,7 +2,7 @@
 
 > Единственный реестр продуктовой narrative-истины для агентов.  
 > Slice: **23 августа 2026** (2FA sealed: ROLE-MATRIX зачислен; Playwright Browser Core зачислен; Webswing выпилен).  
-> Machine-контракт: Pydantic-модели [`../../orchestrator/models/manifest.py`](../../orchestrator/models/manifest.py). `docs/manifest.json` — legacy JSON Schema (RJSF era), хранится как reference.  
+> Machine-контракт: Pydantic-модели [`../../orchestrator/models/wired.py`](../../orchestrator/models/wired.py). `docs/wired.json` — legacy JSON Schema (RJSF era), хранится как reference.  
 > Презентация / deck **потом** режется из этого INDEX + topics + [`MODULES-SKELETON.md`](MODULES-SKELETON.md).  
 > Тулы презентации — **void**.
 
@@ -59,7 +59,7 @@ SOLID для канона — в rule [`docs-canon.mdc`](../../.opencode/rules/d
 | MONITOR-HEADER: унификация wordmark | [`monitor-header.md`](monitor-header.md) | Product / Brand |
 | BRAND-STRATEGY: prettyK SecOps Lab | [`brand-strategy.md`](brand-strategy.md) | Product / Brand |
 | BRAND-FONTS: библия шрифтов | [`brand-fonts.md`](brand-fonts.md) | Product / Brand |
-| REBRANDING: KDT / zap-kdt → PrettyK | [`rebranding.md`](rebranding.md) | Product / Brand |
+| REBRANDING: KDT / scanner-kdt → PrettyK | [`rebranding.md`](rebranding.md) | Product / Brand |
 | Enterprise-friends-required: планка Enterprise | [`enterprise-friends-required.md`](enterprise-friends-required.md) | Product / Brand |
 | FEATURE-ADMISSION: конвейер допуска фич в коробку | [`feature-admission.md`](feature-admission.md) | Product / Governance |
 | NAV CheckInstance / History | [`nav-check.md`](nav-check.md) | Product |
@@ -74,7 +74,7 @@ SOLID для канона — в rule [`docs-canon.mdc`](../../.opencode/rules/d
 | Connectors (Admin → activate → thin MethodId) | [`connectors.md`](connectors.md) | Product / Authoring |
 | Studio Action Hub (единственный create) | [`studio-hub.md`](studio-hub.md) | Authoring |
 | Data modules (DataStream) | [`data-modules.md`](data-modules.md) | Authoring |
-| Манифест: machine-контракт (legacy JSON Schema) | [`manifest-sot.md`](manifest-sot.md) | Authoring / SoT |
+| Манифест: machine-контракт (legacy JSON Schema) | [`wired-sot.md`](wired-sot.md) | Authoring / SoT |
 | prettyK core | [`prettyk-core.md`](prettyk-core.md) | Authoring |
 | Цепь (глаголы / карта / ≠ чужой HAR) | [`chain.md`](chain.md) | Authoring / Runtime |
 | API-модули (OA / GQL / gRPC каскад) | [`api-modules.md`](api-modules.md) | Authoring |
@@ -86,7 +86,7 @@ SOLID для канона — в rule [`docs-canon.mdc`](../../.opencode/rules/d
 | Lab-up обязательный контур | [`lab-up.md`](lab-up.md) | Runtime / Lab |
 | Stand Port META (порты + команды) | [`stand-port-meta.md`](stand-port-meta.md) | Runtime / Lab |
 | Infra Stack (PostgreSQL 16 + Valkey 8: ядро данных) | [`infra-stack.md`](infra-stack.md) | Product / Governance |
-| ZAP demon | [`zap-dual.md`](zap-dual.md) | Runtime |
+| scanner demon | [`scanner-dual.md`](scanner-dual.md) | Runtime |
 | DAST wave (ФаззингВолна) | [`dast-wave.md`](dast-wave.md) | Runtime |
 | Security lab bounds | [`security-lab.md`](security-lab.md) | Runtime / Walls |
 | Допуск ИБ + опциональный акт | [`admission.md`](admission.md) | Admission |
@@ -106,8 +106,8 @@ SOLID для канона — в rule [`docs-canon.mdc`](../../.opencode/rules/d
 ### Скелет презентации (из hub)
 
 1. Product — honest-contract · fe-shell · **brand-video** · **monitor-header** · **brand-strategy** · **brand-fonts** · **enterprise-friends-required** · nav-check · admin-integrations · auth-module · auth-slots · connectors  
-2. Authoring — studio-hub · data-modules · manifest-sot · prettyk-core · **chain** · **api-modules** · discovery-heal (DISC-1 дно)  
-3. Runtime — runtime-shell · **pw-browser-core** · **monitor-hub** · lab-up · zap-dual · dast-wave · security-lab  
+2. Authoring — studio-hub · data-modules · wired-sot · prettyk-core · **chain** · **api-modules** · discovery-heal (DISC-1 дно)  
+3. Runtime — runtime-shell · **pw-browser-core** · **monitor-hub** · lab-up · scanner-dual · dast-wave · security-lab  
 4. Admission — admission  
 5. Walls — walls + § Void  
 

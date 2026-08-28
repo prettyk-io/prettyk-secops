@@ -52,7 +52,7 @@ describe('каталог keywords', () => {
       'grpc',
       'http',
       'webdriver',
-      'zap',
+      'scanner',
     ]);
     expect(totalActionCount(keywordCatalog)).toBeGreaterThan(200);
   });
@@ -70,7 +70,7 @@ describe('каталог keywords', () => {
   it('не содержит мёртвых функций уровня модуля из data_processor.py', () => {
     const core = keywordCatalog.components.core?.actions ?? {};
     for (const dead of ['add_custom_payload', 'get_payloads', 'start_oast_server', 'scan_grpc', 'start_fuzzer']) {
-      expect(core[dead], `«${dead}» — вставка из ZAP-адаптера, её не должно быть в core`).toBeUndefined();
+      expect(core[dead], `«${dead}» — вставка из scanner-адаптера, её не должно быть в core`).toBeUndefined();
     }
     expect(core.log_message).toBeDefined();
   });
@@ -89,8 +89,8 @@ describe('каталог keywords', () => {
 
 describe('splitConstructor', () => {
   it('разбивает строку и сохраняет смещения', () => {
-    expect(splitConstructor('zap|get_alerts|ctx')).toEqual([
-      { index: 0, text: 'zap', start: 0, end: 3 },
+    expect(splitConstructor('scanner|get_alerts|ctx')).toEqual([
+      { index: 0, text: 'scanner', start: 0, end: 3 },
       { index: 1, text: 'get_alerts', start: 4, end: 14 },
       { index: 2, text: 'ctx', start: 15, end: 18 },
     ]);
@@ -107,10 +107,10 @@ describe('splitConstructor', () => {
   });
 
   it('определяет сегмент по позиции курсора', () => {
-    expect(segmentAtOffset('zap|get_alerts|ctx', 0).index).toBe(0);
-    expect(segmentAtOffset('zap|get_alerts|ctx', 3).index).toBe(0);
-    expect(segmentAtOffset('zap|get_alerts|ctx', 5).index).toBe(1);
-    expect(segmentAtOffset('zap|get_alerts|ctx', 18).index).toBe(2);
+    expect(segmentAtOffset('scanner|get_alerts|ctx', 0).index).toBe(0);
+    expect(segmentAtOffset('scanner|get_alerts|ctx', 3).index).toBe(0);
+    expect(segmentAtOffset('scanner|get_alerts|ctx', 5).index).toBe(1);
+    expect(segmentAtOffset('scanner|get_alerts|ctx', 18).index).toBe(2);
   });
 
   it('раскладывает компонент, action и аргументы', () => {
@@ -122,19 +122,18 @@ describe('splitConstructor', () => {
 });
 
 describe('диагностика конструктора', () => {
-  it('корректные конструкторы из docs/zap-1.json проходят без ошибок', () => {
+  it('корректные конструкторы из docs/scanner-1.json проходят без ошибок', () => {
     const samples = [
       'webdriver|open|/#/search',
       'webdriver|open_by_url|https://www.wikipedia.org',
-      'zap|create_context|wikipedia_ctx|Контекст для wikipedia',
-      'zap|create_and_force_user|wikipedia_ctx|test_user|test_login|test_password',
-      'zap|set_context_include|wikipedia_ctx|https://www.wikipedia.org.*',
-      'zap|ajax_spider_scan_iterator|https://www.wikipedia.org|1',
-      'zap|passive_scan_wait|1',
-      'zap|active_scan|https://www.wikipedia.org|wikipedia_ctx|1',
-      'zap|get_alerts|wikipedia_ctx|High',
-      'zap|generate_report|html|zap_report_wikipedia.html',
-      'allure|attach_file|zap_report_wikipedia.html|ZAP Отчёт wikipedia',
+      'scanner|create_context|wikipedia_ctx|Контекст для wikipedia',
+      'scanner|create_and_force_user|wikipedia_ctx|test_user|test_login|test_password',
+      'scanner|set_context_include|wikipedia_ctx|https://www.wikipedia.org.*',
+      'scanner|active_scan|https://www.wikipedia.org|wikipedia_ctx|1',
+      'scanner|passive_scan_wait|1',
+      'scanner|get_alerts|wikipedia_ctx|High',
+      'scanner|generate_report|html|scanner_report_wikipedia.html',
+      'allure|attach_file|scanner_report_wikipedia.html|scanner Отчёт wikipedia',
       'core|log_message|Проверка завершена',
     ];
     for (const sample of samples) {
@@ -229,7 +228,7 @@ describe('collectVariables', () => {
         scenarios: [
           {
             scenario_name: 'S1',
-            steps: [{ constructor: 'zap|get_alerts|ctx', save_as: 'alerts' }],
+            steps: [{ constructor: 'scanner|get_alerts|ctx', save_as: 'alerts' }],
           },
         ],
         test_data_constructor: [{ id: 'fuzz_module', module_type: 'Фаззер' }],

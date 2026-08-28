@@ -5,7 +5,7 @@
     "emergency_reason": "Fixture: shared via data-module (public); scenarios only read"
   },
   "infrastructure": {
-    "zap_mode": "demon",
+    "scanner_mode": "demon",
     "browser_type": "chrome"
   },
   "security_configuration": {

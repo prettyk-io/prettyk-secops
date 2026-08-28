@@ -1,6 +1,6 @@
 ﻿# -*- coding: utf-8 -*-
 """
-Tiny HTTP server for PK Live: noVNC + diary SSE (+ ZAP channel).
+Tiny HTTP server for PK Live: noVNC + diary SSE (+ scanner channel).
 
 Long-lived shell (idle wrapper or soft-bind). Runner signals run_ended for diary
 export; product teardown must not kill HTTP. Disable with PK_LIVE=0.
@@ -231,6 +231,20 @@ class _LiveHandler(BaseHTTPRequestHandler):
             if run_id and not self._gate_run_id(run_id):
                 return
             self._serve_diary_sse(channel, run_id=run_id, kind_filter=kind_filter)
+            return
+        if path == "/api/warzone/scene":
+            # WIRE-WZ: SSE scene_state S(t) из EventJournal.
+            self._serve_warzone_scene_sse()
+            return
+        if path == "/api/warzone/scene/at":
+            # WIRE-WZ: точечный S(t) + state_hash (seek / инвариант 100/100).
+            qs = parse_qs(parsed.query)
+            try:
+                t = float((qs.get("t") or ["0"])[0])
+            except ValueError:
+                self._json_error(400, "t must be a number")
+                return
+            self._serve_warzone_scene_at(t)
             return
         self.send_error(404, "Not Found")
 
@@ -1219,7 +1233,7 @@ class _LiveHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _serve_summary_latest(self):
-        """RES-4: merged Run UI summary (Allure + ZAP + Dojo). ?run_id= filter."""
+        """RES-4: merged Run UI summary (Allure + scanner + Dojo). ?run_id= filter."""
         qs = parse_qs(urlparse(self.path).query)
         run_id = (qs.get("run_id") or [""])[0] or None
         try:
@@ -1536,7 +1550,7 @@ class _LiveHandler(BaseHTTPRequestHandler):
         for key, svc in (
             ("allure_report_url", "allure"),
             ("dojo_report_url", "dojo"),
-            ("zap_report_url", "zap"),
+            ("scanner_report_url", "scanner"),
         ):
             url = str(payload.get(key) or "").strip()
             if url:
@@ -1593,10 +1607,10 @@ class _LiveHandler(BaseHTTPRequestHandler):
         Allure / DefectDojo webhook intake for Results tiles.
 
         JSON body (any of):
-          {"service":"allure"|"dojo"|"zap","report_url":"http://..."}
+          {"service":"allure"|"dojo"|"scanner","report_url":"http://..."}
           {"allure_report_url":"http://..."}
           {"dojo_report_url":"http://..."}
-          {"zap_report_url":"http://..."}
+          {"scanner_report_url":"http://..."}
           {"clear": true}
         """
         try:
@@ -1622,7 +1636,7 @@ class _LiveHandler(BaseHTTPRequestHandler):
         if not updates:
             self._json_error(
                 400,
-                "need service+report_url or allure_report_url / dojo_report_url / zap_report_url",
+                "need service+report_url or allure_report_url / dojo_report_url / scanner_report_url",
             )
             return
 
@@ -2187,6 +2201,76 @@ class _LiveHandler(BaseHTTPRequestHandler):
         payload = json.dumps(event, ensure_ascii=False)
         self.wfile.write(f"data: {payload}\n\n".encode("utf-8"))
         self.wfile.flush()
+
+    # ── WIRE-WZ: SSE scene_state из EventJournal ──
+
+    def _serve_warzone_scene_sse(self):
+        """WIRE-WZ: живой SSE scene_state S(t) на каждый diary-событие.
+
+        Строит EventJournal из diary.ndjson backlog, затем tail-поток:
+        каждое новое событие → state_at(t) → scene_state_payload → SSE.
+        Инвариант 100/100: forward/backward seek дают одинаковый state_hash.
+        """
+        from warzone.event_journal import EventJournal
+
+        # Backlog: diary события → EventJournal
+        backlog = list(diary_bus.read_file_backlog("diary"))
+        journal = EventJournal.from_diary_events(backlog)
+        offset = diary_bus.file_size()
+
+        try:
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Connection", "keep-alive")
+            self.end_headers()
+
+            # Отправить scene_state на последний известный t (backlog)
+            if journal.events:
+                last_t = journal.events[-1].ts
+                payload = journal.scene_state_payload(last_t)
+                self._write_sse(payload)
+
+            # Tail: новые diary события → пересчёт S(t)
+            while True:
+                new_events, offset = diary_bus.read_file_since(offset, "diary")
+                if new_events:
+                    new_journal = EventJournal.from_diary_events(new_events)
+                    for e in new_journal.events:
+                        payload = journal.scene_state_payload(e.ts)
+                        try:
+                            self._write_sse(payload)
+                        except (BrokenPipeError, ConnectionResetError, OSError):
+                            return
+                    # Обновить journal для учёта новых событий в свертке
+                    journal = EventJournal.from_diary_events(
+                        list(diary_bus.read_file_backlog("diary"))
+                    )
+                else:
+                    try:
+                        self.wfile.write(b": keepalive\n\n")
+                        self.wfile.flush()
+                    except (BrokenPipeError, ConnectionResetError, OSError):
+                        break
+                time.sleep(0.3)
+        except (BrokenPipeError, ConnectionResetError, OSError):
+            return
+
+    def _serve_warzone_scene_at(self, t: float):
+        """WIRE-WZ: точечный S(t) + state_hash (seek / инвариант 100/100)."""
+        from warzone.event_journal import EventJournal
+
+        backlog = list(diary_bus.read_file_backlog("diary"))
+        journal = EventJournal.from_diary_events(backlog)
+        payload = journal.scene_state_payload(t)
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        self._cors_headers()
+        self.end_headers()
+        self.wfile.write(body)
 
 
 def build_scene_graph_from_wired(wired: dict) -> dict[str, list]:

@@ -70,25 +70,22 @@ export function useBrowserCanvasStream(
       };
       framesReceived.current++;
 
-      const blob = new Blob([jpegData], { type: 'image/jpeg' });
+      const blobUrl = URL.createObjectURL(new Blob([jpegData], { type: 'image/jpeg' }));
       const img = new Image();
       img.onload = () => {
+        URL.revokeObjectURL(blobUrl);
         canvas.width = frameW > 0 ? frameW : 1280;
         canvas.height = frameH > 0 ? frameH : 800;
-        // Масштабируем canvas под контейнер через CSS (через стили canvas)
+        // Масштабируем canvas под flex-родителя через CSS
         const containerW = canvas.parentElement?.clientWidth ?? canvas.clientWidth;
         const containerH = canvas.parentElement?.clientHeight ?? canvas.clientHeight;
-        const scale = Math.min(containerW / frameW, containerH / frameH);
-        const displayW = frameW * scale;
-        const displayH = frameH * scale;
-        canvas.style.width = `${displayW}px`;
-        canvas.style.height = `${displayH}px`;
+        const scale = Math.min(containerW / canvas.width, containerH / canvas.height);
+        canvas.style.width = `${Math.round(canvas.width * scale)}px`;
+        canvas.style.height = `${Math.round(canvas.height * scale)}px`;
         ctx.drawImage(img, 0, 0);
       };
-      img.src = URL.createObjectURL(blob);
-      // Освобождаем URL после загрузки
-      if (img.complete) URL.revokeObjectURL(img.src);
-      else img.onload = () => { URL.revokeObjectURL(img.src); ctx.drawImage(img, 0, 0); };
+      img.onerror = () => URL.revokeObjectURL(blobUrl);
+      img.src = blobUrl;
     };
 
     ws.onclose = () => {

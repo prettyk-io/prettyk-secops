@@ -3,7 +3,7 @@
 > **ID:** `STUDIO-GRAPH-EXPLORER`  
 > **Статус:** `ready`  
 > **Роль / Исполнитель:** Boss / Flash  
-> **Слой:** Frontend (`cosmo/src/studio/graph/`) ↔ JSON Manifest
+> **Слой:** Frontend (`cosmo/src/studio/graph/`) ↔ JSON Wired
 
 ---
 

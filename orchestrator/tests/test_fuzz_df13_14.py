@@ -1,5 +1,5 @@
 ﻿# -*- coding: utf-8 -*-
-"""DF-13 zap_alert + DF-14 findings/digest export."""
+"""DF-13 scanner_alert + DF-14 findings/digest export."""
 from __future__ import annotations
 
 import json
@@ -18,7 +18,7 @@ from core.fuzzing import (
     FuzzLocation,
     FuzzMessage,
     FuzzPolicy,
-    apply_zap_alerts_to_rows,
+    apply_scanner_alerts_to_rows,
     build_audit_digest,
     export_fuzz_security_artifacts,
     new_alerts_for_origin,
@@ -27,12 +27,12 @@ from core.fuzzing import (
 )
 
 
-class _ZapWithAlerts:
+class _scannerWithAlerts:
     def __init__(self, alerts=None):
         self._alerts = list(alerts or [])
         self.calls = []
 
-    def zap_http_request(
+    def scanner_http_request(
         self, method, url, headers=None, body=None, follow_redirects=False
     ):
         self.calls.append({"method": method, "url": url, "body": body})
@@ -57,7 +57,7 @@ class _ZapWithAlerts:
 
 
 def test_snapshot_and_new_alerts_for_origin():
-    zap = _ZapWithAlerts(
+    scanner = _scannerWithAlerts(
         [
             {
                 "pluginId": "1",
@@ -68,8 +68,8 @@ def test_snapshot_and_new_alerts_for_origin():
             }
         ]
     )
-    before = snapshot_alert_fingerprints(zap)
-    zap._alerts.append(
+    before = snapshot_alert_fingerprints(scanner)
+    scanner._alerts.append(
         {
             "pluginId": "2",
             "name": "new",
@@ -79,13 +79,13 @@ def test_snapshot_and_new_alerts_for_origin():
         }
     )
     fresh = new_alerts_for_origin(
-        zap, origin="http://juice-shop:3000", before=before
+        scanner, origin="http://juice-shop:3000", before=before
     )
     assert len(fresh) == 1
     assert fresh[0]["name"] == "new"
 
 
-def test_apply_zap_alerts_matches_url_hash():
+def test_apply_scanner_alerts_matches_url_hash():
     url = "http://juice-shop:3000/rest/products/search?q=evil"
     row = EvidenceRow(
         index=1,
@@ -98,7 +98,7 @@ def test_apply_zap_alerts_matches_url_hash():
         deltas=("status_changed",),
         request_url_sha256=sha256_text(url),
     )
-    out = apply_zap_alerts_to_rows(
+    out = apply_scanner_alerts_to_rows(
         [row],
         [
             {
@@ -111,13 +111,13 @@ def test_apply_zap_alerts_matches_url_hash():
             }
         ],
     )
-    assert "zap_alert" in out[0].deltas
+    assert "scanner_alert" in out[0].deltas
     assert "status_changed" in out[0].deltas
 
 
-def test_campaign_wires_zap_alert_and_findings(tmp_path):
-    zap = _ZapWithAlerts()
-    runner = FuzzCampaignRunner(zap)
+def test_campaign_wires_scanner_alert_and_findings(tmp_path):
+    scanner = _scannerWithAlerts()
+    runner = FuzzCampaignRunner(scanner)
     campaign = Campaign(
         message=FuzzMessage(
             source="template",
@@ -134,15 +134,15 @@ def test_campaign_wires_zap_alert_and_findings(tmp_path):
         base_url="http://juice-shop:3000",
         reports_dir=tmp_path,
     )
-    assert summary["zap_alerts_total"] >= 1
+    assert summary["scanner_alerts_total"] >= 1
     reasons = []
     for case in summary["cases"]:
         reasons.extend(case.get("anomaly_reasons") or [])
-    assert "zap_alert" in reasons
+    assert "scanner_alert" in reasons
     assert Path(summary["digest_path"]).is_file()
     assert Path(summary["findings_path"]).is_file()
     digest = json.loads(Path(summary["digest_path"]).read_text(encoding="utf-8"))
-    assert digest["zap_alerts_total"] >= 1
+    assert digest["scanner_alerts_total"] >= 1
     findings = json.loads(Path(summary["findings_path"]).read_text(encoding="utf-8"))
     assert findings["kind"] == "pk_fuzz_findings_pack"
 
@@ -154,8 +154,8 @@ def test_export_findings_without_allure_context(tmp_path):
         "target_origin": "http://juice-shop:3000",
         "digest_path": "",
         "evidence_path": "",
-        "reason_counts": {"zap_alert": 1},
-        "zap_alerts": [{"name": "n", "risk": "Low", "url": "u", "param": "", "pluginId": "1"}],
+        "reason_counts": {"scanner_alert": 1},
+        "scanner_alerts": [{"name": "n", "risk": "Low", "url": "u", "param": "", "pluginId": "1"}],
         "anomalies_total": 1,
     }
     meta = export_fuzz_security_artifacts(summary, reports_dir=tmp_path)
@@ -163,18 +163,18 @@ def test_export_findings_without_allure_context(tmp_path):
     assert meta["dojo_pack"] == "findings_json"
 
 
-def test_build_audit_digest_includes_zap_alerts():
+def test_build_audit_digest_includes_scanner_alerts():
     digest = build_audit_digest(
         {
             "run_id": "r1",
             "module_id": "m",
             "cases": [],
-            "zap_alerts_total": 2,
-            "zap_alerts": [{"name": "a"}, {"name": "b"}],
+            "scanner_alerts_total": 2,
+            "scanner_alerts": [{"name": "a"}, {"name": "b"}],
             "baseline": {},
             "location": {},
             "policy": {},
         }
     )
-    assert digest["zap_alerts_total"] == 2
-    assert len(digest["zap_alerts"]) == 2
+    assert digest["scanner_alerts_total"] == 2
+    assert len(digest["scanner_alerts"]) == 2

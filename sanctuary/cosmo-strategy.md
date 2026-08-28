@@ -30,7 +30,7 @@ Cosmo (портал ЦБ)
 | Пак пилота | `cosmo-custom` | Как коробка **сидит внутри** портала Cosmo (кейс ЦБ). |
 
 - К другому банку (Сбер и т.д.) — **та же коробка**, другой `*-custom` пак позже.
-- Ядро (ZAP-адаптер, gate, hooks, fuzz) живёт в **коробке**; custom — только стык с portal.
+- Ядро (scanner-адаптер, gate, hooks, fuzz) живёт в **коробке**; custom — только стык с portal.
 - CANON-код **никогда** не импортирует из INTEGRATION. INTEGRATION может импортировать из CANON.
 
 ## 3. Цели пилота
@@ -46,7 +46,7 @@ Cosmo (портал ЦБ)
 - **Не** брендируем Cosmo; это чужой портал, не наш SKU.
 - **Не** делаем mock прод-API Cosmo нормой — mock = заглушка до реального API.
 - **Не** тащим CBR-пакет (`sanctuary/canon/custom/cosmo/cbr-specific/`) в git — только локально (rule `cbr-cosmo-only.mdc`).
-- **Не** делаем второй `docs/manifest.json` — SoT один.
+- **Не** делаем второй `docs/wired.json` — SoT один.
 - **Не** создаём git worktree / `fork/*` / `pack/*` без явного приказа.
 
 ## 5. Контур пилота (что уже есть / что дозревает)

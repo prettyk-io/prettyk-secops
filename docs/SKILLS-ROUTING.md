@@ -23,7 +23,7 @@
 |---|---|---|
 | Покликать UI на localhost, глянуть что на странице, дернуть X и посмотреть запросы | **`browser-hands-pure`** | localhost, Editor `:5173`, Admin, prettyk-lab, «покликай», «глянь», «что на странице» |
 | Portal на VM, Grafana, gap-сервисы | **`browser-hands-remote`** | portal01, bankvm, VM, «через VM», Grafana |
-| Поднять/почистить Docker-стек SecOps Lab | **`prettyk-lab`** | prettyk-lab, sonarqube, selenium grid, zap daemon, juice-shop, allure, «какие сервисы в докере» |
+| Поднять/почистить Docker-стек SecOps Lab | **`prettyk-lab`** | prettyk-lab, sonarqube, selenium grid, scanner daemon, juice-shop, allure, «какие сервисы в докере» |
 | Застрял в дебаге, не пойму почему не работает | **`debugging-strategies`** | «почему», «не работает», застрял |
 | Прежде чем кодить сложное / «как обычно делают» | **`research-and-sense`** | «узнай как», «погугли», «какой стандарт» |
 | Playwright E2E, локаторы, фикстуры | **`playwright-skill`** (core / cli / ci) | playwright, e2e, тесты браузера |

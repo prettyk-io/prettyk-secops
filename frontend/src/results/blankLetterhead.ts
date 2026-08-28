@@ -19,7 +19,7 @@ export function defaultBlankOrg(overrides?: Partial<BlankOrg>): BlankOrg {
 }
 
 /** Короткий стабильный отпечаток JSON для подвала бланка (FNV-1a 32-bit). */
-export function manifestContentHash(payload: unknown): string {
+export function wiredContentHash(payload: unknown): string {
   const text = JSON.stringify(payload);
   let hash = 2166136261;
   for (const ch of text) {

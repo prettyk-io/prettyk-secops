@@ -1,13 +1,13 @@
 ﻿# -*- coding: utf-8 -*-
 """DF-10 lab: Juice login → History session → SuiteFuzzerRunner (ФаззингВолна).
 
-1) POST /rest/user/login напрямую к Juice (реальный login API; ZAP 2.17
+1) POST /rest/user/login напрямую к Juice (реальный login API; scanner 2.17
    sendHarRequest ломается на POST JSON — illegal_parameter).
-2) Seed GET search **через ZAP** с Bearer/Cookie → History с session headers.
+2) Seed GET search **через scanner** с Bearer/Cookie → History с session headers.
 3) ФаззингВолна с session_replay=true без history_url_contains (same-origin fallback).
 4) Проверка: session_bound meta, нет утечки значений токена в evidence/digest.
 
-Стенд: ZAP demon :8080. ``--base-url`` — URL глазами ZAP (обычно
+Стенд: scanner demon :8080. ``--base-url`` — URL глазами scanner (обычно
 ``http://juice-shop:3000``). ``--login-url`` — URL с хоста агента
 (``http://127.0.0.1:3000``), если Docker DNS недоступен с Windows.
 """
@@ -27,10 +27,10 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from adapters.zap_adapter import ZapAdapter
+from adapters.scanner_adapter import ScannerAdapter
 from core.errors import WiredError
 from core.fuzzing import SuiteFuzzerRunner, live_projection_titles
-from core.gate_policy import zap_api_key_from_env
+from core.gate_policy import scanner_api_key_from_env
 from utils.diary_bus import publish, set_meta
 
 DEFAULT_BASE = "http://juice-shop:3000"
@@ -47,7 +47,7 @@ class _EmptyStream:
         return value
 
 
-def _manifest(base_url: str, corpus: str, max_requests: int) -> SimpleNamespace:
+def _make_wired(base_url: str, corpus: str, max_requests: int) -> SimpleNamespace:
     fuzzer = SimpleNamespace(
         id="juice_session_wave",
         label="Juice session-bound wave",
@@ -125,7 +125,7 @@ def main() -> int:
     parser.add_argument(
         "--base-url",
         default=pk_env("JUICE_URL", DEFAULT_BASE),
-        help="URL цели для ZAP / same-origin (Docker DNS)",
+        help="URL цели для scanner / same-origin (Docker DNS)",
     )
     parser.add_argument(
         "--login-url",
@@ -138,20 +138,20 @@ def main() -> int:
     )
     parser.add_argument("--corpus", default="intent_boundary")
     parser.add_argument("--max-requests", type=int, default=5)
-    parser.add_argument("--zap-host", default=pk_env("ZAP_HOST", "127.0.0.1"))
+    parser.add_argument("--scanner-host", default=pk_env("SCANNER_HOST", "127.0.0.1"))
     parser.add_argument(
-        "--zap-port",
+        "--scanner-port",
         type=int,
-        default=int(pk_env("ZAP_PORT", "8080")),
+        default=int(pk_env("SCANNER_PORT", "8080")),
     )
     parser.add_argument("--no-live", action="store_true")
     args = parser.parse_args()
 
     base = args.base_url.rstrip("/")
-    zap = ZapAdapter(
-        host=args.zap_host,
-        port=args.zap_port,
-        api_key=zap_api_key_from_env(),
+    scanner = ScannerAdapter(
+        host=args.scanner_host,
+        port=args.scanner_port,
+        api_key=scanner_api_key_from_env(),
         base_url=base,
     )
 
@@ -165,7 +165,7 @@ def main() -> int:
     # Seed History: авторизованный запрос same-origin (fallback pick без url_contains).
     seed_url = f"{base}/rest/products/search?q=session-seed"
     print("DF-10 seed GET search with Bearer (value redacted)", flush=True)
-    zap.zap_http_request(
+    scanner.scanner_http_request(
         "GET",
         seed_url,
         headers={
@@ -178,7 +178,7 @@ def main() -> int:
 
     try:
         summary = SuiteFuzzerRunner(
-            _manifest(base, args.corpus, args.max_requests), zap, _EmptyStream()
+            _make_wired(base, args.corpus, args.max_requests), scanner, _EmptyStream()
         ).run("juice_session_wave")
     except WiredError as exc:
         print(f"FAIL: {exc}", flush=True)

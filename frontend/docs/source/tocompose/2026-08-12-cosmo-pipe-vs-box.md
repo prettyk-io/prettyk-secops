@@ -3,7 +3,7 @@
 
 
 > **Не CANON.** Research / chill note 2026-08-12.  
-> Target env: `portal01.dev.stand.cosmo.cbr.ru` · кейс `cosmo-OWASP ZAP Testing`.  
+> Target env: `portal01.dev.stand.cosmo.cbr.ru` · кейс `cosmo-OWASP scanner Testing`.  
 > Пайп: локальный DnD `gitlab-ci.yml` (не в репо).
 
 ## Контур A — сдача по ТЗ (пайп портала)
@@ -11,9 +11,9 @@
 ```text
 Космопорт UI (модалка «Параметры для запуска»)
   → TARGET_URL (+ опц. bearer / scan type)
-  → GitLab job zap_universal_ci
+  → GitLab job scanner_universal_ci
   → генерация autorun YAML в job
-  → zap.sh -cmd -autorun
+  → scanner.sh -cmd -autorun
   → report.sarif.json → AppSecHub
 ```
 

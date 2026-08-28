@@ -16,13 +16,13 @@
 
 - `cosmo/src/monaco/penguinDiagnosticsGate.ts` — блокирующий синтаксический гейт.
 - `cosmo/src/App.tsx` — кнопка запуска и валидации манифеста.
-- `orchestrator/models/manifest.py` — Pydantic модель манифеста.
+- `orchestrator/models/wired.py` — Pydantic модель манифеста.
 - `orchestrator/lab/llm_server.py` — endpoint для предполётного анализа.
 
 ## Архитектура
 
 ```
-  [ Manifest JSON in Editor ]
+  [ Wired JSON in Editor ]
                │
                ▼
   [ Monaco Syntax Gate ] ──(If Valid)──► [ AI Pre-Flight Coach ]

@@ -12,7 +12,7 @@ import {
   Bug,
   Crosshair,
   Target,
-  Zap,
+  scanner,
   Flame,
   ScanEye,
   FileSearch,
@@ -285,7 +285,7 @@ export const ICON_CATALOG: IconItem[] = [
   { name: 'Bug', Icon: Bug, category: 'secops', keywords: ['bug', 'defect', 'cwe', 'cve', 'finding'] },
   { name: 'Crosshair', Icon: Crosshair, category: 'secops', keywords: ['crosshair', 'aim', 'target', 'fuzz'] },
   { name: 'Target', Icon: Target, category: 'secops', keywords: ['target', 'endpoint', 'scope', 'attack'] },
-  { name: 'Zap', Icon: Zap, category: 'secops', keywords: ['zap', 'strike', 'active-scan', 'fuzzing', 'fast'] },
+  { name: 'scanner', Icon: scanner, category: 'secops', keywords: ['scanner', 'strike', 'active-scan', 'fuzzing', 'fast'] },
   { name: 'Flame', Icon: Flame, category: 'secops', keywords: ['flame', 'critical', 'exploit', 'zero-day'] },
   { name: 'ScanEye', Icon: ScanEye, category: 'secops', keywords: ['scan', 'inspect', 'discovery', 'crawler'] },
   { name: 'FileSearch', Icon: FileSearch, category: 'secops', keywords: ['audit', 'search', 'investigate', 'log-cut'] },
@@ -309,7 +309,7 @@ export const ICON_CATALOG: IconItem[] = [
 
   // DEV & CODE
   { name: 'Terminal', Icon: Terminal, category: 'dev', keywords: ['terminal', 'cli', 'console', 'powershell', 'bash'] },
-  { name: 'FileCode', Icon: FileCode, category: 'dev', keywords: ['code', 'script', 'manifest', 'json', 'yaml'] },
+  { name: 'FileCode', Icon: FileCode, category: 'dev', keywords: ['code', 'script', 'wired', 'json', 'yaml'] },
   { name: 'GitBranch', Icon: GitBranch, category: 'dev', keywords: ['git', 'branch', 'dev', 'main', 'feature'] },
   { name: 'GitCommit', Icon: GitCommit, category: 'dev', keywords: ['git', 'commit', 'hash', 'version'] },
   { name: 'GitMerge', Icon: GitMerge, category: 'dev', keywords: ['git', 'merge', 'pr', 'sync'] },

@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from models.wired import Wired
 from utils.chain_ops import (
     apply_slot_extracts,
     chain_from_har,
@@ -385,7 +386,7 @@ def test_value_pack_properties_module_materialize():
             ]
         }
     }
-    resolved, rnotes = bindings_from_value_pack_module(Wired, "chain_vals")
+    resolved, rnotes = bindings_from_value_pack_module(wired, "chain_vals")
     assert resolved["authorization"] == "Bearer FROM_MOD"
     assert any("value_pack_module=chain_vals" in n for n in rnotes)
 
@@ -447,6 +448,6 @@ def test_lab_run_materialize_uses_value_pack_module():
             "imports": [],
         }
     }
-    out = materialize_chain_modules(Wired, {})
+    out = materialize_chain_modules(wired, {})
     assert "flow" in out
     assert "Bearer LAB" in out["flow"]

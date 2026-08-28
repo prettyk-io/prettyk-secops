@@ -1,6 +1,6 @@
 ﻿# -*- coding: utf-8 -*-
 """
-СборИнформации: browser teleport + ZAP spider via ZapWorkStream.
+СборИнформации: browser teleport + scanner spider via scannerWorkStream.
 
 Default mode ``after`` (BrowseThenSpider): обойти URL → один spider по обогащённому
 Sites tree. Mode ``interleaved``: per-node burst (таймбокс, не default max).
@@ -14,7 +14,7 @@ import time
 from typing import Any, List
 from urllib.parse import urljoin
 
-from utils.zap_work_stream import ZapWorkStream
+from utils.scanner_work_stream import scannerWorkStream
 
 logger = logging.getLogger("orchestrator")
 
@@ -120,7 +120,7 @@ def _navigate(webdriver: Any, url: str) -> None:
 
 def run_gather_info(
     webdriver: Any,
-    zap: Any,
+    scanner: Any,
     source: Any,
     burst_sec: Any = None,
     settle_sec: Any = None,
@@ -155,7 +155,7 @@ def run_gather_info(
         urls = urls[: caps["max_urls"]]
 
     base = (getattr(webdriver, "base_url", None) or "").strip()
-    stream = ZapWorkStream(zap)
+    stream = scannerWorkStream(scanner)
     visited: List[str] = []
     wall_hit = False
     pscan_ok = False

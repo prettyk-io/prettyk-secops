@@ -16,8 +16,8 @@
   - `OPERATOR_CAPS`: `isAdmin: false`, `scheduled+manual`, без pre_release/emergency
   - `ADMIN_CAPS`: `isAdmin: true`, `scheduled+pre_release+manual`, без emergency
   - `ABNORMAL_CAPS`: `isAdmin: true`, `emergency+manual`, без scheduled/pre_release
-- `cosmo/src/manifest/ManifestSection.tsx` — фильтрация опций `meta.assessment_purpose` по капсам (`PURPOSE_CAP`).
-- `cosmo/src/manifest/ManifestField.tsx` — селект сбрасывает значение, если оно вне дозволенных опций.
+- `cosmo/src/wired/WiredSection.tsx` — фильтрация опций `meta.assessment_purpose` по капсам (`PURPOSE_CAP`).
+- `cosmo/src/wired/WiredField.tsx` — селект сбрасывает значение, если оно вне дозволенных опций.
 - `RoleGuard` обёрнут вокруг Admin-карточки HomePage (`requires="isAdmin"`) и на route `/admin` в App.tsx.
 - `auth.test.ts` обновлён под три учётки.
 

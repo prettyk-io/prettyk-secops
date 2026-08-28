@@ -18,7 +18,7 @@ describe('dualAxisChrome', () => {
     const chrome = dualAxisChrome({
       verdict: 'fail_run',
       exitCode: 1,
-      countsSource: 'zap',
+      countsSource: 'scanner',
     });
     expect(chrome.execution).toContain('сбой');
     expect(chrome.admission).toContain('недействителен');

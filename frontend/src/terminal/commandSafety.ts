@@ -68,7 +68,7 @@ const DANGEROUS_PATTERNS: ReadonlyArray<[RegExp, string]> = [
   [/\b(drop\s+table|truncate\s+table|delete\s+from)\b/i, 'destructive database operation'],
   [/\b(docker|kubectl|podman)\b/i, 'container/host orchestration'],
   [/\b(sudo|su\s+-|chmod|chown|kill\s+-9)\b/i, 'privileged/host operation'],
-  [/\b(active[_-]?scan|fuzz|intruder|spider|attack)\b/i, 'active security operation against a target'],
+  [/\b(active[_-]?scan|fuzz|intruder|crawl|attack)\b/i, 'active security operation against a target'],
   [/\b(curl|wget|nc)\b/i, 'egress network request'],
 ];
 

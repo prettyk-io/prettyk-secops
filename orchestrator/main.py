@@ -40,10 +40,10 @@ def load_wired(file_path):
 
 
 def run_validate_only(wired_path: str) -> int:
-    """Pydantic + constructors; без Controller/ZAP/Grid. 0 ok, 1 fail."""
+    """Pydantic + constructors; без Controller/scanner/Grid. 0 ok, 1 fail."""
     from core.wired_validate import validate_wired_file
 
-    issues, _manifest = validate_wired_file(wired_path)
+    issues, _wired = validate_wired_file(wired_path)
     if not issues:
         logger.info("validate-only: OK (%s)", wired_path)
         return 0
@@ -55,7 +55,7 @@ def run_validate_only(wired_path: str) -> int:
 
 def _resolve_admission_counts(controller, report_status: dict):
     """
-    QG-AF: Dojo ACTIVE (stats или /findings/+filter); ZAP если Dojo skipped.
+    QG-AF: Dojo ACTIVE (stats или /findings/+filter); scanner если Dojo skipped.
     Returns (counts|None, source, evidence_error|None).
     """
     from adapters.defectdojo_client import defectdojo_configured
@@ -69,7 +69,7 @@ def _resolve_admission_counts(controller, report_status: dict):
             return (
                 None,
                 "dojo",
-                "DefectDojo configured but import failed or ZAP XML missing",
+                "DefectDojo configured but import failed or scanner XML missing",
             )
         err = report_status.get("admission_evidence_error")
         if err:
@@ -85,11 +85,11 @@ def _resolve_admission_counts(controller, report_status: dict):
             "DefectDojo import ok but admission counts unavailable",
         )
 
-    # Dojo off / skipped → ZAP fallback
+    # Dojo off / skipped → scanner fallback
     try:
-        return controller.collect_zap_severity_counts(), "zap", None
+        return controller.collect_scanner_severity_counts(), "scanner", None
     except Exception as exc:
-        return None, "zap", str(exc)
+        return None, "scanner", str(exc)
 
 
 def main():
@@ -98,7 +98,7 @@ def main():
     parser.add_argument(
         "--validate-only",
         action="store_true",
-        help="Validate Pydantic/constructors and exit (no ZAP/Grid)",
+        help="Validate Pydantic/constructors and exit (no scanner/Grid)",
     )
     args = parser.parse_args()
 
@@ -146,10 +146,10 @@ def main():
         from core.gate_policy import report_requirement_failures
 
         report_status = finalize_reports(
-            zap_report_path=controller.last_zap_report,
+            scanner_report_path=controller.last_scanner_report,
             wired=getattr(controller, "wired", None),
         )
-        zap_xml = report_status.get("zap_xml")
+        scanner_xml = report_status.get("scanner_xml")
         report_fails = report_requirement_failures(
             allure_ok=report_status.get("allure_ok"),
             dojo_ok=report_status.get("dojo_ok"),
@@ -303,7 +303,7 @@ def main():
             exit_code = 2
         try:
             write_run_summary_from_controller(
-                controller, exit_code=exit_code, zap_xml_path=zap_xml
+                controller, exit_code=exit_code, scanner_xml_path=scanner_xml
             )
         except Exception as e:
             logger.error("run_summary write failed: %s", e)

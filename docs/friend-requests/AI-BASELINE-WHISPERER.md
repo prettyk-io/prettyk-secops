@@ -10,7 +10,7 @@
 
 ## As-built якорь
 
-- EXP-01 baseline fixtures: `orchestrator/tests/fixtures/exp01_reference/` (manifest, XML, findings JSON, run_summary)
+- EXP-01 baseline fixtures: `orchestrator/tests/fixtures/exp01_reference/` (wired, XML, findings JSON, run_summary)
 - llm-server `:8766` — Qwen3-1.7B, endpoints `/api/ai/classify`, `/api/ai/prioritize`
 - KDT Live `:8767` — AI proxy (`live_server.py`, `ai_assistant_enabled()`)
 - DojoFindingsTable — AI columns, Classify All
@@ -20,8 +20,8 @@
 
 - Dojo database `id` не является cross-run identity и не участвует в сравнении.
 - Current input должен быть привязан к `current_run_id`; нельзя сравнивать через безымянный `latest`.
-- Сравнение строится по версионированному `finding-v1` fingerprint из ZAP-derived данных: `plugin_id + alert_ref + method + normalized_path + parameter`.
-- Если текущий run неполный или scope/auth/manifest несовместимы с baseline, результат — `incomparable`, а не зелёный `FIXED`.
+- Сравнение строится по версионированному `finding-v1` fingerprint из scanner-derived данных: `plugin_id + alert_ref + method + normalized_path + parameter`.
+- Если текущий run неполный или scope/auth/wired несовместимы с baseline, результат — `incomparable`, а не зелёный `FIXED`.
 - `deterministic_delta.json` создаётся всегда. `ai_delta.json` является отдельным optional artifact и не влияет на gate, exit code или findings.
 
 ## Архитектура
@@ -147,7 +147,7 @@ Verification suggestion: проверить /api/debug вручную, если 
 - Stable `finding-v1` fingerprint; Dojo ID запрещён как cross-run identity
 - Сравнение: newly observed, not observed, changed severity по совпавшему fingerprint
 - Метрики: count diff, severity distribution shift, новые CWE
-- Comparability gate: manifest/target/auth/phase/artifact completeness
+- Comparability gate: wired/target/auth/phase/artifact completeness
 - Юнит-тесты на fixtures и смену Dojo IDs
 
 **DoD:** `pytest orchestrator/tests/test_baseline_delta.py` — зелёный; несовместимый или неполный run не показывает `FIXED`.

@@ -1,7 +1,7 @@
 ﻿# -*- coding: utf-8 -*-
 """DF-11 lab: sniper {MASK} + pitchfork MASK_1/MASK_2 (+ TAB) на Juice search.
 
-Стенд: ZAP demon :8080, Juice через Docker DNS ``juice-shop:3000``.
+Стенд: scanner demon :8080, Juice через Docker DNS ``juice-shop:3000``.
 Публичный search — login не нужен.
 """
 from __future__ import annotations
@@ -17,10 +17,10 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from adapters.zap_adapter import ZapAdapter
+from adapters.scanner_adapter import ScannerAdapter
 from core.errors import WiredError
 from core.fuzzing import SuiteFuzzerRunner, live_projection_titles
-from core.gate_policy import zap_api_key_from_env
+from core.gate_policy import scanner_api_key_from_env
 from utils.diary_bus import publish, set_meta
 
 BASE_URL = "http://juice-shop:3000"
@@ -129,11 +129,11 @@ def main() -> int:
     )
     parser.add_argument("--corpus", default="intent_boundary")
     parser.add_argument("--max-requests", type=int, default=5)
-    parser.add_argument("--zap-host", default=pk_env("ZAP_HOST", "127.0.0.1"))
+    parser.add_argument("--scanner-host", default=pk_env("SCANNER_HOST", "127.0.0.1"))
     parser.add_argument(
-        "--zap-port",
+        "--scanner-port",
         type=int,
-        default=int(pk_env("ZAP_PORT", "8080")),
+        default=int(pk_env("SCANNER_PORT", "8080")),
     )
     parser.add_argument("--no-live", action="store_true")
     args = parser.parse_args()
@@ -141,10 +141,10 @@ def main() -> int:
     modes = (
         ["sniper", "pitchfork", "tab"] if args.mode == "all" else [args.mode]
     )
-    zap = ZapAdapter(
-        host=args.zap_host,
-        port=args.zap_port,
-        api_key=zap_api_key_from_env(),
+    scanner = ScannerAdapter(
+        host=args.scanner_host,
+        port=args.scanner_port,
+        api_key=scanner_api_key_from_env(),
         base_url=BASE_URL,
     )
 
@@ -160,7 +160,7 @@ def main() -> int:
             fuzzer_id = "juice_df11_tab"
 
         try:
-            summary = SuiteFuzzerRunner(Wired, zap, _EmptyStream()).run(fuzzer_id)
+            summary = SuiteFuzzerRunner(Wired, scanner, _EmptyStream()).run(fuzzer_id)
         except WiredError as exc:
             raise SystemExit(f"{mode}: {exc}") from exc
 

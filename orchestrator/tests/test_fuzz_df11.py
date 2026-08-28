@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from models.wired import Wired
 from core.errors import WiredError
 from core.fuzzing import (
     SuiteFuzzerRunner,
@@ -37,11 +38,11 @@ class _FakeStream:
         return value
 
 
-class _FakeZap:
+class _Fakescanner:
     def __init__(self):
         self.calls = []
 
-    def zap_http_request(
+    def scanner_http_request(
         self, method, url, headers=None, body=None, follow_redirects=False
     ):
         self.calls.append(
@@ -131,13 +132,13 @@ def test_suite_wave_pitchfork_two_corpora(tmp_path, monkeypatch):
             base_url_override="http://juice-shop:3000"
         ),
     )
-    zap = _FakeZap()
-    runner = SuiteFuzzerRunner(Wired, zap, _FakeStream())
+    scanner = _Fakescanner()
+    runner = SuiteFuzzerRunner(wired, scanner, _FakeStream())
     monkeypatch.setattr(runner, "INTENT_DIR", tmp_path)
 
     summary = runner.run("pf_login")
     # pitchfork zip → 2 удара (min длины), + baseline
-    bodies = [c["body"] for c in zap.calls if c["body"] and "email" in str(c["body"])]
+    bodies = [c["body"] for c in scanner.calls if c["body"] and "email" in str(c["body"])]
     attack_bodies = [b for b in bodies if "u1" in b or "u2" in b]
     assert len(attack_bodies) == 2
     assert '{"email":"u1","password":"p1"}' in attack_bodies
@@ -175,10 +176,10 @@ def test_suite_wave_tab_line_single_corpus(tmp_path, monkeypatch):
             base_url_override="http://juice-shop:3000"
         ),
     )
-    zap = _FakeZap()
-    runner = SuiteFuzzerRunner(Wired, zap, _FakeStream())
+    scanner = _Fakescanner()
+    runner = SuiteFuzzerRunner(wired, scanner, _FakeStream())
     monkeypatch.setattr(runner, "INTENT_DIR", tmp_path)
     runner.run("tab_pairs")
-    bodies = [c["body"] for c in zap.calls if c.get("body")]
+    bodies = [c["body"] for c in scanner.calls if c.get("body")]
     assert any("alice" in b and "secret1" in b for b in bodies)
     assert any("bob" in b and "secret2" in b for b in bodies)

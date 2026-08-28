@@ -5,7 +5,7 @@ Replaces raw CDP listener with Playwright-native API.
 
 Pipeline:
   open URL → snapshot AX → extract candidates → detect forms
-  → click/fill/submit → capture network + DOM after → build transitions → seed ZAP
+  → click/fill/submit → capture network + DOM after → build transitions → seed scanner
 
 Uses:
   - page.accessibility.snapshot() instead of CDP AX nodes

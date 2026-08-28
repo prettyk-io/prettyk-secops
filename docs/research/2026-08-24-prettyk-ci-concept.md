@@ -104,7 +104,7 @@ PrettyK не становится ещё одним Jenkins или GitLab CI. Pr
 Browser Discovery
 API Contract Probe
 Auth Context
-ZAP Active Scan
+scanner Active Scan
 Corpus Fuzzing
 Finding Normalization
 Quality Gate
@@ -146,7 +146,7 @@ Prepare auth context
   ↓
 Browser / API exploration
   ↓
-ZAP / API / Fuzzing
+scanner / API / Fuzzing
   ↓
 Normalize findings
   ↓
@@ -201,7 +201,7 @@ PrettyK подключается к внешнему пайпу через:
 
 В Web IDE пользователь открывает каталог security-компонентов и видит не список npm-пакетов, а готовые проверяемые возможности:
 
-- ZAP Active Scan;
+- scanner Active Scan;
 - Browser Discovery;
 - Auth Replay;
 - OpenAPI/GQL/gRPC Probe;

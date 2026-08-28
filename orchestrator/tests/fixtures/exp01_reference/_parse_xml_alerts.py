@@ -1,11 +1,11 @@
-﻿"""Parse ZAP XML report to structured JSON alerts — as fallback when ZAP API hangs."""
+﻿"""Parse scanner XML report to structured JSON alerts — as fallback when scanner API hangs."""
 import json, os, sys, xml.etree.ElementTree as ET
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(BASE, '..', '..', '..', '..'))
 sys.path.insert(0, os.path.join(ROOT, 'orchestrator'))
 
-xml_path = os.path.join(BASE, 'zap_raw_report.xml')
+xml_path = os.path.join(BASE, 'scanner_raw_report.xml')
 tree = ET.parse(xml_path)
 root_el = tree.getroot()
 
@@ -64,7 +64,7 @@ for site in root_el.findall('.//site'):
             'instances': instances,
         })
 
-out_path = os.path.join(BASE, 'zap_raw_alerts_from_xml.json')
+out_path = os.path.join(BASE, 'scanner_raw_alerts_from_xml.json')
 with open(out_path, 'w', encoding='utf-8') as f:
     json.dump({'alerts': alerts, 'count': len(alerts), 'source': 'xml_parse'}, f, ensure_ascii=False, indent=2)
 

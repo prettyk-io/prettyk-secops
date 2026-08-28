@@ -1,0 +1,16 @@
+apiVersion: v2
+name: prettyk
+description: PrettyK Pure — DAST scanner Helm chart (cluster deployment)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - dast
+  - security
+  - scanner
+  - owasp
+  - airgap
+home: https://prettyk.io
+maintainers:
+  - name: PrettyK Team
+    email: dev@prettyk.io

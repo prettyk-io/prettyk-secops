@@ -46,7 +46,7 @@ PrettyK — enterprise SecOps-платформа, в которой операт
 
 Большие результаты не должны жить единственной копией на локальном диске и не должны раздувать PostgreSQL. В PostgreSQL живёт индекс и метаданные; бинарные доказательства живут через S3-контракт.
 
-**Что получает заказчик:** HAR, видео, скриншоты, ZAP-отчёты, Allure, логи и экспортируемые evidence-пакеты доступны после завершения worker и не зависят от конкретного pod/хоста.
+**Что получает заказчик:** HAR, видео, скриншоты, scanner-отчёты, Allure, логи и экспортируемые evidence-пакеты доступны после завершения worker и не зависят от конкретного pod/хоста.
 
 **GWT:**
 
@@ -60,7 +60,7 @@ PrettyK — enterprise SecOps-платформа, в которой операт
 
 ### 2. Распределённое исполнение — Control Plane / Worker Pool
 
-Сервер управления не должен падать из-за Chromium, ZAP, фаззера или утечки памяти в одном runner. Тяжёлый run выполняется изолированным worker с ограничениями ресурсов и жизненным циклом.
+Сервер управления не должен падать из-за Chromium, scanner, фаззера или утечки памяти в одном runner. Тяжёлый run выполняется изолированным worker с ограничениями ресурсов и жизненным циклом.
 
 **Что получает заказчик:** несколько проверок выполняются параллельно; остановка одного worker не ломает control plane и не превращает run в бесконечный «running».
 
@@ -102,7 +102,7 @@ PrettyK — enterprise SecOps-платформа, в которой операт
 
 ### 5. Таксономия уязвимостей и жизненный цикл finding
 
-PrettyK должен говорить на языке безопасности, а не выдавать разрозненные строки от ZAP и фаззера. Находка получает нормализованный тип, severity, доказательство, fingerprint и историю.
+PrettyK должен говорить на языке безопасности, а не выдавать разрозненные строки от scanner и фаззера. Находка получает нормализованный тип, severity, доказательство, fingerprint и историю.
 
 **Что получает заказчик:** повторный nightly run обновляет существующую finding, а не создаёт поток дублей; новый риск отличается от уже известного.
 
@@ -122,7 +122,7 @@ PrettyK должен говорить на языке безопасности, 
 
 ### 6. Наблюдаемость — OpenTelemetry + Prometheus/OpenMetrics
 
-Live SSE — пользовательский канал, но не полноценная observability-платформа. Нужны коррелируемые traces, metrics и structured logs для control plane, worker, browser, ZAP и интеграций.
+Live SSE — пользовательский канал, но не полноценная observability-платформа. Нужны коррелируемые traces, metrics и structured logs для control plane, worker, browser, scanner и интеграций.
 
 **DoD:** по `run_id`/correlation id можно восстановить путь команды от запуска до evidence; видны queue lag, worker utilisation, run duration, retry rate, artifact upload failures и delivery failures.
 
@@ -148,7 +148,7 @@ Gate policy должна быть версионированной и объяс
 
 Отчёт должен доказывать не только «нашли», но и «чем, когда и на каком входе нашли».
 
-**DoD:** каждый run связывается с check, policy, target, worker/runtime version, временем, входным manifest и artifact checksums; экспорт содержит provenance manifest и не позволяет подменить файл незаметно.
+**DoD:** каждый run связывается с check, policy, target, worker/runtime version, временем, входным wired и artifact checksums; экспорт содержит provenance wired и не позволяет подменить файл незаметно.
 
 Для обмена с внешними security-инструментами желательны стандартные форматы, включая SARIF для findings, без отказа от родного PrettyK evidence-пакета.
 
@@ -214,7 +214,7 @@ Surfaces: Studio / Admin / CLI / CI
        Worker Pool    MinIO / S3
        isolated run  evidence blobs
              │
-       Playwright / ZAP / Fuzzer
+       Playwright / scanner / Fuzzer
 
   Observability: OpenTelemetry → Prometheus/OpenMetrics → dashboards/SIEM
   Governance: asset scope, quotas, retention, backup/restore, provenance

@@ -76,7 +76,7 @@ class FakeHttp:
         self.cookies.append((name, value, domain))
 
 
-class FakeZap:
+class Fakescanner:
     def __init__(self):
         self.rules = []
 
@@ -129,16 +129,16 @@ def test_mfa_live_totp(monkeypatch):
     assert "stub" not in joined and "bolvan" not in joined
 
 
-def test_mfa_cookies_to_zap_replacer(monkeypatch):
+def test_mfa_cookies_to_scanner_replacer(monkeypatch):
     monkeypatch.setenv("PK_AUTH_FORM_BROWSER", "1")
     profile = parse_auth_module(ACTION_TEXT)
-    zap = FakeZap()
-    out = apply_auth_action(profile, FakeWd(), FakeHttp(), zap)
+    scanner = Fakescanner()
+    out = apply_auth_action(profile, FakeWd(), FakeHttp(), scanner)
     assert out["applied"] is True
-    assert out["cookies_zap"] == 1
-    assert any("cookies→ZAP Replacer: 1" in n for n in out["notes"])
-    assert zap.rules[0][2] == "Cookie"
-    assert zap.rules[0][3] == "sid=mfa1"
+    assert out["cookies_scanner"] == 1
+    assert any("cookies→scanner Replacer: 1" in n for n in out["notes"])
+    assert scanner.rules[0][2] == "Cookie"
+    assert scanner.rules[0][3] == "sid=mfa1"
 
 
 def test_mfa_sms_code(monkeypatch):

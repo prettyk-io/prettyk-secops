@@ -10,13 +10,13 @@
 |---|---|---|
 | **WebDriver** | Кто кликает в UI? | Отчётом / SOC |
 | **Selenium Grid** (опц.) | Remote WD + UI сессий + noVNC нод | Оболочкой KDT |
-| **Live-оболочка** (PrettyK Live) | Картинка + ленты сценария/ZAP во время прогона | Grid UI / Allure / Dojo |
+| **Live-оболочка** (PrettyK Live) | Картинка + ленты сценария/scanner во время прогона | Grid UI / Allure / Dojo |
 | **Сырой noVNC** | Desktop ноды без лент | Продуктовым монитором |
 | **allure-light-secops** | HTML шагов после прогона | Live |
 | **DefectDojo** | Реестр findings (часто ACTIVE для gate) | Исполнением шагов |
-| **ZAP** | MITM + API сканера | Браузерной фермой |
+| **scanner** | MITM + API сканера | Браузерной фермой |
 
-Формула стенда: **манифест → оркестратор → WebDriver (±Grid) → трафик через ZAP → свидетельства (Allure/ZAP/Dojo) + опционально Live**.
+Формула стенда: **манифест → оркестратор → WebDriver (±Grid) → трафик через scanner → свидетельства (Allure/scanner/Dojo) + опционально Live**.
 
 ## 2. Lab-контур (локальные порты — пример, не догма)
 
@@ -56,7 +56,7 @@
 
 | Компонент | Без него |
 |---|---|
-| ZAP + WebDriver | Нет прогона UI/DAST-контура |
+| scanner + WebDriver | Нет прогона UI/DAST-контура |
 | Grid | Можно `local` WD |
 | Live | Можно `KDT_LIVE=0` |
 | Allure / Dojo | Опциональны; `KDT_REQUIRE_*=1` делает fail-closed |

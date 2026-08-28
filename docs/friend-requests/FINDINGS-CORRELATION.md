@@ -4,7 +4,7 @@
 
 ## Тезис
 
-Разные сканеры (SonarQube, Trivy, KCS, CodeScoring, ZAP, Fuzzer, Playwright-автотесты) производят находки в разных форматах и с разной семантикой. PrettyK нормализует их в единую модель Finding, коррелирует (одна и та же уязвимость найдена разными инструментами = один Finding с multiple evidence sources), и предоставляет единую картину для Security Gates, отчётов и ГОСТ-Акта.
+Разные сканеры (SonarQube, Trivy, KCS, CodeScoring, scanner, Fuzzer, Playwright-автотесты) производят находки в разных форматах и с разной семантикой. PrettyK нормализует их в единую модель Finding, коррелирует (одна и та же уязвимость найдена разными инструментами = один Finding с multiple evidence sources), и предоставляет единую картину для Security Gates, отчётов и ГОСТ-Акта.
 
 ## Ключевые свойства
 
@@ -16,7 +16,7 @@
 
 ## Что уже есть
 
-- ZAP выдает алерты (сейчас пишутся в Monitor).
+- scanner выдает алерты (сейчас пишутся в Monitor).
 - SonarQube/Trivy/KCS/CodeScoring — не интегрированы (будущие адаптеры).
 - Fuzzer — работает, находки не систематизированы в общую модель.
 
@@ -31,12 +31,12 @@
 ## Честная «не обещаем»
 
 - AI-powered correlation (ML на похожесть findings) — out of scope v1. Правила: CWE + target.
-- Полные адаптеры для всех сканеров в v1 — ZAP + Fuzzer + Playwright autotests. SonarQube/Trivy/KCS/CodeScoring — по мере интеграции.
+- Полные адаптеры для всех сканеров в v1 — scanner + Fuzzer + Playwright autotests. SonarQube/Trivy/KCS/CodeScoring — по мере интеграции.
 
 ## DoD
 
 - Модель `Finding`.
-- Нормализация ZAP alerts → Finding.
+- Нормализация scanner alerts → Finding.
 - Нормализация Fuzzer findings → Finding.
 - Correlation engine: группировка по CWE + target.
 - Тесты: нормализация, корреляция, дедупликация.

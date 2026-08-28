@@ -16,12 +16,12 @@
 | Qwen3-1.7B (Boss) | Затогглен, UI скрыт при OFF |
 | Penguin diagnostics gate (`penguinDiagnosticsGate.ts`) | Чинит кнопку «Проверить» — Monaco ошибки блокируют валидацию |
 | 230 EN-алиасов prettyK DSL (Flash) | `method_ids.json`, 50/50 тестов |
-| Manifest `juice_shop_test_1` из чека `39f0eaa3` | Извлечён, `debug_mode=true`, заморожен в fixtures |
+| Wired `juice_shop_test_1` из чека `39f0eaa3` | Извлечён, `debug_mode=true`, заморожен в fixtures |
 
 ## Итог эталонного прогона
 
 ```
-Манифест:   orchestrator/tests/fixtures/exp01_reference/manifest.json
+Манифест:   orchestrator/tests/fixtures/exp01_reference/wired.json
 Проект:     exp01-baseline
 Exit:       0 (gate=void, debug_mode)
 Spider:     982 URL
@@ -36,10 +36,10 @@ Allure:     http://127.0.0.1:5050/
 
 ```
 orchestrator/tests/fixtures/exp01_reference/
-  manifest.json
+  wired.json
   spider_urls.json
-  zap_raw_report.xml
-  zap_raw_alerts_from_xml.json
+  scanner_raw_report.xml
+  scanner_raw_alerts_from_xml.json
   dojo_baseline_findings.json
   run_summary.json
 ```
@@ -54,4 +54,4 @@ http://127.0.0.1:8081/engagement/1
 
 ## Примечание
 
-Первый полный цикл «Editor → CLI run → ZAP → Allure → Dojo» без ручной правки манифеста. Локаторы checkout-а отвалились в новой версии Juice Shop, но `continue_on_failure: true` спасает — пайплайн доходит до ZAP scan и XML-отчёта в любом случае. Локаторы — отдельный эпик, не блокер baseline.
+Первый полный цикл «Editor → CLI run → scanner → Allure → Dojo» без ручной правки манифеста. Локаторы checkout-а отвалились в новой версии Juice Shop, но `continue_on_failure: true` спасает — пайплайн доходит до scanner scan и XML-отчёта в любом случае. Локаторы — отдельный эпик, не блокер baseline.

@@ -110,7 +110,7 @@ ORGANIZATION (компания-покупатель: «Сбербанк», «В�
 | **Кто создаёт проект** | QA-инженер сам | admin_sec или эксперт |
 | **Болванки (Blank Templates)** | ❌ Нет | ✅ admin_sec нарезает из реестра, назначает эксперту |
 | **Сценарии** | Инженер пишет с нуля или Discovery Engine | Эксперт наполняет болванку DSL-сценариями |
-| **Consumer при запуске** | Actions/Probes (чистая автоматизация) | Actions + ZAP/Fuzzer/Dojo consumer |
+| **Consumer при запуске** | Actions/Probes (чистая автоматизация) | Actions + scanner/Fuzzer/Dojo consumer |
 | **Dashboard** | Скриншоты, логи, пошаговый разбор | Severity breakdown, Dojo links, gate status |
 | **Политики гейтов** | ❌ Нет | ✅ На уровне Org или Domain |
 
@@ -435,7 +435,7 @@ Organization
 - сам создаёт сценарии;
 - сам запускает и смотрит результаты;
 - обязательных болванок нет;
-- ZAP, Dojo и security gate не входят в профиль;
+- scanner, Dojo и security gate не входят в профиль;
 - есть screenshot, logs, status и history.
 
 ### SecOps Lab
@@ -455,7 +455,7 @@ Organization
 - `admin_sec` управляет приложениями, scope, шаблонами, policies и назначениями;
 - `sec_expert` выполняет назначенные проверки;
 - утверждённый scope нельзя менять без разрешения;
-- ZAP, фаззер и Dojo подключаются как security consumer-профиль.
+- scanner, фаззер и Dojo подключаются как security consumer-профиль.
 
 ### Ролевая поправка
 
@@ -620,7 +620,7 @@ SecOps Lab
 
 | Персона / Роль | Главный экран | Что видит и делает | Визуальный тон |
 |---|---|---|---|
-| **Инфра-админ** (`admin_service`) | `#/control` (Machine Room) | Телеметрия контейнеров, здоровье ZAP/Live/Allure, ползунки Retention, Vault, список Spaces и выделенные квоты. Ноль шума от тестов. | Строгий темный slate/zinc, моноширинные метрики, графики нагрузки. |
+| **Инфра-админ** (`admin_service`) | `#/control` (Machine Room) | Телеметрия контейнеров, здоровье scanner/Live/Allure, ползунки Retention, Vault, список Spaces и выделенные квоты. Ноль шума от тестов. | Строгий темный slate/zinc, моноширинные метрики, графики нагрузки. |
 | **Лид ИБ / Space Admin** (`admin_sec`) | `#/spaces/:id/admin` (Control Deck) | Реестр веб-приложений, выдача болванок (Assignments), матрица политик гейтов, команда домена. | Defense-grade: акценты amber/crimson, щиты, статусы комплаенса. |
 | **Сек-эксперт / QA** (`sec_expert` / `qa_engineer`) | `#/spaces/:id/projects` (Studio Canvas) | «Моя очередь задач», редактор графа сценариев, живой раннер, логи шагов, инспектор локаторов. | Творческий студийный: чистый холст, цветные pill-ноды, плавные связки. |
 | **Стейкхолдер / Аудитор** (`user` / `viewer`) | `#/spaces/:id/dashboard` (Executive Summary) | Тренды прогонов, тепловая карта уязвимостей, экспорт отчетов (PDF / Allure), статус релизных гейтов. | Презентационный: крупные KPI-карточки, понятные графики, минимум кнопок действия. |

@@ -29,7 +29,7 @@ Space (группа / «экспедиция» / AD-видимость)
 
 ### DAST as-is (не сущность портала)
 
-`ZapRun` / `BlackBoxRun` живут в CI: variables + autorun file + optional auth script + SARIF → AppSecHub.  
+`scannerRun` / `BlackBoxRun` живут в CI: variables + autorun file + optional auth script + SARIF → AppSecHub.  
 В портале — модалка параметров и галочка ЖЦ, не объект «проверка».
 
 ## Связь с коробкой (пак, не SoT)
@@ -53,4 +53,4 @@ Space (группа / «экспедиция» / AD-видимость)
 
 - Create notification UI (фулскрин).  
 - STAGE↔UI таблица 1:1.  
-- Кто commit’ит `ZAP/` (job vs руками).
+- Кто commit’ит `scanner/` (job vs руками).

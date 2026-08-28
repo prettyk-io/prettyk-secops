@@ -76,7 +76,7 @@ class TestSingleAppDefaultBricks:
             PipelineBrick(id="b1", name="SAST", type="sast", source="org/frontend",
                           definition=BrickDefinition(image="sonarsource/sonar-scanner-cli:latest")),
             PipelineBrick(id="b2", name="DAST", type="dast", source="org/frontend",
-                          definition=BrickDefinition(image="owasp/zap2docker-stable:latest")),
+                          definition=BrickDefinition(image="owasp/scanner2docker-stable:latest")),
         ]
         batches = compile_pipeline([app], bricks)
         assert len(batches) == 1
@@ -130,7 +130,7 @@ class TestDAG:
                           definition=BrickDefinition(image="node:20"),
                           depends_on=["build"]),
             PipelineBrick(id="dast", name="DAST", type="dast", source="org/repo",
-                          definition=BrickDefinition(image="owasp/zap2docker-stable:latest"),
+                          definition=BrickDefinition(image="owasp/scanner2docker-stable:latest"),
                           depends_on=["build"]),
         ]
         app = Application(id="app-1", domain_id="d-1", level=1,
@@ -437,7 +437,7 @@ class TestFullCompileAndExecute:
             _mk_brick("b-sonar", "SonarQube", "sast", ["b-build"]),
             _mk_brick("b-trivy", "Trivy", "sca", ["b-build"]),
             _mk_brick("b-deploy", "Deploy Staging", "deploy"),
-            _mk_brick("b-zap", "ZAP Scan", "dast", ["b-deploy"]),
+            _mk_brick("b-scanner", "scanner Scan", "dast", ["b-deploy"]),
         ]
         pc = PlanCompiler()
         batches = pc.compile(bricks, app=_mk_app(), plan_id="plan-lifecycle")

@@ -8,8 +8,8 @@
 Захват двух источников:
   1. **DOM** — `webdriver.page_source` после каждого navigate (имеет смысл только
      для «гуляющего» браузера; для API-обхода DOM пуст).
-  2. **Network** — ZAP History через `zap.get_messages()`. Браузер и HTTP/gRPC
-     адаптеры уже проксируются через ZAP, поэтому весь трафик оседает в History;
+  2. **Network** — scanner History через `scanner.get_messages()`. Браузер и HTTP/gRPC
+     адаптеры уже проксируются через scanner, поэтому весь трафик оседает в History;
      CDP-событийный сниффинг (BiDi) в PK не тянем — History даёт то же самое
      и не зависит от браузера.
 
@@ -134,7 +134,7 @@ class DiscoveryPage:
 
 @dataclass
 class NetworkEntry:
-    """Один запрос из ZAP History, нормализованный в JSON-friendly вид."""
+    """Один запрос из scanner History, нормализованный в JSON-friendly вид."""
 
     method: str
     url: str
@@ -291,19 +291,19 @@ def _message_to_entry(message: Dict[str, Any], base: str) -> Optional[NetworkEnt
 
 
 def capture_network(
-    zap: Any,
+    scanner: Any,
     *,
     base: str = "",
     start: Optional[int] = None,
     count: Optional[int] = None,
 ) -> List[NetworkEntry]:
-    """Снять Network-трафик из ZAP History → list[NetworkEntry].
+    """Снять Network-трафик из scanner History → list[NetworkEntry].
 
     ``start``/``count`` — окно History. По умолчанию берём хвост (как и
     ``get_messages``, до 200 записей). Для полного обхода вызывающий код может
     отдать явное окно от начала прогона.
     """
-    messages = getattr(zap, "get_messages", None)
+    messages = getattr(scanner, "get_messages", None)
     if messages is None:
         return []
     try:
@@ -330,7 +330,7 @@ def capture_network(
 
 def capture_current(
     webdriver: Any,
-    zap: Any,
+    scanner: Any,
     *,
     url: str,
     base: str = "",
@@ -344,9 +344,9 @@ def capture_current(
             corpus.pages.append(capture_page(webdriver, url))
         except Exception as exc:  # noqa: BLE001
             logger.debug("discovery_capture: capture_page failed: %s", exc)
-    if zap is not None:
+    if scanner is not None:
         corpus.network = capture_network(
-            zap, base=base, start=history_start, count=history_count
+            scanner, base=base, start=history_start, count=history_count
         )
     return corpus
 

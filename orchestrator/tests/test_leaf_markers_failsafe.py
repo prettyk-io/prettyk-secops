@@ -25,7 +25,7 @@ def _bare_controller(execute):
     ctrl.action_factory = type("F", (), {"execute": staticmethod(execute)})()
     ctrl.adapters = {"data": None}
     ctrl._wired_problems = []
-    ctrl.last_zap_report = None
+    ctrl.last_scanner_report = None
 
     def parse(raw: str):
         parts = raw.split("|")

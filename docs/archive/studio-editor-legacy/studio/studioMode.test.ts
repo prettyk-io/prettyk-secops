@@ -36,7 +36,7 @@ describe('studioSuiteMode', () => {
 describe('studioOffEmptyDescription', () => {
   it('manual: без «Студия» и без wire-имён', () => {
     const manual = studioOffEmptyDescription({ meta: { assessment_purpose: 'manual' } });
-    expect(manual).toContain('Ручная проверка в ZAP');
+    expect(manual).toContain('Ручная проверка в scanner');
     expect(manual.toLowerCase()).not.toContain('студия');
     expect(manual).not.toContain('custom_policy');
     expect(manual).not.toContain('scan_policy');

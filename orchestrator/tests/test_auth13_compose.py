@@ -294,13 +294,13 @@ def test_enrich_primenit_auth_compose_not_none(monkeypatch):
     ctrl = object.__new__(Controller)
     ctrl.wired = man
     params = {"module_id": "c"}
-    ctrl._enrich_zap_wired_params("apply_wired_auth", params)
+    ctrl._enrich_scanner_wired_params("apply_wired_auth", params)
     assert params["auth_type"] != "Без авторизации"
     apps = json.loads(params["auth_applications_json"])
     assert [a["auth_type"] for a in apps] == ["API Key", "Bearer Token"]
 
 
-class FakeZap:
+class Fakescanner:
     def __init__(self):
         self.rules = []
         self.connected = True
@@ -329,17 +329,17 @@ class FakeZap:
 
 
 def test_apply_wired_auth_compose_multi():
-    """BOT-A2: ZapAdapter apply multi applications from compose resolve."""
-    from adapters.zap_adapter import ZapAdapter
+    """BOT-A2: ScannerAdapter apply multi applications from compose resolve."""
+    from adapters.scanner_adapter import ScannerAdapter
 
-    zap = object.__new__(ZapAdapter)
-    fake = FakeZap()
-    zap._ensure_connected = fake._ensure_connected
-    zap._get_context_id = fake._get_context_id
-    zap.create_context = fake.create_context
-    zap.domains_csv_to_include_regexes = fake.domains_csv_to_include_regexes
-    zap.set_context_include = fake.set_context_include
-    zap.add_replacer_rule = fake.add_replacer_rule
+    scanner = object.__new__(ScannerAdapter)
+    fake = Fakescanner()
+    scanner._ensure_connected = fake._ensure_connected
+    scanner._get_context_id = fake._get_context_id
+    scanner.create_context = fake.create_context
+    scanner.domains_csv_to_include_regexes = fake.domains_csv_to_include_regexes
+    scanner.set_context_include = fake.set_context_include
+    scanner.add_replacer_rule = fake.add_replacer_rule
 
     import json
 
@@ -355,8 +355,8 @@ def test_apply_wired_auth_compose_multi():
             "module_id": "b",
         },
     ]
-    out = ZapAdapter.apply_wired_auth(
-        zap,
+    out = ScannerAdapter.apply_wired_auth(
+        scanner,
         "ctx",
         auth_applications_json=json.dumps(apps),
     )

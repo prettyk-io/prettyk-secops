@@ -87,7 +87,12 @@ def _channel_match(wanted: str, event_channel: str) -> bool:
     w = (wanted or "all").strip().lower()
     if w in ("", "all"):
         return True
-    return w == (event_channel or "diary").strip().lower()
+    ev = (event_channel or "diary").strip().lower()
+    if w == ev:
+        return True
+    if w in {"scanner", "scanner"} and ev in {"scanner", "scanner"}:
+        return True
+    return False
 
 
 def _active_run_id() -> str:
@@ -325,14 +330,14 @@ def is_http_report_url(url: Any) -> bool:
 
 
 def get_results_hooks(run_id: Optional[str] = None) -> Dict[str, Any]:
-    """Report URLs pushed by Allure / DefectDojo / ZAP summary (cross-process file).
+    """Report URLs pushed by Allure / DefectDojo / scanner summary (cross-process file).
 
     When run_id is given, filter entries to only hooks matching that run.
     An entry matches if it has no run_id (backwards-compat legacy), or its run_id
     equals the requested one.  check_id is NOT used as a secondary filter —
     one check may have many runs.
     """
-    empty = {"allure": None, "dojo": None, "zap": None}
+    empty = {"allure": None, "dojo": None, "scanner": None}
     try:
         if not RESULTS_HOOKS_JSON.is_file():
             return dict(empty)
@@ -344,12 +349,12 @@ def get_results_hooks(run_id: Optional[str] = None) -> Dict[str, Any]:
     result = {
         "allure": _normalize_hook_entry(raw.get("allure")),
         "dojo": _normalize_hook_entry(raw.get("dojo")),
-        "zap": _normalize_hook_entry(raw.get("zap")),
+        "scanner": _normalize_hook_entry(raw.get("scanner")),
     }
     rid = (run_id or "").strip()
     if not rid:
         return result
-    for key in ("allure", "dojo", "zap"):
+    for key in ("allure", "dojo", "scanner"):
         entry = result.get(key)
         if isinstance(entry, dict):
             entry_rid = str(entry.get("run_id") or "").strip()
@@ -361,7 +366,7 @@ def get_results_hooks(run_id: Optional[str] = None) -> Dict[str, Any]:
 def clear_results_hooks() -> Dict[str, Any]:
     """Reset report hooks (lab demo / re-smoke)."""
     ensure_live_dir()
-    empty = {"allure": None, "dojo": None, "zap": None}
+    empty = {"allure": None, "dojo": None, "scanner": None}
     with _file_lock:
         RESULTS_HOOKS_JSON.write_text(
             json.dumps(empty, ensure_ascii=False, indent=0),
@@ -373,11 +378,11 @@ def clear_results_hooks() -> Dict[str, Any]:
 def set_results_hook(service: str, report_url: str, **extra: Any) -> Dict[str, Any]:
     """
     Persist a fresh report URL for Results tiles.
-    service: allure | dojo | zap
+    service: allure | dojo | scanner
     """
     key = (service or "").strip().lower()
-    if key not in ("allure", "dojo", "zap"):
-        raise ValueError("service must be allure, dojo, or zap")
+    if key not in ("allure", "dojo", "scanner"):
+        raise ValueError("service must be allure, dojo, or scanner")
     url = (report_url or "").strip()
     if not url:
         raise ValueError("report_url is required")
@@ -405,7 +410,7 @@ def set_results_hook(service: str, report_url: str, **extra: Any) -> Dict[str, A
         current = {
             "allure": disk.get("allure"),
             "dojo": disk.get("dojo"),
-            "zap": disk.get("zap"),
+            "scanner": disk.get("scanner"),
         }
         prev = current.get(key)
         if isinstance(prev, dict):

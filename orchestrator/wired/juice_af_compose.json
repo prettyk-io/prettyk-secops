@@ -3,12 +3,12 @@
     "assessment_purpose": "scheduled",
     "app_type": "web",
     "project_id": "juice-af-compose",
-    "scheduled_info": "Lab: ПрименитьAuth → План (AF operating model). Нужны Juice + ZAP; не CI smoke."
+    "scheduled_info": "Lab: ПрименитьAuth → План (AF operating model). Нужны Juice + scanner; не CI smoke."
   },
   "infrastructure": {
-    "zap_mode": "demon",
+    "scanner_mode": "demon",
     "browser_type": "chrome-headless",
-    "zap_work_timeout_min": 30,
+    "scanner_work_timeout_min": 30,
     "idle_timeout_min": 10
   },
   "security_configuration": {
@@ -33,7 +33,7 @@
             "constructor": "НовыйКонтекст juice_ctx"
           },
           {
-            "description": "Auth из security_configuration → ZAP (Replacer Bearer)",
+            "description": "Auth из security_configuration → scanner (Replacer Bearer)",
             "constructor": "ПрименитьAuth juice_ctx"
           },
           {
@@ -45,7 +45,7 @@
             "constructor": "План plans/juice-baseline.yaml"
           },
           {
-            "description": "Маркер в Live zap-ленте",
+            "description": "Маркер в Live scanner-ленте",
             "constructor": "ЛогАтаки \"af-compose: auth+plan done\""
           }
         ]

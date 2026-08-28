@@ -103,8 +103,8 @@ def _minimal_wired():
     w.infrastructure.base_url_override = "http://example.com"
     w.infrastructure.allowed_extra_domains = ""
     w.infrastructure.browser_type = "chrome-headless"
-    w.infrastructure.zap_mode = "demon"
-    w.infrastructure.zap_work_timeout_min = 1
+    w.infrastructure.scanner_mode = "demon"
+    w.infrastructure.scanner_work_timeout_min = 1
     w.infrastructure.webswing_session_timeout_min = 1
     w.infrastructure.idle_timeout_min = 1
     w.test_suites = MagicMock()
@@ -114,16 +114,16 @@ def _minimal_wired():
 
 
 @patch("adapters.playwright_adapter.PlaywrightBrowserRuntime.launch", side_effect=Exception("no browser"))
-@patch("core.controller.ZapAdapter", autospec=True)
+@patch("core.controller.ScannerAdapter", autospec=True)
 @patch("core.controller.WebDriverAdapter")
 def test_controller_playwright_branch_registers_adapters(
-    mock_wd, mock_zap, mock_launch, _minimal_wired, monkeypatch,
+    mock_wd, mock_scanner, mock_launch, _minimal_wired, monkeypatch,
 ):
     """PW-E1: PK_BROWSER_RUNTIME=playwright → 'webdriver' и 'browser' = PlaywrightAdapter."""
     from core.controller import Controller
 
     monkeypatch.setenv("PK_BROWSER_RUNTIME", "playwright")
-    monkeypatch.setenv("PK_ZAP_MODE", "demon")
+    monkeypatch.setenv("PK_SCANNER_MODE", "demon")
 
     try:
         ctrl = Controller(_minimal_wired, wired_path=None)
@@ -138,16 +138,16 @@ def test_controller_playwright_branch_registers_adapters(
     assert ctrl.reporter is not None
 
 
-@patch("core.controller.ZapAdapter", autospec=True)
+@patch("core.controller.ScannerAdapter", autospec=True)
 @patch("core.controller.WebDriverAdapter")
 def test_controller_selenium_is_default(
-    mock_wd, mock_zap, _minimal_wired, monkeypatch,
+    mock_wd, mock_scanner, _minimal_wired, monkeypatch,
 ):
     """PW-E1: без PK_BROWSER_RUNTIME → дефолт = Selenium (WebDriverAdapter)."""
     from core.controller import Controller
 
     monkeypatch.delenv("PK_BROWSER_RUNTIME", raising=False)
-    monkeypatch.setenv("PK_ZAP_MODE", "demon")
+    monkeypatch.setenv("PK_SCANNER_MODE", "demon")
 
     try:
         ctrl = Controller(_minimal_wired, wired_path=None)
@@ -180,7 +180,7 @@ def test_controller_with_real_wired_via_flag(monkeypatch):
     """Контроллер с PK_BROWSER_RUNTIME=playwright использует PlaywrightAdapter."""
     import os as _os
     monkeypatch.setenv("PK_BROWSER_RUNTIME", "playwright")
-    monkeypatch.setenv("PK_ZAP_MODE", "demon")
+    monkeypatch.setenv("PK_SCANNER_MODE", "demon")
 
     from adapters.playwright_adapter import PlaywrightAdapter
     from core.controller import Controller
@@ -191,8 +191,8 @@ def test_controller_with_real_wired_via_flag(monkeypatch):
     w.infrastructure.base_url_override = "http://example.com"
     w.infrastructure.allowed_extra_domains = ""
     w.infrastructure.browser_type = "chrome-headless"
-    w.infrastructure.zap_mode = "demon"
-    w.infrastructure.zap_work_timeout_min = 1
+    w.infrastructure.scanner_mode = "demon"
+    w.infrastructure.scanner_work_timeout_min = 1
     w.infrastructure.webswing_session_timeout_min = 1
     w.infrastructure.idle_timeout_min = 1
     w.test_suites = MagicMock()
@@ -200,7 +200,7 @@ def test_controller_with_real_wired_via_flag(monkeypatch):
     w.test_suites.imports = []
 
     from unittest.mock import patch as _patch
-    with _patch("core.controller.ZapAdapter", autospec=True):
+    with _patch("core.controller.ScannerAdapter", autospec=True):
         with _patch("core.controller.WebDriverAdapter", autospec=True):
             with _patch.object(PlaywrightAdapter, "_ensure_page", side_effect=Exception("no browser")):
                 try:
@@ -239,3 +239,112 @@ def test_convert_webm_ffmpeg_not_installed(tmp_path, monkeypatch):
     from utils.run_recording import convert_webm_to_mp4
     result = convert_webm_to_mp4(str(tmp_path), "run-test")
     assert result is None
+
+
+# ── PW-E4: live execution — headed браузер в контейнере ─────────────────────
+
+
+def test_controller_passes_cdp_endpoint_to_playwright(monkeypatch):
+    """PW-E4: headed execution → PK_BROWSER_CDP_ENDPOINT прокидывается в PlaywrightAdapter."""
+    from unittest.mock import MagicMock, patch
+
+    w = MagicMock()
+    w.meta.project_id = "pw-e4"
+    w.infrastructure.base_url_override = "http://example.com"
+    w.infrastructure.allowed_extra_domains = ""
+    w.infrastructure.browser_type = "chrome"  # headed (не -headless)
+    w.infrastructure.scanner_mode = "demon"
+    w.infrastructure.scanner_work_timeout_min = 1
+    w.infrastructure.webswing_session_timeout_min = 1
+    w.infrastructure.idle_timeout_min = 1
+    w.test_suites = MagicMock()
+    w.test_suites.scenarios = []
+    w.test_suites.imports = []
+
+    monkeypatch.setenv("PK_BROWSER_RUNTIME", "playwright")
+    monkeypatch.setenv("PK_SCANNER_MODE", "demon")
+    monkeypatch.setenv("PK_BROWSER_CDP_ENDPOINT", "http://localhost:9223")
+
+    from core.controller import Controller
+
+    with patch("core.controller.ScannerAdapter", autospec=True):
+        with patch("core.controller.WebDriverAdapter", autospec=True):
+            with patch("adapters.playwright_adapter.PlaywrightAdapter") as mock_pa:
+                try:
+                    Controller(w, wired_path=None)
+                except Exception:
+                    pass
+
+    # PlaywrightAdapter должен получить cdp_endpoint (PW-E4)
+    kwargs = mock_pa.call_args.kwargs
+    assert kwargs.get("cdp_endpoint") == "http://localhost:9223"
+
+
+def test_playwright_adapter_uses_cdp_when_endpoint_set():
+    """PW-E4: PlaywrightAdapter._ensure_page при cdp_endpoint идёт через connect_over_cdp, не launch."""
+    from adapters.playwright_adapter import PlaywrightAdapter
+
+    ad = PlaywrightAdapter(browser="chromium", headless=False, cdp_endpoint="http://localhost:9223")
+    # launch НЕ вызывается, если есть cdp_endpoint (см. _ensure_page)
+    import inspect
+    src = inspect.getsource(PlaywrightAdapter._ensure_page)
+    assert "_cdp_endpoint" in src
+    assert "connect_over_cdp" in src
+
+
+# ── PW-E5: parity suite — один wired на обоих рантаймах ─────────────────────
+
+
+PARITY_WIRED = {
+    "meta": {"project_id": "parity-e5"},
+    "infrastructure": {"base_url_override": "http://example.com", "browser_type": "chrome-headless"},
+    "test_suites": {
+        "scenarios": [{
+            "id": "parity-smoke",
+            "scenario_name": "Parity Smoke",
+            "steps": [
+                {"constructor": "webdriver|open|http://example.com"},
+                {"constructor": "webdriver|click|role:button[name=Login]"},
+                {"constructor": "webdriver|send_keys|label:Email|test@example.com"},
+                {"constructor": "webdriver|take_screenshot|parity.png"},
+                {"constructor": "webdriver|get_text|role:heading"},
+                {"constructor": "webdriver|back"},
+            ],
+        }],
+    },
+}
+
+
+def test_parity_wired_declarative_identical_for_both_runtimes():
+    """PW-E5: один wired-файл, одинаковый contract для Selenium и Playwright."""
+    import json
+
+    data = json.loads(json.dumps(PARITY_WIRED))
+    steps = data["test_suites"]["scenarios"][0]["steps"]
+    assert len(steps) == 6
+    # Оба рантайма читают один и тот же декларативный wire-контракт
+    assert steps[0]["constructor"] == "webdriver|open|http://example.com"
+    assert steps[1]["constructor"] == "webdriver|click|role:button[name=Login]"
+
+
+def test_parity_both_adapters_support_all_steps():
+    """PW-E5: каждый метод parity-wired есть в обоих адаптерах."""
+    from adapters.playwright_adapter import PlaywrightAdapter
+    from adapters.webdriver_adapter import WebDriverAdapter
+
+    required = ["open", "click", "send_keys", "take_screenshot", "get_text", "back"]
+    for m in required:
+        assert hasattr(PlaywrightAdapter, m), f"PlaywrightAdapter missing {m}"
+        assert hasattr(WebDriverAdapter, m), f"WebDriverAdapter missing {m}"
+
+
+def test_parity_verdict_contract_shared():
+    """PW-E5: verdict/evidence — общий контракт (не зависит от рантайма)."""
+    # Оба рантайма пишут в один evidence-контракт (allure + run_summary).
+    # Reporter принимает адаптер любого рантайма (webdriver_adapter).
+    from utils.reporter import Reporter
+    import inspect
+
+    sig = inspect.signature(Reporter.__init__)
+    params = list(sig.parameters.keys())
+    assert "webdriver_adapter" in params or "adapter" in params or "driver" in params

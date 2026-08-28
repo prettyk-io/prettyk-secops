@@ -87,7 +87,7 @@ export function Canvas({ counts }: CanvasProps) {
       {
         id: "deck-1",
         title: "Juice Shop — Auth & Scan",
-        description: "Логин, spider, фаззинг, активное сканирование",
+        description: "Логин, crawl, фаззинг, активное сканирование",
         continueOnError: true,
         steps: [],
         collapsed: false,

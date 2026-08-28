@@ -9,7 +9,7 @@ cd D:\prettyk-dev\services
 docker network create pk-net 2>$null
 
 # Основной стек
-docker compose -f docker-compose.yml -f docker-compose.zap.yml -f docker-compose.target.yml up -d
+docker compose -f docker-compose.yml -f docker-compose.scanner.yml -f docker-compose.target.yml up -d
 
 # Дождаться Grid (обычно 30-90 сек)
 docker ps --filter "name=selenium-hub" --format "{{.Status}}"
@@ -46,7 +46,7 @@ $env:PK_AI_ASSISTANT_ENABLED = "1"
 docker ps --format "table {{.Names}}\t{{.Status}}"
 
 # Должны быть: selenium-hub, chrome, firefox, chrome-video (Grid)
-#   zap, juice-shop, pk-api-lab (сканер/цель)
+#   scanner, juice-shop, pk-api-lab (сканер/цель)
 #   allure3-secops, allure-light-secops (отчёты)
 #   defectdojo-* (6 штук)
 #   llm-server, llama-server, llama-server-reasoning (QWEN)
@@ -64,7 +64,7 @@ curl.exe -sS --max-time 3 http://localhost:5173/ -o NUL -w "%{http_code}"  # →
 | 5173 | Editor (Vite) | `netstat -ano \| findstr :5173` |
 | 8765 | Playground | `curl :8765/api/run/status` |
 | 8767 | Live | `curl :8767/api/meta` |
-| 8080 | ZAP API | `curl :8080` |
+| 8080 | scanner API | `curl :8080` |
 | 8081 | Dojo | `curl :8081` |
 | 5050 | Allure3 | `curl :5050/health` |
 | 4444 | Selenium Grid | `curl :4444/status` |

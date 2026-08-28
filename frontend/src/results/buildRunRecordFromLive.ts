@@ -283,7 +283,7 @@ export function buildRunRecordFromLive(input: {
       monitor: LAB_RESULT_LINKS.monitor,
       allure: hookUrl(hooks, 'allure') || LAB_RESULT_LINKS.allure,
       dojo: hookUrl(hooks, 'dojo') || LAB_RESULT_LINKS.dojo,
-      zap_api: LAB_RESULT_LINKS.zap_api,
+      scanner_api: LAB_RESULT_LINKS.scanner_api,
     },
     gate: buildLiveGate({ meta, dojo, hints, executive }),
     summary,

@@ -1,5 +1,5 @@
 ﻿# -*- coding: utf-8 -*-
-"""Dual-axis / QG-AF: resolve Dojo counts vs ZAP fallback."""
+"""Dual-axis / QG-AF: resolve Dojo counts vs scanner fallback."""
 from __future__ import annotations
 
 import main as pk_main
@@ -29,7 +29,7 @@ def test_resolve_prefers_finalize_admission_counts(monkeypatch):
     assert counts["medium"] == 2
 
 
-def test_resolve_zap_fallback_when_dojo_skipped(monkeypatch):
+def test_resolve_scanner_fallback_when_dojo_skipped(monkeypatch):
     monkeypatch.setattr(
         "adapters.defectdojo_client.defectdojo_configured", lambda: False
     )
@@ -44,13 +44,13 @@ def test_resolve_zap_fallback_when_dojo_skipped(monkeypatch):
             }
 
     ctrl = object.__new__(Controller)
-    ctrl.adapters = {"zap": Z()}
+    ctrl.adapters = {"scanner": Z()}
     counts, source, err = pk_main._resolve_admission_counts(
         ctrl,
         {"dojo_skipped": True, "dojo_ok": True, "dojo_stats": None},
     )
     assert err is None
-    assert source == "zap"
+    assert source == "scanner"
     assert counts["high"] == 4
 
 

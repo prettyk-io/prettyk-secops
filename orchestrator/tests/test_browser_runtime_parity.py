@@ -114,20 +114,65 @@ class TestAdapterMethodParity:
 
 
 class TestRuntimeSelection:
-    """Проверка: PK_BROWSER_RUNTIME переключает адаптеры."""
+    """Проверка: PK_BROWSER_RUNTIME переключает адаптеры (честно, через resolve_browser_runtime)."""
 
-    def test_runtime_env_var_recognized(self):
-        import os
-        runtime = os.environ.get("PK_BROWSER_RUNTIME", "playwright")
-        assert runtime in ("playwright", "selenium")
+    def test_runtime_env_var_recognized(self, monkeypatch):
+        monkeypatch.setenv("PK_BROWSER_RUNTIME", "playwright")
+        from core.controller import resolve_browser_runtime
+        assert resolve_browser_runtime() == "playwright"
 
-    def test_default_is_playwright(self):
-        import os
-        default = os.environ.get("PK_BROWSER_RUNTIME") or "playwright"
-        assert default == "playwright"
+        monkeypatch.setenv("PK_BROWSER_RUNTIME", "selenium")
+        assert resolve_browser_runtime() == "selenium"
+
+    def test_default_is_playwright(self, monkeypatch):
+        """PW-C1: без PK_BROWSER_RUNTIME дефолт — playwright (cutover выполнен)."""
+        monkeypatch.delenv("PK_BROWSER_RUNTIME", raising=False)
+        from core.controller import resolve_browser_runtime
+        assert resolve_browser_runtime() == "playwright"
+
+    def test_unknown_runtime_falls_back_to_playwright(self, monkeypatch):
+        """Неизвестное значение → playwright (fail-safe, не падаем)."""
+        monkeypatch.setenv("PK_BROWSER_RUNTIME", "webkit-whatever")
+        from core.controller import resolve_browser_runtime
+        assert resolve_browser_runtime() == "playwright"
 
     def test_both_adapters_importable(self):
         from adapters.playwright_adapter import PlaywrightAdapter
         from adapters.webdriver_adapter import WebDriverAdapter
         assert PlaywrightAdapter is not None
         assert WebDriverAdapter is not None
+
+
+class TestBrowserStandardActionsParity:
+    """PW-E2: PlaywrightAdapter обязан покрывать ВЕСЬ BROWSER_STANDARD_ACTIONS.
+
+    При PK_BROWSER_RUNTIME=playwright controller регистрирует PlaywrightAdapter
+    как "browser" напрямую (без BrowserAdapter-обёртки). Значит любой
+    browser-метод сценария (ОчиститьСостояние, УстановитьCookie, ЛогиБраузера…)
+    должен существовать у PlaywrightAdapter — иначе run падает на AttributeError.
+    """
+
+    def test_playwright_covers_all_browser_standard_actions(self):
+        from core.pretty_method_spec import BROWSER_STANDARD_ACTIONS
+        from adapters.playwright_adapter import PlaywrightAdapter
+
+        missing = sorted(a for a in BROWSER_STANDARD_ACTIONS if not hasattr(PlaywrightAdapter, a))
+        assert missing == [], f"PlaywrightAdapter missing browser actions: {missing}"
+
+    def test_browser_adapter_covers_all_browser_standard_actions(self):
+        """Эталон: BrowserAdapter (selenium-путь) тоже покрывает весь контракт."""
+        from core.pretty_method_spec import BROWSER_STANDARD_ACTIONS
+        from adapters.browser_adapter import BrowserAdapter
+
+        missing = sorted(a for a in BROWSER_STANDARD_ACTIONS if not hasattr(BrowserAdapter, a))
+        assert missing == [], f"BrowserAdapter missing browser actions: {missing}"
+
+    def test_browser_standard_actions_is_allowed_by_registry(self):
+        """Каждый BROWSER_STANDARD_ACTIONS проходит allowlist-проверку."""
+        from core.pretty_method_spec import is_allowed_action
+
+        for action in (
+            "clear_cookies", "clear_state", "get_browser_logs",
+            "get_console_errors", "set_cookie", "get_cookie",
+        ):
+            assert is_allowed_action("browser", action), f"browser.{action} not allowed"

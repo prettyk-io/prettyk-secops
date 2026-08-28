@@ -114,9 +114,9 @@ def test_wired_loads_string_imports(tmp_path: Path):
     data = {
         "meta": {"assessment_purpose": "scheduled"},
         "infrastructure": {
-            "zap_mode": "demon",
+            "scanner_mode": "demon",
             "browser_type": "chrome-headless",
-            "zap_work_timeout_min": 60,
+            "scanner_work_timeout_min": 60,
             "idle_timeout_min": 10,
         },
         "security_configuration": {

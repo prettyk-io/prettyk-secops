@@ -7,7 +7,7 @@ alwaysApply: true
 
 ## Hub — монолит; SOLID; полировка через полный 2FA
 
-[`docs/canon/`](../../docs/canon/) + [`INDEX.md`](../../docs/canon/INDEX.md) — **бетон** (= сила SoT [`docs/manifest.json`](../../docs/manifest.json)).
+[`docs/canon/`](../../docs/canon/) + [`INDEX.md`](../../docs/canon/INDEX.md) — **бетон** (= сила SoT [`docs/wired.json`](../../docs/wired.json)).
 
 **Не ломаем — полируем.** SOLID для канона:
 
@@ -17,7 +17,7 @@ alwaysApply: true
 | **O** | Открыт к полировке и созревшему add; закрыт к сносу/rewrite |
 | **L** | Полировка не ломает другие FRIEND / honest-contract |
 | **I** | Hub ≠ QUEUE ≠ EVIDENCE ≠ friend-request ≠ POSSIBLE |
-| **D** | Зависеть от hub, не от эпиков; manifest SoT отдельно |
+| **D** | Зависеть от hub, не от эпиков; wired SoT отдельно |
 
 ### 2FA (порядок)
 
@@ -53,5 +53,5 @@ Friend-request ≠ CANON. Promote в hub — полный 2FA и только с
 3. `rg "\*\*CANON\*\*" docs/canon/`.  
 4. Outside → QUEUE / EVIDENCE / PUBLIC.  
 5. void — не воскрешать без 2FA.  
-6. Manifest SoT отдельно.  
+6. Wired SoT отдельно.  
 7. Skill: [`docs-canon`](../skills/docs-canon/SKILL.md).

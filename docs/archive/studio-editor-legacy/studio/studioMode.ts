@@ -32,7 +32,7 @@ export function studioSuiteMode(formData: unknown): StudioSuiteMode {
 /** Человеческий текст empty-state (без wire-имён и без «Студия»). */
 export function studioOffEmptyDescription(formData: unknown): string {
   if (studioOffReason(formData) === 'manual') {
-    return 'Редактор закрыт для назначения «Ручная проверка в ZAP». В\u00A0Форме выберите другое назначение проверки.';
+    return 'Редактор закрыт для назначения «Ручная проверка в scanner». В\u00A0Форме выберите другое назначение проверки.';
   }
   return 'Редактор недоступен.';
 }

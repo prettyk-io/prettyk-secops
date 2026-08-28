@@ -137,9 +137,9 @@ def seed_journal_and_evidence(*, run_id: str = "demo-seed") -> None:
         print(f"seed journal/evidence skipped: {exc}", file=sys.stderr)
         return
     diary_bus.publish("NOTE", f"demo seed start {run_id}", channel="diary")
-    diary_bus.publish("HIGH", "SQL Injection — demo alert", channel="zap")
+    diary_bus.publish("HIGH", "SQL Injection — demo alert", channel="scanner")
     diary_bus.publish("ERROR", "demo watchdog flake (non-fatal)", channel="diary")
-    diary_bus.publish("SCAN", "passive scan finished", channel="zap")
+    diary_bus.publish("SCAN", "passive scan finished", channel="scanner")
     diary_bus.publish("GATE", "admission Watch (demo)", channel="diary")
     try:
         diary_bus.export_diary_snapshot(run_id=run_id, filter_preset="all")
@@ -197,7 +197,7 @@ def seed_run_summary_g20(*, run_id: str = "demo-seed") -> None:
             "allure_report": "reports/allure-report",
             "live": DEFAULT_LIVE,
         },
-        zap_mode="demon",
+        scanner_mode="demon",
     )
     payload["dojo_stats"] = dict(SEED_DOJO_STATS)
     payload["executive"] = dict(SEED_DOJO_EXECUTIVE)
@@ -234,7 +234,7 @@ def seed_run_ui_summary(*, run_id: str = "demo-seed") -> None:
             "collapse": dict(SEED_DOJO_COLLAPSE),
             "executive": dict(SEED_DOJO_EXECUTIVE),
         },
-        zap={
+        scanner={
             "ok": True,
             "counts": {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 1},
             "instance_counts": {
@@ -264,8 +264,8 @@ def seed_run_ui_summary(*, run_id: str = "demo-seed") -> None:
     append_severity_trend(summary)
 
 
-def zap_hook_body(*, seed_act: bool) -> Dict[str, Any]:
-    body: Dict[str, Any] = {"zap_report_url": "http://127.0.0.1:8080/"}
+def scanner_hook_body(*, seed_act: bool) -> Dict[str, Any]:
+    body: Dict[str, Any] = {"scanner_report_url": "http://127.0.0.1:8080/"}
     if seed_act:
         body["counts"] = {
             "critical": 0,
@@ -395,7 +395,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         if args.mode == "dojo":
             post_hooks(live, dojo_hook_body(dojo_url, seed_act=seed))
             if seed:
-                post_hooks(live, zap_hook_body(seed_act=True))
+                post_hooks(live, scanner_hook_body(seed_act=True))
                 seed_act_meta()
                 seed_run_ui_summary()
                 seed_journal_and_evidence()
@@ -408,7 +408,7 @@ def main(argv: Optional[list[str]] = None) -> int:
             body["allure_report_url"] = args.allure_url
             post_hooks(live, body)
             if seed:
-                post_hooks(live, zap_hook_body(seed_act=True))
+                post_hooks(live, scanner_hook_body(seed_act=True))
                 seed_act_meta()
                 seed_run_ui_summary()
                 seed_journal_and_evidence()

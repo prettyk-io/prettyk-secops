@@ -8,7 +8,7 @@ import {
   setActiveCheckId,
 } from '../checks/checksStore';
 
-function manifestWith({
+function wiredWith({
   pages = {},
   scenarios = [],
   modules = [],
@@ -43,17 +43,17 @@ describe('StudioImportDialog', () => {
   it('показывает только другие проверки и список блоков', () => {
     // createCheck сам вызывает setActiveCheckId; явно ставим нужный в конце.
     createCheck({
-      wired: manifestWith({ pages: { a: { title: 'A' } } }),
+      wired: wiredWith({ pages: { a: { title: 'A' } } }),
       title: 'Текущая проверка',
     });
     createCheck({
-      wired: manifestWith({
+      wired: wiredWith({
         pages: { b1: { title: 'B1' }, b2: { title: 'B2' }, b3: { title: 'B3' } },
         scenarios: [{ scenario_name: 'sc_1' }],
       }),
       title: 'Источник с блоками',
     });
-    const current = createCheck({ wired: manifestWith(), title: 'Ещё один draft' });
+    const current = createCheck({ wired: wiredWith(), title: 'Ещё один draft' });
     setActiveCheckId(current.check_id);
 
     render(
@@ -75,7 +75,7 @@ describe('StudioImportDialog', () => {
 
   it('возвращает выбранные блоки и содержимое ресурсов', () => {
     createCheck({
-      wired: manifestWith({
+      wired: wiredWith({
         pages: { p1: { title: 'P1' } },
         scenarios: [{ scenario_name: 'sc_1' }],
         modules: [{ id: 'mod_1' }],
@@ -85,7 +85,7 @@ describe('StudioImportDialog', () => {
       resource_contents: { res_1: 'resource-body' },
       title: 'Источник',
     });
-    const current = createCheck({ wired: manifestWith(), title: 'Текущая' });
+    const current = createCheck({ wired: wiredWith(), title: 'Текущая' });
     setActiveCheckId(current.check_id);
 
     const onImport = vi.fn();
@@ -119,13 +119,13 @@ describe('StudioImportDialog', () => {
 
   it('включает содержимое ресурсов при выбранном типе resources', () => {
     createCheck({
-      wired: manifestWith({
+      wired: wiredWith({
         resources: [{ as: 'res_1', path: 'resources/res_1.txt', kind: 'data_file' }],
       }),
       resource_contents: { res_1: 'resource-body' },
       title: 'Источник',
     });
-    const current = createCheck({ wired: manifestWith(), title: 'Текущая' });
+    const current = createCheck({ wired: wiredWith(), title: 'Текущая' });
     setActiveCheckId(current.check_id);
 
     const onImport = vi.fn();
@@ -145,7 +145,7 @@ describe('StudioImportDialog', () => {
   });
 
   it('показывает пустое состояние без других проверок', () => {
-    const current = createCheck({ wired: manifestWith(), title: 'Единственная' });
+    const current = createCheck({ wired: wiredWith(), title: 'Единственная' });
     setActiveCheckId(current.check_id);
 
     render(

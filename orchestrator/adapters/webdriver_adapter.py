@@ -4,7 +4,7 @@ from utils.env_dual import pk_env
 Адаптер браузера: Selenium (сессия) + Selene (действия с элементами).
 
 Слои:
-  * Selenium WebDriver — создание драйвера (local / Grid Remote), proxy→ZAP,
+  * Selenium WebDriver — создание драйвера (local / Grid Remote), proxy→scanner,
     alerts/frames/windows, ActionChains-дыры, Resource Timing, React set_value.
   * Selene (yashaka/selene, питоний порт Selenide) — lazy-локаторы, wait/retry,
     click/type/assert/collection. Паттерн как у банковского Java-Selenide из Nexus.
@@ -64,7 +64,7 @@ SUPPORTED_MODES = (MODE_LOCAL, MODE_REMOTE)
 DEFAULT_SELENIUM_URL = "http://127.0.0.1:4444"
 DEFAULT_CONTAINER_HOST = "host.docker.internal"
 
-# Адреса, которые внутри контейнера браузера означают сам контейнер, а не хост с ZAP.
+# Адреса, которые внутри контейнера браузера означают сам контейнер, а не хост с scanner.
 LOOPBACK_HOSTS = ("localhost", "127.0.0.1", "0.0.0.0", "::1", "[::1]")
 
 
@@ -325,7 +325,7 @@ class WebDriverAdapter(BaseAdapter):
         Приводит адрес прокси к виду, достижимому оттуда, где реально работает браузер.
 
         Controller описывает прокси с точки зрения хоста-раннера (localhost:proxy_port),
-        потому что там же он поднимает ZAP. Внутри контейнера браузера loopback — это сам
+        потому что там же он поднимает scanner. Внутри контейнера браузера loopback — это сам
         контейнер, поэтому в remote-режиме подменяем его на адрес хоста: host.docker.internal
         прописан в extra_hosts node-сервисов в docker-compose.yml.
         """
@@ -354,7 +354,7 @@ class WebDriverAdapter(BaseAdapter):
             options = self._chrome_options(headless, proxy)
         else:
             raise ValueError(f"Unsupported browser: {browser}")
-        # ZAP — MITM со своим CA, который в браузер не установлен: без acceptInsecureCerts
+        # scanner — MITM со своим CA, который в браузер не установлен: без acceptInsecureCerts
         # любая HTTPS-цель через прокси упадёт на проверке сертификата.
         options.accept_insecure_certs = True
         return options
@@ -373,7 +373,7 @@ class WebDriverAdapter(BaseAdapter):
             options.set_preference("network.proxy.ssl", host)
             options.set_preference("network.proxy.ssl_port", port)
             # Firefox по умолчанию не проксирует loopback, а цель на localhost — типовой
-            # кейс для CI-раннера: без этих двух настроек её трафик молча минует ZAP.
+            # кейс для CI-раннера: без этих двух настроек её трафик молча минует scanner.
             options.set_preference("network.proxy.no_proxies_on", "")
             options.set_preference("network.proxy.allow_hijacking_localhost", True)
         return options
@@ -481,11 +481,10 @@ class WebDriverAdapter(BaseAdapter):
         if not self._ensure_driver():
             return None, selector_type, selector_value
         try:
-            element = (
-                self._el(selector_type, selector_value, timeout)
-                .should(be.present)
-                .locate()
-            )
+            target = self._el(selector_type, selector_value, timeout)
+            if hasattr(target, "should"):
+                target = target.should(be.present)
+            element = target.locate() if hasattr(target, "locate") else target
             self._remember_located(element, selector_type, selector_value)
             return element, selector_type, selector_value
         except Exception as primary:
@@ -502,11 +501,10 @@ class WebDriverAdapter(BaseAdapter):
                 raise primary
             new_type, new_value, _score = healed
             try:
-                element = (
-                    self._el(new_type, new_value, timeout)
-                    .should(be.present)
-                    .locate()
-                )
+                target = self._el(new_type, new_value, timeout)
+                if hasattr(target, "should"):
+                    target = target.should(be.present)
+                element = target.locate() if hasattr(target, "locate") else target
             except Exception as secondary:
                 # Healed locator still dead → ERROR path (soft may still absorb above).
                 logger.error(
@@ -666,10 +664,10 @@ class WebDriverAdapter(BaseAdapter):
     ):
         """
         СборИнформации: per-URL navigate → spider burst → pscan cap.
-        Runtime: Controller registers bound `_kw_gather_info` (WD+ZAP).
+        Runtime: Controller registers bound `_kw_gather_info` (WD+scanner).
         """
         raise RuntimeError(
-            "gather_info requires Controller runtime (webdriver + zap ZapWorkStream)"
+            "gather_info requires Controller runtime (webdriver + scanner scannerWorkStream)"
         )
 
     def crawl_urls(self, source, pause_seconds=3):
@@ -679,7 +677,7 @@ class WebDriverAdapter(BaseAdapter):
         G-65 export уже отдаёт absolute (base+path); relative — join здесь.
         Не через open()/open_by_url: open режет http(s), open_by_url — allowlist
         (base_url приложения туда не обязан входить).
-        pause после open: SPA/hash (#/…) успевает отрисоваться, ZAP — увидеть трафик.
+        pause после open: SPA/hash (#/…) успевает отрисоваться, scanner — увидеть трафик.
         """
         from urllib.parse import urljoin
 
@@ -1049,7 +1047,7 @@ class WebDriverAdapter(BaseAdapter):
         try:
             from utils.diary_bus import publish
 
-            publish("LOG", str(text), channel="zap")
+            publish("LOG", str(text), channel="scanner")
         except Exception:
             pass
 
@@ -1654,7 +1652,7 @@ class WebDriverAdapter(BaseAdapter):
   по умолчанию remote (Grid).
 - _resolve_proxy: в remote-режиме loopback в адресе прокси заменяется на адрес,
   достижимый из контейнера браузера, с явной строкой в логе.
-- accept_insecure_certs=True для обоих браузеров: ZAP терминирует TLS своим CA.
+- accept_insecure_certs=True для обоих браузеров: scanner терминирует TLS своим CA.
 - Проксирование loopback-целей: network.proxy.allow_hijacking_localhost у Firefox,
   --proxy-bypass-list=<-loopback> у Chrome.
 - Убран --disable-web-security: к проксированию отношения не имеет, отключает

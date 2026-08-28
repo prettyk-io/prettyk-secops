@@ -1,5 +1,5 @@
-﻿# -*- coding: utf-8 -*-
-"""IMP scope smoke: OA / GQL / gRPC / HAR / CHAIN MethodIds + PrettyK ladder (no live ZAP)."""
+# -*- coding: utf-8 -*-
+"""IMP scope smoke: OA / GQL / gRPC / HAR / CHAIN MethodIds + PrettyK ladder (no live scanner)."""
 from __future__ import annotations
 
 import sys
@@ -24,11 +24,11 @@ FIXTURES = Path(__file__).resolve().parent / "fixtures" / "openapi"
 
 
 def test_imp_scope_method_ids():
-    assert lookup_method_id("ИмпортHAR") == ("zap", "import_har_sequence")
-    assert lookup_method_id("СканПоследовательности") == ("zap", "sequence_active_scan")
-    assert lookup_method_id("ВыполнитьЦепь") == ("zap", "execute_chain_module")
-    assert lookup_method_id("СканированиеЦепи") == ("zap", "scan_chain_module")
-    assert lookup_method_id("ПодготовитьЦепь") == ("zap", "prepare_chain_module")
+    assert lookup_method_id("ИмпортHAR") == ("scanner", "import_har_sequence")
+    assert lookup_method_id("СканПоследовательности") == ("scanner", "sequence_active_scan")
+    assert lookup_method_id("ВыполнитьЦепь") == ("scanner", "execute_chain_module")
+    assert lookup_method_id("СканированиеЦепи") == ("scanner", "scan_chain_module")
+    assert lookup_method_id("ПодготовитьЦепь") == ("scanner", "prepare_chain_module")
     assert lookup_method_id("ФаззингЦепи") == ("fuzz", "fuzz_chain_module")
     assert lookup_method_id("РасследованиеЦепи")[1] == "investigate_chain_module"
 

@@ -17,7 +17,7 @@ def test_resolve_hooks_counts_prefers_dojo():
                 "stats": {"critical": 0, "high": 2, "medium": 1, "low": 0, "info": 0},
                 "counts_source": "dojo_stats",
             },
-            "zap": {"counts": {"high": 9}},
+            "scanner": {"counts": {"high": 9}},
         }
     )
     assert counts["high"] == 2

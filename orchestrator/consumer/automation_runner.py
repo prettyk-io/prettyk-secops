@@ -1,9 +1,9 @@
 ﻿# -*- coding: utf-8 -*-
-"""AutomationRunner — Playwright-only scenario runner (no ZAP, no Dojo, no Allure).
+"""AutomationRunner — Playwright-only scenario runner (no scanner, no Dojo, no Allure).
 
 ADM-0 Contract Proof: same Wired/DSL scenario, two consumers.
   - AutomationConsumer: pure browser automation (this module)
-  - SecurityConsumer: existing Controller (ZAP + Dojo + Allure)
+  - SecurityConsumer: existing Controller (scanner + Dojo + Allure)
 """
 from __future__ import annotations
 
@@ -183,7 +183,7 @@ class AutomationRunResult:
 
 
 class AutomationRunner:
-    """Runs Wired scenarios through Playwright browser only — no ZAP/Dojo/Allure."""
+    """Runs Wired scenarios through Playwright browser only — no scanner/Dojo/Allure."""
 
     def __init__(
         self,

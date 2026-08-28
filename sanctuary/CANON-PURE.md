@@ -70,7 +70,7 @@ Controller не обращается к сканеру/браузеру в об�
 | Live-оболочка | Картинка + ленты сценария/сканера во время прогона | Отчётом |
 | Структурированный отчёт (Allure-класс) | HTML шагов после прогона | Live |
 | Реестр находок (Dojo-класс) | Учёт findings | Исполнением шагов |
-| Сканер (ZAP-класс) | MITM + API сканера | Браузерной фермой |
+| Сканер (scanner-класс) | MITM + API сканера | Браузерной фермой |
 
 Формула: **сценарий → оркестратор → WebDriver (±Grid) → трафик через сканер → свидетельства
 (отчёт/сканер/реестр) + опционально Live**.
@@ -116,6 +116,6 @@ fail-closed.
 ## 10. Связь
 
 - Рабочий hub: [`../canon/INDEX.md`](../canon/INDEX.md) — тезисы, SEEKER, POSSIBLE.
-- Machine-контракт: Pydantic `orchestrator/models/manifest.py`; `docs/manifest.json` — legacy JSON Schema, reference.
+- Machine-контракт: Pydantic `orchestrator/models/wired.py`; `docs/wired.json` — legacy JSON Schema, reference.
 - Архитектура vnext: [`../canon/fe-vnext-architecture.md`](../canon/fe-vnext-architecture.md).
 - Сплит: [`../canon/split-canon.md`](../canon/split-canon.md).

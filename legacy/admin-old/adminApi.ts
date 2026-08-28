@@ -553,7 +553,7 @@ export type PreflightWarning = {
 export type PreflightResult = {
   warnings: PreflightWarning[];
   summary: string;
-  manifest_stats: Record<string, number>;
+  wired_stats: Record<string, number>;
   model: { name: string; prompt_version: string };
 };
 

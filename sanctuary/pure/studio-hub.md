@@ -11,7 +11,7 @@
 flowchart LR
   Plus[tabbar_plus] --> Catalog[Hub_catalog]
   Catalog --> Form[name_folder_form]
-  Form -->|Submit| Mutate[add_star_manifest]
+  Form -->|Submit| Mutate[add_star_wired]
   Mutate --> Tree[Explorer_tree]
   Catalog -.->|no_Submit| Empty[nothing_in_tree]
 ```

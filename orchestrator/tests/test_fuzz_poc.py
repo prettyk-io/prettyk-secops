@@ -36,14 +36,14 @@ from core.fuzzing import (
     ResponseMetrics,
     merge_request_headers,
     parse_http_request_headers,
-    parse_zap_history_message,
+    parse_scanner_history_message,
     pick_message_from_history,
     session_bound_meta,
     sha256_text,
     write_audit_digest,
 )
 from core.method_id import render_execution_title, resolve_call
-from models.wired import TestDataConstructorModule as DataModule
+from models.wired import TestDataConstructorModule as DataModule, Wired
 
 
 class _FakeStream:
@@ -57,13 +57,13 @@ class _FakeStream:
         return value
 
 
-class _FakeZap:
+class _Fakescanner:
     def __init__(self, *, boom_marker="boom", messages=None):
         self.calls = []
         self._boom = boom_marker
         self._messages = list(messages or [])
 
-    def zap_http_request(
+    def scanner_http_request(
         self, method, url, headers=None, body=None, follow_redirects=False
     ):
         self.calls.append((method, url, dict(headers or {})))
@@ -104,9 +104,9 @@ def _no_sleep_and_tmp_reports(monkeypatch, tmp_path):
 
 def test_runner_flags_server_error_and_writes_evidence():
     corpus = ["safe-1", "boom-payload", "safe-2"]
-    zap = _FakeZap()
+    scanner = _Fakescanner()
     stream = _FakeStream(corpus)
-    summary = FuzzRunner(_Wired(_module()), zap, stream).run("q_fuzz")
+    summary = FuzzRunner(_Wired(_module()), scanner, stream).run("q_fuzz")
 
     assert summary["cases_total"] == 3
     assert summary["anomalies_total"] == 1
@@ -120,7 +120,7 @@ def test_runner_flags_server_error_and_writes_evidence():
     assert flagged[0]["deltas"] == ["status_changed", "server_error"]
     assert summary["reason_counts"]["server_error"] == 1
     assert summary["reason_counts"]["status_changed"] == 1
-    assert len(zap.calls) == 4
+    assert len(scanner.calls) == 4
 
     evidence = Path(summary["evidence_path"])
     assert evidence.is_file()
@@ -133,9 +133,9 @@ def test_runner_flags_server_error_and_writes_evidence():
 
 def test_runner_bounds_corpus_by_max_requests():
     corpus = [f"p{i}" for i in range(50)]
-    zap = _FakeZap(boom_marker="__never__")
+    scanner = _Fakescanner(boom_marker="__never__")
     stream = _FakeStream(corpus)
-    summary = FuzzRunner(_Wired(_module(max_requests=5)), zap, stream).run("q_fuzz")
+    summary = FuzzRunner(_Wired(_module(max_requests=5)), scanner, stream).run("q_fuzz")
     assert summary["cases_total"] == 5
 
 
@@ -155,7 +155,7 @@ def test_runner_rejects_out_of_origin_url():
         },
     )
     with pytest.raises(WiredError, match="origin"):
-        FuzzRunner(_Wired(module), _FakeZap(), _FakeStream(["a"])).run("q_fuzz")
+        FuzzRunner(_Wired(module), _Fakescanner(), _FakeStream(["a"])).run("q_fuzz")
 
 
 def test_assert_same_origin_helper():
@@ -190,9 +190,9 @@ def test_mask_location_and_reject_host_escape():
         module_id="mask_host",
     )
     with pytest.raises(WiredError, match="origin"):
-        FuzzCampaignRunner(_FakeZap(boom_marker="__never__")).run(bad, base_url=base)
+        FuzzCampaignRunner(_Fakescanner(boom_marker="__never__")).run(bad, base_url=base)
 
-    summary = FuzzCampaignRunner(_FakeZap(boom_marker="__never__")).run(
+    summary = FuzzCampaignRunner(_Fakescanner(boom_marker="__never__")).run(
         campaign, base_url=base
     )
     assert summary["cases_total"] == 2
@@ -215,7 +215,7 @@ def test_apply_location_query_and_mask():
 
 
 def test_campaign_template_juice_search_style():
-    zap = _FakeZap(boom_marker="__never__")
+    scanner = _Fakescanner(boom_marker="__never__")
     campaign = Campaign(
         message=FuzzMessage(
             source="template",
@@ -225,13 +225,13 @@ def test_campaign_template_juice_search_style():
         payloads=["apple"],
         module_id="search",
     )
-    summary = FuzzCampaignRunner(zap).run(
+    summary = FuzzCampaignRunner(scanner).run(
         campaign, base_url="http://juice-shop:3000"
     )
     assert summary["message_source"] == "template"
     assert summary["cases_total"] == 1
     assert summary["target_origin"] == "http://juice-shop:3000"
-    assert any("/rest/products/search" in url for _, url, _hdr in zap.calls)
+    assert any("/rest/products/search" in url for _, url, _hdr in scanner.calls)
 
 
 def test_parse_and_pick_history_message():
@@ -247,7 +247,7 @@ def test_parse_and_pick_history_message():
             "method": "GET",
         },
     ]
-    parsed = parse_zap_history_message(messages[0])
+    parsed = parse_scanner_history_message(messages[0])
     assert parsed["method"] == "GET"
     assert "products/search" in parsed["url"]
     assert "Host" not in parsed["headers"]
@@ -285,7 +285,7 @@ def test_parse_http_request_headers_cookie_and_skip_host():
     assert headers["Authorization"] == "Bearer TOPSECRET"
     assert headers["Accept"] == "application/json"
 
-    parsed = parse_zap_history_message({"requestHeader": raw})
+    parsed = parse_scanner_history_message({"requestHeader": raw})
     assert parsed["headers"]["Cookie"].startswith("token=")
     meta = session_bound_meta(parsed["headers"])
     assert meta["has_cookie"] is True
@@ -293,9 +293,9 @@ def test_parse_http_request_headers_cookie_and_skip_host():
     assert "Cookie" in meta["request_header_names"]
 
 
-def test_parse_zap_history_method_url_from_request_line():
+def test_parse_scanner_history_method_url_from_request_line():
     """method/url из request-line, если поля сообщения пусты (SQ-BE-2g)."""
-    parsed = parse_zap_history_message(
+    parsed = parse_scanner_history_message(
         {
             "requestHeader": (
                 "POST https://juice.local/rest/user/login HTTP/1.1\r\n"
@@ -334,7 +334,7 @@ def test_campaign_from_history_replays_session_headers():
             ),
         }
     ]
-    zap = _FakeZap(boom_marker="__never__", messages=messages)
+    scanner = _Fakescanner(boom_marker="__never__", messages=messages)
     campaign = Campaign(
         message=FuzzMessage(
             source="history",
@@ -345,7 +345,7 @@ def test_campaign_from_history_replays_session_headers():
         payloads=["one", "two"],
         module_id="from_hist",
     )
-    summary = FuzzCampaignRunner(zap).run(
+    summary = FuzzCampaignRunner(scanner).run(
         campaign, base_url="http://juice-shop:3000"
     )
     assert summary["message_source"] == "history"
@@ -354,8 +354,8 @@ def test_campaign_from_history_replays_session_headers():
     assert summary["session_bound"] is True
     assert "Cookie" in summary["request_header_names"]
     # baseline + 2 cases — Cookie уходит в sender
-    assert len(zap.calls) == 3
-    for _method, _url, hdr in zap.calls:
+    assert len(scanner.calls) == 3
+    for _method, _url, hdr in scanner.calls:
         assert hdr.get("Cookie") == cookie
         assert hdr.get("Accept") == "application/json"
     # evidence без значений секрета
@@ -404,7 +404,7 @@ def test_load_string_corpus_truncate_and_empty():
 
 def test_empty_corpus_via_runner():
     with pytest.raises(WiredError, match="пуст"):
-        FuzzRunner(_Wired(_module()), _FakeZap(), _FakeStream([])).run("q_fuzz")
+        FuzzRunner(_Wired(_module()), _Fakescanner(), _FakeStream([])).run("q_fuzz")
 
 
 def test_corpus_hard_cap_even_if_list_huge():
@@ -428,7 +428,7 @@ def test_redact_skips_short_payload_markers():
 
 def test_live_projection_titles_redact_payloads():
     corpus = ["SECRET-PAYLOAD-XYZ", "safe"]
-    summary = FuzzRunner(_Wired(_module()), _FakeZap(), _FakeStream(corpus)).run(
+    summary = FuzzRunner(_Wired(_module()), _Fakescanner(), _FakeStream(corpus)).run(
         "q_fuzz"
     )
     titles = live_projection_titles(summary)
@@ -443,7 +443,7 @@ def test_live_projection_titles_redact_payloads():
 
     # с аномалией
     summary2 = FuzzRunner(
-        _Wired(_module()), _FakeZap(), _FakeStream(["boom-x"])
+        _Wired(_module()), _Fakescanner(), _FakeStream(["boom-x"])
     ).run("q_fuzz")
     titles2 = live_projection_titles(summary2)
     assert len(titles2) == 3  # summary + digest + anomaly
@@ -677,13 +677,13 @@ def test_execution_title_for_fuzz_run():
 
 
 def test_adapter_requires_bound_stream():
-    adapter = FuzzAdapter(_Wired(_module()), _FakeZap())
+    adapter = FuzzAdapter(_Wired(_module()), _Fakescanner())
     with pytest.raises(WiredError, match="DataStream"):
         adapter.run("q_fuzz")
 
 
 def test_adapter_run_delegates_after_bind():
-    adapter = FuzzAdapter(_Wired(_module()), _FakeZap())
+    adapter = FuzzAdapter(_Wired(_module()), _Fakescanner())
     adapter.bind(_FakeStream(["safe"]))
     summary = adapter.run("q_fuzz")
     assert summary["module_id"] == "q_fuzz"
@@ -728,8 +728,8 @@ def test_suite_fuzzer_runner_intent_corpus():
             base_url_override="http://juice-shop:3000"
         ),
     )
-    zap = _FakeZap(boom_marker="__never__")
-    summary = SuiteFuzzerRunner(Wired, zap, _FakeStream([])).run("juice_search_q")
+    scanner = _Fakescanner(boom_marker="__never__")
+    summary = SuiteFuzzerRunner(wired, scanner, _FakeStream([])).run("juice_search_q")
     assert summary["module_id"] == "juice_search_q"
     assert summary["cases_total"] >= 1
     assert summary["message_source"] == "template"
@@ -767,7 +767,7 @@ def test_adapter_wave_delegates_after_bind():
             base_url_override="http://juice-shop:3000"
         ),
     )
-    adapter = FuzzAdapter(Wired, _FakeZap())
+    adapter = FuzzAdapter(wired, _Fakescanner())
     adapter.bind(_FakeStream([]))
     summary = adapter.wave("wave1")
     assert summary["module_id"] == "wave1"
@@ -806,8 +806,8 @@ def test_suite_fuzzer_runner_multi_target_post():
             base_url_override="http://juice-shop:3000"
         ),
     )
-    zap = _FakeZap()
-    summary = SuiteFuzzerRunner(Wired, zap, _FakeStream([])).run("wave_post_get")
+    scanner = _Fakescanner()
+    summary = SuiteFuzzerRunner(wired, scanner, _FakeStream([])).run("wave_post_get")
     assert summary["fuzzer_id"] == "wave_post_get"
     assert summary["targets_count"] == 2
     assert summary["requests_count"] >= 2
@@ -844,8 +844,8 @@ def test_suite_fuzzer_post_body_numbered_masks():
             base_url_override="http://juice-shop:3000"
         ),
     )
-    zap = _FakeZap()
-    summary = SuiteFuzzerRunner(Wired, zap, _FakeStream([])).run("post_json_masks")
+    scanner = _Fakescanner()
+    summary = SuiteFuzzerRunner(wired, scanner, _FakeStream([])).run("post_json_masks")
     assert summary["fuzzer_id"] == "post_json_masks"
     assert summary["targets_count"] == 1
     assert len(summary["target_summaries"]) == 1

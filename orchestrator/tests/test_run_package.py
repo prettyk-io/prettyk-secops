@@ -87,9 +87,9 @@ def test_build_run_package_includes_diary_cuts_meta(tmp_path, monkeypatch):
     (live / "diary.ndjson").write_text(
         json.dumps(
             {
-                "kind": "ZAP",
+                "kind": "scanner",
                 "text": "Authorization Bearer secret-token-abc password=hunter2",
-                "channel": "zap",
+                "channel": "scanner",
                 "ts": 1,
             }
         )

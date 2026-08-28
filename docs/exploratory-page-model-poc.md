@@ -20,7 +20,7 @@
 - `docs/backlog.md:857` (16 августа 2026): «коробка одной кнопкой: URL → grab network →
   spider cluster search → extract → process corpus → form list → activeScan →
   passiveScan → report. 0 actions юзером»
-- **ZAP Sequence / HAR Import** уже в бэклоге: replay с CSRF/token correlation
+- **scanner Sequence / HAR Import** уже в бэклоге: replay с CSRF/token correlation
   (`docs/backlog.md:1233`)
 - **Chain Module** — уже умеет `.har → steps + slots + template`, материализует
   цепь вызовов из сырого HAR. Это ближайший предшественник.

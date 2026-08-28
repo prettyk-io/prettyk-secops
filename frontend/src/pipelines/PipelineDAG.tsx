@@ -29,7 +29,7 @@ const MOCK_DAG: DAGBatch[] = [
   { id: 'b2', name: 'SAST: Semgrep', status: 'passed', kind: 'SAST', dependsOn: ['b1'], gateResult: 'pass' },
   { id: 'b3', name: 'SCA: Dep Check', status: 'passed', kind: 'SCA', dependsOn: ['b1'], gateResult: 'pass' },
   { id: 'b4', name: 'Deploy to Stage', status: 'running', kind: 'Deploy', dependsOn: ['b2', 'b3'], progress: 65 },
-  { id: 'b5', name: 'DAST: ZAP Scan', status: 'pending', kind: 'DAST', dependsOn: ['b4'] },
+  { id: 'b5', name: 'DAST: scanner Scan', status: 'pending', kind: 'DAST', dependsOn: ['b4'] },
   { id: 'b6', name: 'Quality Gate', status: 'pending', kind: 'Gate', dependsOn: ['b5'], gateResult: null },
 ];
 

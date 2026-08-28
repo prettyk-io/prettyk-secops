@@ -1,7 +1,7 @@
 ﻿# -*- coding: utf-8 -*-
 """
 gRPC PoC-адаптер: список сервисов из proto_pack + unary через harness.
-Хост только из URL атаки; трафик опционально через HTTP CONNECT proxy (ZAP).
+Хост только из URL атаки; трафик опционально через HTTP CONNECT proxy (scanner).
 """
 from __future__ import annotations
 
@@ -37,7 +37,7 @@ class GrpcAdapter(BaseAdapter):
             self._wired_dir = None
 
     def set_proxy(self, proxy_url: Optional[str] = None) -> bool:
-        """HTTP CONNECT proxy (как HttpAdapter) — для попадания трафика в ZAP."""
+        """HTTP CONNECT proxy (как HttpAdapter) — для попадания трафика в scanner."""
         raw = (proxy_url or "").strip()
         self._proxy_url = raw or None
         if self._proxy_url:

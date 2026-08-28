@@ -50,11 +50,11 @@ allure-report/
 logs/
 *.log
 video/
-zap-session*/
-zap_report*.html
-zap_report*.json
-zap_report*.xml
-zap_report*.md
+scanner-session*/
+scanner_report*.html
+scanner_report*.json
+scanner_report*.xml
+scanner_report*.md
 browser_state.json
 cookies.json
 
@@ -96,7 +96,7 @@ deploy_vps/www/**/*.webm
 # VPS deploy package (auto-generated, не в git)
 # =====================
 /deploy_vps/
-/manifest.json
+/wired.json
 
 # =====================
 # IDE и редакторы

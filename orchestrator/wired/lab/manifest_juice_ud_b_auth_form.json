@@ -4,12 +4,12 @@
     "initiator_name": "BOT-EXT UD-B2",
     "assessment_purpose": "scheduled",
     "app_type": "web",
-    "scheduled_info": "UD-B2: auth=form browser Juice login → cookies / ZAP Cookie"
+    "scheduled_info": "UD-B2: auth=form browser Juice login → cookies / scanner Cookie"
   },
   "infrastructure": {
-    "zap_mode": "demon",
+    "scanner_mode": "demon",
     "browser_type": "chrome-headless",
-    "zap_work_timeout_min": 20,
+    "scanner_work_timeout_min": 20,
     "idle_timeout_min": 10,
     "start_with_webswing": false
   },

@@ -14,14 +14,14 @@
 prettyk-dev/
 ├── cosmo/                   ← WORKSPACE. Здесь пилим код (vnext фронт).
 ├── orchestrator/            ← БЭКЕНД (solid AF) + tools/*.ps1 (lab_up/lab_clean/sonar…)
-├── services/                ← docker-compose (Grid/Allure/ZAP/Juice/Dojo/Sonar)
+├── services/                ← docker-compose (Grid/Allure/scanner/Juice/Dojo/Sonar)
 ├── reports/                 ← артефакты прогона
 ├── .venv/                   ← python-окружение бэкенда
 ├── pure/                    ← CANON BASE доки. MANTRA + ledger.
 ├── sanctuary/               ← ВЕРХНЯЯ ПОЛКА. Каноны + устав + 2FA + temple-core.
 │   ├── canon-temple/        ← CHARTER.md + TEMPLE-CORE.md
 │   └── canon/               ← hub (INDEX + 27 FRIEND topics)
-├── docs/                    ← SoT + вход агентов (manifest.json, backlog.md, этот файл…)
+├── docs/                    ← SoT + вход агентов (wired.json, backlog.md, этот файл…)
 ├── legacy/                  ← всё старое (frontend/docs-старые/debug-tools/sandbox…). Смотреть глазами, не трогать.
 └── .cursor/ .github/        ← агентские правила / CI
 ```
@@ -76,7 +76,7 @@ prettyk-dev/
 
 Что считается каноном:
 - `sanctuary/canon/**` — hub истины.
-- `docs/manifest.json` — machine-контракт (legacy JSON Schema, RJSF era). Форма не генерируется из него. Хранится как reference до замены плоским typed JSON.
+- `docs/wired.json` — machine-контракт (legacy JSON Schema, RJSF era). Форма не генерируется из него. Хранится как reference до замены плоским typed JSON.
 - Всё, что уже прошло 2FA и зачислено в hub.
 
 Без Keeper в канон не проходит ничего. Рука потянулась поправить — **стоп**. Ты не прав.

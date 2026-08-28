@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>CRAWL-6 — Fixture SPA for Crawler Acceptance</title>
+<style>
+*{box-sizing:border-box}body{font-family:Arial,sans-serif;margin:0;background:#0f172a;color:#e2e8f0}
+nav{display:flex;gap:8px;padding:12px 16px;background:#1e293b;border-bottom:1px solid #334155}
+nav a{color:#38bdf8;text-decoration:none;padding:6px 12px;border-radius:4px;font-size:14px;cursor:pointer}
+nav a:hover{background:rgba(56,189,248,.1)}
+nav a.active{background:rgba(56,189,248,.2);color:#22d3ee}
+main{padding:24px;max-width:800px;margin:0 auto}
+button,.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid #334155;border-radius:6px;background:#1e293b;color:#e2e8f0;font-size:13px;cursor:pointer}
+button:hover,.btn:hover{background:#334155}
+button.danger{background:rgba(239,68,68,.1);border-color:#ef4444;color:#ef4444}
+button.danger:hover{background:rgba(239,68,68,.2)}
+input,select{display:block;width:100%;padding:8px 12px;margin:4px 0 12px;border:1px solid #334155;border-radius:6px;background:#0f172a;color:#e2e8f0;font-size:13px}
+label{font-size:12px;color:#94a3b8}
+h2{font-size:18px;margin:0 0 16px}
+.card{padding:16px;border:1px solid #1e293b;border-radius:8px;background:#0b101c;margin-bottom:12px}
+.tab-bar{display:flex;gap:0;margin-bottom:12px;border-bottom:1px solid #334155}
+.tab-bar button{padding:8px 16px;border:none;border-bottom:2px solid transparent;background:transparent;color:#94a3b8;cursor:pointer;font-size:13px}
+.tab-bar button.active{border-bottom-color:#38bdf8;color:#38bdf8}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:1000}
+.modal{background:#1e293b;border:1px solid #334155;border-radius:8px;padding:24px;min-width:320px;max-width:480px}
+.modal h3{margin:0 0 16px}
+.status{font-size:12px;padding:4px 8px;border-radius:4px;display:inline-block}
+.status-ok{background:rgba(34,197,94,.1);color:#22c55e}
+.status-err{background:rgba(239,68,68,.1);color:#ef4444}
+</style>
+</head>
+<body>
+
+<nav>
+  <a data-route="/#/" class="active" onclick="navigate('/#/')">Главная</a>
+  <a data-route="/#/login" onclick="navigate('/#/login')">Логин</a>
+  <a data-route="/#/dashboard" onclick="navigate('/#/dashboard')">Дашборд</a>
+</nav>
+
+<main id="app"></main>
+
+<script>
+// ── SPA Router ──
+var _stateCount = 0;
+function currentRoute() { return window.location.hash || '/#/'; }
+function setRoute(hash) { window.location.hash = hash; }
+function navigate(hash) { setRoute(hash); renderRoute(); }
+
+function renderRoute() {
+  var h = currentRoute();
+  var nav = document.querySelectorAll('[data-route]');
+  nav.forEach(function(a) { a.classList.toggle('active', a.getAttribute('data-route') === h); });
+  if (h === '/#/login') renderLogin();
+  else if (h === '/#/dashboard') renderDashboard();
+  else renderHome();
+}
+
+// ── /#/ Home ──
+function renderHome() {
+  _stateCount++;
+  document.getElementById('app').innerHTML =
+    '<h2>Главная страница</h2>' +
+    '<div class="card"><p>Добро пожаловать в тестовое SPA.</p></div>' +
+    '<div style="display:flex;gap:8px">' +
+      '<button onclick="searchAPI()" title="Поиск по сайту">🔍 Поиск</button>' +
+      '<button class="danger" onclick="if(confirm(\'Удалить аккаунт?\'))deleteAccount()" aria-label="Удалить аккаунт">🗑 Удалить аккаунт</button>' +
+      '<button onclick="logout()" aria-label="Выйти">🚪 Выйти</button>' +
+      '<button onclick="openSettings()" aria-label="Настройки">⚙ Настройки</button>' +
+    '</div>' +
+    '<div class="card" style="margin-top:12px"><p>Ссылки:</p>' +
+      '<a href="mailto:support@example.com">Поддержка</a> · ' +
+      '<a href="https://external.com/api" target="_blank">Внешний API</a> · ' +
+      '<a href="javascript:void(0)">Пустая ссылка</a>' +
+    '</div>';
+}
+
+// ── /#/login ──
+function renderLogin() {
+  _stateCount++;
+  document.getElementById('app').innerHTML =
+    '<h2>Вход в систему</h2>' +
+    '<div class="card">' +
+      '<label for="email">Email</label><input id="email" name="email" type="email" placeholder="user@example.com" data-testid="login-email">' +
+      '<label for="password">Пароль</label><input id="password" name="password" type="password" data-testid="login-password">' +
+      '<button onclick="doLogin()" aria-label="Войти" data-testid="login-submit">Войти</button>' +
+      '<span id="login-status"></span>' +
+    '</div>';
+}
+
+function doLogin() {
+  var email = document.getElementById('email').value;
+  var pass = document.getElementById('password').value;
+  var ok = email === 'admin@test.local' && pass === 'test123';
+  fetch('/api/login', {
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({email:email,password:pass})
+  }).then(function(r){return r.json()}).then(function(d){
+    document.getElementById('login-status').innerHTML =
+      '<span class="status '+(d.ok?'status-ok':'status-err')+'">'+(d.ok?'✓ OK':'✗ '+d.error)+'</span>';
+  }).catch(function(e){
+    document.getElementById('login-status').innerHTML =
+      '<span class="status status-err">✗ '+e.message+'</span>';
+  });
+}
+
+function searchAPI() {
+  var q = prompt('Поиск:') || '';
+  fetch('/api/search?q='+encodeURIComponent(q))
+    .then(function(r){return r.json()})
+    .then(function(d){alert('Найдено: '+(d.results||[]).length+' записей')})
+    .catch(function(){});
+}
+
+// ── /#/dashboard ──
+function renderDashboard() {
+  _stateCount++;
+  document.getElementById('app').innerHTML =
+    '<h2>Дашборд</h2>' +
+    '<div class="card" style="margin-bottom:12px">Статистика: ' + _stateCount + ' состояний</div>' +
+    '<div class="tab-bar">' +
+      '<button class="active" onclick="switchTab(\'profile\',this)" role="tab" aria-selected="true">Профиль</button>' +
+      '<button onclick="switchTab(\'payments\',this)" role="tab" aria-selected="false">Платежи</button>' +
+      '<button onclick="switchTab(\'history\',this)" role="tab" aria-selected="false">История</button>' +
+    '</div>' +
+    '<div id="tab-profile" class="tab-panel active">' +
+      '<label>Имя</label><input data-testid="profile-name" value="Иван">' +
+      '<label>Email</label><input data-testid="profile-email" value="ivan@test.local">' +
+      '<div id="lazy-form"></div>' +
+    '</div>' +
+    '<div id="tab-payments" class="tab-panel">' +
+      '<p>Нет платежей за текущий период.</p>' +
+      '<button class="danger" onclick="alert(\'Платёж отменён\')" aria-label="Купить подписку">💳 Купить</button>' +
+    '</div>' +
+    '<div id="tab-history" class="tab-panel">' +
+      '<p>История пуста.</p>' +
+    '</div>';
+  // Lazy форма через 500ms
+  setTimeout(function(){
+    document.getElementById('lazy-form').innerHTML =
+      '<label>API Endpoint</label><input data-testid="profile-api" placeholder="https://..." value="">' +
+      '<button onclick="fetch(\'/api/search?q=profile\').then(function(r){return r.json()}).then(function(d){alert(d.count+\' items\')})" aria-label="Обновить API">Обновить API</button>';
+  }, 500);
+}
+
+function switchTab(tabId, btn) {
+  document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('active')});
+  document.querySelectorAll('.tab-bar button').forEach(function(b){b.classList.remove('active')});
+  btn.classList.add('active');
+  document.getElementById('tab-'+tabId).classList.add('active');
+}
+
+// ── Модальное окно ──
+function openSettings() {
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML =
+    '<div class="modal">' +
+      '<h3>Настройки профиля</h3>' +
+      '<label>Никнейм</label><input id="settings-nick" aria-label="Никнейм" value="">' +
+      '<label>Телефон</label><input id="settings-phone" aria-label="Телефон" type="tel" value="">' +
+      '<div style="display:flex;gap:8px;margin-top:12px">' +
+        '<button onclick="document.querySelector(\'.modal-overlay\').remove()" aria-label="Закрыть">Отмена</button>' +
+        '<button onclick="saveSettings();document.querySelector(\'.modal-overlay\').remove()" aria-label="Сохранить">💾 Сохранить</button>' +
+        '<button class="danger" onclick="document.querySelector(\'.modal-overlay\').remove()" aria-label="Сменить пароль">🔑 Сменить пароль</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+}
+
+function saveSettings() {
+  var nick = document.getElementById('settings-nick').value;
+  var phone = document.getElementById('settings-phone').value;
+  console.log('settings saved:', {nick: nick, phone: phone});
+}
+
+// ── Опасные действия ──
+function deleteAccount() { alert('Аккаунт удалён (mock)'); }
+function logout() { alert('Вы вышли (mock)'); setRoute('/#/'); renderRoute(); }
+
+// ── API XHR заглушки ──
+(function(){
+  var origFetch = window.fetch;
+  window.fetch = function(url, opts) {
+    var u = typeof url === 'string' ? url : url.url;
+    if (u === '/api/login') {
+      var body = opts && opts.body ? JSON.parse(opts.body) : {};
+      var ok = body.email === 'admin@test.local' && body.password === 'test123';
+      return Promise.resolve(new Response(JSON.stringify({ok:ok, token:ok?'mock-jwt':'', error:ok?null:'invalid credentials'}), {status:ok?200:401, headers:{'Content-Type':'application/json'}}));
+    }
+    if (/\/api\/search/.test(u)) {
+      var q = (u.match(/[?&]q=([^&]+)/)||['',''])[1] || '';
+      return Promise.resolve(new Response(JSON.stringify({query:q,count:q?3:0,results:q?[{id:1,title:q+'-1'},{id:2,title:q+'-2'},{id:3,title:q+'-3'}]:[]}), {status:200, headers:{'Content-Type':'application/json'}}));
+    }
+    return origFetch.apply(this, arguments);
+  };
+  window.Response = origFetch('').constructor;
+})();
+
+// ── Intercept pushState ──
+(function(){
+  var orig = window.history.pushState;
+  window.history.pushState = function() { orig.apply(this, arguments); renderRoute(); };
+})();
+
+// ── Boot ──
+renderRoute();
+</script>
+</body>
+</html>

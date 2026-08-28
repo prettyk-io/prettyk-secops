@@ -1,5 +1,5 @@
 /**
- * MethodId (RU → wirek) + ворота ZAP/HTTP/Сессия/Драйвер.
+ * MethodId (RU → wirek) + ворота scanner/HTTP/Сессия/Драйвер.
  * Генерируется: npm run generate:method-ids
  */
 import methodIdsJson from '../generated/method_ids.json';
@@ -70,7 +70,7 @@ export function facadeMethods(facade: string): readonly FacadeMethodEntry[] {
   return methodIdFacades[canonical]?.methods ?? [];
 }
 
-/** Метод ворот по id или алиасу (`HttpЧерезZAP` → `ЗапросЧерезZAP`). */
+/** Метод ворот по id или алиасу (`HttpЧерезscanner` → `ЗапросЧерезscanner`). */
 export function lookupFacadeMethod(
   facade: string,
   methodName: string,

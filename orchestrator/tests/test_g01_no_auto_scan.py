@@ -22,12 +22,12 @@ def test_scan_policy_only_maps_af_profile_declarative():
 def test_controller_load_with_domains_does_not_apply_or_scan(monkeypatch):
     """allowed_extra_domains при load не вызывает spider / apply_context_domains."""
     monkeypatch.setenv("PK_AUTH_BOOTSTRAP", "0")
-    monkeypatch.setenv("PK_ZAP_AUTH_BOOTSTRAP", "0")
+    monkeypatch.setenv("PK_SCANNER_AUTH_BOOTSTRAP", "0")
 
-    zap = MagicMock()
-    zap.spider_scan = MagicMock()
-    zap.run_automation_plan = MagicMock()
-    zap.apply_context_domains = MagicMock()
+    scanner = MagicMock()
+    scanner.spider_scan = MagicMock()
+    scanner.run_automation_plan = MagicMock()
+    scanner.apply_context_domains = MagicMock()
 
     with patch.object(Controller, "_init_adapters", lambda self: None), patch.object(
         Controller, "_register_actions", lambda self: None
@@ -38,7 +38,7 @@ def test_controller_load_with_domains_does_not_apply_or_scan(monkeypatch):
             Wired(
                 meta=Meta(assessment_purpose="emergency", emergency_reason="g01"),
                 infrastructure=Infrastructure(
-                    zap_mode="demon", browser_type="chrome-headless"
+                    scanner_mode="demon", browser_type="chrome-headless"
                 ),
                 security_configuration=SecurityConfiguration(
                     base_url_override="http://juice-shop:3000",
@@ -49,10 +49,10 @@ def test_controller_load_with_domains_does_not_apply_or_scan(monkeypatch):
                 test_suites=SuitesModel(scenarios=[]),
             )
         )
-        ctrl.adapters["zap"] = zap
+        ctrl.adapters["scanner"] = scanner
         ctrl._log_declarative_gap()
 
-    zap.spider_scan.assert_not_called()
-    zap.run_automation_plan.assert_not_called()
-    if hasattr(zap, "apply_context_domains"):
-        zap.apply_context_domains.assert_not_called()
+    scanner.spider_scan.assert_not_called()
+    scanner.run_automation_plan.assert_not_called()
+    if hasattr(scanner, "apply_context_domains"):
+        scanner.apply_context_domains.assert_not_called()

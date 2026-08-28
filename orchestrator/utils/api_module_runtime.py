@@ -2,7 +2,7 @@
 """
 Мост исполнения для module_type OpenAPI / GraphQL.
 
-Модуль = контракт + перечень операций + явные флаги ZAP; сам по себе сканером не является.
+Модуль = контракт + перечень операций + явные флаги scanner; сам по себе сканером не является.
 """
 from __future__ import annotations
 
@@ -36,7 +36,7 @@ class ResolvedOpenApi:
     spec: str = ""
     base_url: str = ""
     auth_module_id: str = ""
-    zap_import: bool = False
+    scanner_import: bool = False
     notes: List[str] = field(default_factory=list)
 
 
@@ -48,16 +48,16 @@ class ResolvedGraphql:
     endpoint: str = ""
     headers: Dict[str, str] = field(default_factory=dict)
     auth_module_id: str = ""
-    zap_import: bool = False
-    zap_scan: bool = False
+    scanner_import: bool = False
+    scanner_scan: bool = False
     notes: List[str] = field(default_factory=list)
 
 
-def env_force_zap_import(*, openapi: bool = True) -> bool:
+def env_force_scanner_import(*, openapi: bool = True) -> bool:
     if openapi:
-        keys = ("PK_OPENAPI_ZAP_IMPORT", "PK_API_ZAP_IMPORT")
+        keys = ("PK_OPENAPI_scanner_IMPORT", "PK_API_scanner_IMPORT")
     else:
-        keys = ("PK_GRAPHQL_ZAP_IMPORT", "PK_API_ZAP_IMPORT")
+        keys = ("PK_GRAPHQL_scanner_IMPORT", "PK_API_scanner_IMPORT")
     for key in keys:
         raw = pk_env_name(key).strip().lower()
         if raw in ("1", "true", "yes", "on"):
@@ -65,11 +65,11 @@ def env_force_zap_import(*, openapi: bool = True) -> bool:
     return False
 
 
-def env_force_zap_scan(*, openapi: bool = False) -> bool:
+def env_force_scanner_scan(*, openapi: bool = False) -> bool:
     if openapi:
-        keys = ("PK_OPENAPI_ZAP_SCAN", "PK_API_ZAP_SCAN")
+        keys = ("PK_OPENAPI_scanner_SCAN", "PK_API_scanner_SCAN")
     else:
-        keys = ("PK_GRAPHQL_ZAP_SCAN", "PK_API_ZAP_SCAN")
+        keys = ("PK_GRAPHQL_scanner_SCAN", "PK_API_scanner_SCAN")
     for key in keys:
         raw = pk_env_name(key).strip().lower()
         if raw in ("1", "true", "yes", "on"):
@@ -87,13 +87,20 @@ def find_api_module(
     if not mid or wired is None:
         return None
     allowed = set(module_types) if module_types else set(_API_MODULE_TYPES)
-    suites = getattr(wired, "test_suites", None)
-    if suites is None:
-        return None
-    for mod in getattr(suites, "test_data_constructor", None) or []:
-        if (getattr(mod, "id", None) or "").strip() != mid:
+    modules = []
+    if isinstance(wired, dict):
+        modules = wired.get("test_data_constructor_modules") or (wired.get("test_suites") or {}).get("test_data_constructor") or []
+    else:
+        modules = (
+            getattr(wired, "test_data_constructor_modules", None)
+            or getattr(getattr(wired, "test_suites", None), "test_data_constructor", None)
+            or []
+        )
+    for mod in modules:
+        mod_id = (mod.get("id") if isinstance(mod, dict) else getattr(mod, "id", None)) or ""
+        if str(mod_id).strip() != mid:
             continue
-        mtype = getattr(mod, "module_type", None) or ""
+        mtype = (mod.get("module_type") if isinstance(mod, dict) else getattr(mod, "module_type", None)) or ""
         if mtype in allowed:
             return mod
     return None
@@ -117,7 +124,7 @@ def _fields_dict(mod: Any, attr: str) -> Dict[str, Any]:
         "spec_path",
         "base_url_override",
         "auth_module_id",
-        "zap_import",
+        "scanner_import",
         "last_inventory",
         "schema_mode",
         "sdl_as",
@@ -129,7 +136,7 @@ def _fields_dict(mod: Any, attr: str) -> Dict[str, Any]:
         "sdl_path",
         "sdl_text",
         "headers",
-        "zap_scan",
+        "scanner_scan",
     ):
         if hasattr(raw, key):
             out[key] = getattr(raw, key)
@@ -270,7 +277,7 @@ def resolve_openapi_arg(
     out.module_id = raw
     out.from_module = True
     out.auth_module_id = str(fields.get("auth_module_id") or "").strip()
-    out.zap_import = bool(fields.get("zap_import"))
+    out.scanner_import = bool(fields.get("scanner_import"))
     try:
         out.base_url = attack_base_url(wired)
     except WiredError as exc:
@@ -362,8 +369,8 @@ def resolve_graphql_arg(
     out.module_id = raw
     out.from_module = True
     out.auth_module_id = str(fields.get("auth_module_id") or "").strip()
-    out.zap_import = bool(fields.get("zap_import"))
-    out.zap_scan = bool(fields.get("zap_scan"))
+    out.scanner_import = bool(fields.get("scanner_import"))
+    out.scanner_scan = bool(fields.get("scanner_scan"))
 
     endpoint_rel = str(
         fields.get("endpoint_rel") or fields.get("endpoint") or "/graphql"
@@ -447,15 +454,15 @@ def static_auth_headers(wired: Any, auth_module_id: str) -> Tuple[Dict[str, str]
     return headers, notes
 
 
-def allow_zap_import(*, module_flag: bool, openapi: bool) -> Tuple[bool, List[str]]:
-    if env_force_zap_import(openapi=openapi):
-        return True, ["импорт в ZAP принудительно включён (переменная окружения)"]
+def allow_scanner_import(*, module_flag: bool, openapi: bool) -> Tuple[bool, List[str]]:
+    if env_force_scanner_import(openapi=openapi):
+        return True, ["импорт в scanner принудительно включён (переменная окружения)"]
     if module_flag:
         return True, []
-    return False, ["импорт в ZAP выключен в модуле — шаг пропущен"]
+    return False, ["импорт в scanner выключен в модуле — шаг пропущен"]
 
 
-def allow_zap_scan(
+def allow_scanner_scan(
     *,
     module_flag: bool,
     openapi: bool,
@@ -463,16 +470,16 @@ def allow_zap_scan(
 ) -> Tuple[bool, List[str]]:
     if not from_module:
         return True, []
-    if env_force_zap_scan(openapi=openapi):
-        return True, ["скан в ZAP принудительно включён (переменная окружения)"]
+    if env_force_scanner_scan(openapi=openapi):
+        return True, ["скан в scanner принудительно включён (переменная окружения)"]
     if openapi:
-        # OpenAPI SoT: zap_import gates scan when arg is module id
+        # OpenAPI SoT: scanner_import gates scan when arg is module id
         if module_flag:
             return True, []
-        return False, ["импорт/скан в ZAP выключен в модуле — шаг пропущен"]
+        return False, ["импорт/скан в scanner выключен в модуле — шаг пропущен"]
     if module_flag:
         return True, []
-    return False, ["скан GraphQL в ZAP выключен в модуле — шаг пропущен"]
+    return False, ["скан GraphQL в scanner выключен в модуле — шаг пропущен"]
 
 
 def inventory_openapi(spec: str) -> Dict[str, Any]:
@@ -579,7 +586,7 @@ def execute_openapi_operations(
 ) -> Dict[str, Any]:
     """
     Выполнить простые операции (сначала GET без параметров пути) через HttpAdapter.
-    Трафик может идти через прокси ZAP. Активное сканирование не запускает.
+    Трафик может идти через прокси scanner. Активное сканирование не запускает.
     """
     notes: List[str] = []
     results: List[Dict[str, Any]] = []
@@ -608,7 +615,7 @@ def execute_openapi_operations(
         "ok": True,
         "attempted": len(results),
         "results": results,
-        "notes": notes + ["только HTTP-запросы — активное сканирование ZAP не запускалось"],
+        "notes": notes + ["только HTTP-запросы — активное сканирование scanner не запускалось"],
     }
 
 
@@ -650,7 +657,7 @@ def execute_graphql_request(
             "query": q,
             "status": resp.get("status") if isinstance(resp, dict) else None,
             "response": resp.get("json") if isinstance(resp, dict) else None,
-            "notes": notes + ["только выполнение запроса — активное сканирование ZAP не запускалось"],
+            "notes": notes + ["только выполнение запроса — активное сканирование scanner не запускалось"],
         }
     except Exception as exc:  # noqa: BLE001
         return {

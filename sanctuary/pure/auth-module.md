@@ -2,7 +2,7 @@
 
 > **CANON** — hub topic. Slice: **11 августа 2026** (зачисление lab 12–15+37).  
 > Detail: [`../internal/auth-module.md`](../internal/auth-module.md) · matrix: [`../internal/auth-matrix.md`](../internal/auth-matrix.md).  
-> EVIDENCE: acceptance [`30`](../acceptance/30-trials-auth12-apikey-2026-08-11.md)…[`37`](../acceptance/37-trials-auth-browser-zap-cookie-2026-08-11.md).  
+> EVIDENCE: acceptance [`30`](../acceptance/30-trials-auth12-apikey-2026-08-11.md)…[`37`](../acceptance/37-trials-auth-browser-scanner-cookie-2026-08-11.md).  
 > Реестр: [`INDEX.md`](INDEX.md). Честность: [`honest-contract.md`](honest-contract.md).  
 > Слоты / gaps: [`auth-slots.md`](auth-slots.md).
 
@@ -18,7 +18,7 @@ flowchart LR
   IR --> Val[validate_dry_run]
   Val --> Http[Http_bootstrap]
   Val --> Browser[Selenium_opt_in]
-  Val --> Zap[ZAP_static_or_Cookie]
+  Val --> scanner[scanner_static_or_Cookie]
 ```
 
 | Тезис | Факт |
@@ -39,8 +39,8 @@ flowchart LR
 | **form** | Selenium login + locators `тип значение` | `KDT_AUTH_FORM_BROWSER=1` |
 | **action** | form + MFA TOTP/SMS + `otp_locator` | тот же browser gate |
 
-Browser cookies → Http jar **и** ZAP Replacer `Cookie` (acceptance 37).  
-Query Key в ZAP — honest note (нет Replacer query).
+Browser cookies → Http jar **и** scanner Replacer `Cookie` (acceptance 37).  
+Query Key в scanner — honest note (нет Replacer query).
 
 ## 3. Runtime / честность
 

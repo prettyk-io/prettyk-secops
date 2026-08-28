@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from core.errors import WiredError
+from models.wired import Wired
 from utils.api_module_runtime import find_api_module
 from utils.chain_ops import ChainError, materialize_chain_fields
 from utils.paths import ensure_runs_dir
@@ -87,7 +88,7 @@ def resolve_chain_arg(
         out.notes.append("пустой аргумент Цепь")
         return out
 
-    mod = find_api_module(Wired, raw, module_types=[CHAIN_MODULE_TYPE])
+    mod = find_api_module(wired, raw, module_types=[CHAIN_MODULE_TYPE])
     if mod is not None:
         fields = _chain_fields_dict(mod)
         har_as = str(fields.get("har_as") or raw).strip() or raw

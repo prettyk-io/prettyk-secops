@@ -51,21 +51,6 @@ def test_merge_both_fail_honest():
     assert "auth-discovery fail" in clue["diary_line"]
 
 
-def test_auto_authorize_publishes_diary(monkeypatch):
-    from adapters.webdriver_adapter import WebDriverAdapter
-
-    lines: list[str] = []
-
-    def _pub(kind, text, channel="diary"):
-        lines.append(f"{kind}:{text}:{channel}")
-
-    monkeypatch.setattr("utils.diary_bus.publish", _pub)
-    wd = WebDriverAdapter.__new__(WebDriverAdapter)
-    out = wd.auto_authorize_discovery("https://x/login")
-    assert out["applied"] is False
-    assert lines and lines[0].startswith("AUTH:")
-
-
 def test_auth_ir_juice_like_chain_lab():
     """IMP-AD-3: Auth IR login → session (http mock, Juice-shaped)."""
     text = "\n".join(

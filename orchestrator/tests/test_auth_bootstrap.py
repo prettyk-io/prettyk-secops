@@ -34,7 +34,7 @@ class FakeHttp:
         return {"status": 200, "status_code": 200, "text": "ok", "body": "ok"}
 
 
-class FakeZap:
+class Fakescanner:
     def __init__(self):
         self.rules = []
 
@@ -45,16 +45,16 @@ class FakeZap:
 def test_basic_applies_http_only(monkeypatch):
     monkeypatch.delenv("PK_AUTH_BOOTSTRAP", raising=False)
     http = FakeHttp()
-    zap = FakeZap()
+    scanner = Fakescanner()
     out = apply_auth_bootstrap(
         auth_type="Базовая авторизация",
         auth_details={"Логин": "u", "Пароль": "p"},
         http_adapter=http,
-        zap_adapter=zap,
+        scanner_adapter=scanner,
     )
     assert out["applied"] is True
     assert http.calls[0] == ("basic", "u", "p")
-    assert zap.rules == []  # без Replacer
+    assert scanner.rules == []  # без Replacer
 
 
 def test_bearer(monkeypatch):
@@ -64,7 +64,7 @@ def test_bearer(monkeypatch):
         auth_type="Bearer Token",
         auth_details={"Токен": "abc"},
         http_adapter=http,
-        zap_adapter=None,
+        scanner_adapter=None,
     )
     assert out["applied"] is True
     assert http.calls == [("bearer", "abc")]
@@ -122,7 +122,7 @@ def test_quality_gate_flag(monkeypatch):
 
     # Минимальный stub Controller без __init__ адаптеров
     ctrl = object.__new__(Controller)
-    ctrl.adapters = {"zap": Z()}
+    ctrl.adapters = {"scanner": Z()}
     ctrl.quality_gate_failed = False
     ctrl.quality_gate_summary = None
     ctrl.admission_risk_hints = {}
@@ -142,13 +142,13 @@ def test_quality_gate_alert_error_fail_closed(monkeypatch):
 
     class ZBoom:
         def summarize_alerts_for_live(self, risks=None, limit=None):
-            raise RuntimeError("zap down")
+            raise RuntimeError("scanner down")
 
         def summarize_high_alerts(self, limit=30):
-            raise RuntimeError("zap down")
+            raise RuntimeError("scanner down")
 
     ctrl = object.__new__(Controller)
-    ctrl.adapters = {"zap": ZBoom()}
+    ctrl.adapters = {"scanner": ZBoom()}
     ctrl.quality_gate_failed = False
     ctrl.quality_gate_summary = None
     ctrl.admission_risk_hints = {}
@@ -167,7 +167,7 @@ def test_quality_gate_alert_error_fail_closed(monkeypatch):
     assert ctrl.quality_gate_summary["fail_mode"] == "open"
 
 
-def test_quality_gate_missing_zap_fail_closed(monkeypatch):
+def test_quality_gate_missing_scanner_fail_closed(monkeypatch):
     from core.controller import Controller
 
     ctrl = object.__new__(Controller)

@@ -11,7 +11,7 @@ function makePipeline(): PipelineDefinition {
     requiredCapabilities: ['checks:create', 'fuzzer:execute'],
     steps: [
       { id: 'disc', component: { name: 'Browser Discovery', version: '1.4.0' } },
-      { id: 'scan', component: { name: 'ZAP Active Scan', version: '2.15.0' } },
+      { id: 'scan', component: { name: 'scanner Active Scan', version: '2.15.0' } },
       { id: 'gate', component: { name: 'Quality Gate', version: '3.1.0' } },
     ],
     edges: [

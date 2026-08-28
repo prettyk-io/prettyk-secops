@@ -72,23 +72,23 @@ def test_auth_chain_vault_preflight_and_extract():
     assert vault.get_token("csrf") == "csrf_abc_777"
 
 
-def test_auth_chain_vault_inject_into_zap():
+def test_auth_chain_vault_inject_into_scanner():
     vault = AuthChainVault()
     vault.set_token("auth.token", "bearer_token_12345")
     vault.set_token("auth.cookie", "session_id=sess_999")
 
-    mock_zap = MagicMock()
+    mock_scanner = MagicMock()
 
     # Инъекция Bearer
-    ok_bearer = vault.inject_into_zap(mock_zap, token_var="auth.token", auth_type="bearer")
+    ok_bearer = vault.inject_into_scanner(mock_scanner, token_var="auth.token", auth_type="bearer")
     assert ok_bearer is True
-    mock_zap.add_replacer_rule.assert_any_call(
+    mock_scanner.add_replacer_rule.assert_any_call(
         "pk-vault-bearer", "REQ_HEADER", "Authorization", "Bearer bearer_token_12345", False
     )
 
     # Инъекция Cookie
-    ok_cookie = vault.inject_into_zap(mock_zap, token_var="auth.cookie", auth_type="cookie")
+    ok_cookie = vault.inject_into_scanner(mock_scanner, token_var="auth.cookie", auth_type="cookie")
     assert ok_cookie is True
-    mock_zap.add_replacer_rule.assert_any_call(
+    mock_scanner.add_replacer_rule.assert_any_call(
         "pk-vault-cookie", "REQ_HEADER", "Cookie", "session_id=sess_999", False
     )

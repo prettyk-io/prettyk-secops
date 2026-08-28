@@ -21,7 +21,7 @@ def test_publish_redacts_bearer(tmp_path, monkeypatch):
     diary_bus.publish(
         "LOG",
         'ЛогАтаки | Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.aaa.bbb password=secret',
-        channel="zap",
+        channel="scanner",
     )
     raw = diary.read_text(encoding="utf-8").strip()
     ev = json.loads(raw)

@@ -99,12 +99,12 @@ class HttpAdapter(BaseAdapter):
         logger.info(f"HttpAdapter initialized with base_url={base_url}, retries={retries}, timeout=({timeout_connect}, {timeout_read})")
 
     def bind_run_wired(self, wired) -> None:
-        """Controller: Manifest для резолва module id (OA/GQL traffic)."""
+        """Controller: Wired для резолва module id (OA/GQL traffic)."""
         self._run_wired = wired
 
     def set_proxy(self, proxy_url, proxy_type="http"):
         """
-        Прокси для session (ZAP browser proxy). Keyword не обязателен —
+        Прокси для session (scanner browser proxy). Keyword не обязателен —
         Controller вызывает на старте.
         Returns True when a proxy is configured, False when cleared.
         """
@@ -124,7 +124,7 @@ class HttpAdapter(BaseAdapter):
 
     def execute_openapi_module(self, module_id_or_spec, limit=5):
         """
-        Выполнить операции OpenAPI по HTTP (через прокси ZAP).
+        Выполнить операции OpenAPI по HTTP (через прокси scanner).
         MethodId: ВыполнитьОперацииOpenAPI.
         """
         from utils.api_module_runtime import (
@@ -170,7 +170,7 @@ class HttpAdapter(BaseAdapter):
 
     def execute_graphql_module(self, module_id, query=""):
         """
-        Выполнить запрос GraphQL по HTTP (через прокси ZAP).
+        Выполнить запрос GraphQL по HTTP (через прокси scanner).
         MethodId: ВыполнитьGraphQL.
         """
         from utils.api_module_runtime import (

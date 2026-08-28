@@ -75,7 +75,7 @@ vi.mock('./ScenarioDeckStore', () => ({
   },
 }));
 
-function makeManifest(scenarioCount: number, pageCount: number) {
+function makeWired(scenarioCount: number, pageCount: number) {
   return {
     meta: { assessment_purpose: 'automated' },
     infrastructure: { base_url_override: 'https://example.com' },
@@ -113,13 +113,13 @@ describe('Studio (STU-V2 B1/B2/B4)', () => {
   });
 
   it('B1+B2: привязан к checkId — Explorer получает formData, Canvas получает реальные счётчики', () => {
-    const manifest = makeManifest(2, 1);
-    render(<Studio checkId="chk-12345678" initialManifest={manifest} />);
+    const wired = makeWired(2, 1);
+    render(<Studio checkId="chk-12345678" initialWired={wired} />);
 
     // Explorer привязан именно к этому formData.
     const explorer = screen.getByTestId('studio-explorer');
     const explorerData = JSON.parse(explorer.getAttribute('data-formdata') ?? 'null');
-    expect(explorerData).toEqual(manifest);
+    expect(explorerData).toEqual(wired);
 
     // Canvas счётчики — реальные (2 сценария, 1 страница), не литералы.
     const canvas = screen.getByTestId('canvas-v2');
@@ -130,11 +130,11 @@ describe('Studio (STU-V2 B1/B2/B4)', () => {
   });
 
   it('B1: другая проверка — свои данные (перезагрузка formData)', () => {
-    const first = makeManifest(2, 1);
-    const second = makeManifest(1, 3);
-    const { rerender } = render(<Studio checkId="chk-aaa" initialManifest={first} />);
+    const first = makeWired(2, 1);
+    const second = makeWired(1, 3);
+    const { rerender } = render(<Studio checkId="chk-aaa" initialWired={first} />);
 
-    rerender(<Studio checkId="chk-bbb" initialManifest={second} />);
+    rerender(<Studio checkId="chk-bbb" initialWired={second} />);
 
     const explorer = screen.getByTestId('studio-explorer');
     const explorerData = JSON.parse(explorer.getAttribute('data-formdata') ?? 'null');
@@ -147,8 +147,8 @@ describe('Studio (STU-V2 B1/B2/B4)', () => {
   });
 
   it('B4: вкладка «Код» открывает Monaco-конструктор на языке prettyk', () => {
-    const manifest = makeManifest(1, 0);
-    render(<Studio checkId="chk-abc" initialManifest={manifest} />);
+    const wired = makeWired(1, 0);
+    render(<Studio checkId="chk-abc" initialWired={wired} />);
 
     fireEvent.click(screen.getByText('Код'));
 

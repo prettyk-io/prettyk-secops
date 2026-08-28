@@ -1,5 +1,5 @@
 ﻿# -*- coding: utf-8 -*-
-"""Валидация манифеста без Controller / ZAP / Grid (G-06 --validate-only)."""
+"""Валидация манифеста без Controller / scanner / Grid (G-06 --validate-only)."""
 from __future__ import annotations
 
 import difflib
@@ -58,21 +58,21 @@ def signature_info(method) -> tuple:
 def build_dry_action_factory() -> ActionFactory:
     """Регистрация wire-методов с классов адаптеров — без сети.
 
-    DSL-B4: webdriver и browser идут через P0_ALLOWLIST (25 методов),
-    не через dir(cls). Остальные адаптеры (zap, http, ...) — dir(cls).
+    DSL-B4 + PW-C3: webdriver и browser идут через P0_ALLOWLIST (25 методов)
+    на PlaywrightAdapter — один мир, WebDriverAdapter выпилен из боевого пути.
+    Остальные адаптеры (scanner, http, ...) — dir(cls).
     """
-    from adapters.browser_adapter import BrowserAdapter
     from adapters.data_adapter import DataAdapter
     from adapters.data_processor import DataProcessor
     from adapters.connector_adapter import ConnectorAdapter
     from adapters.grpc_adapter import GrpcAdapter
     from adapters.http_adapter import HttpAdapter
     from adapters.inspector import Inspector
-    from adapters.webdriver_adapter import WebDriverAdapter
-    from adapters.zap_adapter import ZapAdapter
+    from adapters.playwright_adapter import PlaywrightAdapter
+    from adapters.scanner_adapter import ScannerAdapter
     from core.fuzzing import FuzzAdapter
     from utils.reporter import Reporter
-    from core.pretty_method_spec import P0_ALLOWLIST
+    from core.pretty_method_spec import P0_ALLOWLIST, browser_standard_actions
 
     factory = ActionFactory()
     for m in (
@@ -84,26 +84,25 @@ def build_dry_action_factory() -> ActionFactory:
     ):
         factory.register("allure", m, getattr(Reporter, m))
 
-    # ── P0_ALLOWLIST: webdriver — только доказанные методы ──
-    _wd = WebDriverAdapter.__new__(WebDriverAdapter)
+    # ── P0_ALLOWLIST: webdriver — только доказанные методы (на PlaywrightAdapter) ──
+    _pw = PlaywrightAdapter.__new__(PlaywrightAdapter)
     for spec in P0_ALLOWLIST:
         if spec.component != "webdriver":
             continue
-        method = getattr(_wd, spec.action, None)
+        method = getattr(_pw, spec.action, None)
         if callable(method):
             factory.register(spec.component, spec.action, method)
 
-    # ── Browser: dir(BrowserAdapter) — куки, сессия, storage, cdp_command ──
-    _ba = BrowserAdapter(_wd)
-    from core.pretty_method_spec import browser_standard_actions
+    # ── Browser: PlaywrightAdapter (cookies/storage/console) ──
     for action in sorted(browser_standard_actions()):
-        method = getattr(_ba, action, None)
+        method = getattr(_pw, action, None)
         if callable(method):
             factory.register("browser", action, method)
 
     # ── Остальные адаптеры: dir(cls) ──
     adapters = {
-        "zap": ZapAdapter,
+        "scanner": ScannerAdapter,
+        "scanner": ScannerAdapter,
         "http": HttpAdapter,
         "grpc": GrpcAdapter,
         "connector": ConnectorAdapter,
@@ -290,7 +289,8 @@ def validate_wired_file(
     path = Path(wired_path)
     issues: List[str] = []
     try:
-        raw = path.read_text(encoding="utf-8")
+        # utf-8-sig — срезает BOM (U+FEFF); json.loads не переносит его.
+        raw = path.read_text(encoding="utf-8-sig")
         data = json.loads(raw)
     except json.JSONDecodeError as e:
         return [f"json: {e}"], None

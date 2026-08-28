@@ -1,5 +1,5 @@
 ﻿# -*- coding: utf-8 -*-
-"""TRAF-A: passive observed insertion points from ZAP History (query + JSON).
+"""TRAF-A: passive observed insertion points from scanner History (query + JSON).
 
 Не Param Miner. Не SoT. Opt-in feed в ФаззингВолна через env / helper.
 """
@@ -112,12 +112,12 @@ def _request_body(message: Dict[str, Any]) -> str:
 def _parse_message(message: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """Lazy import parse to avoid circular import at module load."""
     try:
-        from core.fuzzing import parse_zap_history_message
+        from core.fuzzing import parse_scanner_history_message
     except ImportError:  # pragma: no cover
-        from orchestrator.core.fuzzing import parse_zap_history_message  # type: ignore
+        from orchestrator.core.fuzzing import parse_scanner_history_message  # type: ignore
 
     try:
-        parsed = parse_zap_history_message(message)
+        parsed = parse_scanner_history_message(message)
     except Exception:  # noqa: BLE001 — skip bad rows
         return None
     parsed["status"] = _status_from_message(message)

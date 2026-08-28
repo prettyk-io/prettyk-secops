@@ -79,7 +79,7 @@ def run():
         entry = {
             "idx": i,
             "title": f.get("title"),
-            "zap_severity": f.get("severity"),
+            "scanner_severity": f.get("severity"),
             "cwe": f.get("cwe"),
             "latency_ms": round(elapsed, 1),
         }
@@ -88,10 +88,10 @@ def run():
             entry["ai_fp_confidence"] = ai.get("fp_confidence")
             entry["ai_reasoning"] = ai.get("reasoning", "")[:200]
             ai_sev = str(ai.get("severity", "")).lower()
-            zap_sev = str(f.get("severity", "")).lower()
-            entry["severity_match"] = ai_sev == zap_sev or ai_sev == zap_sev.replace("informational", "info")
+            scanner_sev = str(f.get("severity", "")).lower()
+            entry["severity_match"] = ai_sev == scanner_sev or ai_sev == scanner_sev.replace("informational", "info")
             ok_count += 1
-            print(f"  [{i+1}/{len(unique)}] {f['title'][:60]:<60} | {zap_sev:>5} -> {ai_sev:>5} | match={entry['severity_match']} | fp={ai.get('fp_confidence', '?')} | {elapsed:.0f}ms")
+            print(f"  [{i+1}/{len(unique)}] {f['title'][:60]:<60} | {scanner_sev:>5} -> {ai_sev:>5} | match={entry['severity_match']} | fp={ai.get('fp_confidence', '?')} | {elapsed:.0f}ms")
         else:
             entry["error"] = ai.get("error", "unknown") if ai else "no_response"
             print(f"  [{i+1}/{len(unique)}] {f['title'][:60]:<60} | ERROR: {entry['error']} | {elapsed:.0f}ms")

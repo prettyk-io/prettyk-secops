@@ -56,9 +56,9 @@ type PrettyKStepId = string;
 
 const COMPONENT_MAP: Partial<Record<ExternalComponentName, PrettyKStepId>> = {
   'browser-discovery': 'browser-discovery',
-  'zap-active-scan': 'zap-active-scan',
-  'zap-baseline-scan': 'zap-active-scan',
-  'zap-full-scan': 'zap-active-scan',
+  'scanner-active-scan': 'scanner-active-scan',
+  'scanner-baseline-scan': 'scanner-active-scan',
+  'scanner-full-scan': 'scanner-active-scan',
   'corpus-fuzzing': 'corpus-fuzzing',
   'fuzzer': 'corpus-fuzzing',
   'quality-gate': 'quality-gate',
@@ -178,7 +178,7 @@ export interface StepExport {
 const EXPORT_MAP: Record<ExportTarget, Partial<Record<string, string>>> = {
   'github-actions': {
     'browser-discovery': 'prettyk/browser-discovery@v1',
-    'zap-active-scan': 'prettyk/zap-scan@v2',
+    'scanner-active-scan': 'prettyk/scanner-scan@v2',
     'corpus-fuzzing': 'prettyk/fuzzer@v2',
     'quality-gate': 'prettyk/quality-gate@v3',
     'evidence-pack': 'prettyk/evidence-pack@v1',
@@ -186,7 +186,7 @@ const EXPORT_MAP: Record<ExportTarget, Partial<Record<string, string>>> = {
   },
   'gitlab-ci': {
     'browser-discovery': 'prettyk/browser-discovery@v1',
-    'zap-active-scan': 'prettyk/zap-scan@v2',
+    'scanner-active-scan': 'prettyk/scanner-scan@v2',
     'corpus-fuzzing': 'prettyk/fuzzer@v2',
     'quality-gate': 'prettyk/quality-gate@v3',
     'evidence-pack': 'prettyk/evidence-pack@v1',
@@ -194,17 +194,17 @@ const EXPORT_MAP: Record<ExportTarget, Partial<Record<string, string>>> = {
   },
   'jenkins': {
     'browser-discovery': 'prettyk/browser-discovery@v1',
-    'zap-active-scan': 'prettyk/zap-scan@v2',
+    'scanner-active-scan': 'prettyk/scanner-scan@v2',
     'quality-gate': 'prettyk/quality-gate@v3',
   },
   'tekton': {
     'browser-discovery': 'prettyk-browser-discovery-task',
-    'zap-active-scan': 'prettyk-zap-scan-task',
+    'scanner-active-scan': 'prettyk-scanner-scan-task',
     'quality-gate': 'prettyk-quality-gate-task',
   },
   'prettyk-native': {
     'browser-discovery': 'browser-discovery',
-    'zap-active-scan': 'zap-active-scan',
+    'scanner-active-scan': 'scanner-active-scan',
     'corpus-fuzzing': 'corpus-fuzzing',
     'quality-gate': 'quality-gate',
     'evidence-pack': 'evidence-pack',

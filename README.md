@@ -1,6 +1,6 @@
 # PrettyK
 
-PrettyK — среда для функциональных и динамических проверок безопасности веб-приложений. Автор описывает сценарий в Редакторе на языке PrettyK, оркестратор выполняет его через браузер и OWASP ZAP (scanner), а результат появляется в PrettyK Live, Allure и `run_summary.json`.
+PrettyK — среда для функциональных и динамических проверок безопасности веб-приложений. Автор описывает сценарий в Редакторе на языке PrettyK, оркестратор выполняет его через браузер и OWASP scanner (scanner), а результат появляется в PrettyK Live, Allure и `run_summary.json`.
 
 Статус проекта: **alpha, подготовка к beta**. Формат манифеста и язык ещё могут меняться.
 
@@ -34,7 +34,7 @@ Set-Location ..
 
 - Форма параметров проверки и Редактор сценариев;
 - язык PrettyK и стабильная диагностическая запись `component|action|args`;
-- Python-оркестратор, WebDriver, HTTP-клиент и управление сканером (OWASP ZAP);
+- Python-оркестратор, WebDriver, HTTP-клиент и управление сканером (OWASP scanner);
 - локальный стенд с Juice Shop, Selenium Grid, PrettyK Live и allure-light-secops;
 - quality gate по уровню alerts сканера;
 - JSON Schema для интеграции с внешними системами.
@@ -42,16 +42,16 @@ Set-Location ..
 Единственная поддерживаемая точка полного запуска:
 
 ```powershell
-.\.venv\Scripts\python.exe orchestrator\main.py --manifest path\to\manifest.json
+.\.venv\Scripts\python.exe orchestrator\main.py --wired path\to\wired.json
 ```
 
 Коды завершения: `0` — проверка завершена и gate пройден; `1` — ошибка; `2` — проверка завершена, но gate обнаружил недопустимые alerts.
 
 ## Для интеграции и разработки
 
-- [структура манифеста](docs/manifest.md);
+- [структура манифеста](docs/wired.md);
 - [технический паспорт](docs/prettyk.md);
 - [безопасная эксплуатация](docs/security.md);
 - [разработка и тесты](docs/development.md);
-- [`docs/manifest.json`](docs/manifest.json) — JSON Schema;
+- [`docs/wired.json`](docs/wired.json) — JSON Schema;
 - [`docs/run_summary.schema.json`](docs/run_summary.schema.json) — итог прогона.

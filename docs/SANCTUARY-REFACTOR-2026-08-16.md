@@ -23,8 +23,8 @@
 | **PrettyK Live / Monitor** | 8767 | canon |
 | **Allure 3** | **5050** | **канон / дефолт** (заезжает вместо allure2) |
 | **Allure 2** | legacy | **помечен legacy**, пока живёт рядом, потом выкорчёвываем |
-| ZAP demon API | 8080 | canon |
-| ZAP Webswing | 8082 | не дефолт |
+| scanner demon API | 8080 | canon |
+| scanner Webswing | 8082 | не дефолт |
 | Selenium Grid | 4444 | canon |
 | noVNC Chrome / Firefox | 7900 / 7901 | canon |
 | Juice Shop | 3000 | canon |
@@ -70,6 +70,6 @@
 
 ## 6. Границы (для Buddy и всех)
 
-- **Святилище** `sanctuary/` + `docs/manifest.json` + `docs/canon/` + `.opencode/rules/` — зона Максима + Keeper. Вход только через 2FA.
+- **Святилище** `sanctuary/` + `docs/wired.json` + `docs/canon/` + `.opencode/rules/` — зона Максима + Keeper. Вход только через 2FA.
 - **Buddy** (внешний DevOps) не ходит в Святилище и не делает авто-paste/авто-чистку в этом репо. Его границы — отдельный протокол в его workspace.
 - Commit / push / deploy — только по явной команде Максима.

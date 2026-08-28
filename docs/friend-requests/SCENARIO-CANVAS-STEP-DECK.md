@@ -38,7 +38,7 @@
 ### 2.1. Пилюля «Действие» (Action Method Pill)
 Выпадающий список с мгновенным автодополнением, разбит по семантическим группам и цветам:
 - 🌐 **Web / Browser (Cyan `#38BDF8`):** `Click`, `Type`, `Open`, `Wait`, `Hover`, `Select`, `PressKey`
-- 🛡️ **Security / DAST (Violet `#A855F7`):** `Spider`, `ActiveScan`, `Check`, `ZapReport`
+- 🛡️ **Security / DAST (Violet `#A855F7`):** `Spider`, `ActiveScan`, `Check`, `scannerReport`
 - 💥 **Fuzzing / Intruder (Amber `#F59E0B`):** `FuzzWave`, `Mutate`, `Intruder`
 - 🔑 **Data / Variables (Emerald `#10B981`):** `Let` (`Пусть`), `Secret` (`Секрет`), `GenerateEmail`, `GeneratePhone`
 - 📄 **Page Models:** методы обнаруженных моделей страниц (например, `login_page.Войти`)

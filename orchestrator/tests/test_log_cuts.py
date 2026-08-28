@@ -38,7 +38,7 @@ def test_parse_options_unknown():
 
 def test_match_security_and_fuzz():
     opts = {"security"}
-    assert log_cuts.match_event({"kind": "ZAP", "text": "scan"}, opts)
+    assert log_cuts.match_event({"kind": "scanner", "text": "scan"}, opts)
     assert log_cuts.match_event({"kind": "ФАЗЗИНГ", "text": "wave"}, opts)
     assert log_cuts.match_event({"kind": "FUZZ", "text": "wave"}, opts)
     assert log_cuts.match_event({"kind": "LOG", "text": "ЛогАтаки | x"}, opts)
@@ -49,14 +49,14 @@ def test_match_security_and_fuzz():
 def test_start_end_cut_writes_file(tmp_path):
     path_hint = log_cuts.start_cut("LEGION", "security,error", comment="wave A")
     assert path_hint.name == "LEGION.log"
-    log_cuts.feed_event({"kind": "ZAP", "text": "alert high", "ts": 1_700_000_000.0})
+    log_cuts.feed_event({"kind": "scanner", "text": "alert high", "ts": 1_700_000_000.0})
     log_cuts.feed_event({"kind": "STEP", "text": "ignored", "ts": 1_700_000_001.0})
     log_cuts.feed_event({"kind": "ERROR", "text": "boom", "ts": 1_700_000_002.0})
     out = log_cuts.end_cut("LEGION")
     text = Path(out).read_text(encoding="utf-8")
     assert "# wave A" in text
     assert "НачатьЛогирование LEGION security,error" in text
-    assert "ZAP" in text and "alert high" in text
+    assert "scanner" in text and "alert high" in text
     assert "ERROR" in text and "boom" in text
     assert "ignored" not in text
 
@@ -97,6 +97,6 @@ def test_publish_feeds_open_cut(tmp_path, monkeypatch):
     monkeypatch.setattr(diary_bus, "LIVE_DIR", tmp_path)
     diary_bus.clear()
     log_cuts.start_cut("PACK", "security")
-    diary_bus.publish("ZAP", "from publish", channel="zap")
+    diary_bus.publish("scanner", "from publish", channel="scanner")
     out = log_cuts.end_cut("PACK")
     assert "from publish" in Path(out).read_text(encoding="utf-8")

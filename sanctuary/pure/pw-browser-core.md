@@ -93,7 +93,7 @@ orchestrator/probes/      # read-only probes (state, url, heading, network, ax)
 | Одна страница | Либо PW, либо Selenium. **Не вместе.** | |
 | Docker-упаковка | `playwright install --with-deps chromium` | Через Grid |
 
-## 8. ZAP + Playwright (MITM-проксирование)
+## 8. scanner + Playwright (MITM-проксирование)
 
 ```python
 context = await browser.new_context(
@@ -102,7 +102,7 @@ context = await browser.new_context(
 )
 ```
 
-Без `--proxy-server=`, без `accept_insecure_certs`, без ручной установки CA. Трафик гарантированно в ZAP.
+Без `--proxy-server=`, без `accept_insecure_certs`, без ручной установки CA. Трафик гарантированно в scanner.
 
 ## 9. Auth-injection
 

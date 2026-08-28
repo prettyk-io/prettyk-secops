@@ -1,5 +1,5 @@
 /**
- * manifestIO — утилита скачивания манифеста из App.tsx (dev-роутер).
+ * wiredIO — утилита скачивания манифеста из App.tsx (dev-роутер).
  */
 
 import type { WiredData } from './types';

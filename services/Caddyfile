@@ -1,0 +1,44 @@
+# COS-014: Caddy reverse proxy — один entry, авто TLS.
+#
+# Один порт 443 для всего приложения:
+#   frontend :5173, API :8100, Gitea :3000, MinIO :9000
+#
+# Caddy автоматически получает TLS-сертификат (ACME) для домена.
+# Внутренние сервисы (PG, Valkey, scanner, OpenBao) НЕ exposed наружу.
+
+{
+  # Замените на реальный домен. Для localhost — TLS off, http://.
+  auto_https off
+}
+
+:443 {
+  # Космо API (FastAPI)
+  handle /api/* {
+    reverse_proxy cosmo-api:8100
+  }
+
+  # Gitea (forge UI)
+  handle /forge/* {
+    uri strip_prefix /forge
+    reverse_proxy cosmo-gitea:3000
+  }
+
+  # MinIO (артефакты)
+  handle /artifacts/* {
+    uri strip_prefix /artifacts
+    reverse_proxy cosmo-minio:9000
+  }
+
+  # Frontend (Vite build)
+  handle {
+    reverse_proxy frontend:5173
+  }
+
+  # COS-014: WebSocket/SSE не обрываются (долгие соединения)
+  # Caddy держит WS/SSE из коробки — без таймаута на idle.
+}
+
+# Health endpoint самого Caddy (опционально)
+:2019 {
+  respond "Caddy is running" 200
+}

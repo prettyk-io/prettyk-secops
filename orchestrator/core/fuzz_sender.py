@@ -1,7 +1,7 @@
 ﻿# -*- coding: utf-8 -*-
 """Генерация HttpSender: маска в запросе → значение ScriptVars.
 
-Не UI Fuzzer ZAP. Скрипт в daemon подменяет mask на global ScriptVar
+Не UI Fuzzer scanner. Скрипт в daemon подменяет mask на global ScriptVar
 в sendingRequest. Цикл пейлоадов — снаружи (ДляКаждого / ПейлоадПодмены).
 """
 from __future__ import annotations
@@ -47,7 +47,7 @@ function replaceAll(text, from, to) {{
 }}
 
 function sendingRequest(msg, initiator, helper) {{
-	var payload = org.zaproxy.zap.extension.script.ScriptVars.getGlobalVar(VAR_KEY);
+	var payload = org.zaproxy.scanner.extension.script.ScriptVars.getGlobalVar(VAR_KEY);
 	if (payload === null || payload === undefined) {{
 		return;
 	}}

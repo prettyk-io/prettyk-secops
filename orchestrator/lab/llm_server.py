@@ -557,7 +557,7 @@ class _Handler(BaseHTTPRequestHandler):
         infrastructure = wired.get("infrastructure", {}) if isinstance(Wired, dict) else {}
 
         brief_parts = [
-            f"Manifest: {len(scenarios)} scenarios, {len(pages)} pages, {len(fuzzers)} fuzzers, "
+            f"Wired: {len(scenarios)} scenarios, {len(pages)} pages, {len(fuzzers)} fuzzers, "
             f"{len(auth)} auth profiles, {len(connectors)} connectors.",
         ]
 

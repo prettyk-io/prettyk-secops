@@ -5,7 +5,7 @@
 #   docker compose -f services/docker-compose.target.yml up -d
 #
 # Адреса:
-#   из браузера/ZAP (внутри pk-net) — http://juice-shop:3000
+#   из браузера/scanner (внутри pk-net) — http://juice-shop:3000
 #   с хоста — http://127.0.0.1:3000
 
 services:

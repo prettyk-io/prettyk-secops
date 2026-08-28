@@ -20,7 +20,7 @@ describe('suiteZip', () => {
     const roundtrip = readStoreZipTextFiles(buffer);
     expect(roundtrip).toBeDefined();
     const extracted = extractSuiteFromZipFiles(roundtrip!);
-    expect(extracted.manifestJson).toContain('meta');
+    expect(extracted.wiredJson).toContain('meta');
     expect(extracted.resourceContents.urls).toContain('https://b');
   });
 
@@ -37,10 +37,10 @@ describe('suiteZip', () => {
         release_manager: 'c@example.test',
       },
       infrastructure: {
-        zap_mode: 'demon',
+        scanner_mode: 'demon',
         browser_type: 'chrome',
         additional_local_server_port: 8085,
-        zap_work_timeout_min: 10,
+        scanner_work_timeout_min: 10,
         idle_timeout_min: 5,
         webswing_session_timeout_min: 60,
       },
@@ -57,15 +57,15 @@ describe('suiteZip', () => {
         test_data_constructor: [],
       },
     };
-    const manifestJson = exportWiredJson(formData, 'authoring');
-    const files = buildSuiteZipFiles(manifestJson, {
+    const wiredJson = exportWiredJson(formData, 'authoring');
+    const files = buildSuiteZipFiles(wiredJson, {
       urls: 'http://juice-shop:3000/#/\n',
     });
     const extracted = extractSuiteFromZipFiles(
       readStoreZipTextFiles(await buildZipBlob(files).arrayBuffer())!,
     );
     expect(extracted.resourceContents.urls).toContain('juice-shop');
-    expect(extracted.manifestJson).toContain('"as": "urls"');
-    expect(extracted.manifestJson).not.toContain('***');
+    expect(extracted.wiredJson).toContain('"as": "urls"');
+    expect(extracted.wiredJson).not.toContain('***');
   });
 });

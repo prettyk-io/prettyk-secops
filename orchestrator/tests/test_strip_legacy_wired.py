@@ -8,7 +8,7 @@ import pytest
 
 from models.wired import strip_legacy_wired_dict
 
-# Паритет: FE migrateLegacyManifest → stripLegacyManifestKeys (frontend/src/schema/).
+# Паритет: FE migrateLegacyWired → stripLegacyWiredKeys (frontend/src/schema/).
 # BE strip_legacy_wired_dict (models/Wired.py) покрывает те же scenario/step-ключи
 # плюс meta/infrastructure/security legacy вне migrate.
 LEGACY_STRIP_TABLE: list[tuple[str, bool, bool]] = [
@@ -38,10 +38,10 @@ def _legacy_Wired_blob() -> dict[str, Any]:
             "app_type": "web",
         },
         "infrastructure": {
-            "zap_mode": "demon",
+            "scanner_mode": "demon",
             "browser_type": "chrome",
             "additional_local_server_port": 8085,
-            "zap_work_timeout_min": 10,
+            "scanner_work_timeout_min": 10,
             "idle_timeout_min": 5,
             "webswing_session_timeout_min": 60,
             "start_with_webswing": True,

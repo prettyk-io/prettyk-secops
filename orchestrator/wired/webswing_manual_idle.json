@@ -5,7 +5,7 @@
     "emergency_reason": "Ручной Webswing: idle 5 мин → shutdown_all. Без авто-сценариев."
   },
   "infrastructure": {
-    "zap_mode": "webswing",
+    "scanner_mode": "webswing",
     "browser_type": "chrome-headless",
     "start_with_webswing": true,
     "idle_timeout_min": 5,

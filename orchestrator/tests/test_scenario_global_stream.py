@@ -52,7 +52,7 @@ def test_datastream_merge_is_explicit_api():
 
 
 def _stub_controller(monkeypatch) -> Controller:
-    """Controller без ZAP/WD; data + core для Пусть / Лог."""
+    """Controller без scanner/WD; data + core для Пусть / Лог."""
     monkeypatch.setenv("PK_AUTH_BOOTSTRAP", "0")
     monkeypatch.setenv("PK_QUALITY_GATE", "0")
 
@@ -68,10 +68,10 @@ def _stub_controller(monkeypatch) -> Controller:
     monkeypatch.setattr("utils.allure_runtime.unbind_allure", lambda *_a, **_k: None)
 
     ctrl = Controller.__new__(Controller)
-    ctrl.last_zap_report = None
+    ctrl.last_scanner_report = None
     ctrl.wired = Wired(
         meta=Meta(assessment_purpose="scheduled"),
-        infrastructure=Infrastructure(zap_mode="demon", browser_type="chrome-headless", base_url_override="http://example.test"),
+        infrastructure=Infrastructure(scanner_mode="demon", browser_type="chrome-headless", base_url_override="http://example.test"),
         security_configuration=SecurityConfiguration(
             base_url_override="http://example.test",
             allowed_extra_domains="",
@@ -98,7 +98,7 @@ def _stub_controller(monkeypatch) -> Controller:
     ctrl.action_factory.register("data", "secret", ctrl.adapters["data"].secret)
     ctrl.action_factory.register("core", "log_message", DataProcessor.log_message)
     ctrl.reporter = MagicMock()
-    ctrl._attach_final_zap_report = lambda: None
+    ctrl._attach_final_scanner_report = lambda: None
     ctrl._diary = lambda *a, **k: None
     ctrl._attach_call_details = lambda *a, **k: None
     ctrl._enrich_wired_error = lambda e, **k: e

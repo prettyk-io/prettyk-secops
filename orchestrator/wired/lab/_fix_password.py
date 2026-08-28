@@ -1,6 +1,6 @@
 ﻿from pathlib import Path
 
-p = Path(__file__).with_name("manifest_juice_fuzz.json")
+p = Path(__file__).with_name("wired_juice_fuzz.json")
 text = p.read_text(encoding="utf-8")
 # JSON text contains escaped quotes: \"
 commented = '# Секрет $password_value = \\"pk_password\\"'

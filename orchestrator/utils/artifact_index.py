@@ -82,7 +82,7 @@ def _paths_for_finalize(
     *,
     rid: str,
     run_dir: Optional[Path],
-    zap_xml: Optional[Path],
+    scanner_xml: Optional[Path],
     allure_results_dir: Optional[Path],
 ) -> Dict[str, str]:
     paths: Dict[str, str] = {}
@@ -90,8 +90,8 @@ def _paths_for_finalize(
         paths["run_dir"] = str(Path(run_dir))
     elif (RUNS_DIR / rid).is_dir():
         paths["run_dir"] = str(RUNS_DIR / rid)
-    if zap_xml is not None and Path(zap_xml).exists():
-        paths["zap_xml"] = str(Path(zap_xml))
+    if scanner_xml is not None and Path(scanner_xml).exists():
+        paths["scanner_xml"] = str(Path(scanner_xml))
     if allure_results_dir is not None:
         paths["allure_results_dir"] = str(Path(allure_results_dir))
     return paths
@@ -112,7 +112,7 @@ def record_finalize_artifacts(
     check_id: Optional[str],
     run_id: Optional[str] = None,
     run_dir: Optional[Path] = None,
-    zap_xml: Optional[Path] = None,
+    scanner_xml: Optional[Path] = None,
     allure_results_dir: Optional[Path] = None,
     allure_report_url: Optional[str] = None,
     dojo: Optional[Dict[str, Any]] = None,
@@ -130,14 +130,14 @@ def record_finalize_artifacts(
     paths = _paths_for_finalize(
         rid=rid,
         run_dir=run_dir,
-        zap_xml=zap_xml,
+        scanner_xml=scanner_xml,
         allure_results_dir=allure_results_dir,
     )
     dojo_meta = _subset_meta(
         dojo,
         ("test_id", "engagement_id", "product_id", "test_url", "engagement_url"),
     )
-    hooks_meta = _subset_meta(hooks, ("allure", "dojo", "zap"))
+    hooks_meta = _subset_meta(hooks, ("allure", "dojo", "scanner"))
     if allure_report_url:
         hooks_meta.setdefault("allure", allure_report_url)
 
@@ -226,7 +226,7 @@ def list_run_paths(check_id: str) -> List[Path]:
         if not isinstance(run, dict):
             continue
         paths = run.get("paths") if isinstance(run.get("paths"), dict) else {}
-        for key in ("run_dir", "zap_xml", "allure_results_dir"):
+        for key in ("run_dir", "scanner_xml", "allure_results_dir"):
             raw = paths.get(key)
             if raw:
                 out.append(Path(str(raw)))

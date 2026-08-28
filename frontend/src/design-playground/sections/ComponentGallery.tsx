@@ -14,7 +14,7 @@ import {
   X,
   Copy,
   Search,
-  Zap,
+  scanner,
   Bold,
   Italic,
   Underline,
@@ -205,7 +205,7 @@ function BtnMatrix({ g, hs, fs, sps, cp, preset, backdrop }: {
     { l: 'Ghost', e: <Button variant="ghost" {...p} style={{ ...hs, ...fs, color: '#38bdf8', borderRadius: primaryStyle.borderRadius }}>Ghost</Button>, c: '<Button variant="ghost">Ghost</Button>' },
     { l: 'Link', e: <Button variant="link" {...p} style={{ ...hs, ...fs, color: '#38bdf8' }}>Link</Button>, c: '<Button variant="link">Link</Button>' },
     { l: 'Destructive Solid', e: <Button variant="destructive" {...p} style={{ ...hs, ...fs, borderRadius: primaryStyle.borderRadius }}>Danger</Button>, c: '<Button variant="destructive">Danger</Button>' },
-    { l: 'With Icon', e: <Button {...p} style={{ ...hs, ...fs, ...primaryStyle }}><Zap className="size-3.5 mr-1" /> Inject</Button>, c: '<Button><Zap /> Inject</Button>' },
+    { l: 'With Icon', e: <Button {...p} style={{ ...hs, ...fs, ...primaryStyle }}><scanner className="size-3.5 mr-1" /> Inject</Button>, c: '<Button><scanner /> Inject</Button>' },
   ];
   return <div style={{ display: 'flex', flexWrap: 'wrap', gap: g }}>{rows.map((r) => <MC key={r.l} label={r.l} code={r.c} cp={cp} preset={preset} backdrop={backdrop}>{r.e}</MC>)}</div>;
 }

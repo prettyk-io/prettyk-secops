@@ -2,23 +2,23 @@
   "methods": [
     {
       "id": "AuthКонтекста",
-      "component": "zap",
+      "component": "scanner",
       "action": "set_context_auth",
-      "wirek": "zap|set_context_auth",
+      "wirek": "scanner|set_context_auth",
       "tier": "util"
     },
     {
       "id": "BrowserAuth",
-      "component": "zap",
+      "component": "scanner",
       "action": "set_browser_based_auth",
-      "wirek": "zap|set_browser_based_auth",
+      "wirek": "scanner|set_browser_based_auth",
       "tier": "util"
     },
     {
       "id": "ForcedUser",
-      "component": "zap",
+      "component": "scanner",
       "action": "set_forced_user",
-      "wirek": "zap|set_forced_user",
+      "wirek": "scanner|set_forced_user",
       "tier": "util"
     },
     {
@@ -37,51 +37,30 @@
     },
     {
       "id": "HttpSender",
-      "component": "zap",
+      "component": "scanner",
       "action": "install_mask_http_sender",
-      "wirek": "zap|install_mask_http_sender",
-      "tier": "util"
-    },
-    {
-      "id": "АвтоАвторизоваться",
-      "component": "webdriver",
-      "action": "auto_authorize_discovery",
-      "wirek": "webdriver|auto_authorize_discovery",
+      "wirek": "scanner|install_mask_http_sender",
       "tier": "util"
     },
     {
       "id": "АктивноеСканирование",
-      "component": "zap",
+      "component": "scanner",
       "action": "active_scan",
-      "wirek": "zap|active_scan",
+      "wirek": "scanner|active_scan",
       "tier": "ui"
     },
     {
       "id": "АлертыOAST",
-      "component": "zap",
+      "component": "scanner",
       "action": "get_oast_alerts",
-      "wirek": "zap|get_oast_alerts",
+      "wirek": "scanner|get_oast_alerts",
       "tier": "util"
     },
     {
       "id": "АрхивироватьКонтекст",
-      "component": "zap",
+      "component": "scanner",
       "action": "archive_context",
-      "wirek": "zap|archive_context",
-      "tier": "util"
-    },
-    {
-      "id": "АтрибутЭлементаПоИндексу",
-      "component": "webdriver",
-      "action": "get_element_attribute_by_index",
-      "wirek": "webdriver|get_element_attribute_by_index",
-      "tier": "util"
-    },
-    {
-      "id": "ВвестиВОповещение",
-      "component": "webdriver",
-      "action": "send_keys_to_alert",
-      "wirek": "webdriver|send_keys_to_alert",
+      "wirek": "scanner|archive_context",
       "tier": "util"
     },
     {
@@ -92,45 +71,38 @@
       "tier": "ui"
     },
     {
-      "id": "ВернутьсяВОсновнойКонтент",
-      "component": "webdriver",
-      "action": "switch_to_default",
-      "wirek": "webdriver|switch_to_default",
-      "tier": "util"
-    },
-    {
       "id": "ВключитьForcedUser",
-      "component": "zap",
+      "component": "scanner",
       "action": "enable_forced_user_mode",
-      "wirek": "zap|enable_forced_user_mode",
+      "wirek": "scanner|enable_forced_user_mode",
       "tier": "util"
     },
     {
       "id": "ВключитьHttpSender",
-      "component": "zap",
+      "component": "scanner",
       "action": "enable_http_sender_script",
-      "wirek": "zap|enable_http_sender_script",
+      "wirek": "scanner|enable_http_sender_script",
       "tier": "util"
     },
     {
       "id": "ВключитьВКонтекст",
-      "component": "zap",
+      "component": "scanner",
       "action": "set_context_include",
-      "wirek": "zap|set_context_include",
+      "wirek": "scanner|set_context_include",
       "tier": "ui"
     },
     {
       "id": "ВключитьПассивныеСканеры",
-      "component": "zap",
+      "component": "scanner",
       "action": "enable_passive_scanners",
-      "wirek": "zap|enable_passive_scanners",
+      "wirek": "scanner|enable_passive_scanners",
       "tier": "util"
     },
     {
       "id": "ВключитьПользователя",
-      "component": "zap",
+      "component": "scanner",
       "action": "enable_user",
-      "wirek": "zap|enable_user",
+      "wirek": "scanner|enable_user",
       "tier": "util"
     },
     {
@@ -155,13 +127,6 @@
       "tier": "util"
     },
     {
-      "id": "ВыбратьПоИндексу",
-      "component": "webdriver",
-      "action": "select_by_index",
-      "wirek": "webdriver|select_by_index",
-      "tier": "util"
-    },
-    {
       "id": "ВыбратьПоТексту",
       "component": "webdriver",
       "action": "select_by_text",
@@ -177,23 +142,23 @@
     },
     {
       "id": "ВыключитьForcedUser",
-      "component": "zap",
+      "component": "scanner",
       "action": "disable_forced_user_mode",
-      "wirek": "zap|disable_forced_user_mode",
+      "wirek": "scanner|disable_forced_user_mode",
       "tier": "util"
     },
     {
       "id": "ВыключитьHttpSender",
-      "component": "zap",
+      "component": "scanner",
       "action": "disable_http_sender_script",
-      "wirek": "zap|disable_http_sender_script",
+      "wirek": "scanner|disable_http_sender_script",
       "tier": "util"
     },
     {
       "id": "ВыключитьПассивныеСканеры",
-      "component": "zap",
+      "component": "scanner",
       "action": "disable_all_passive_scanners",
-      "wirek": "zap|disable_all_passive_scanners",
+      "wirek": "scanner|disable_all_passive_scanners",
       "tier": "util"
     },
     {
@@ -240,37 +205,37 @@
     },
     {
       "id": "ВыполнитьСкрипт",
-      "component": "zap",
+      "component": "scanner",
       "action": "run_script",
-      "wirek": "zap|run_script",
+      "wirek": "scanner|run_script",
       "tier": "util"
     },
     {
       "id": "ВыполнитьЦепь",
-      "component": "zap",
+      "component": "scanner",
       "action": "execute_chain_module",
-      "wirek": "zap|execute_chain_module",
+      "wirek": "scanner|execute_chain_module",
       "tier": "util"
     },
     {
       "id": "ГлобальнаяVarСкрипта",
-      "component": "zap",
+      "component": "scanner",
       "action": "set_script_global_var",
-      "wirek": "zap|set_script_global_var",
+      "wirek": "scanner|set_script_global_var",
       "tier": "util"
     },
     {
       "id": "ГлобальныйФильтрАлерта",
-      "component": "zap",
+      "component": "scanner",
       "action": "add_global_alert_filter",
-      "wirek": "zap|add_global_alert_filter",
+      "wirek": "scanner|add_global_alert_filter",
       "tier": "util"
     },
     {
       "id": "ДобавитьPayload",
-      "component": "zap",
+      "component": "scanner",
       "action": "add_custom_payload",
-      "wirek": "zap|add_custom_payload",
+      "wirek": "scanner|add_custom_payload",
       "tier": "util"
     },
     {
@@ -331,23 +296,23 @@
     },
     {
       "id": "ЗагрузитьHttpSender",
-      "component": "zap",
+      "component": "scanner",
       "action": "load_http_sender_script",
-      "wirek": "zap|load_http_sender_script",
+      "wirek": "scanner|load_http_sender_script",
       "tier": "util"
     },
     {
       "id": "ЗагрузитьСессию",
-      "component": "zap",
+      "component": "scanner",
       "action": "load_session",
-      "wirek": "zap|load_session",
+      "wirek": "scanner|load_session",
       "tier": "util"
     },
     {
       "id": "ЗагрузитьСкрипт",
-      "component": "zap",
+      "component": "scanner",
       "action": "load_script",
-      "wirek": "zap|load_script",
+      "wirek": "scanner|load_script",
       "tier": "util"
     },
     {
@@ -359,23 +324,9 @@
     },
     {
       "id": "ЗагрузитьФильтры",
-      "component": "zap",
+      "component": "scanner",
       "action": "load_alert_filters",
-      "wirek": "zap|load_alert_filters",
-      "tier": "util"
-    },
-    {
-      "id": "ЗажатьКлавишу",
-      "component": "webdriver",
-      "action": "key_down",
-      "wirek": "webdriver|key_down",
-      "tier": "util"
-    },
-    {
-      "id": "ЗажатьКнопкуМыши",
-      "component": "webdriver",
-      "action": "click_and_hold",
-      "wirek": "webdriver|click_and_hold",
+      "wirek": "scanner|load_alert_filters",
       "tier": "util"
     },
     {
@@ -400,10 +351,10 @@
       "tier": "util"
     },
     {
-      "id": "ЗапросЧерезZAP",
-      "component": "zap",
-      "action": "zap_http_request",
-      "wirek": "zap|zap_http_request",
+      "id": "ЗапросЧерезscanner",
+      "component": "scanner",
+      "action": "scanner_http_request",
+      "wirek": "scanner|scanner_http_request",
       "tier": "util"
     },
     {
@@ -429,44 +380,44 @@
     },
     {
       "id": "ИзбегатьLogout",
-      "component": "zap",
+      "component": "scanner",
       "action": "set_logout_avoidance",
-      "wirek": "zap|set_logout_avoidance",
+      "wirek": "scanner|set_logout_avoidance",
       "tier": "util"
     },
     {
       "id": "ИмпортGraphQL",
-      "component": "zap",
+      "component": "scanner",
       "action": "import_graphql_schema",
-      "wirek": "zap|import_graphql_schema",
+      "wirek": "scanner|import_graphql_schema",
       "tier": "util"
     },
     {
       "id": "ИмпортHAR",
-      "component": "zap",
+      "component": "scanner",
       "action": "import_har_sequence",
-      "wirek": "zap|import_har_sequence",
+      "wirek": "scanner|import_har_sequence",
       "tier": "util"
     },
     {
       "id": "ИмпортOpenAPI",
-      "component": "zap",
+      "component": "scanner",
       "action": "import_openapi_spec",
-      "wirek": "zap|import_openapi_spec",
+      "wirek": "scanner|import_openapi_spec",
       "tier": "util"
     },
     {
       "id": "ИмпортgRPC",
-      "component": "zap",
+      "component": "scanner",
       "action": "import_grpc_proto",
-      "wirek": "zap|import_grpc_proto",
+      "wirek": "scanner|import_grpc_proto",
       "tier": "util"
     },
     {
       "id": "ИмпортСертификата",
-      "component": "zap",
+      "component": "scanner",
       "action": "import_certificate",
-      "wirek": "zap|import_certificate",
+      "wirek": "scanner|import_certificate",
       "tier": "util"
     },
     {
@@ -478,9 +429,9 @@
     },
     {
       "id": "ИсключитьИзКонтекста",
-      "component": "zap",
+      "component": "scanner",
       "action": "set_context_exclude",
-      "wirek": "zap|set_context_exclude",
+      "wirek": "scanner|set_context_exclude",
       "tier": "util"
     },
     {
@@ -492,44 +443,44 @@
     },
     {
       "id": "КонтекстПерехватаПользователя",
-      "component": "zap",
+      "component": "scanner",
       "action": "new_user_intercept_context",
-      "wirek": "zap|new_user_intercept_context",
+      "wirek": "scanner|new_user_intercept_context",
       "tier": "util"
     },
     {
       "id": "Краулер",
-      "component": "zap",
+      "component": "scanner",
       "action": "ajax_spider_scan",
-      "wirek": "zap|ajax_spider_scan",
+      "wirek": "scanner|ajax_spider_scan",
       "tier": "ui"
     },
     {
       "id": "КраулерГлубокий",
-      "component": "zap",
+      "component": "scanner",
       "action": "ajax_spider_scan_deep",
-      "wirek": "zap|ajax_spider_scan_deep",
+      "wirek": "scanner|ajax_spider_scan_deep",
       "tier": "util"
     },
     {
       "id": "КраулерИтератор",
-      "component": "zap",
+      "component": "scanner",
       "action": "ajax_spider_scan_iterator",
-      "wirek": "zap|ajax_spider_scan_iterator",
+      "wirek": "scanner|ajax_spider_scan_iterator",
       "tier": "util"
     },
     {
       "id": "КраулерКлиент",
-      "component": "zap",
+      "component": "scanner",
       "action": "client_spider_scan",
-      "wirek": "zap|client_spider_scan",
+      "wirek": "scanner|client_spider_scan",
       "tier": "util"
     },
     {
       "id": "КраулерПоверхностный",
-      "component": "zap",
+      "component": "scanner",
       "action": "ajax_spider_scan_shallow",
-      "wirek": "zap|ajax_spider_scan_shallow",
+      "wirek": "scanner|ajax_spider_scan_shallow",
       "tier": "util"
     },
     {
@@ -541,9 +492,9 @@
     },
     {
       "id": "ЛогАтаки",
-      "component": "zap",
+      "component": "scanner",
       "action": "log_attack",
-      "wirek": "zap|log_attack",
+      "wirek": "scanner|log_attack",
       "tier": "ui"
     },
     {
@@ -555,23 +506,16 @@
     },
     {
       "id": "ЛокальныйСервер",
-      "component": "zap",
+      "component": "scanner",
       "action": "add_local_server",
-      "wirek": "zap|add_local_server",
-      "tier": "util"
-    },
-    {
-      "id": "МеткаВДневнике",
-      "component": "webdriver",
-      "action": "log_marker",
-      "wirek": "webdriver|log_marker",
+      "wirek": "scanner|add_local_server",
       "tier": "util"
     },
     {
       "id": "МетодЗапросаGraphQL",
-      "component": "zap",
+      "component": "scanner",
       "action": "set_graphql_request_method",
-      "wirek": "zap|set_graphql_request_method",
+      "wirek": "scanner|set_graphql_request_method",
       "tier": "util"
     },
     {
@@ -610,38 +554,10 @@
       "tier": "util"
     },
     {
-      "id": "НажатьКомбинацию",
-      "component": "webdriver",
-      "action": "key_combination",
-      "wirek": "webdriver|key_combination",
-      "tier": "util"
-    },
-    {
-      "id": "НажатьПоИндексу",
-      "component": "webdriver",
-      "action": "click_element_by_index",
-      "wirek": "webdriver|click_element_by_index",
-      "tier": "ui"
-    },
-    {
-      "id": "НажатьПоТексту",
-      "component": "webdriver",
-      "action": "click_element_by_text",
-      "wirek": "webdriver|click_element_by_text",
-      "tier": "ui"
-    },
-    {
       "id": "НажатьПравой",
       "component": "webdriver",
       "action": "right_click",
       "wirek": "webdriver|right_click",
-      "tier": "util"
-    },
-    {
-      "id": "НажатьУдерживая",
-      "component": "webdriver",
-      "action": "hold_click",
-      "wirek": "webdriver|hold_click",
       "tier": "util"
     },
     {
@@ -653,9 +569,9 @@
     },
     {
       "id": "НовыйКонтекст",
-      "component": "zap",
+      "component": "scanner",
       "action": "create_context",
-      "wirek": "zap|create_context",
+      "wirek": "scanner|create_context",
       "tier": "ui"
     },
     {
@@ -663,13 +579,6 @@
       "component": "webdriver",
       "action": "refresh",
       "wirek": "webdriver|refresh",
-      "tier": "ui"
-    },
-    {
-      "id": "ОбойтиСтраницы",
-      "component": "webdriver",
-      "action": "crawl_urls",
-      "wirek": "webdriver|crawl_urls",
       "tier": "ui"
     },
     {
@@ -681,37 +590,30 @@
     },
     {
       "id": "ОстановитьАктивноеСканирование",
-      "component": "zap",
+      "component": "scanner",
       "action": "stop_active_scan",
-      "wirek": "zap|stop_active_scan",
+      "wirek": "scanner|stop_active_scan",
       "tier": "util"
     },
     {
       "id": "ОстановитьПлан",
-      "component": "zap",
+      "component": "scanner",
       "action": "stop_automation_plan",
-      "wirek": "zap|stop_automation_plan",
+      "wirek": "scanner|stop_automation_plan",
       "tier": "util"
     },
     {
       "id": "ОстановитьСканера",
-      "component": "zap",
+      "component": "scanner",
       "action": "stop_spider",
-      "wirek": "zap|stop_spider",
-      "tier": "util"
-    },
-    {
-      "id": "ОтклонитьОповещение",
-      "component": "webdriver",
-      "action": "dismiss_alert",
-      "wirek": "webdriver|dismiss_alert",
+      "wirek": "scanner|stop_spider",
       "tier": "util"
     },
     {
       "id": "ОтключитьПользователя",
-      "component": "zap",
+      "component": "scanner",
       "action": "disable_user",
-      "wirek": "zap|disable_user",
+      "wirek": "scanner|disable_user",
       "tier": "util"
     },
     {
@@ -729,31 +631,10 @@
       "tier": "ui"
     },
     {
-      "id": "ОтправитьФорму",
-      "component": "webdriver",
-      "action": "submit",
-      "wirek": "webdriver|submit",
-      "tier": "util"
-    },
-    {
-      "id": "ОтпуститьКлавишу",
-      "component": "webdriver",
-      "action": "key_up",
-      "wirek": "webdriver|key_up",
-      "tier": "util"
-    },
-    {
-      "id": "ОтпуститьКнопкуМыши",
-      "component": "webdriver",
-      "action": "release",
-      "wirek": "webdriver|release",
-      "tier": "util"
-    },
-    {
       "id": "Отчёт",
-      "component": "zap",
+      "component": "scanner",
       "action": "generate_report",
-      "wirek": "zap|generate_report",
+      "wirek": "scanner|generate_report",
       "tier": "ui"
     },
     {
@@ -765,9 +646,9 @@
     },
     {
       "id": "ОчиститьReplacer",
-      "component": "zap",
+      "component": "scanner",
       "action": "clear_replacer_rules",
-      "wirek": "zap|clear_replacer_rules",
+      "wirek": "scanner|clear_replacer_rules",
       "tier": "util"
     },
     {
@@ -779,9 +660,9 @@
     },
     {
       "id": "ОчиститьКонтекст",
-      "component": "zap",
+      "component": "scanner",
       "action": "clear_context",
-      "wirek": "zap|clear_context",
+      "wirek": "scanner|clear_context",
       "tier": "util"
     },
     {
@@ -793,16 +674,16 @@
     },
     {
       "id": "ПассивноеСканирование",
-      "component": "zap",
+      "component": "scanner",
       "action": "passive_scan_wait",
-      "wirek": "zap|passive_scan_wait",
+      "wirek": "scanner|passive_scan_wait",
       "tier": "util"
     },
     {
       "id": "ПассивныеСканеры",
-      "component": "zap",
+      "component": "scanner",
       "action": "get_passive_scanners",
-      "wirek": "zap|get_passive_scanners",
+      "wirek": "scanner|get_passive_scanners",
       "tier": "util"
     },
     {
@@ -814,72 +695,37 @@
     },
     {
       "id": "ПейлоадПодмены",
-      "component": "zap",
+      "component": "scanner",
       "action": "set_fuzz_payload",
-      "wirek": "zap|set_fuzz_payload",
+      "wirek": "scanner|set_fuzz_payload",
       "tier": "util"
     },
     {
       "id": "ПереключитьКонтекст",
-      "component": "zap",
+      "component": "scanner",
       "action": "switch_context",
-      "wirek": "zap|switch_context",
-      "tier": "util"
-    },
-    {
-      "id": "ПереключитьОкно",
-      "component": "webdriver",
-      "action": "switch_to_window",
-      "wirek": "webdriver|switch_to_window",
-      "tier": "util"
-    },
-    {
-      "id": "ПереключитьФрейм",
-      "component": "webdriver",
-      "action": "switch_to_frame",
-      "wirek": "webdriver|switch_to_frame",
-      "tier": "util"
-    },
-    {
-      "id": "ПереместитьКЭлементу",
-      "component": "webdriver",
-      "action": "move_to_element",
-      "wirek": "webdriver|move_to_element",
-      "tier": "util"
-    },
-    {
-      "id": "Перетащить",
-      "component": "webdriver",
-      "action": "drag_and_drop",
-      "wirek": "webdriver|drag_and_drop",
-      "tier": "util"
-    },
-    {
-      "id": "ПеретащитьСоСмещением",
-      "component": "webdriver",
-      "action": "drag_and_drop_by_offset",
-      "wirek": "webdriver|drag_and_drop_by_offset",
+      "wirek": "scanner|switch_context",
       "tier": "util"
     },
     {
       "id": "План",
-      "component": "zap",
+      "component": "scanner",
       "action": "run_automation_plan",
-      "wirek": "zap|run_automation_plan",
+      "wirek": "scanner|run_automation_plan",
       "tier": "ui"
     },
     {
       "id": "ПодготовитьЦепь",
-      "component": "zap",
+      "component": "scanner",
       "action": "prepare_chain_module",
-      "wirek": "zap|prepare_chain_module",
+      "wirek": "scanner|prepare_chain_module",
       "tier": "util"
     },
     {
       "id": "ПолитикаСканирования",
-      "component": "zap",
+      "component": "scanner",
       "action": "set_scan_policy",
-      "wirek": "zap|set_scan_policy",
+      "wirek": "scanner|set_scan_policy",
       "tier": "util"
     },
     {
@@ -898,9 +744,9 @@
     },
     {
       "id": "ПолучитьАлерты",
-      "component": "zap",
+      "component": "scanner",
       "action": "get_alerts",
-      "wirek": "zap|get_alerts",
+      "wirek": "scanner|get_alerts",
       "tier": "util"
     },
     {
@@ -918,20 +764,6 @@
       "tier": "ui"
     },
     {
-      "id": "ПолучитьКоординаты",
-      "component": "webdriver",
-      "action": "get_location",
-      "wirek": "webdriver|get_location",
-      "tier": "util"
-    },
-    {
-      "id": "ПолучитьРазмер",
-      "component": "webdriver",
-      "action": "get_size",
-      "wirek": "webdriver|get_size",
-      "tier": "util"
-    },
-    {
       "id": "ПолучитьСвойство",
       "component": "webdriver",
       "action": "get_property",
@@ -946,17 +778,10 @@
       "tier": "ui"
     },
     {
-      "id": "ПолучитьТекстОповещения",
-      "component": "webdriver",
-      "action": "get_alert_text",
-      "wirek": "webdriver|get_alert_text",
-      "tier": "util"
-    },
-    {
       "id": "ПравилоReplacer",
-      "component": "zap",
+      "component": "scanner",
       "action": "add_replacer_rule",
-      "wirek": "zap|add_replacer_rule",
+      "wirek": "scanner|add_replacer_rule",
       "tier": "util"
     },
     {
@@ -996,24 +821,17 @@
     },
     {
       "id": "ПрименитьAuth",
-      "component": "zap",
-      "action": "apply_manifest_auth",
-      "wirek": "zap|apply_manifest_auth",
+      "component": "scanner",
+      "action": "apply_wired_auth",
+      "wirek": "scanner|apply_wired_auth",
       "tier": "ui"
     },
     {
       "id": "ПрименитьДомены",
-      "component": "zap",
+      "component": "scanner",
       "action": "apply_allowed_domains",
-      "wirek": "zap|apply_allowed_domains",
+      "wirek": "scanner|apply_allowed_domains",
       "tier": "ui"
-    },
-    {
-      "id": "ПринятьОповещение",
-      "component": "webdriver",
-      "action": "accept_alert",
-      "wirek": "webdriver|accept_alert",
-      "tier": "util"
     },
     {
       "id": "ПроверитьURL",
@@ -1079,20 +897,6 @@
       "tier": "assert"
     },
     {
-      "id": "ПроверитьИстину",
-      "component": "webdriver",
-      "action": "assert_true",
-      "wirek": "webdriver|assert_true",
-      "tier": "assert"
-    },
-    {
-      "id": "ПроверитьЛожь",
-      "component": "webdriver",
-      "action": "assert_false",
-      "wirek": "webdriver|assert_false",
-      "tier": "assert"
-    },
-    {
       "id": "ПроверитьМеньше",
       "component": "inspector",
       "action": "assert_less",
@@ -1128,20 +932,6 @@
       "tier": "assert"
     },
     {
-      "id": "ПроверитьНеравенство",
-      "component": "webdriver",
-      "action": "assert_not_equals",
-      "wirek": "webdriver|assert_not_equals",
-      "tier": "assert"
-    },
-    {
-      "id": "ПроверитьОтсутствиеВхождения",
-      "component": "webdriver",
-      "action": "assert_not_contains",
-      "wirek": "webdriver|assert_not_contains",
-      "tier": "assert"
-    },
-    {
       "id": "ПроверитьОчередьКоннектора",
       "component": "connector",
       "action": "probe_queue",
@@ -1167,20 +957,6 @@
       "component": "webdriver",
       "action": "assert_text_present",
       "wirek": "webdriver|assert_text_present",
-      "tier": "assert"
-    },
-    {
-      "id": "ПроверитьТекстОповещения",
-      "component": "webdriver",
-      "action": "assert_alert_text",
-      "wirek": "webdriver|assert_alert_text",
-      "tier": "assert"
-    },
-    {
-      "id": "ПроверитьЧекбокс",
-      "component": "webdriver",
-      "action": "assert_checkbox_checked",
-      "wirek": "webdriver|assert_checkbox_checked",
       "tier": "assert"
     },
     {
@@ -1213,23 +989,23 @@
     },
     {
       "id": "ПрофильСканирования",
-      "component": "zap",
+      "component": "scanner",
       "action": "apply_scan_depth_profile",
-      "wirek": "zap|apply_scan_depth_profile",
+      "wirek": "scanner|apply_scan_depth_profile",
       "tier": "util"
     },
     {
       "id": "РасследованиеЦепи",
-      "component": "zap",
+      "component": "scanner",
       "action": "investigate_chain_module",
-      "wirek": "zap|investigate_chain_module",
+      "wirek": "scanner|investigate_chain_module",
       "tier": "util"
     },
     {
       "id": "СайтыСессий",
-      "component": "zap",
+      "component": "scanner",
       "action": "get_sessions_sites",
-      "wirek": "zap|get_sessions_sites",
+      "wirek": "scanner|get_sessions_sites",
       "tier": "util"
     },
     {
@@ -1241,79 +1017,86 @@
     },
     {
       "id": "СгенерироватьПлан",
-      "component": "zap",
+      "component": "scanner",
       "action": "generate_automation_plan",
-      "wirek": "zap|generate_automation_plan",
+      "wirek": "scanner|generate_automation_plan",
       "tier": "ui"
     },
     {
       "id": "СессииСайта",
-      "component": "zap",
+      "component": "scanner",
       "action": "get_site_sessions",
-      "wirek": "zap|get_site_sessions",
+      "wirek": "scanner|get_site_sessions",
       "tier": "util"
     },
     {
       "id": "СканGraphQL",
-      "component": "zap",
+      "component": "scanner",
       "action": "scan_graphql_api",
-      "wirek": "zap|scan_graphql_api",
+      "wirek": "scanner|scan_graphql_api",
       "tier": "util"
     },
     {
       "id": "СканOpenAPI",
-      "component": "zap",
+      "component": "scanner",
       "action": "scan_openapi",
-      "wirek": "zap|scan_openapi",
+      "wirek": "scanner|scan_openapi",
       "tier": "util"
     },
     {
       "id": "СканgRPC",
-      "component": "zap",
+      "component": "scanner",
       "action": "scan_grpc",
-      "wirek": "zap|scan_grpc",
+      "wirek": "scanner|scan_grpc",
       "tier": "util"
     },
     {
       "id": "СканПоследовательности",
-      "component": "zap",
+      "component": "scanner",
       "action": "sequence_active_scan",
-      "wirek": "zap|sequence_active_scan",
+      "wirek": "scanner|sequence_active_scan",
       "tier": "util"
     },
     {
       "id": "Сканер",
-      "component": "zap",
-      "action": "spider_scan",
-      "wirek": "zap|spider_scan",
+      "component": "scanner",
+      "action": "crawl",
+      "wirek": "scanner|crawl",
       "tier": "ui"
     },
     {
       "id": "СканерSPA",
-      "component": "zap",
+      "component": "scanner",
       "action": "spider_scan_spa",
-      "wirek": "zap|spider_scan_spa",
+      "wirek": "scanner|spider_scan_spa",
       "tier": "util"
     },
     {
       "id": "СканерГлубокий",
-      "component": "zap",
+      "component": "scanner",
       "action": "spider_scan_deep",
-      "wirek": "zap|spider_scan_deep",
+      "wirek": "scanner|spider_scan_deep",
       "tier": "util"
     },
     {
       "id": "СканерЛокальный",
-      "component": "zap",
+      "component": "scanner",
       "action": "spider_scan_local",
-      "wirek": "zap|spider_scan_local",
+      "wirek": "scanner|spider_scan_local",
       "tier": "util"
     },
     {
       "id": "СканированиеЦепи",
-      "component": "zap",
+      "component": "scanner",
       "action": "scan_chain_module",
-      "wirek": "zap|scan_chain_module",
+      "wirek": "scanner|scan_chain_module",
+      "tier": "util"
+    },
+    {
+      "id": "Сканировать",
+      "component": "scanner",
+      "action": "spider_scan",
+      "wirek": "scanner|spider_scan",
       "tier": "util"
     },
     {
@@ -1324,101 +1107,80 @@
       "tier": "ui"
     },
     {
-      "id": "СкриншотЭлемента",
-      "component": "webdriver",
-      "action": "take_element_screenshot",
-      "wirek": "webdriver|take_element_screenshot",
-      "tier": "util"
-    },
-    {
-      "id": "СместитьКурсор",
-      "component": "webdriver",
-      "action": "move_by_offset",
-      "wirek": "webdriver|move_by_offset",
-      "tier": "util"
-    },
-    {
       "id": "СоздатьИНазначитьForcedUser",
-      "component": "zap",
+      "component": "scanner",
       "action": "create_and_force_user",
-      "wirek": "zap|create_and_force_user",
+      "wirek": "scanner|create_and_force_user",
       "tier": "util"
     },
     {
       "id": "СоздатьПользователя",
-      "component": "zap",
+      "component": "scanner",
       "action": "create_user",
-      "wirek": "zap|create_user",
+      "wirek": "scanner|create_user",
       "tier": "util"
     },
     {
       "id": "Сообщения",
-      "component": "zap",
+      "component": "scanner",
       "action": "get_messages",
-      "wirek": "zap|get_messages",
+      "wirek": "scanner|get_messages",
       "tier": "util"
     },
     {
       "id": "СохранитьСессию",
-      "component": "zap",
+      "component": "scanner",
       "action": "save_session",
-      "wirek": "zap|save_session",
+      "wirek": "scanner|save_session",
       "tier": "util"
     },
     {
       "id": "СписокPayload",
-      "component": "zap",
+      "component": "scanner",
       "action": "get_payloads",
-      "wirek": "zap|get_payloads",
+      "wirek": "scanner|get_payloads",
       "tier": "util"
     },
     {
       "id": "СписокReplacer",
-      "component": "zap",
+      "component": "scanner",
       "action": "list_replacer_rules",
-      "wirek": "zap|list_replacer_rules",
+      "wirek": "scanner|list_replacer_rules",
       "tier": "util"
     },
     {
       "id": "СписокКонтекстов",
-      "component": "zap",
+      "component": "scanner",
       "action": "list_contexts",
-      "wirek": "zap|list_contexts",
-      "tier": "util"
-    },
-    {
-      "id": "СписокОкон",
-      "component": "webdriver",
-      "action": "get_window_handles",
-      "wirek": "webdriver|get_window_handles",
+      "wirek": "scanner|list_contexts",
       "tier": "util"
     },
     {
       "id": "СписокОперацийGraphQL",
-      "component": "zap",
+      "component": "scanner",
       "action": "list_graphql_operations",
-      "wirek": "zap|list_graphql_operations",
+      "wirek": "scanner|list_graphql_operations",
       "tier": "util"
     },
     {
       "id": "СписокОперацийOpenAPI",
-      "component": "zap",
+      "component": "scanner",
       "action": "list_openapi_operations",
-      "wirek": "zap|list_openapi_operations",
+      "wirek": "scanner|list_openapi_operations",
       "tier": "util"
     },
     {
       "id": "СписокПолитикСканирования",
-      "component": "zap",
+      "component": "scanner",
       "action": "get_scan_policies",
-      "wirek": "zap|get_scan_policies",
+      "wirek": "scanner|get_scan_policies",
       "tier": "util"
     },
     {
       "id": "СписокПользователей",
-      "component": "zap",
+      "component": "scanner",
       "action": "get_users",
-      "wirek": "zap|get_users",
+      "wirek": "scanner|get_users",
       "tier": "util"
     },
     {
@@ -1430,65 +1192,65 @@
     },
     {
       "id": "СписокСкриптов",
-      "component": "zap",
+      "component": "scanner",
       "action": "list_scripts",
-      "wirek": "zap|list_scripts",
+      "wirek": "scanner|list_scripts",
       "tier": "util"
     },
     {
       "id": "СтартOAST",
-      "component": "zap",
+      "component": "scanner",
       "action": "start_oast_server",
-      "wirek": "zap|start_oast_server",
+      "wirek": "scanner|start_oast_server",
       "tier": "util"
     },
     {
       "id": "СтатусАктивногоСканирования",
-      "component": "zap",
+      "component": "scanner",
       "action": "active_scan_status",
-      "wirek": "zap|active_scan_status",
+      "wirek": "scanner|active_scan_status",
       "tier": "util"
     },
     {
       "id": "СтатусКраулерКлиент",
-      "component": "zap",
+      "component": "scanner",
       "action": "client_spider_status",
-      "wirek": "zap|client_spider_status",
+      "wirek": "scanner|client_spider_status",
       "tier": "util"
     },
     {
       "id": "СтатусКраулера",
-      "component": "zap",
+      "component": "scanner",
       "action": "ajax_spider_status",
-      "wirek": "zap|ajax_spider_status",
+      "wirek": "scanner|ajax_spider_status",
       "tier": "util"
     },
     {
       "id": "СтатусПлана",
-      "component": "zap",
+      "component": "scanner",
       "action": "automation_plan_progress",
-      "wirek": "zap|automation_plan_progress",
+      "wirek": "scanner|automation_plan_progress",
       "tier": "util"
     },
     {
       "id": "СтатусСканера",
-      "component": "zap",
+      "component": "scanner",
       "action": "spider_status",
-      "wirek": "zap|spider_status",
+      "wirek": "scanner|spider_status",
       "tier": "util"
     },
     {
       "id": "СтопOAST",
-      "component": "zap",
+      "component": "scanner",
       "action": "stop_oast_server",
-      "wirek": "zap|stop_oast_server",
+      "wirek": "scanner|stop_oast_server",
       "tier": "util"
     },
     {
-      "id": "СыройЗапросЧерезZAP",
-      "component": "zap",
-      "action": "zap_http_raw_request",
-      "wirek": "zap|zap_http_raw_request",
+      "id": "СыройЗапросЧерезscanner",
+      "component": "scanner",
+      "action": "scanner_http_raw_request",
+      "wirek": "scanner|scanner_http_raw_request",
       "tier": "util"
     },
     {
@@ -1499,13 +1261,6 @@
       "tier": "ui"
     },
     {
-      "id": "ТекстЯчейкиТаблицы",
-      "component": "webdriver",
-      "action": "get_table_cell_text",
-      "wirek": "webdriver|get_table_cell_text",
-      "tier": "util"
-    },
-    {
       "id": "ТекстыЭлементов",
       "component": "webdriver",
       "action": "get_elements_texts",
@@ -1513,52 +1268,38 @@
       "tier": "ui"
     },
     {
-      "id": "ТекстыЭлементовСТекстом",
-      "component": "webdriver",
-      "action": "filter_elements_by_text",
-      "wirek": "webdriver|filter_elements_by_text",
-      "tier": "util"
-    },
-    {
-      "id": "ТекущееОкно",
-      "component": "webdriver",
-      "action": "get_current_window_handle",
-      "wirek": "webdriver|get_current_window_handle",
-      "tier": "util"
-    },
-    {
       "id": "УдалитьHttpSender",
-      "component": "zap",
+      "component": "scanner",
       "action": "remove_http_sender_script",
-      "wirek": "zap|remove_http_sender_script",
+      "wirek": "scanner|remove_http_sender_script",
       "tier": "util"
     },
     {
       "id": "УдалитьPayload",
-      "component": "zap",
+      "component": "scanner",
       "action": "remove_payload",
-      "wirek": "zap|remove_payload",
+      "wirek": "scanner|remove_payload",
       "tier": "util"
     },
     {
       "id": "УдалитьReplacer",
-      "component": "zap",
+      "component": "scanner",
       "action": "remove_replacer_rule",
-      "wirek": "zap|remove_replacer_rule",
+      "wirek": "scanner|remove_replacer_rule",
       "tier": "util"
     },
     {
       "id": "УдалитьКонтекст",
-      "component": "zap",
+      "component": "scanner",
       "action": "delete_context",
-      "wirek": "zap|delete_context",
+      "wirek": "scanner|delete_context",
       "tier": "util"
     },
     {
       "id": "УдалитьСкрипт",
-      "component": "zap",
+      "component": "scanner",
       "action": "remove_script",
-      "wirek": "zap|remove_script",
+      "wirek": "scanner|remove_script",
       "tier": "util"
     },
     {
@@ -1577,9 +1318,9 @@
     },
     {
       "id": "УчётныеДанныеПользователя",
-      "component": "zap",
+      "component": "scanner",
       "action": "set_user_credentials",
-      "wirek": "zap|set_user_credentials",
+      "wirek": "scanner|set_user_credentials",
       "tier": "util"
     },
     {
@@ -1598,23 +1339,16 @@
     },
     {
       "id": "ФильтрАлерта",
-      "component": "zap",
+      "component": "scanner",
       "action": "add_alert_filter",
-      "wirek": "zap|add_alert_filter",
+      "wirek": "scanner|add_alert_filter",
       "tier": "util"
     },
     {
       "id": "ЧислоАлертов",
-      "component": "zap",
+      "component": "scanner",
       "action": "get_alert_count",
-      "wirek": "zap|get_alert_count",
-      "tier": "util"
-    },
-    {
-      "id": "ЧислоСтрокТаблицы",
-      "component": "webdriver",
-      "action": "get_table_row_count",
-      "wirek": "webdriver|get_table_row_count",
+      "wirek": "scanner|get_alert_count",
       "tier": "util"
     },
     {
@@ -1637,36 +1371,19 @@
       "action": "is_displayed",
       "wirek": "webdriver|is_displayed",
       "tier": "util"
-    },
-    {
-      "id": "ЭлементыСписка",
-      "component": "webdriver",
-      "action": "get_list_items",
-      "wirek": "webdriver|get_list_items",
-      "tier": "util"
     }
   ],
   "aliases": {
     "НажатьКнопку": "Нажать",
     "ВставитьТекст": "ВставитьЗначение",
     "Назад": "Вернуться",
-    "ФильтрЭлементовПоТексту": "ТекстыЭлементовСТекстом",
     "Логировать": "Лог",
     "ЛогСообщение": "Лог",
-    "ПринятьAlert": "ПринятьОповещение",
-    "ОтклонитьAlert": "ОтклонитьОповещение",
-    "ПолучитьТекстAlert": "ПолучитьТекстОповещения",
-    "ВвестиВAlert": "ВвестиВОповещение",
-    "ПроверитьТекстAlert": "ПроверитьТекстОповещения",
     "ОчиститьCookiesCDP": "ОчиститьCookies",
     "УтвердитьРавенство": "ПроверитьРавенство",
-    "УтвердитьНеравенство": "ПроверитьНеравенство",
     "УтвердитьВхождение": "ПроверитьВхождение",
-    "УтвердитьОтсутствие": "ПроверитьОтсутствиеВхождения",
     "УтвердитьВСписке": "ПроверитьВСписке",
     "УтвердитьНеВСписке": "ПроверитьНеВСписке",
-    "УтвердитьИстину": "ПроверитьИстину",
-    "УтвердитьЛожь": "ПроверитьЛожь",
     "УтвердитьБольше": "ПроверитьБольше",
     "УтвердитьМеньше": "ПроверитьМеньше",
     "УтвердитьВДиапазоне": "ПроверитьВДиапазоне",
@@ -1675,14 +1392,15 @@
     "УтвердитьНепустоту": "ПроверитьНепустоту"
   },
   "facadeAliases": {
-    "ZAP": "Сканер",
+    "SCANNER": "Сканер",
+    "scanner": "Сканер",
     "CDP": "Сессия",
     "WD": "Драйвер",
     "Браузер": "Драйвер"
   },
   "facadeMethodAliases": {
-    "HttpЧерезZAP": "ЗапросЧерезZAP",
-    "СыройHttpЧерезZAP": "СыройЗапросЧерезZAP",
+    "HttpЧерезscanner": "ЗапросЧерезscanner",
+    "СыройHttpЧерезscanner": "СыройЗапросЧерезscanner",
     "ПодменаHttpSender": "HttpSender",
     "ПодменитьUserAgent": "ПодменитьАгентПользователя"
   },
@@ -1692,81 +1410,75 @@
       "methods": [
         {
           "id": "AuthКонтекста",
-          "component": "zap",
+          "component": "scanner",
           "action": "set_context_auth",
-          "wirek": "zap|set_context_auth"
+          "wirek": "scanner|set_context_auth"
         },
         {
           "id": "BrowserAuth",
-          "component": "zap",
+          "component": "scanner",
           "action": "set_browser_based_auth",
-          "wirek": "zap|set_browser_based_auth"
+          "wirek": "scanner|set_browser_based_auth"
         },
         {
           "id": "ForcedUser",
-          "component": "zap",
+          "component": "scanner",
           "action": "set_forced_user",
-          "wirek": "zap|set_forced_user"
+          "wirek": "scanner|set_forced_user"
         },
         {
           "id": "HttpSender",
-          "component": "zap",
+          "component": "scanner",
           "action": "install_mask_http_sender",
-          "wirek": "zap|install_mask_http_sender"
-        },
-        {
-          "id": "АвтоАвторизоваться",
-          "component": "webdriver",
-          "action": "auto_authorize_discovery",
-          "wirek": "webdriver|auto_authorize_discovery"
+          "wirek": "scanner|install_mask_http_sender"
         },
         {
           "id": "АктивноеСканирование",
-          "component": "zap",
+          "component": "scanner",
           "action": "active_scan",
-          "wirek": "zap|active_scan"
+          "wirek": "scanner|active_scan"
         },
         {
           "id": "АлертыOAST",
-          "component": "zap",
+          "component": "scanner",
           "action": "get_oast_alerts",
-          "wirek": "zap|get_oast_alerts"
+          "wirek": "scanner|get_oast_alerts"
         },
         {
           "id": "АрхивироватьКонтекст",
-          "component": "zap",
+          "component": "scanner",
           "action": "archive_context",
-          "wirek": "zap|archive_context"
+          "wirek": "scanner|archive_context"
         },
         {
           "id": "ВключитьForcedUser",
-          "component": "zap",
+          "component": "scanner",
           "action": "enable_forced_user_mode",
-          "wirek": "zap|enable_forced_user_mode"
+          "wirek": "scanner|enable_forced_user_mode"
         },
         {
           "id": "ВключитьHttpSender",
-          "component": "zap",
+          "component": "scanner",
           "action": "enable_http_sender_script",
-          "wirek": "zap|enable_http_sender_script"
+          "wirek": "scanner|enable_http_sender_script"
         },
         {
           "id": "ВключитьВКонтекст",
-          "component": "zap",
+          "component": "scanner",
           "action": "set_context_include",
-          "wirek": "zap|set_context_include"
+          "wirek": "scanner|set_context_include"
         },
         {
           "id": "ВключитьПассивныеСканеры",
-          "component": "zap",
+          "component": "scanner",
           "action": "enable_passive_scanners",
-          "wirek": "zap|enable_passive_scanners"
+          "wirek": "scanner|enable_passive_scanners"
         },
         {
           "id": "ВключитьПользователя",
-          "component": "zap",
+          "component": "scanner",
           "action": "enable_user",
-          "wirek": "zap|enable_user"
+          "wirek": "scanner|enable_user"
         },
         {
           "id": "ВызовgRPC",
@@ -1776,21 +1488,21 @@
         },
         {
           "id": "ВыключитьForcedUser",
-          "component": "zap",
+          "component": "scanner",
           "action": "disable_forced_user_mode",
-          "wirek": "zap|disable_forced_user_mode"
+          "wirek": "scanner|disable_forced_user_mode"
         },
         {
           "id": "ВыключитьHttpSender",
-          "component": "zap",
+          "component": "scanner",
           "action": "disable_http_sender_script",
-          "wirek": "zap|disable_http_sender_script"
+          "wirek": "scanner|disable_http_sender_script"
         },
         {
           "id": "ВыключитьПассивныеСканеры",
-          "component": "zap",
+          "component": "scanner",
           "action": "disable_all_passive_scanners",
-          "wirek": "zap|disable_all_passive_scanners"
+          "wirek": "scanner|disable_all_passive_scanners"
         },
         {
           "id": "ВыполнитьGraphQL",
@@ -1806,423 +1518,435 @@
         },
         {
           "id": "ВыполнитьСкрипт",
-          "component": "zap",
+          "component": "scanner",
           "action": "run_script",
-          "wirek": "zap|run_script"
+          "wirek": "scanner|run_script"
         },
         {
           "id": "ВыполнитьЦепь",
-          "component": "zap",
+          "component": "scanner",
           "action": "execute_chain_module",
-          "wirek": "zap|execute_chain_module"
+          "wirek": "scanner|execute_chain_module"
         },
         {
           "id": "ГлобальнаяVarСкрипта",
-          "component": "zap",
+          "component": "scanner",
           "action": "set_script_global_var",
-          "wirek": "zap|set_script_global_var"
+          "wirek": "scanner|set_script_global_var"
         },
         {
           "id": "ГлобальныйФильтрАлерта",
-          "component": "zap",
+          "component": "scanner",
           "action": "add_global_alert_filter",
-          "wirek": "zap|add_global_alert_filter"
+          "wirek": "scanner|add_global_alert_filter"
         },
         {
           "id": "ДобавитьPayload",
-          "component": "zap",
+          "component": "scanner",
           "action": "add_custom_payload",
-          "wirek": "zap|add_custom_payload"
+          "wirek": "scanner|add_custom_payload"
         },
         {
           "id": "ЗагрузитьHttpSender",
-          "component": "zap",
+          "component": "scanner",
           "action": "load_http_sender_script",
-          "wirek": "zap|load_http_sender_script"
+          "wirek": "scanner|load_http_sender_script"
         },
         {
           "id": "ЗагрузитьСессию",
-          "component": "zap",
+          "component": "scanner",
           "action": "load_session",
-          "wirek": "zap|load_session"
+          "wirek": "scanner|load_session"
         },
         {
           "id": "ЗагрузитьСкрипт",
-          "component": "zap",
+          "component": "scanner",
           "action": "load_script",
-          "wirek": "zap|load_script"
+          "wirek": "scanner|load_script"
+        },
+        {
+          "id": "ЗагрузитьФайл",
+          "component": "webdriver",
+          "action": "upload_file",
+          "wirek": "webdriver|upload_file"
         },
         {
           "id": "ЗагрузитьФильтры",
-          "component": "zap",
+          "component": "scanner",
           "action": "load_alert_filters",
-          "wirek": "zap|load_alert_filters"
+          "wirek": "scanner|load_alert_filters"
         },
         {
-          "id": "ЗапросЧерезZAP",
-          "component": "zap",
-          "action": "zap_http_request",
-          "wirek": "zap|zap_http_request"
+          "id": "ЗапросЧерезscanner",
+          "component": "scanner",
+          "action": "scanner_http_request",
+          "wirek": "scanner|scanner_http_request"
         },
         {
           "id": "ИзбегатьLogout",
-          "component": "zap",
+          "component": "scanner",
           "action": "set_logout_avoidance",
-          "wirek": "zap|set_logout_avoidance"
+          "wirek": "scanner|set_logout_avoidance"
         },
         {
           "id": "ИмпортGraphQL",
-          "component": "zap",
+          "component": "scanner",
           "action": "import_graphql_schema",
-          "wirek": "zap|import_graphql_schema"
+          "wirek": "scanner|import_graphql_schema"
         },
         {
           "id": "ИмпортHAR",
-          "component": "zap",
+          "component": "scanner",
           "action": "import_har_sequence",
-          "wirek": "zap|import_har_sequence"
+          "wirek": "scanner|import_har_sequence"
         },
         {
           "id": "ИмпортOpenAPI",
-          "component": "zap",
+          "component": "scanner",
           "action": "import_openapi_spec",
-          "wirek": "zap|import_openapi_spec"
+          "wirek": "scanner|import_openapi_spec"
         },
         {
           "id": "ИмпортgRPC",
-          "component": "zap",
+          "component": "scanner",
           "action": "import_grpc_proto",
-          "wirek": "zap|import_grpc_proto"
+          "wirek": "scanner|import_grpc_proto"
         },
         {
           "id": "ИмпортСертификата",
-          "component": "zap",
+          "component": "scanner",
           "action": "import_certificate",
-          "wirek": "zap|import_certificate"
+          "wirek": "scanner|import_certificate"
         },
         {
           "id": "ИсключитьИзКонтекста",
-          "component": "zap",
+          "component": "scanner",
           "action": "set_context_exclude",
-          "wirek": "zap|set_context_exclude"
+          "wirek": "scanner|set_context_exclude"
         },
         {
           "id": "КонтекстПерехватаПользователя",
-          "component": "zap",
+          "component": "scanner",
           "action": "new_user_intercept_context",
-          "wirek": "zap|new_user_intercept_context"
+          "wirek": "scanner|new_user_intercept_context"
         },
         {
           "id": "Краулер",
-          "component": "zap",
+          "component": "scanner",
           "action": "ajax_spider_scan",
-          "wirek": "zap|ajax_spider_scan"
+          "wirek": "scanner|ajax_spider_scan"
         },
         {
           "id": "КраулерГлубокий",
-          "component": "zap",
+          "component": "scanner",
           "action": "ajax_spider_scan_deep",
-          "wirek": "zap|ajax_spider_scan_deep"
+          "wirek": "scanner|ajax_spider_scan_deep"
         },
         {
           "id": "КраулерИтератор",
-          "component": "zap",
+          "component": "scanner",
           "action": "ajax_spider_scan_iterator",
-          "wirek": "zap|ajax_spider_scan_iterator"
+          "wirek": "scanner|ajax_spider_scan_iterator"
         },
         {
           "id": "КраулерКлиент",
-          "component": "zap",
+          "component": "scanner",
           "action": "client_spider_scan",
-          "wirek": "zap|client_spider_scan"
+          "wirek": "scanner|client_spider_scan"
         },
         {
           "id": "КраулерПоверхностный",
-          "component": "zap",
+          "component": "scanner",
           "action": "ajax_spider_scan_shallow",
-          "wirek": "zap|ajax_spider_scan_shallow"
+          "wirek": "scanner|ajax_spider_scan_shallow"
         },
         {
           "id": "ЛогАтаки",
-          "component": "zap",
+          "component": "scanner",
           "action": "log_attack",
-          "wirek": "zap|log_attack"
+          "wirek": "scanner|log_attack"
         },
         {
           "id": "ЛокальныйСервер",
-          "component": "zap",
+          "component": "scanner",
           "action": "add_local_server",
-          "wirek": "zap|add_local_server"
+          "wirek": "scanner|add_local_server"
         },
         {
           "id": "МетодЗапросаGraphQL",
-          "component": "zap",
+          "component": "scanner",
           "action": "set_graphql_request_method",
-          "wirek": "zap|set_graphql_request_method"
+          "wirek": "scanner|set_graphql_request_method"
         },
         {
           "id": "НовыйКонтекст",
-          "component": "zap",
+          "component": "scanner",
           "action": "create_context",
-          "wirek": "zap|create_context"
+          "wirek": "scanner|create_context"
         },
         {
           "id": "ОстановитьАктивноеСканирование",
-          "component": "zap",
+          "component": "scanner",
           "action": "stop_active_scan",
-          "wirek": "zap|stop_active_scan"
+          "wirek": "scanner|stop_active_scan"
         },
         {
           "id": "ОстановитьПлан",
-          "component": "zap",
+          "component": "scanner",
           "action": "stop_automation_plan",
-          "wirek": "zap|stop_automation_plan"
+          "wirek": "scanner|stop_automation_plan"
         },
         {
           "id": "ОстановитьСканера",
-          "component": "zap",
+          "component": "scanner",
           "action": "stop_spider",
-          "wirek": "zap|stop_spider"
+          "wirek": "scanner|stop_spider"
         },
         {
           "id": "ОтключитьПользователя",
-          "component": "zap",
+          "component": "scanner",
           "action": "disable_user",
-          "wirek": "zap|disable_user"
+          "wirek": "scanner|disable_user"
         },
         {
           "id": "Отчёт",
-          "component": "zap",
+          "component": "scanner",
           "action": "generate_report",
-          "wirek": "zap|generate_report"
+          "wirek": "scanner|generate_report"
         },
         {
           "id": "ОчиститьReplacer",
-          "component": "zap",
+          "component": "scanner",
           "action": "clear_replacer_rules",
-          "wirek": "zap|clear_replacer_rules"
+          "wirek": "scanner|clear_replacer_rules"
         },
         {
           "id": "ОчиститьКонтекст",
-          "component": "zap",
+          "component": "scanner",
           "action": "clear_context",
-          "wirek": "zap|clear_context"
+          "wirek": "scanner|clear_context"
         },
         {
           "id": "ПассивноеСканирование",
-          "component": "zap",
+          "component": "scanner",
           "action": "passive_scan_wait",
-          "wirek": "zap|passive_scan_wait"
+          "wirek": "scanner|passive_scan_wait"
         },
         {
           "id": "ПассивныеСканеры",
-          "component": "zap",
+          "component": "scanner",
           "action": "get_passive_scanners",
-          "wirek": "zap|get_passive_scanners"
+          "wirek": "scanner|get_passive_scanners"
         },
         {
           "id": "ПейлоадПодмены",
-          "component": "zap",
+          "component": "scanner",
           "action": "set_fuzz_payload",
-          "wirek": "zap|set_fuzz_payload"
+          "wirek": "scanner|set_fuzz_payload"
         },
         {
           "id": "ПереключитьКонтекст",
-          "component": "zap",
+          "component": "scanner",
           "action": "switch_context",
-          "wirek": "zap|switch_context"
+          "wirek": "scanner|switch_context"
         },
         {
           "id": "План",
-          "component": "zap",
+          "component": "scanner",
           "action": "run_automation_plan",
-          "wirek": "zap|run_automation_plan"
+          "wirek": "scanner|run_automation_plan"
         },
         {
           "id": "ПодготовитьЦепь",
-          "component": "zap",
+          "component": "scanner",
           "action": "prepare_chain_module",
-          "wirek": "zap|prepare_chain_module"
+          "wirek": "scanner|prepare_chain_module"
         },
         {
           "id": "ПолитикаСканирования",
-          "component": "zap",
+          "component": "scanner",
           "action": "set_scan_policy",
-          "wirek": "zap|set_scan_policy"
+          "wirek": "scanner|set_scan_policy"
         },
         {
           "id": "ПолучитьАлерты",
-          "component": "zap",
+          "component": "scanner",
           "action": "get_alerts",
-          "wirek": "zap|get_alerts"
+          "wirek": "scanner|get_alerts"
         },
         {
           "id": "ПравилоReplacer",
-          "component": "zap",
+          "component": "scanner",
           "action": "add_replacer_rule",
-          "wirek": "zap|add_replacer_rule"
+          "wirek": "scanner|add_replacer_rule"
         },
         {
           "id": "ПрименитьAuth",
-          "component": "zap",
-          "action": "apply_manifest_auth",
-          "wirek": "zap|apply_manifest_auth"
+          "component": "scanner",
+          "action": "apply_wired_auth",
+          "wirek": "scanner|apply_wired_auth"
         },
         {
           "id": "ПрименитьДомены",
-          "component": "zap",
+          "component": "scanner",
           "action": "apply_allowed_domains",
-          "wirek": "zap|apply_allowed_domains"
+          "wirek": "scanner|apply_allowed_domains"
         },
         {
           "id": "ПрофильСканирования",
-          "component": "zap",
+          "component": "scanner",
           "action": "apply_scan_depth_profile",
-          "wirek": "zap|apply_scan_depth_profile"
+          "wirek": "scanner|apply_scan_depth_profile"
         },
         {
           "id": "РасследованиеЦепи",
-          "component": "zap",
+          "component": "scanner",
           "action": "investigate_chain_module",
-          "wirek": "zap|investigate_chain_module"
+          "wirek": "scanner|investigate_chain_module"
         },
         {
           "id": "СайтыСессий",
-          "component": "zap",
+          "component": "scanner",
           "action": "get_sessions_sites",
-          "wirek": "zap|get_sessions_sites"
+          "wirek": "scanner|get_sessions_sites"
         },
         {
           "id": "СгенерироватьПлан",
-          "component": "zap",
+          "component": "scanner",
           "action": "generate_automation_plan",
-          "wirek": "zap|generate_automation_plan"
+          "wirek": "scanner|generate_automation_plan"
         },
         {
           "id": "СессииСайта",
-          "component": "zap",
+          "component": "scanner",
           "action": "get_site_sessions",
-          "wirek": "zap|get_site_sessions"
+          "wirek": "scanner|get_site_sessions"
         },
         {
           "id": "СканGraphQL",
-          "component": "zap",
+          "component": "scanner",
           "action": "scan_graphql_api",
-          "wirek": "zap|scan_graphql_api"
+          "wirek": "scanner|scan_graphql_api"
         },
         {
           "id": "СканOpenAPI",
-          "component": "zap",
+          "component": "scanner",
           "action": "scan_openapi",
-          "wirek": "zap|scan_openapi"
+          "wirek": "scanner|scan_openapi"
         },
         {
           "id": "СканgRPC",
-          "component": "zap",
+          "component": "scanner",
           "action": "scan_grpc",
-          "wirek": "zap|scan_grpc"
+          "wirek": "scanner|scan_grpc"
         },
         {
           "id": "СканПоследовательности",
-          "component": "zap",
+          "component": "scanner",
           "action": "sequence_active_scan",
-          "wirek": "zap|sequence_active_scan"
+          "wirek": "scanner|sequence_active_scan"
         },
         {
           "id": "Сканер",
-          "component": "zap",
-          "action": "spider_scan",
-          "wirek": "zap|spider_scan"
+          "component": "scanner",
+          "action": "crawl",
+          "wirek": "scanner|crawl"
         },
         {
           "id": "СканерSPA",
-          "component": "zap",
+          "component": "scanner",
           "action": "spider_scan_spa",
-          "wirek": "zap|spider_scan_spa"
+          "wirek": "scanner|spider_scan_spa"
         },
         {
           "id": "СканерГлубокий",
-          "component": "zap",
+          "component": "scanner",
           "action": "spider_scan_deep",
-          "wirek": "zap|spider_scan_deep"
+          "wirek": "scanner|spider_scan_deep"
         },
         {
           "id": "СканерЛокальный",
-          "component": "zap",
+          "component": "scanner",
           "action": "spider_scan_local",
-          "wirek": "zap|spider_scan_local"
+          "wirek": "scanner|spider_scan_local"
         },
         {
           "id": "СканированиеЦепи",
-          "component": "zap",
+          "component": "scanner",
           "action": "scan_chain_module",
-          "wirek": "zap|scan_chain_module"
+          "wirek": "scanner|scan_chain_module"
+        },
+        {
+          "id": "Сканировать",
+          "component": "scanner",
+          "action": "spider_scan",
+          "wirek": "scanner|spider_scan"
         },
         {
           "id": "СоздатьИНазначитьForcedUser",
-          "component": "zap",
+          "component": "scanner",
           "action": "create_and_force_user",
-          "wirek": "zap|create_and_force_user"
+          "wirek": "scanner|create_and_force_user"
         },
         {
           "id": "СоздатьПользователя",
-          "component": "zap",
+          "component": "scanner",
           "action": "create_user",
-          "wirek": "zap|create_user"
+          "wirek": "scanner|create_user"
         },
         {
           "id": "Сообщения",
-          "component": "zap",
+          "component": "scanner",
           "action": "get_messages",
-          "wirek": "zap|get_messages"
+          "wirek": "scanner|get_messages"
         },
         {
           "id": "СохранитьСессию",
-          "component": "zap",
+          "component": "scanner",
           "action": "save_session",
-          "wirek": "zap|save_session"
+          "wirek": "scanner|save_session"
         },
         {
           "id": "СписокPayload",
-          "component": "zap",
+          "component": "scanner",
           "action": "get_payloads",
-          "wirek": "zap|get_payloads"
+          "wirek": "scanner|get_payloads"
         },
         {
           "id": "СписокReplacer",
-          "component": "zap",
+          "component": "scanner",
           "action": "list_replacer_rules",
-          "wirek": "zap|list_replacer_rules"
+          "wirek": "scanner|list_replacer_rules"
         },
         {
           "id": "СписокКонтекстов",
-          "component": "zap",
+          "component": "scanner",
           "action": "list_contexts",
-          "wirek": "zap|list_contexts"
+          "wirek": "scanner|list_contexts"
         },
         {
           "id": "СписокОперацийGraphQL",
-          "component": "zap",
+          "component": "scanner",
           "action": "list_graphql_operations",
-          "wirek": "zap|list_graphql_operations"
+          "wirek": "scanner|list_graphql_operations"
         },
         {
           "id": "СписокОперацийOpenAPI",
-          "component": "zap",
+          "component": "scanner",
           "action": "list_openapi_operations",
-          "wirek": "zap|list_openapi_operations"
+          "wirek": "scanner|list_openapi_operations"
         },
         {
           "id": "СписокПолитикСканирования",
-          "component": "zap",
+          "component": "scanner",
           "action": "get_scan_policies",
-          "wirek": "zap|get_scan_policies"
+          "wirek": "scanner|get_scan_policies"
         },
         {
           "id": "СписокПользователей",
-          "component": "zap",
+          "component": "scanner",
           "action": "get_users",
-          "wirek": "zap|get_users"
+          "wirek": "scanner|get_users"
         },
         {
           "id": "СписокСервисовgRPC",
@@ -2232,105 +1956,105 @@
         },
         {
           "id": "СписокСкриптов",
-          "component": "zap",
+          "component": "scanner",
           "action": "list_scripts",
-          "wirek": "zap|list_scripts"
+          "wirek": "scanner|list_scripts"
         },
         {
           "id": "СтартOAST",
-          "component": "zap",
+          "component": "scanner",
           "action": "start_oast_server",
-          "wirek": "zap|start_oast_server"
+          "wirek": "scanner|start_oast_server"
         },
         {
           "id": "СтатусАктивногоСканирования",
-          "component": "zap",
+          "component": "scanner",
           "action": "active_scan_status",
-          "wirek": "zap|active_scan_status"
+          "wirek": "scanner|active_scan_status"
         },
         {
           "id": "СтатусКраулерКлиент",
-          "component": "zap",
+          "component": "scanner",
           "action": "client_spider_status",
-          "wirek": "zap|client_spider_status"
+          "wirek": "scanner|client_spider_status"
         },
         {
           "id": "СтатусКраулера",
-          "component": "zap",
+          "component": "scanner",
           "action": "ajax_spider_status",
-          "wirek": "zap|ajax_spider_status"
+          "wirek": "scanner|ajax_spider_status"
         },
         {
           "id": "СтатусПлана",
-          "component": "zap",
+          "component": "scanner",
           "action": "automation_plan_progress",
-          "wirek": "zap|automation_plan_progress"
+          "wirek": "scanner|automation_plan_progress"
         },
         {
           "id": "СтатусСканера",
-          "component": "zap",
+          "component": "scanner",
           "action": "spider_status",
-          "wirek": "zap|spider_status"
+          "wirek": "scanner|spider_status"
         },
         {
           "id": "СтопOAST",
-          "component": "zap",
+          "component": "scanner",
           "action": "stop_oast_server",
-          "wirek": "zap|stop_oast_server"
+          "wirek": "scanner|stop_oast_server"
         },
         {
-          "id": "СыройЗапросЧерезZAP",
-          "component": "zap",
-          "action": "zap_http_raw_request",
-          "wirek": "zap|zap_http_raw_request"
+          "id": "СыройЗапросЧерезscanner",
+          "component": "scanner",
+          "action": "scanner_http_raw_request",
+          "wirek": "scanner|scanner_http_raw_request"
         },
         {
           "id": "УдалитьHttpSender",
-          "component": "zap",
+          "component": "scanner",
           "action": "remove_http_sender_script",
-          "wirek": "zap|remove_http_sender_script"
+          "wirek": "scanner|remove_http_sender_script"
         },
         {
           "id": "УдалитьPayload",
-          "component": "zap",
+          "component": "scanner",
           "action": "remove_payload",
-          "wirek": "zap|remove_payload"
+          "wirek": "scanner|remove_payload"
         },
         {
           "id": "УдалитьReplacer",
-          "component": "zap",
+          "component": "scanner",
           "action": "remove_replacer_rule",
-          "wirek": "zap|remove_replacer_rule"
+          "wirek": "scanner|remove_replacer_rule"
         },
         {
           "id": "УдалитьКонтекст",
-          "component": "zap",
+          "component": "scanner",
           "action": "delete_context",
-          "wirek": "zap|delete_context"
+          "wirek": "scanner|delete_context"
         },
         {
           "id": "УдалитьСкрипт",
-          "component": "zap",
+          "component": "scanner",
           "action": "remove_script",
-          "wirek": "zap|remove_script"
+          "wirek": "scanner|remove_script"
         },
         {
           "id": "УчётныеДанныеПользователя",
-          "component": "zap",
+          "component": "scanner",
           "action": "set_user_credentials",
-          "wirek": "zap|set_user_credentials"
+          "wirek": "scanner|set_user_credentials"
         },
         {
           "id": "ФильтрАлерта",
-          "component": "zap",
+          "component": "scanner",
           "action": "add_alert_filter",
-          "wirek": "zap|add_alert_filter"
+          "wirek": "scanner|add_alert_filter"
         },
         {
           "id": "ЧислоАлертов",
-          "component": "zap",
+          "component": "scanner",
           "action": "get_alert_count",
-          "wirek": "zap|get_alert_count"
+          "wirek": "scanner|get_alert_count"
         }
       ]
     },
@@ -2475,40 +2199,16 @@
           "wirek": "browser|get_session_id"
         },
         {
-          "id": "InitСкрипт",
-          "component": "browser",
-          "action": "cdp_add_init_script",
-          "wirek": "browser|cdp_add_init_script"
-        },
-        {
-          "id": "БлокироватьURL",
-          "component": "browser",
-          "action": "cdp_set_blocked_urls",
-          "wirek": "browser|cdp_set_blocked_urls"
-        },
-        {
           "id": "ВключитьNetwork",
           "component": "browser",
           "action": "cdp_network_enable",
           "wirek": "browser|cdp_network_enable"
         },
         {
-          "id": "ВключитьМетрики",
-          "component": "browser",
-          "action": "cdp_performance_enable",
-          "wirek": "browser|cdp_performance_enable"
-        },
-        {
           "id": "ВозможностиСессии",
           "component": "browser",
           "action": "get_session_capabilities",
           "wirek": "browser|get_session_capabilities"
-        },
-        {
-          "id": "ВосстановитьСостояние",
-          "component": "browser",
-          "action": "restore_state",
-          "wirek": "browser|restore_state"
         },
         {
           "id": "ВсеCookies",
@@ -2529,34 +2229,10 @@
           "wirek": "browser|cdp_network_disable"
         },
         {
-          "id": "ВыключитьМетрики",
-          "component": "browser",
-          "action": "cdp_performance_disable",
-          "wirek": "browser|cdp_performance_disable"
-        },
-        {
-          "id": "Выполнить",
-          "component": "browser",
-          "action": "cdp_evaluate",
-          "wirek": "browser|cdp_evaluate"
-        },
-        {
-          "id": "Геолокация",
-          "component": "browser",
-          "action": "cdp_set_geolocation",
-          "wirek": "browser|cdp_set_geolocation"
-        },
-        {
           "id": "ДобавитьCookieПолностью",
           "component": "browser",
           "action": "add_cookie_full",
           "wirek": "browser|add_cookie_full"
-        },
-        {
-          "id": "ДопЗаголовки",
-          "component": "browser",
-          "action": "cdp_set_extra_headers",
-          "wirek": "browser|cdp_set_extra_headers"
         },
         {
           "id": "ЗагрузитьCookies",
@@ -2569,12 +2245,6 @@
           "component": "browser",
           "action": "get_cookie_value",
           "wirek": "browser|get_cookie_value"
-        },
-        {
-          "id": "ИгнорСертификатов",
-          "component": "browser",
-          "action": "cdp_ignore_certificate_errors",
-          "wirek": "browser|cdp_ignore_certificate_errors"
         },
         {
           "id": "КоличествоCookies",
@@ -2599,36 +2269,6 @@
           "component": "browser",
           "action": "get_performance_logs",
           "wirek": "browser|get_performance_logs"
-        },
-        {
-          "id": "Локаль",
-          "component": "browser",
-          "action": "cdp_set_locale",
-          "wirek": "browser|cdp_set_locale"
-        },
-        {
-          "id": "Метрики",
-          "component": "browser",
-          "action": "cdp_get_performance_metrics",
-          "wirek": "browser|cdp_get_performance_metrics"
-        },
-        {
-          "id": "НаПереднийПлан",
-          "component": "browser",
-          "action": "cdp_bring_to_front",
-          "wirek": "browser|cdp_bring_to_front"
-        },
-        {
-          "id": "ОстановитьЗагрузкуСтраницы",
-          "component": "browser",
-          "action": "cdp_stop_loading",
-          "wirek": "browser|cdp_stop_loading"
-        },
-        {
-          "id": "ОтключитьКэш",
-          "component": "browser",
-          "action": "cdp_set_cache_disabled",
-          "wirek": "browser|cdp_set_cache_disabled"
         },
         {
           "id": "ОчиститьCookies",
@@ -2667,24 +2307,6 @@
           "wirek": "browser|get_console_errors"
         },
         {
-          "id": "Перезагрузить",
-          "component": "browser",
-          "action": "cdp_reload",
-          "wirek": "browser|cdp_reload"
-        },
-        {
-          "id": "ПоведениеЗагрузок",
-          "component": "browser",
-          "action": "cdp_set_download_behavior",
-          "wirek": "browser|cdp_set_download_behavior"
-        },
-        {
-          "id": "ПодменитьАгентПользователя",
-          "component": "browser",
-          "action": "cdp_set_user_agent",
-          "wirek": "browser|cdp_set_user_agent"
-        },
-        {
           "id": "ПолучитьCookie",
           "component": "browser",
           "action": "get_cookie",
@@ -2703,64 +2325,10 @@
           "wirek": "browser|get_session_storage_item"
         },
         {
-          "id": "РазмерУстройства",
-          "component": "browser",
-          "action": "cdp_set_device_metrics",
-          "wirek": "browser|cdp_set_device_metrics"
-        },
-        {
-          "id": "СброситьГеолокацию",
-          "component": "browser",
-          "action": "cdp_clear_geolocation",
-          "wirek": "browser|cdp_clear_geolocation"
-        },
-        {
-          "id": "СброситьДопЗаголовки",
-          "component": "browser",
-          "action": "cdp_clear_extra_headers",
-          "wirek": "browser|cdp_clear_extra_headers"
-        },
-        {
-          "id": "СброситьРазмерУстройства",
-          "component": "browser",
-          "action": "cdp_clear_device_metrics",
-          "wirek": "browser|cdp_clear_device_metrics"
-        },
-        {
-          "id": "СброситьЭмуляциюСети",
-          "component": "browser",
-          "action": "cdp_reset_network_conditions",
-          "wirek": "browser|cdp_reset_network_conditions"
-        },
-        {
-          "id": "Скриншот",
-          "component": "browser",
-          "action": "cdp_capture_screenshot",
-          "wirek": "browser|cdp_capture_screenshot"
-        },
-        {
-          "id": "СнятьБлокировкуURL",
-          "component": "browser",
-          "action": "cdp_clear_blocked_urls",
-          "wirek": "browser|cdp_clear_blocked_urls"
-        },
-        {
-          "id": "СохранитьСостояние",
-          "component": "browser",
-          "action": "save_state",
-          "wirek": "browser|save_state"
-        },
-        {
           "id": "ТаймаутыСессии",
           "component": "browser",
           "action": "get_session_timeouts",
           "wirek": "browser|get_session_timeouts"
-        },
-        {
-          "id": "Таймзона",
-          "component": "browser",
-          "action": "cdp_set_timezone",
-          "wirek": "browser|cdp_set_timezone"
         },
         {
           "id": "ТекущиеУсловияСети",
@@ -2815,18 +2383,6 @@
           "component": "browser",
           "action": "set_session_timeouts",
           "wirek": "browser|set_session_timeouts"
-        },
-        {
-          "id": "ЭмуляцияTouch",
-          "component": "browser",
-          "action": "cdp_set_touch_emulation",
-          "wirek": "browser|cdp_set_touch_emulation"
-        },
-        {
-          "id": "ЭмуляцияСети",
-          "component": "browser",
-          "action": "cdp_emulate_network",
-          "wirek": "browser|cdp_emulate_network"
         }
       ]
     },
@@ -2834,34 +2390,10 @@
       "label": "Драйвер",
       "methods": [
         {
-          "id": "АвтоАвторизоваться",
-          "component": "webdriver",
-          "action": "auto_authorize_discovery",
-          "wirek": "webdriver|auto_authorize_discovery"
-        },
-        {
-          "id": "АтрибутЭлементаПоИндексу",
-          "component": "webdriver",
-          "action": "get_element_attribute_by_index",
-          "wirek": "webdriver|get_element_attribute_by_index"
-        },
-        {
-          "id": "ВвестиВОповещение",
-          "component": "webdriver",
-          "action": "send_keys_to_alert",
-          "wirek": "webdriver|send_keys_to_alert"
-        },
-        {
           "id": "Вернуться",
           "component": "webdriver",
           "action": "back",
           "wirek": "webdriver|back"
-        },
-        {
-          "id": "ВернутьсяВОсновнойКонтент",
-          "component": "webdriver",
-          "action": "switch_to_default",
-          "wirek": "webdriver|switch_to_default"
         },
         {
           "id": "Вперёд",
@@ -2880,12 +2412,6 @@
           "component": "webdriver",
           "action": "select_by_value",
           "wirek": "webdriver|select_by_value"
-        },
-        {
-          "id": "ВыбратьПоИндексу",
-          "component": "webdriver",
-          "action": "select_by_index",
-          "wirek": "webdriver|select_by_index"
         },
         {
           "id": "ВыбратьПоТексту",
@@ -2960,18 +2486,6 @@
           "wirek": "webdriver|upload_file"
         },
         {
-          "id": "ЗажатьКлавишу",
-          "component": "webdriver",
-          "action": "key_down",
-          "wirek": "webdriver|key_down"
-        },
-        {
-          "id": "ЗажатьКнопкуМыши",
-          "component": "webdriver",
-          "action": "click_and_hold",
-          "wirek": "webdriver|click_and_hold"
-        },
-        {
           "id": "ЗакрытьБраузер",
           "component": "webdriver",
           "action": "quit",
@@ -2994,12 +2508,6 @@
           "component": "webdriver",
           "action": "get_elements_count",
           "wirek": "webdriver|get_elements_count"
-        },
-        {
-          "id": "МеткаВДневнике",
-          "component": "webdriver",
-          "action": "log_marker",
-          "wirek": "webdriver|log_marker"
         },
         {
           "id": "Навести",
@@ -3032,52 +2540,16 @@
           "wirek": "webdriver|press_key"
         },
         {
-          "id": "НажатьКомбинацию",
-          "component": "webdriver",
-          "action": "key_combination",
-          "wirek": "webdriver|key_combination"
-        },
-        {
-          "id": "НажатьПоИндексу",
-          "component": "webdriver",
-          "action": "click_element_by_index",
-          "wirek": "webdriver|click_element_by_index"
-        },
-        {
-          "id": "НажатьПоТексту",
-          "component": "webdriver",
-          "action": "click_element_by_text",
-          "wirek": "webdriver|click_element_by_text"
-        },
-        {
           "id": "НажатьПравой",
           "component": "webdriver",
           "action": "right_click",
           "wirek": "webdriver|right_click"
         },
         {
-          "id": "НажатьУдерживая",
-          "component": "webdriver",
-          "action": "hold_click",
-          "wirek": "webdriver|hold_click"
-        },
-        {
           "id": "ОбновитьСтраницу",
           "component": "webdriver",
           "action": "refresh",
           "wirek": "webdriver|refresh"
-        },
-        {
-          "id": "ОбойтиСтраницы",
-          "component": "webdriver",
-          "action": "crawl_urls",
-          "wirek": "webdriver|crawl_urls"
-        },
-        {
-          "id": "ОтклонитьОповещение",
-          "component": "webdriver",
-          "action": "dismiss_alert",
-          "wirek": "webdriver|dismiss_alert"
         },
         {
           "id": "Открыть",
@@ -3092,58 +2564,10 @@
           "wirek": "webdriver|open_by_url"
         },
         {
-          "id": "ОтправитьФорму",
-          "component": "webdriver",
-          "action": "submit",
-          "wirek": "webdriver|submit"
-        },
-        {
-          "id": "ОтпуститьКлавишу",
-          "component": "webdriver",
-          "action": "key_up",
-          "wirek": "webdriver|key_up"
-        },
-        {
-          "id": "ОтпуститьКнопкуМыши",
-          "component": "webdriver",
-          "action": "release",
-          "wirek": "webdriver|release"
-        },
-        {
           "id": "ОчиститьЗначение",
           "component": "webdriver",
           "action": "clear",
           "wirek": "webdriver|clear"
-        },
-        {
-          "id": "ПереключитьОкно",
-          "component": "webdriver",
-          "action": "switch_to_window",
-          "wirek": "webdriver|switch_to_window"
-        },
-        {
-          "id": "ПереключитьФрейм",
-          "component": "webdriver",
-          "action": "switch_to_frame",
-          "wirek": "webdriver|switch_to_frame"
-        },
-        {
-          "id": "ПереместитьКЭлементу",
-          "component": "webdriver",
-          "action": "move_to_element",
-          "wirek": "webdriver|move_to_element"
-        },
-        {
-          "id": "Перетащить",
-          "component": "webdriver",
-          "action": "drag_and_drop",
-          "wirek": "webdriver|drag_and_drop"
-        },
-        {
-          "id": "ПеретащитьСоСмещением",
-          "component": "webdriver",
-          "action": "drag_and_drop_by_offset",
-          "wirek": "webdriver|drag_and_drop_by_offset"
         },
         {
           "id": "ПолучитьCSS",
@@ -3164,18 +2588,6 @@
           "wirek": "webdriver|get_value"
         },
         {
-          "id": "ПолучитьКоординаты",
-          "component": "webdriver",
-          "action": "get_location",
-          "wirek": "webdriver|get_location"
-        },
-        {
-          "id": "ПолучитьРазмер",
-          "component": "webdriver",
-          "action": "get_size",
-          "wirek": "webdriver|get_size"
-        },
-        {
           "id": "ПолучитьСвойство",
           "component": "webdriver",
           "action": "get_property",
@@ -3186,18 +2598,6 @@
           "component": "webdriver",
           "action": "get_text",
           "wirek": "webdriver|get_text"
-        },
-        {
-          "id": "ПолучитьТекстОповещения",
-          "component": "webdriver",
-          "action": "get_alert_text",
-          "wirek": "webdriver|get_alert_text"
-        },
-        {
-          "id": "ПринятьОповещение",
-          "component": "webdriver",
-          "action": "accept_alert",
-          "wirek": "webdriver|accept_alert"
         },
         {
           "id": "ПроверитьURL",
@@ -3224,18 +2624,6 @@
           "wirek": "webdriver|assert_title"
         },
         {
-          "id": "ПроверитьИстину",
-          "component": "webdriver",
-          "action": "assert_true",
-          "wirek": "webdriver|assert_true"
-        },
-        {
-          "id": "ПроверитьЛожь",
-          "component": "webdriver",
-          "action": "assert_false",
-          "wirek": "webdriver|assert_false"
-        },
-        {
           "id": "ПроверитьНаличиеЭлемента",
           "component": "webdriver",
           "action": "assert_element_present",
@@ -3248,18 +2636,6 @@
           "wirek": "webdriver|assert_element_not_visible"
         },
         {
-          "id": "ПроверитьНеравенство",
-          "component": "webdriver",
-          "action": "assert_not_equals",
-          "wirek": "webdriver|assert_not_equals"
-        },
-        {
-          "id": "ПроверитьОтсутствиеВхождения",
-          "component": "webdriver",
-          "action": "assert_not_contains",
-          "wirek": "webdriver|assert_not_contains"
-        },
-        {
           "id": "ПроверитьРавенство",
           "component": "webdriver",
           "action": "assert_equals",
@@ -3270,18 +2646,6 @@
           "component": "webdriver",
           "action": "assert_text_present",
           "wirek": "webdriver|assert_text_present"
-        },
-        {
-          "id": "ПроверитьТекстОповещения",
-          "component": "webdriver",
-          "action": "assert_alert_text",
-          "wirek": "webdriver|assert_alert_text"
-        },
-        {
-          "id": "ПроверитьЧекбокс",
-          "component": "webdriver",
-          "action": "assert_checkbox_checked",
-          "wirek": "webdriver|assert_checkbox_checked"
         },
         {
           "id": "ПрокрутитьВверх",
@@ -3320,34 +2684,10 @@
           "wirek": "webdriver|take_screenshot"
         },
         {
-          "id": "СкриншотЭлемента",
-          "component": "webdriver",
-          "action": "take_element_screenshot",
-          "wirek": "webdriver|take_element_screenshot"
-        },
-        {
-          "id": "СместитьКурсор",
-          "component": "webdriver",
-          "action": "move_by_offset",
-          "wirek": "webdriver|move_by_offset"
-        },
-        {
-          "id": "СписокОкон",
-          "component": "webdriver",
-          "action": "get_window_handles",
-          "wirek": "webdriver|get_window_handles"
-        },
-        {
           "id": "ТекстЭлементаПоИндексу",
           "component": "webdriver",
           "action": "get_element_text_by_index",
           "wirek": "webdriver|get_element_text_by_index"
-        },
-        {
-          "id": "ТекстЯчейкиТаблицы",
-          "component": "webdriver",
-          "action": "get_table_cell_text",
-          "wirek": "webdriver|get_table_cell_text"
         },
         {
           "id": "ТекстыЭлементов",
@@ -3356,28 +2696,10 @@
           "wirek": "webdriver|get_elements_texts"
         },
         {
-          "id": "ТекстыЭлементовСТекстом",
-          "component": "webdriver",
-          "action": "filter_elements_by_text",
-          "wirek": "webdriver|filter_elements_by_text"
-        },
-        {
-          "id": "ТекущееОкно",
-          "component": "webdriver",
-          "action": "get_current_window_handle",
-          "wirek": "webdriver|get_current_window_handle"
-        },
-        {
           "id": "УстановитьЗначениеDOM",
           "component": "webdriver",
           "action": "set_value",
           "wirek": "webdriver|set_value"
-        },
-        {
-          "id": "ЧислоСтрокТаблицы",
-          "component": "webdriver",
-          "action": "get_table_row_count",
-          "wirek": "webdriver|get_table_row_count"
         },
         {
           "id": "ЭлементВыбран",
@@ -3396,12 +2718,6 @@
           "component": "webdriver",
           "action": "is_displayed",
           "wirek": "webdriver|is_displayed"
-        },
-        {
-          "id": "ЭлементыСписка",
-          "component": "webdriver",
-          "action": "get_list_items",
-          "wirek": "webdriver|get_list_items"
         }
       ]
     }

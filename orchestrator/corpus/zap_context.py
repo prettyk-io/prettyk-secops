@@ -1,10 +1,10 @@
 ﻿# -*- coding: utf-8 -*-
-"""CD-5: внедрение корпуса (DiscoveryCorpus / RequestTemplate / ServiceMap) в ZAP Context & Sites Tree.
+"""CD-5: внедрение корпуса (DiscoveryCorpus / RequestTemplate / ServiceMap) в scanner Context & Sites Tree.
 
 Функционал:
-  1. ``build_zap_raw_request()`` — форматирование ``RequestTemplate`` в стандартный HTTP/1.1 wire-формат.
-  2. ``inject_corpus_into_zap()`` — регистрация URL-шаблонов в include-паттерны контекста ZAP
-     и отправка синтетических/пробуждённых запросов через ``zap.core.send_request`` для
+  1. ``build_scanner_raw_request()`` — форматирование ``RequestTemplate`` в стандартный HTTP/1.1 wire-формат.
+  2. ``inject_corpus_into_scanner()`` — регистрация URL-шаблонов в include-паттерны контекста scanner
+     и отправка синтетических/пробуждённых запросов через ``scanner.core.send_request`` для
      наполнения дерева сайтов (Sites Tree), чтобы последующий ``active_scan`` сканировал
      не только обнаруженные спайдером страницы, но и все извлечённые/пробуждённые эндпоинты.
 """
@@ -21,14 +21,14 @@ from corpus.service_map import ServiceMap
 logger = logging.getLogger("orchestrator")
 
 
-def build_zap_raw_request(
+def build_scanner_raw_request(
     template: RequestTemplate,
     *,
     host_header: Optional[str] = None,
     user_agent: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PK-SecOps/1.0",
     headers_extra: Optional[Dict[str, str]] = None,
 ) -> str:
-    """Сборка HTTP/1.1 wire-запроса из ``RequestTemplate`` для отправки в ZAP API."""
+    """Сборка HTTP/1.1 wire-запроса из ``RequestTemplate`` для отправки в scanner API."""
     method = (template.method or "GET").upper()
     parts = urlsplit(template.url or "/")
     host = host_header or parts.netloc or "127.0.0.1"
@@ -75,19 +75,19 @@ def build_zap_raw_request(
     return "\r\n".join(lines)
 
 
-def inject_corpus_into_zap(
-    zap_adapter: Any,
+def inject_corpus_into_scanner(
+    scanner_adapter: Any,
     templates: Sequence[RequestTemplate],
     *,
     context_name: Optional[str] = None,
     send_to_sites_tree: bool = True,
     service_map: Optional[ServiceMap] = None,
 ) -> Dict[str, Any]:
-    """Внедрение разобранного корпуса запросов в ZAP:
+    """Внедрение разобранного корпуса запросов в scanner:
 
     1. Добавление URL/Origin в include-фильтры контекста (если задан context_name).
-    2. Прогон запросов через ``zap_http_raw_request`` / ``send_request`` для наполнения
-       Sites Tree ZAP (перед active_scan).
+    2. Прогон запросов через ``scanner_http_raw_request`` / ``send_request`` для наполнения
+       Sites Tree scanner (перед active_scan).
     """
     stats = {
         "templates_total": len(templates),
@@ -100,7 +100,7 @@ def inject_corpus_into_zap(
         return stats
 
     # 1. Добавление путей в context include regex
-    if context_name and hasattr(zap_adapter, "set_context_include"):
+    if context_name and hasattr(scanner_adapter, "set_context_include"):
         seen_origins = set()
         for t in templates:
             parts = urlsplit(t.url or "")
@@ -109,24 +109,24 @@ def inject_corpus_into_zap(
                 if origin not in seen_origins:
                     seen_origins.add(origin)
                     try:
-                        zap_adapter.set_context_include(context_name, f"{origin}.*")
+                        scanner_adapter.set_context_include(context_name, f"{origin}.*")
                         stats["context_includes_added"] += 1
                     except Exception as exc:
-                        logger.debug("ZAP context include skip for %s: %s", origin, exc)
+                        logger.debug("scanner context include skip for %s: %s", origin, exc)
 
-    # 2. Отправка запросов в ZAP для наполнения дерева
+    # 2. Отправка запросов в scanner для наполнения дерева
     if send_to_sites_tree:
         for t in templates:
             try:
-                raw_http = build_zap_raw_request(t)
-                if hasattr(zap_adapter, "zap_http_raw_request"):
-                    zap_adapter.zap_http_raw_request(raw_http, follow_redirects=True)
+                raw_http = build_scanner_raw_request(t)
+                if hasattr(scanner_adapter, "scanner_http_raw_request"):
+                    scanner_adapter.scanner_http_raw_request(raw_http, follow_redirects=True)
                     stats["injected_requests"] += 1
-                elif hasattr(zap_adapter, "_zap") and zap_adapter._zap:
-                    zap_adapter._zap.core.send_request(raw_http, "true")
+                elif hasattr(scanner_adapter, "_scanner") and scanner_adapter._scanner:
+                    scanner_adapter._scanner.core.send_request(raw_http, "true")
                     stats["injected_requests"] += 1
             except Exception as exc:
                 stats["failed_requests"] += 1
-                logger.debug("Failed injecting template %s into ZAP: %s", t.url, exc)
+                logger.debug("Failed injecting template %s into scanner: %s", t.url, exc)
 
     return stats

@@ -19,12 +19,12 @@
 │  (Входной продукт / «Wedge»)         │  (Enterprise / High-Ticket)          │
 ├──────────────────────────────────────┼──────────────────────────────────────┤
 │ • Для кого: QA, SDET, DevOps         │ • Для кого: ИБ, AppSec, CISO, Финтех │
-│ • Задачи: E2E, smoke, регрессия,     │ • Задачи: DAST, фаззинг, ZAP, Dojo,  │
+│ • Задачи: E2E, smoke, регрессия,     │ • Задачи: DAST, фаззинг, scanner, Dojo,  │
 │   скрапинг, синтетический мониторинг │   политики гейтов, аудит уязвимостей │
 │ • Состав: Runner + Canvas + DSL +    │ • Состав: Всё из Automation +        │
-│   Discovery + Dashboard результатов  │   ZAP demon + Dojo + Allure + Vault  │
+│   Discovery + Dashboard результатов  │   scanner demon + Dojo + Allure + Vault  │
 │ • Вес: Минимальный (<100 MB),        │ • Вес: Полный compose-стек           │
-│   без Java/ZAP/Dojo тяжестей         │   с ИБ-сервисами                     │
+│   без Java/scanner/Dojo тяжестей         │   с ИБ-сервисами                     │
 │ • Цена: Бросовая / сверхдоступная    │ • Цена: Премиальный Enterprise       │
 └──────────────────────────────────────┴──────────────────────────────────────┘
 ```
@@ -60,7 +60,7 @@
 **Что реально работает (бэкенд):**
 - `OverviewPage` — KPI-карточки, severity-статистика
 - `DeployRegistry` — реестр деплоев
-- `EvidencePanel` — evidence-карточки с Dojo/Allure/ZAP
+- `EvidencePanel` — evidence-карточки с Dojo/Allure/scanner
 - `DojoFindingsTable` — таблица находок Dojo
 - `PoliciesPanel` — политики gate (read-only)
 - `RunsPage` — прогоны
@@ -142,12 +142,12 @@ PrettyK имеет **явный consumer-agnostic DSL** (`Type label "Email" $em
 | **AI** | Генерация тест-кейсов из требований | QWEN (severity, FP, классификация) |
 | **Автоматизация** | Visual/codeless или platform-specific execution | **Playwright Browser Core** + CDP |
 | **Отчёты** | Встроенные дашборды | Allure3 + DefectDojo + Live Monitor |
-| **Интеграции** | Jira, Jenkins | ZAP demon, Dojo, Allure, свой CI |
+| **Интеграции** | Jira, Jenkins | scanner demon, Dojo, Allure, свой CI |
 | **Discovery** | В просмотренных материалах не подтверждено | ✅ Автореверс форм без ручных локаторов |
 
 **Проверяемое отличие PrettyK:**
 1. **Airgap.** PrettyK может работать внутри закрытого контура; большинство рассмотренных конкурентов позиционируются как SaaS или hybrid. Это нужно подтверждать по конкретному deployment profile, а не обобщать на весь рынок.
-2. **Security + Functional в одном.** aqua не умеет DAST. ZAP не умеет test management. Мы умеем оба.
+2. **Security + Functional в одном.** aqua не умеет DAST. scanner не умеет test management. Мы умеем оба.
 3. **Собственный DSL.** У PrettyK есть открытый consumer-agnostic язык описания сценариев; у проверенных публичных материалов конкурентов такой же уровень переносимого контракта не обнаружен.
 4. **QWEN внутри коробки.** Локальная AI-модель, без внешних API.
 5. **Discovery Engine.** Автореверс форм без ручных локаторов — ни у кого из конкурентов нет.
@@ -182,7 +182,7 @@ PrettyK имеет **явный consumer-agnostic DSL** (`Type label "Email" $em
 │ SECOPS CONTROL    │ INFRA CONTROL PANEL   │ DASHBOARD (Results)              │
 │ (Admin ИБ)        │ (admin_service)       │                                  │
 │                   │                       │                                  │
-│ • Нарезать        │ • ZAP demon status    │ • Test results overview          │
+│ • Нарезать        │ • scanner demon status    │ • Test results overview          │
 │   болванки        │ • Dojo health         │ • Allure reports                 │
 │ • Assign на       │ • Allure service      │ • Run history                    │
 │   экспертов       │ • Storage/Retention   │ • Severity trends                │
@@ -253,7 +253,7 @@ PrettyK имеет **явный consumer-agnostic DSL** (`Type label "Email" $em
         ↓
 Единый runner и envelope результата
         ├── Automation consumer
-        └── Security consumer (ZAP / fuzzer / Dojo)
+        └── Security consumer (scanner / fuzzer / Dojo)
 ```
 
 **Главная гипотеза PoC:** один и тот же сценарный контракт должен запускаться в двух режимах, а различия должны появляться только на уровне consumer и результата. Если для Automation Project потребуется отдельный runtime, это должно быть доказано экспериментом, а не предположено заранее.
@@ -264,7 +264,7 @@ PrettyK имеет **явный consumer-agnostic DSL** (`Type label "Email" $em
 
 | Срез | Given | When | Then |
 |---|---|---|---|
-| Automation | Создан Automation Project с `Open → Type → Click → Wait` | Пользователь запускает сценарий | Один общий runner возвращает success/failure, screenshot и logs; ZAP/Dojo/Allure не требуются |
+| Automation | Создан Automation Project с `Open → Type → Click → Wait` | Пользователь запускает сценарий | Один общий runner возвращает success/failure, screenshot и logs; scanner/Dojo/Allure не требуются |
 | Security | Создан Security Check на тех же базовых действиях | Пользователь запускает проверку | Security consumer добавляет scan-specific findings/gate, не меняя базовый DSL |
 | Results | Есть успешный и неуспешный запуск обоих типов | Открыт Dashboard | Видны тип проекта, статус, время, screenshot/log links и понятная причина failure |
 | Access | Пользователь имеет одну из ролей продукта | Открыта поверхность | Доступны только разрешённые действия; UI не является единственным механизмом ограничения |
@@ -331,10 +331,10 @@ PrettyK имеет **явный consumer-agnostic DSL** (`Type label "Email" $em
 
 1. **Ментальная модель: «What are you building today?»**
    - Точка входа в проект должна быть предельно ясной: переключатель или стартовая карточка `[ 🛡️ SecOps Check ]` vs `[ ⚡ Automation Flow ]`.
-   - Один и тот же холст (@xyflow/react), но контекстная палитра нод: в Automation доступны чистые веб-действия и ассерты; в SecOps появляются probe-чипы (ZAP, Fuzzer boundary, Auth check). Пользователю не нужно переучивать моторику.
+   - Один и тот же холст (@xyflow/react), но контекстная палитра нод: в Automation доступны чистые веб-действия и ассерты; в SecOps появляются probe-чипы (scanner, Fuzzer boundary, Auth check). Пользователю не нужно переучивать моторику.
 
 2. **Три экрана глазами человека (Zero-Clutter Visual Hierarchy):**
-   - **Control Panel (`#/control`) — «Машинное отделение» (admin_service):** строго утилитарный, темный телеметрический UI. Здоровье демонов (ZAP, Allure, Live), графики памяти, ползунки Retention, статус Vault. Минимум графического шума — максимум статусной ясности.
+   - **Control Panel (`#/control`) — «Машинное отделение» (admin_service):** строго утилитарный, темный телеметрический UI. Здоровье демонов (scanner, Allure, Live), графики памяти, ползунки Retention, статус Vault. Минимум графического шума — максимум статусной ясности.
    - **SecOps Control (`#/admin`) — «Командный мостик» (admin_sec):** управление реестром приложений, политиками гейтов и выдачей болванок. Чистые shadcn-таблицы, бейджи соответствия, аудит-лог. Никаких вложенных таблиц старого antd.
    - **Dashboard (`#/dashboard`) — «Утренний кофе» (для всех ролей):** агрегированный фид результатов. Полиморфная карточка прогона (Polymorphic Run Card): одинаковая шапка (статус, цель, время, автор), но адаптивное тело — скриншот сбоя для Automation либо breakdown уязвимостей для SecOps.
 

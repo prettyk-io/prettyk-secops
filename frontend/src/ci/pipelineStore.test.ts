@@ -14,7 +14,7 @@ function makePipeline(): PipelineDefinition {
     requiredCapabilities: ['checks:create'],
     steps: [
       { id: 'a', component: { name: 'Browser Discovery', version: '1.4.0' } },
-      { id: 'b', component: { name: 'ZAP Active Scan', version: '2.15.0' } },
+      { id: 'b', component: { name: 'scanner Active Scan', version: '2.15.0' } },
       { id: 'c', component: { name: 'Quality Gate', version: '3.1.0' } },
     ],
     edges: [
@@ -78,28 +78,28 @@ describe('Pipeline Store (PK-CI-1) — durable graph', () => {
       ...makePipeline(),
       steps: [
         { id: 'disc', component: { name: 'Browser Discovery', version: '1.0.0' } },
-        { id: 'zap', component: { name: 'ZAP', version: '2.0.0' } },
+        { id: 'scanner', component: { name: 'scanner', version: '2.0.0' } },
         { id: 'fuzz', component: { name: 'Fuzz', version: '1.0.0' } },
         { id: 'gate', component: { name: 'Gate', version: '1.0.0' } },
       ],
       edges: [
-        { from: 'disc', to: 'zap', kind: 'depends_on' },
+        { from: 'disc', to: 'scanner', kind: 'depends_on' },
         { from: 'disc', to: 'fuzz', kind: 'depends_on' },
-        { from: 'zap', to: 'gate', kind: 'depends_on' },
+        { from: 'scanner', to: 'gate', kind: 'depends_on' },
         { from: 'fuzz', to: 'gate', kind: 'depends_on' },
       ],
     };
     const order = topologicalOrder(p.steps, p.edges);
     expect(order[0]).toBe('disc');
     expect(order[order.length - 1]).toBe('gate');
-    // zap/fuzz идут после disc и до gate
-    expect(order.indexOf('zap')).toBeGreaterThan(order.indexOf('disc'));
+    // scanner/fuzz идут после disc и до gate
+    expect(order.indexOf('scanner')).toBeGreaterThan(order.indexOf('disc'));
     expect(order.indexOf('fuzz')).toBeGreaterThan(order.indexOf('disc'));
   });
 
   it('collectUnpinnedComponents flags latest', () => {
     const p = makePipeline();
-    p.steps[1] = { id: 'b', component: { name: 'ZAP', version: 'latest' } };
+    p.steps[1] = { id: 'b', component: { name: 'scanner', version: 'latest' } };
     expect(collectUnpinnedComponents(p)).toEqual(['b']);
   });
 

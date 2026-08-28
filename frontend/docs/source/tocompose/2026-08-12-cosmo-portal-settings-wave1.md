@@ -39,7 +39,7 @@ CTA: Создать · Отменить.
 
 1. **Статический анализ и сборка** — поле **Кастомный пайплайн сборки**; шаги (вкл/обязательность/условие продолжения): Сборка · Юнит-тестирование · Генерация документации · SonarQube · PTAI · Solar Appscreener · Trivy · CodeScoring · Sandbox · Kaspersky Container Security.  
 2. **Развертывание** — **Кастомный пайплайн развертывания**; шаг Развёртывание ПО.  
-3. **Динамическое тестирование и автотесты** — Выполнение автотестов · **Blackbox** · **OWASP ZAP**.  
+3. **Динамическое тестирование и автотесты** — Выполнение автотестов · **Blackbox** · **OWASP scanner**.  
 4. **Мониторинг** / инициализация исходников — в headings.
 
 ### ЖЦ SoT из сети (harness `browser-hands-remote`, 2026-08-12)
@@ -64,7 +64,7 @@ CTA: Создать · Отменить.
 | 11 | `deployment` | Развёртывание ПО | ✓ | ✓ | failed |
 | 12 | `autotests` | Выполнение автотестов | ✓ | | |
 | 13 | `blackbox` | Blackbox | ✓ | | |
-| 14 | `owasp_dast` | OWASP ZAP | ✓ | | |
+| 14 | `owasp_dast` | OWASP scanner | ✓ | | |
 
 Соседний конвейер при открытии Настроек: `/integrations` · `/pipelines?include=application_pipeline` · `/resources` · `/runtimes` · `/brokers` · `/env_profiles` (+ notification noise).  
 Дампы: `Space/Temp/pal-lc-body.json`, `pal-lc-pain.json`, `pal-settings-walk.json`. Skills: `browser-hands-remote` (всё вместе: traffic · ax · CDP).

@@ -133,11 +133,11 @@ export function OpenApiModuleForm({
         />
       </label>
       <Checkbox
-        checked={fields.zap_import}
+        checked={fields.scanner_import}
         style={{ marginBottom: 12 }}
-        onChange={(e) => onChange({ zap_import: e.target.checked })}
+        onChange={(e) => onChange({ scanner_import: e.target.checked })}
       >
-        Разрешить ИмпортOpenAPI в ZAP (только по шагу сценария)
+        Разрешить ИмпортOpenAPI в scanner (только по шагу сценария)
       </Checkbox>
       <Button
         type="primary"

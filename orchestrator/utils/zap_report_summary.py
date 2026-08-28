@@ -1,6 +1,6 @@
 ﻿# -*- coding: utf-8 -*-
 """
-RES-4: сводка из Traditional ZAP XML (без HTML-скрейпа).
+RES-4: сводка из Traditional scanner XML (без HTML-скрейпа).
 
 Канон: docs/internal/run-summary-ui.md
 """
@@ -19,7 +19,7 @@ _RISK = {
     "1": "low",
     "2": "medium",
     "3": "high",
-    # ZAP has no native critical; map via riskdesc if needed
+    # scanner has no native critical; map via riskdesc if needed
 }
 
 
@@ -40,7 +40,7 @@ def _risk_key(alertitem: ET.Element) -> str:
     return "info"
 
 
-def _empty_zap_summary(root_path: Path) -> Dict[str, Any]:
+def _empty_scanner_summary(root_path: Path) -> Dict[str, Any]:
     return {
         "ok": False,
         "path": str(root_path),
@@ -123,12 +123,12 @@ def _ingest_alertitem(
     return n_inst
 
 
-def summarize_zap_xml(path: PathLike) -> Dict[str, Any]:
+def summarize_scanner_xml(path: PathLike) -> Dict[str, Any]:
     """
-    Parse OWASPZAPReport XML → counts (by alertitem) + top + collapse-ready findings.
+    Parse OWASPscannerReport XML → counts (by alertitem) + top + collapse-ready findings.
     """
     root_path = Path(path)
-    empty = _empty_zap_summary(root_path)
+    empty = _empty_scanner_summary(root_path)
     if not root_path.is_file():
         empty["error"] = "missing"
         return empty

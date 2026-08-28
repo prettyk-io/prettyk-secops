@@ -24,7 +24,7 @@ DEFAULT_CATEGORIES: List[Dict[str, Any]] = [
     },
     {
         "name": "Scanner / security",
-        "messageRegex": ".*(ZAP|OWASP|alertRef|spider|ascan).*",
+        "messageRegex": ".*(scanner|OWASP|alertRef|spider|ascan).*",
         "matchedStatuses": ["failed", "broken"],
     },
     {

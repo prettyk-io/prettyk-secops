@@ -5,7 +5,7 @@
   1. ``AuthProfile`` — декларативная конфигурация профиля аутентификации (pre-flight endpoint,
      credentials, extraction mapping).
   2. ``AuthChainVault`` — выполнение pre-flight запроса, извлечение динамических токенов (JSON path / headers / cookies),
-     сохранение в контекст сессии ({{auth.token}}, {{auth.cookie}}), и инъекция в ZAP/HttpAdapter.
+     сохранение в контекст сессии ({{auth.token}}, {{auth.cookie}}), и инъекция в scanner/HttpAdapter.
   3. ``extract_value_by_path()`` — надежное извлечение вложенных ключей ("data.token", "response.jwt").
 """
 from __future__ import annotations
@@ -174,23 +174,23 @@ class AuthChainVault:
             "tokens": extracted_tokens,
         }
 
-    def inject_into_zap(
+    def inject_into_scanner(
         self,
-        zap_adapter: Any,
+        scanner_adapter: Any,
         context_name: str = "pk_ctx",
         token_var: str = "auth.token",
         auth_type: str = "bearer",
         header_name: str = "Authorization",
     ) -> bool:
-        """AUTH-2: Проброс динамического токена/куки в ZAP Replacer / Context."""
+        """AUTH-2: Проброс динамического токена/куки в scanner Replacer / Context."""
         val = self.get_token(token_var)
         if not val:
-            logger.warning("No token found in vault for %s, skipping ZAP injection", token_var)
+            logger.warning("No token found in vault for %s, skipping scanner injection", token_var)
             return False
 
         try:
             if auth_type.lower() == "bearer":
-                zap_adapter.add_replacer_rule(
+                scanner_adapter.add_replacer_rule(
                     "pk-vault-bearer",
                     "REQ_HEADER",
                     "Authorization",
@@ -198,7 +198,7 @@ class AuthChainVault:
                     False,
                 )
             elif auth_type.lower() == "cookie":
-                zap_adapter.add_replacer_rule(
+                scanner_adapter.add_replacer_rule(
                     "pk-vault-cookie",
                     "REQ_HEADER",
                     "Cookie",
@@ -206,15 +206,15 @@ class AuthChainVault:
                     False,
                 )
             else:
-                zap_adapter.add_replacer_rule(
+                scanner_adapter.add_replacer_rule(
                     f"pk-vault-{header_name.lower()}",
                     "REQ_HEADER",
                     header_name,
                     str(val),
                     False,
                 )
-            logger.info("Injected vault token %s (%s) into ZAP Replacer", token_var, auth_type)
+            logger.info("Injected vault token %s (%s) into scanner Replacer", token_var, auth_type)
             return True
         except Exception as exc:
-            logger.error("Failed to inject vault token into ZAP: %s", exc)
+            logger.error("Failed to inject vault token into scanner: %s", exc)
             return False

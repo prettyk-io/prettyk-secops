@@ -32,9 +32,9 @@ def _ctrl_with_scenarios(scenarios):
     ctrl.scenario_outcomes = []
     ctrl.suites_complete = False
     ctrl.page_resolver = None
-    ctrl.last_zap_report = None
+    ctrl.last_scanner_report = None
     ctrl._await_session_end = lambda: None
-    ctrl._attach_final_zap_report = lambda: None
+    ctrl._attach_final_scanner_report = lambda: None
     ctrl._seed_wired_stream = lambda: None
     ctrl._log_declarative_gap = lambda: None
     ctrl.collect_wired_problems = lambda: []

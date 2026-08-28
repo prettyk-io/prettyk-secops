@@ -15,7 +15,7 @@ from core.data_stream import DataStream
 from models.wired import SuiteImport
 
 
-class _Zap:
+class _scanner:
     def __init__(self):
         self.includes: list[tuple[str, str]] = []
 
@@ -24,15 +24,15 @@ class _Zap:
 
     @staticmethod
     def domains_csv_to_include_regexes(domains_csv: str) -> list:
-        from adapters.zap_adapter import ZapAdapter
+        from adapters.scanner_adapter import ScannerAdapter
 
-        return ZapAdapter.domains_csv_to_include_regexes(domains_csv)
+        return ScannerAdapter.domains_csv_to_include_regexes(domains_csv)
 
 
 def _ctrl(*, base="http://juice-shop:3000", imports=None, modules=None):
     ctrl = Controller.__new__(Controller)
     ctrl._url_list_keys = set()
-    ctrl.adapters = {"zap": _Zap()}
+    ctrl.adapters = {"scanner": _scanner()}
     ctrl.wired = SimpleNamespace(
         test_suites=SimpleNamespace(
             imports=imports or [],
@@ -58,12 +58,12 @@ def test_include_base_and_stream_urls_not_allowed_extra():
         ],
     )
     ctrl._include_url_lists_in_context("juice_ctx", stream)
-    zap: _Zap = ctrl.adapters["zap"]
-    joined = " ".join(rx for _, rx in zap.includes)
+    scanner: _scanner = ctrl.adapters["scanner"]
+    joined = " ".join(rx for _, rx in scanner.includes)
     assert "juice-shop" in joined or "juice\\-shop" in joined
     assert "login" in joined or r"\#" in joined or "/#" in joined
     assert "evil" not in joined
-    assert all(ctx == "juice_ctx" for ctx, _ in zap.includes)
+    assert all(ctx == "juice_ctx" for ctx, _ in scanner.includes)
 
 
 def test_empty_url_list_noop():
@@ -72,7 +72,7 @@ def test_empty_url_list_noop():
     stream = DataStream()
     stream.set("urls", [])
     ctrl._include_url_lists_in_context("ctx", stream)
-    assert ctrl.adapters["zap"].includes == []
+    assert ctrl.adapters["scanner"].includes == []
 
 
 def test_create_context_hook_calls_include(monkeypatch):
@@ -81,9 +81,9 @@ def test_create_context_hook_calls_include(monkeypatch):
     ctrl._url_list_keys = {"pages"}
     stream = DataStream()
     stream.set("pages", ["http://app.test/#/a"])
-    zap = ctrl.adapters["zap"]
+    scanner = ctrl.adapters["scanner"]
     ctrl._include_url_lists_in_context("c1", stream)
-    assert len(zap.includes) >= 2  # base + one url
+    assert len(scanner.includes) >= 2  # base + one url
 
 
 def test_import_txt_marks_url_list_key(tmp_path: Path):

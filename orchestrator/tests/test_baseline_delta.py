@@ -18,7 +18,7 @@ PROV_A = DeltaProvenance(
     current_run_id="run-001",
     wired_hash="sha256:aaa",
     target_scope_hash="sha256:bbb",
-    scan_profile="zap-demon-chrome",
+    scan_profile="scanner-demon-chrome",
     finding_schema_version="finding-v1",
 )
 

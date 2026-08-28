@@ -18,8 +18,8 @@ export function countsSourceLabel(raw: unknown): string | null {
       return 'Dojo ACTIVE (stats)';
     case 'dojo_findings':
       return 'Dojo ACTIVE (findings)';
-    case 'zap':
-      return 'ZAP fallback';
+    case 'scanner':
+      return 'scanner fallback';
     default:
       return raw.trim();
   }

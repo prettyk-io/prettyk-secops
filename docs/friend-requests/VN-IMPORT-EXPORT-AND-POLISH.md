@@ -12,8 +12,8 @@
    - **IMPX-4/5** (Flash) — Кнопка «Импорт» в тулбаре Studio, стейт и бесшовный мерж в активный манифест без перезагрузки редактора.
 
 2. **VN-POL (Полировка безопасности и WireK):**
-   - **VN-POL-F1/F2** (Flash) — Модуль маскирования чувствительных данных `redact.ts` (`isSecretFieldKey`, `redactManifestSecrets`, `redactSecretsForDraft`). Врезка в `exportManifest.ts`, `checksStore.ts`, `draft.ts` (пароли/токены не утекают в plaintext).
-   - **VN-POL-F3** (Flash) — Стабильный хэш содержимого манифеста `blankLetterhead.ts` (`manifestContentHash`) и подпись отпечатка в подвале печатного бланка.
+   - **VN-POL-F1/F2** (Flash) — Модуль маскирования чувствительных данных `redact.ts` (`isSecretFieldKey`, `redactWiredSecrets`, `redactSecretsForDraft`). Врезка в `exportWired.ts`, `checksStore.ts`, `draft.ts` (пароли/токены не утекают в plaintext).
+   - **VN-POL-F3** (Flash) — Стабильный хэш содержимого манифеста `blankLetterhead.ts` (`wiredContentHash`) и подпись отпечатка в подвале печатного бланка.
    - **VN-POL-R1/R2** (Bro) — Модуль генерации Wire-превью `studioWorkspaceWirePreview.ts` с маскированием RHS `Секрет $x = ***` и переключатель сплит-режима PrettyK ↔ WireK в рабочей области Studio.
 
 ## Тезис

@@ -31,8 +31,8 @@ describe('prettyToWire', () => {
     expect(resolveCall('Открыть /#/login')).toBe('webdriver|open|/#/login');
   });
 
-  it('facade ZAP', () => {
-    expect(resolveCall('ZAP Краулер $base')).toBe('zap|ajax_spider_scan|$base');
+  it('facade scanner', () => {
+    expect(resolveCall('Сканер $base')).toBe('scanner|spider_scan|$base');
   });
 
   it('language leaves', () => {

@@ -76,7 +76,7 @@ Grafana разделяет Dashboard и Explore:
 
 Datadog объединяет pipeline results, performance, trends и reliability в одной CI/CD experience. При этом данные представлены через специализированные explorer/dashboard/notebook поверхности и связаны с commit, pipeline и trace.
 
-**Что берём:** execution hub должен связывать run с причиной и следствием: manifest/commit → execution → trace/evidence → finding. Не обязательно показывать всё одновременно.
+**Что берём:** execution hub должен связывать run с причиной и следствием: wired/commit → execution → trace/evidence → finding. Не обязательно показывать всё одновременно.
 
 #### Playwright Trace Viewer
 
@@ -112,7 +112,7 @@ rrweb — готовый TypeScript toolkit для DOM snapshot, DOM mutation re
 **Что не обещаем:** rrweb воспроизводит web DOM/session events. Он не воспроизводит автоматически:
 
 - состояние Selenium/Playwright процесса;
-- ZAP traffic;
+- scanner traffic;
 - server-side backend state;
 - fuzzer scheduler;
 - доказательную причинность finding.
@@ -128,9 +128,9 @@ rrweb — готовый TypeScript toolkit для DOM snapshot, DOM mutation re
 | Access binding | HMAC bind token, ACL draft | ACL не является завершённым enterprise IAM |
 | Browser execution | Playwright/Selenium, BrowserPanel | replay-контракт не равен live browser state |
 | Editor/authoring | Studio, Canvas, Monaco, Explorer | authoring не должен блокироваться данными War Zone |
-| Evidence | logs, screenshots, video, ZAP, Allure, Dojo | нужна единая correlation-модель |
+| Evidence | logs, screenshots, video, scanner, Allure, Dojo | нужна единая correlation-модель |
 | Structured replay basis | step/evidence data частично есть | immutable replay envelope пока не зафиксирован |
-| Forensics | logs и ZAP data | SSH/Splunk/AI grep пока connector/PoC, не as-built foundation |
+| Forensics | logs и scanner data | SSH/Splunk/AI grep пока connector/PoC, не as-built foundation |
 
 ### 1.4. Раунд 1 — вывод
 
@@ -149,13 +149,13 @@ rrweb — готовый TypeScript toolkit для DOM snapshot, DOM mutation re
 ### 2.1. Общий поток данных
 
 ```text
-Manifest / validated plan
+Wired / validated plan
           |
        Run start
           |
    execution runtime
    /       |        \
-Playwright ZAP      Fuzzer
+Playwright scanner      Fuzzer
    |        |         |
    +--------+---------+
             |
@@ -182,7 +182,7 @@ run identity
 attempt identity
 step identity
 event timestamp / sequence
-source: playwright | zap | fuzzer | live | connector
+source: playwright | scanner | fuzzer | live | connector
 severity / status
 evidence references
 finding reference, if any
@@ -211,7 +211,7 @@ finding reference, if any
 - network requests/responses;
 - trace attachments.
 
-#### ZAP
+#### scanner
 
 - proxy/scanner events;
 - alert/finding metadata;
@@ -252,7 +252,7 @@ evidence attachments
 
 - live updates приходят из того же run stream;
 - selection шага фильтрует log/evidence;
-- finding открывает evidence, но не меняет исходный manifest;
+- finding открывает evidence, но не меняет исходный wired;
 - execution view read-only по отношению к authoring;
 - доступен переход в Forensics с сохранённым selection.
 
@@ -290,7 +290,7 @@ View 3 — query and correlation workspace:
 timeline selection
   → structured logs
   → backend trace correlation
-  → ZAP source details
+  → scanner source details
   → external connector result
   → optional AI query assistance
 ```
@@ -332,7 +332,7 @@ immutable evidence timeline
 - action timeline;
 - screenshots/filmstrip;
 - DOM snapshot where available;
-- network/ZAP evidence references;
+- network/scanner evidence references;
 - structured logs;
 - finding markers;
 - deterministic step transitions.
@@ -397,7 +397,7 @@ WebGL не нужен для View 1, View 3 или базового Rewind. Не
 - p95 event-to-paint до 250 ms для live operator feedback;
 - seek должен давать понятный первый кадр, а не ждать загрузки всего run.
 
-Точные thresholds должны быть подтверждены на реальном прогоне с ZAP + Fuzzer, а не на пустом mock.
+Точные thresholds должны быть подтверждены на реальном прогоне с scanner + Fuzzer, а не на пустом mock.
 
 ### 2.9. Раунд 2 — вывод
 
@@ -475,7 +475,7 @@ War Room может визуально наследовать язык Canvas, �
 
 ```text
 1. Собрал
-   Operator создаёт/редактирует manifest в Authoring.
+   Operator создаёт/редактирует wired в Authoring.
 
 2. Проверил
    Validate/dry-run подтверждает, что план допустим.
@@ -487,7 +487,7 @@ War Room может визуально наследовать язык Canvas, �
    View 1 показывает live steps, logs, alerts и evidence.
 
 5. Разбираю
-   Selection шага открывает network/ZAP/console/evidence.
+   Selection шага открывает network/scanner/console/evidence.
 
 6. Перемотал
    Replay перемещает оператора по записанной timeline; side effects не повторяются.
@@ -597,7 +597,7 @@ time t
  ├─ telemetry samples
  ├─ browser video or snapshots
  ├─ structured logs
- ├─ ZAP event/finding
+ ├─ scanner event/finding
  ├─ backend trace correlation
  └─ Buddy explanation / bookmark
 ```
@@ -629,7 +629,7 @@ evidence references
 
 Wall clock может прыгать из-за NTP, timezone и разных машин. Replay должен опираться на monotonic run time и deterministic tie-breaker, например sequence + source + event ID.
 
-События, пришедшие поздно из SSE/ZAP/backend connector, не должны менять уже просмотренную историю молча. Их состояние должно быть одним из:
+События, пришедшие поздно из SSE/scanner/backend connector, не должны менять уже просмотренную историю молча. Их состояние должно быть одним из:
 
 ```text
 provisional → finalized
@@ -643,7 +643,7 @@ Rewind следует мыслить как набор синхронных trac
 
 1. **Attack track** — реальные dictionary/case/payload events.
 2. **Network track** — request/response, latency, status, route.
-3. **ZAP track** — proxy/scanner alerts and findings.
+3. **scanner track** — proxy/scanner alerts and findings.
 4. **Browser track** — screenshots, DOM snapshots, Playwright trace/video references.
 5. **Telemetry track** — throughput, alerts/sec, timings, worker/resource signals.
 6. **Log track** — structured records with time and step correlation.
@@ -793,7 +793,7 @@ operator drags slider slowly
   → real request laser leaves fuzzer
   → telemetry pulse rises
   → browser/network state changes
-  → ZAP alert appears
+  → scanner alert appears
   → finding marker locks the timeline
   → evidence cards open in causal order
   → Buddy explains only from linked evidence
@@ -807,7 +807,7 @@ operator drags slider slowly
 
 1. Timeline/event semantics и master timebase.
 2. Real fuzzer dictionary/case provenance.
-3. Multi-track synchronization для logs, telemetry, ZAP и evidence.
+3. Multi-track synchronization для logs, telemetry, scanner и evidence.
 4. Deterministic replay projection с seek/keyframes.
 5. View 1 synchronized scrubber.
 6. War Zone lasers as real payload projections, initially SVG/DOM.

@@ -8,10 +8,10 @@ from types import SimpleNamespace
 import pytest
 
 from adapters.http_adapter import HttpAdapter
-from adapters.zap_adapter import ZapAdapter
+from adapters.scanner_adapter import ScannerAdapter
 from core.errors import WiredError
 from utils.api_module_runtime import (
-    allow_zap_import,
+    allow_scanner_import,
     resolve_graphql_arg,
     resolve_openapi_arg,
     static_auth_headers,
@@ -44,7 +44,7 @@ def test_resolve_openapi_relative_cascade():
         openapi_fields={
             "spec_mode": "url_relative",
             "spec_path_rel": "/openapi.json",
-            "zap_import": False,
+            "scanner_import": False,
             "auth_module_id": "auth1",
         },
     )
@@ -52,7 +52,7 @@ def test_resolve_openapi_relative_cascade():
     assert r.from_module is True
     assert r.spec == "http://127.0.0.1:8090/openapi.json"
     assert r.base_url == "http://127.0.0.1:8090"
-    assert r.zap_import is False
+    assert r.scanner_import is False
     assert r.auth_module_id == "auth1"
 
 
@@ -68,13 +68,13 @@ def test_resolve_openapi_resource_file():
         openapi_fields={
             "spec_mode": "resource",
             "spec_as": "bank_oas",
-            "zap_import": True,
+            "scanner_import": True,
         },
     )
     r = resolve_openapi_arg(_Wired([mod], imports=[imp]), "bank_openapi")
     assert r.from_module is True
     assert Path(r.spec).resolve() == OAS.resolve()
-    assert r.zap_import is True
+    assert r.scanner_import is True
 
 
 def test_resolve_openapi_denies_foreign_host():
@@ -106,7 +106,7 @@ def test_resolve_openapi_legacy_file_path():
         openapi_fields={
             "spec_source": "file",
             "spec_path": str(OAS),
-            "zap_import": False,
+            "scanner_import": False,
             "auth_module_id": "auth1",
         },
     )
@@ -132,25 +132,25 @@ def test_resolve_graphql_module():
             "schema_mode": "resource",
             "sdl_as": "bank_sdl",
             "endpoint_rel": "/graphql",
-            "zap_import": True,
-            "zap_scan": False,
+            "scanner_import": True,
+            "scanner_scan": False,
         },
     )
     r = resolve_graphql_arg(_Wired([mod], imports=[imp]), "bank_graphql")
     assert r.from_module is True
     assert Path(r.schema).resolve() == SDL.resolve()
     assert r.endpoint == "http://127.0.0.1:8090/graphql"
-    assert r.zap_import is True
+    assert r.scanner_import is True
 
 
-def test_allow_zap_import_gate(monkeypatch):
-    monkeypatch.delenv("PK_OPENAPI_ZAP_IMPORT", raising=False)
-    monkeypatch.delenv("PK_API_ZAP_IMPORT", raising=False)
-    ok, notes = allow_zap_import(module_flag=False, openapi=True)
+def test_allow_scanner_import_gate(monkeypatch):
+    monkeypatch.delenv("PK_OPENAPI_scanner_IMPORT", raising=False)
+    monkeypatch.delenv("PK_API_scanner_IMPORT", raising=False)
+    ok, notes = allow_scanner_import(module_flag=False, openapi=True)
     assert ok is False
     assert notes
-    monkeypatch.setenv("PK_OPENAPI_ZAP_IMPORT", "1")
-    ok2, _ = allow_zap_import(module_flag=False, openapi=True)
+    monkeypatch.setenv("PK_OPENAPI_scanner_IMPORT", "1")
+    ok2, _ = allow_scanner_import(module_flag=False, openapi=True)
     assert ok2 is True
 
 
@@ -165,26 +165,26 @@ def test_static_auth_bearer():
     assert notes == []
 
 
-def test_zap_import_skips_when_module_gate(monkeypatch):
+def test_scanner_import_skips_when_module_gate(monkeypatch):
     monkeypatch.setenv("PK_API_LAB_DRY", "1")
-    monkeypatch.delenv("PK_OPENAPI_ZAP_IMPORT", raising=False)
-    monkeypatch.delenv("PK_API_ZAP_IMPORT", raising=False)
+    monkeypatch.delenv("PK_OPENAPI_scanner_IMPORT", raising=False)
+    monkeypatch.delenv("PK_API_scanner_IMPORT", raising=False)
     mod = SimpleNamespace(
         id="bank_openapi",
         module_type="OpenAPI",
         openapi_fields={
             "spec_mode": "resource",
             "spec_as": "bank_oas",
-            "zap_import": False,
+            "scanner_import": False,
         },
     )
     imp = SimpleNamespace(kind="openapi_spec", as_name="bank_oas", path=str(OAS))
-    zap = ZapAdapter.__new__(ZapAdapter)
-    zap._connected = False
-    zap._zap = None
-    zap._run_wired = _Wired([mod], imports=[imp])
-    assert zap.import_openapi_spec("bank_openapi") is True
-    assert getattr(zap, "_last_openapi_import", {}).get("skipped") is True
+    scanner = ScannerAdapter.__new__(ScannerAdapter)
+    scanner._connected = False
+    scanner._scanner = None
+    scanner._run_wired = _Wired([mod], imports=[imp])
+    assert scanner.import_openapi_spec("bank_openapi") is True
+    assert getattr(scanner, "_last_openapi_import", {}).get("skipped") is True
 
 
 def test_http_set_proxy_and_exercise_dry(monkeypatch):
@@ -199,7 +199,7 @@ def test_http_set_proxy_and_exercise_dry(monkeypatch):
         openapi_fields={
             "spec_mode": "resource",
             "spec_as": "bank_oas",
-            "zap_import": False,
+            "scanner_import": False,
         },
     )
     http.bind_run_wired(_Wired([mod], imports=[imp]))

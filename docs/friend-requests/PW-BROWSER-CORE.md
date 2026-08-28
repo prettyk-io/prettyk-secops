@@ -65,7 +65,7 @@ await page.goto("http://juice-shop:3000")
 
 - Оркестратор сам поднимает браузер. Без Selenium Grid, без внешнего WebDriver.
 - Работает в Docker-контейнере (`npx playwright install --with-deps chromium`).
-- ZAP-проксирование через `proxy` в `browser.new_context()` — трафик гарантированно в ZAP. Сертификаты не нужны.
+- scanner-проксирование через `proxy` в `browser.new_context()` — трафик гарантированно в scanner. Сертификаты не нужны.
 
 ### Mode B — connectOverCDP (живая сессия агента/оператора)
 
@@ -102,7 +102,7 @@ ctx_guest = await browser.new_context(storage_state="guest.json")
 | DOM extraction | `extract_elements()` по AX-нодам | `page.accessibility.snapshot()` + `page.evaluate(() => document.body.innerHTML)` |
 | Network interception | Ручной `Network.enable` + слушатель | `page.route('**/*', handler)` с моком/логированием/инжектом |
 | BrowserContext изоляция | Нет — один driver на сессию | `browser.new_context()` за 10 мс |
-| ZAP через прокси | `--proxy-server=` при старте драйвера | `proxy` в `new_context()` — без перезапуска |
+| scanner через прокси | `--proxy-server=` при старте драйвера | `proxy` в `new_context()` — без перезапуска |
 | console/page errors | `get_log('browser')` | `page.on('console')`, `page.on('pageerror')` |
 | Locator scoring | Ручной `candidates` builder | Playwright `getByRole`/`getByLabel`/`getByTestId` — встроенная приоритизация |
 | Action trace | Ручной `record_action()` | `page.on('request')` / `page.on('response')` — полный трейс нажатия |
@@ -200,7 +200,7 @@ launch browser
   → для каждого интерактивного: click / fill / submit
   → capture network + DOM after
   → build transitions → page model
-  → seed ZAP context (уже есть corpus/zap_context.py)
+  → seed scanner context (уже есть corpus/scanner_context.py)
   → output Discovery IR (models/discovery.py)
 ```
 

@@ -34,7 +34,7 @@ function historyForIbWeb(): EvidenceHistoryPoint[] {
         skipped: 2,
         duration_ms: 1_820_000,
       },
-      note: 'pre_release · ZAP XML → Dojo',
+      note: 'pre_release · scanner XML → Dojo',
     },
     {
       at: DAYS(7),

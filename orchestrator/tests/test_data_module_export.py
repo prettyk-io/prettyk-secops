@@ -24,7 +24,7 @@ def _ctrl_with_modules(modules, *, base_url="http://juice-shop:3000"):
     ctrl.language_engine = LanguageEngine()
     ctrl.page_resolver = None
     ctrl._wired_problems = []
-    ctrl.last_zap_report = None
+    ctrl.last_scanner_report = None
     stream = DataStream()
     data = DataAdapter()
     data.bind(stream)

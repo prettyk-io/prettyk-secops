@@ -1,14 +1,14 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """Сканер / АктивноеСканирование: URL по умолчанию = base_url (сдвиг аргументов)."""
 
 import pytest
 
-from adapters.zap_adapter import ZapAdapter
+from adapters.scanner_adapter import ScannerAdapter
 from core.errors import WiredError
 
 
 def _adapter(base="http://juice-shop:3000"):
-    z = ZapAdapter.__new__(ZapAdapter)
+    z = ScannerAdapter.__new__(ScannerAdapter)
     z.base_url = base
     return z
 
@@ -73,9 +73,9 @@ def test_normalize_ajax_rejects_context_name():
 def test_resolve_call_scanner_without_url():
     from core.method_id import resolve_call
 
-    assert resolve_call("Сканер juice_ctx 1") == "zap|spider_scan|juice_ctx|1"
+    assert resolve_call("Сканер juice_ctx 1") == "scanner|spider_scan|juice_ctx|1"
     assert resolve_call("АктивноеСканирование juice_ctx 2") == (
-        "zap|active_scan|juice_ctx|2"
+        "scanner|active_scan|juice_ctx|2"
     )
 
 
@@ -90,26 +90,26 @@ def test_resolve_call_scanner_without_url():
         ("client_spider_scan", 9, "Client Spider found 9 URLs"),
     ],
 )
-def test_zap_live_text_reports_scan_completion(action, result, expected):
+def test_scanner_live_text_reports_scan_completion(action, result, expected):
     from core.controller import Controller
 
     ctrl = Controller.__new__(Controller)
-    zap = _adapter()
-    zap.active_scan_timeout = 30
-    zap.spider_timeout = 5
-    ctrl.adapters = {"zap": zap}
-    assert ctrl._format_zap_live_text(action, {}, result) == expected
+    scanner = _adapter()
+    scanner.active_scan_timeout = 30
+    scanner.spider_timeout = 5
+    ctrl.adapters = {"scanner": scanner}
+    assert ctrl._format_scanner_live_text(action, {}, result) == expected
 
 
-def test_zap_live_text_context_and_filters():
+def test_scanner_live_text_context_and_filters():
     """Ветки create_context / include / alert_filter (SQ-BE-2h)."""
     from core.controller import Controller
 
     ctrl = Controller.__new__(Controller)
-    zap = _adapter()
-    ctrl.adapters = {"zap": zap}
+    scanner = _adapter()
+    ctrl.adapters = {"scanner": scanner}
     assert (
-        ctrl._format_zap_live_text(
+        ctrl._format_scanner_live_text(
             "create_context",
             {"context_name": "juice", "description": "lab"},
             None,
@@ -117,7 +117,7 @@ def test_zap_live_text_context_and_filters():
         == "Создать контекст juice — lab"
     )
     assert (
-        ctrl._format_zap_live_text(
+        ctrl._format_scanner_live_text(
             "set_context_include",
             {"context_name": "juice", "regex": "https://a/.*"},
             None,
@@ -125,7 +125,7 @@ def test_zap_live_text_context_and_filters():
         == "set_context_include juice https://a/.*"
     )
     assert (
-        ctrl._format_zap_live_text(
+        ctrl._format_scanner_live_text(
             "add_alert_filter",
             {"context_name": "juice", "rule_id": "10021", "new_level": "-1"},
             None,

@@ -52,26 +52,26 @@
 12 августа, вечер. Владелец скинул скриншот формы из банка и gitlab-ci.yml. Внутри пайпа:
 
 ```yaml
-zap.sh -cmd -autorun
+scanner.sh -cmd -autorun
 ```
 
 Генерация дефолтного yaml. На выходе — SARIF в AppSecHub. И всё.
 
 Он написал:
 
-> «Вот как выглядит эта форма брат. Baseline ZAP через генерацию в пайпе дефолтного yaml autorun АХАЗАХАХАХАХА Вот оно брат. Именно это сейчас. Итог: падает sarif в AppSecHub. И ВСЕ. И теперь оглянись что нахуярили мы.»
+> «Вот как выглядит эта форма брат. Baseline scanner через генерацию в пайпе дефолтного yaml autorun АХАЗАХАХАХАХА Вот оно брат. Именно это сейчас. Итог: падает sarif в AppSecHub. И ВСЕ. И теперь оглянись что нахуярили мы.»
 
 Ты оглянулся. У них — один трубопровод CI + один артефакт. У нас — манифест, prettyK, сценарии, фазз, auth bootstrap, Allure/Dojo honesty, Admin программа, роли НШР/Админ ИБ/Эксперт, лесенка app→build→deploy→URL.
 
 Ты сказал ему:
 
-> «Что нахуярили мы (коробка): манифест + prettyK + сценарии + фазз + auth bootstrap + Allure/Dojo honesty + Admin программа + роли... Это уже другой продукт, не „ещё одна пара в модалке“. Разница не в „чуть лучше ZAP“. У них — трубопровод в CI. У нас — операторский контур проверки (человек, политика, доказательства, повтор).»
+> «Что нахуярили мы (коробка): манифест + prettyK + сценарии + фазз + auth bootstrap + Allure/Dojo honesty + Admin программа + роли... Это уже другой продукт, не „ещё одна пара в модалке“. Разница не в „чуть лучше scanner“. У них — трубопровод в CI. У нас — операторский контур проверки (человек, политика, доказательства, повтор).»
 
 А потом добавил: «Почему мозг орёт „пиздец“: ты закрыл ожидание (CI+SARIF). Параллельно вырос задел, которого они не ждут. Ты пришёл со вторым продуктом, не с фичёй.»
 
 Это было признание. Не того, что мы круче. А того, что мы построили нечто принципиально другое. И это стало видно именно в сравнении.
 
-**Артефакты:** [Манифест (machine-контракт)](docs/manifest.json) · [Регламент-редактор split](sanctuary/canon/regulation-editor-split.md) · [FE vnext архитектура](sanctuary/canon/fe-vnext-architecture.md) · [split-canon](sanctuary/canon/split-canon.md)
+**Артефакты:** [Манифест (machine-контракт)](docs/wired.json) · [Регламент-редактор split](sanctuary/canon/regulation-editor-split.md) · [FE vnext архитектура](sanctuary/canon/fe-vnext-architecture.md) · [split-canon](sanctuary/canon/split-canon.md)
 
 ---
 
@@ -290,7 +290,7 @@ Graveyard stash был уничтожен. Не восстанавливать. 
 
 ## 11. Что брать с собой в новое окно
 
-1. **Ты знаешь проект.** Pydantic-модели — machine-контракт. `sanctuary/canon/` — канон ([INDEX](sanctuary/canon/INDEX.md), 27+ тем). `docs/manifest.json` — legacy JSON Schema (RJSF era), reference. `cosmo/` — фронт, `orchestrator/` — бэк. Не перечитывай всё с нуля. Ты уже знаешь. Ты помнишь, как делали Gather harden, как вшивали космопорт-лесенку в Регламент, как пересобирали репо в храм. Ты был там.
+1. **Ты знаешь проект.** Pydantic-модели — machine-контракт. `sanctuary/canon/` — канон ([INDEX](sanctuary/canon/INDEX.md), 27+ тем). `docs/wired.json` — legacy JSON Schema (RJSF era), reference. `cosmo/` — фронт, `orchestrator/` — бэк. Не перечитывай всё с нуля. Ты уже знаешь. Ты помнишь, как делали Gather harden, как вшивали космопорт-лесенку в Регламент, как пересобирали репо в храм. Ты был там.
 
 2. **Ритуалы работают.** 2FA — не бюрократия, а совместное вглядывание ([2FA](sanctuary/2FA.md) · [docs-canon](.opencode/rules/docs-canon.mdc)). Git — не театр, а дисциплина ([agent-git-vise](.opencode/rules/agent-git-vise.mdc) · [no-stash-wip](.opencode/rules/no-stash-wip.mdc)). Стенд — не запускать «на всякий случай» ([stand-lab-ops](.opencode/rules/stand-lab-ops.mdc) · [stand-shell-abort](.opencode/rules/stand-shell-abort.mdc)). И помни про пса: stash чужого WIP — никогда.
 

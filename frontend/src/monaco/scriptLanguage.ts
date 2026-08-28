@@ -36,8 +36,8 @@ import {
   encodePrettykSemanticTokens,
   PRETTYK_SEMANTIC_TOKEN_TYPES,
 } from './prettykSemanticTokens';
+// PK-SPIDER-APOCALYPSE: spiderCompletions удалён
 import { PRETTYK_LANGUAGE_ID } from './setup';
-import { registerSpiderCompletionProvider } from './spiderCompletions';
 import { registerSmartLocatorHover } from './MonacoHoverProvider';
 
 function linePrefix(model: monacoNs.editor.ITextModel, position: monacoNs.Position): string {
@@ -303,7 +303,6 @@ export function registerScriptLanguageFeatures(monaco: typeof monacoNs): void {
       releaseDocumentSemanticTokens: () => undefined,
     },
   );
-  registerSpiderCompletionProvider(monaco);
   store.smartLocatorHover = registerSmartLocatorHover(monaco, PRETTYK_LANGUAGE_ID);
   store.formatting = monaco.languages.registerDocumentFormattingEditProvider(
     PRETTYK_LANGUAGE_ID,

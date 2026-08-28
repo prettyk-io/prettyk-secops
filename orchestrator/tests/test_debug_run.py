@@ -101,6 +101,16 @@ def test_wait_while_paused_unblocks(live_tmp):
 
 
 def test_live_api_pause_resume(live_tmp):
+    from utils.live_server import live_port
+    import socket
+    s = socket.socket()
+    try:
+        s.connect(('127.0.0.1', live_port()))
+        s.close()
+        # Live server already running — skip to avoid port conflict
+        pytest.skip("Live server already running on port")
+    except (ConnectionRefusedError, OSError):
+        pass
     set_live_debug_flags(enabled=True, paused=False, timers_suppressed=True)
     url = start_live_server(session_name="unit-debug")
     base = url.rstrip("/")

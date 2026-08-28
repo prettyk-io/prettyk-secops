@@ -1,28 +1,28 @@
-﻿# Industrial ZAP (G-37): API key + узкий api.addrs.
-# Lab default остаётся services/docker-compose.zap.yml (disablekey).
+﻿# Industrial scanner (G-37): API key + узкий api.addrs.
+# Lab default остаётся services/docker-compose.scanner.yml (disablekey).
 #
-#   set ZAP_API_KEY=...          # обязательно
-#   set ZAP_API_ADDRS=127.0.0.1  # опционально; default loopback
-#   docker compose -f services/docker-compose.zap.industrial.yml up -d
+#   set SCANNER_API_KEY=...          # обязательно
+#   set scanner_API_ADDRS=127.0.0.1  # опционально; default loopback
+#   docker compose -f services/docker-compose.scanner.industrial.yml up -d
 #
-# Оркестратор: PK_ZAP_API_KEY или ZAP_API_KEY (передаётся в ZapAdapter).
+# Оркестратор: PK_SCANNER_API_KEY или SCANNER_API_KEY (передаётся в scannerAdapter).
 
 services:
-  zap:
-    image: zaproxy/zap-stable:2.17.0
-    container_name: zap
+  scanner:
+    image: zaproxy/scanner-stable:2.17.0
+    container_name: scanner
     restart: unless-stopped
     ports:
       - "8080:8080"
       - "8099:8099"
     volumes:
-      - ../zap/plugins:/zap/plugins:ro
+      - ../scanner/plugins:/scanner/plugins:ro
     networks:
       - pk-net
     environment:
-      ZAP_API_KEY: ${ZAP_API_KEY:?set ZAP_API_KEY for industrial profile}
+      SCANNER_API_KEY: ${SCANNER_API_KEY:?set SCANNER_API_KEY for industrial profile}
     command:
-      - zap.sh
+      - scanner.sh
       - -daemon
       - -port
       - "8080"
@@ -31,9 +31,9 @@ services:
       - -config
       - api.disablekey=false
       - -config
-      - api.key=${ZAP_API_KEY}
+      - api.key=${SCANNER_API_KEY}
       - -config
-      - api.addrs.addr.name=${ZAP_API_ADDRS:-127.0.0.1}
+      - api.addrs.addr.name=${scanner_API_ADDRS:-127.0.0.1}
       - -config
       - api.addrs.addr.regex=false
       - -config
@@ -51,11 +51,11 @@ services:
       - -config
       - telemetry.allowTelemetry=false
     healthcheck:
-      # С api.key версия без ключа отвечает 403 — передаём ZAP_API_KEY.
+      # С api.key версия без ключа отвечает 403 — передаём SCANNER_API_KEY.
       test:
         [
           "CMD-SHELL",
-          'curl -fsS "http://localhost:8080/JSON/core/view/version/?apikey=$${ZAP_API_KEY}"',
+          'curl -fsS "http://localhost:8080/JSON/core/view/version/?apikey=$${SCANNER_API_KEY}"',
         ]
       interval: 15s
       timeout: 5s

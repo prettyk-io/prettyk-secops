@@ -119,22 +119,22 @@ def test_capture_page_reads_title_and_dom():
 # ── capture_network ──
 
 
-def test_capture_network_empty_without_zap():
-    class NoZap:
+def test_capture_network_empty_without_scanner():
+    class Noscanner:
         pass
 
-    assert capture_network(NoZap()) == []
+    assert capture_network(Noscanner()) == []
 
 
 def test_capture_network_from_get_messages():
-    class FakeZap:
+    class Fakescanner:
         def get_messages(self, start=None, count=None):
             return [
                 _msg(),
                 {"method": "GET", "url": "http://juice-shop:3000/"},
             ]
 
-    entries = capture_network(FakeZap(), base="http://juice-shop:3000")
+    entries = capture_network(Fakescanner(), base="http://juice-shop:3000")
     assert len(entries) == 2
     assert entries[0].method == "POST"
     assert entries[1].method == "GET"
@@ -142,11 +142,11 @@ def test_capture_network_from_get_messages():
 
 
 def test_capture_network_skips_bad_rows():
-    class FakeZap:
+    class Fakescanner:
         def get_messages(self, start=None, count=None):
             return [{"garbage": True}, _msg()]
 
-    entries = capture_network(FakeZap(), base="http://juice-shop:3000")
+    entries = capture_network(Fakescanner(), base="http://juice-shop:3000")
     assert len(entries) == 1
 
 

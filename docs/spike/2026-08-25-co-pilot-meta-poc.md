@@ -337,7 +337,7 @@ PoC получает `PROMOTE`, если на фиксированном тес�
 - все типы действий и все виды assertion;
 - production persistence, multi-user collaboration и retention policy;
 - Slack/Discord/почтовые уведомления;
-- ZAP, Dojo, Allure и полноценный evidence pack;
+- scanner, Dojo, Allure и полноценный evidence pack;
 - мобильные браузеры и матрица окружений;
 - выбор окончательной модели или брендинг PrettyK Buddy;
 - массовая генерация тестов по всему приложению;

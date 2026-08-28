@@ -6,7 +6,7 @@
 > 
 > **27 авг 2026 — общая инфраструктура, построенная по ходу DSL/браузерной сессии (не целевой Cosmo-эпик, а shared foundation):**
 > - **Boss:** PlanCompiler Python (COS-002 эквивалент — BrickCatalog + topsort + cycle detection + compiled_hash), Batch DAG Executor (pending→running→passed/failed/blocked + Gate-ожидание + идемпотентность).
-> - **Luna:** Pydantic-модели Domain/AppGraph/Brick/Run/Gate (5 моделей, 39 тестов) + Gitea/Woodpecker/Jenkins/ZAP/Fuzzer адаптеры (5 шт., 32 теста) + EvidenceChain (SHA-256 иммутабельный лог, 14 тестов) + ГОСТ-Акт (модель + HTML renderer + SARIF, 21 тест) + интеграционный full-cycle тест (Domain→Run→Gate→Evidence→Акт, 62 теста).
+> - **Luna:** Pydantic-модели Domain/AppGraph/Brick/Run/Gate (5 моделей, 39 тестов) + Gitea/Woodpecker/Jenkins/scanner/Fuzzer адаптеры (5 шт., 32 теста) + EvidenceChain (SHA-256 иммутабельный лог, 14 тестов) + ГОСТ-Акт (модель + HTML renderer + SARIF, 21 тест) + интеграционный full-cycle тест (Domain→Run→Gate→Evidence→Акт, 62 теста).
 > - Эти компоненты будут переиспользованы при запуске Cosmo 2.0, но сейчас они обслуживают текущий DSL/parity/evidence-контур.
 
 ---
@@ -96,7 +96,7 @@
 ### Контекст
 Брокер управляет изолированными сессиями защитных инстрментов:
 - Привязка к run_id
-- Аллокация портов (ZAP :8080, Playwright CDP :9222, KDT Live :8767)
+- Аллокация портов (scanner :8080, Playwright CDP :9222, KDT Live :8767)
 - Health chеck: инструмент жив / готов / занят
 - Освобождение при завершении run
 - Таймаут сессии (если run завис)
@@ -191,7 +191,7 @@ mock Gitea + mock Woodpecker + реaльный compiler + реaльная сте
 - [ ] Mоck-тeсты: всe oпeрaции.
 - [ ] Интeрфeйс ЕxесutiоnАdарtеr (аbstrаct bаsе clаss) — чтoбы пoтoм дoбaвить Jеnkins.
 
-## COS-009: ZAP ctl + Playwright ctl — стандартный интерфейс
+## COS-009: scanner ctl + Playwright ctl — стандартный интерфейс
 
 **Est:** 2–3h  
 **Зависит от:** COS-004 (СараbilityВrоkеr).  

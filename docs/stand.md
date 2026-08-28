@@ -10,7 +10,7 @@
 
 > [!WARNING]
 
-> Лабораторный ZAP работает без API-ключа. Не публикуйте порты стенда в общую сеть и не направляйте active scan на систему без разрешения.
+> Лабораторный scanner работает без API-ключа. Не публикуйте порты стенда в общую сеть и не направляйте active scan на систему без разрешения.
 
 ## Требования
 
@@ -63,7 +63,7 @@ npm.cmd run dev
 
 Откройте [http://localhost:5173/](http://localhost:5173/).
 
-Скрипт проверяет или запускает Vite и локальный API проверки языка. Он не запускает Docker, браузер, ZAP, PrettyK Live или сценарий. После изменения Python-кода проверки перезапустите скрипт; изменения React и CSS обычно подхватывает Vite. Инвазивный FE → снова глазная проверка по блоку IMPORTANT выше.
+Скрипт проверяет или запускает Vite и локальный API проверки языка. Он не запускает Docker, браузер, scanner, PrettyK Live или сценарий. После изменения Python-кода проверки перезапустите скрипт; изменения React и CSS обычно подхватывает Vite. Инвазивный FE → снова глазная проверка по блоку IMPORTANT выше.
 
 ## Запустить обязательный контур
 
@@ -73,7 +73,7 @@ npm.cmd run dev
 .\orchestrator\tools\lab_up.ps1
 ```
 
-Он поднимает Docker Engine при необходимости, Grid, **allure3-secops**, ZAP daemon,
+Он поднимает Docker Engine при необходимости, Grid, **allure3-secops**, scanner daemon,
 Juice Shop, Editor/playground и idle PrettyK Live, после чего ждёт их HTTP-readiness. Webswing не
 входит в старт по умолчанию. Для DefectDojo используйте
 `.\orchestrator\tools\lab_up.ps1 -IncludeDefectDojo`.
@@ -187,7 +187,7 @@ $LASTEXITCODE
 | `run_summary.json` | итог, код, gate и пути к артефактам |
 | `reports\allure-results\` | исходные данные для allure3-secops |
 | `reports\allure-report\` | HTML-отчёт (статика сервиса) |
-| `reports\scanner-results\` | отчёты ZAP |
+| `reports\scanner-results\` | отчёты scanner |
 | `reports\video\` | видео сессий Grid |
 | `reports\live\` | данные PrettyK Live |
 
@@ -237,9 +237,9 @@ docker compose -f services\docker-compose.sonarqube.yml down
 
 ## Опциональные сервисы
 
-### HAR → ZAP sequence (IMP-HAR)
+### HAR → scanner sequence (IMP-HAR)
 
-Compose scanner монтирует `reports/runs` → `/zap/wrk/prettyk-runs`. Studio Resources (`kind=har_file`) пишут `.har` в run-dir; `ИмпортHAR` переписывает host-path в контейнерный. После правки `services/docker-compose.scanner.yml` volumes — **recreate** demon, не только restart:
+Compose scanner монтирует `reports/runs` → `/scanner/wrk/prettyk-runs`. Studio Resources (`kind=har_file`) пишут `.har` в run-dir; `ИмпортHAR` переписывает host-path в контейнерный. После правки `services/docker-compose.scanner.yml` volumes — **recreate** demon, не только restart:
 
 ```powershell
 docker compose -f services\docker-compose.scanner.yml up -d --force-recreate
@@ -250,17 +250,17 @@ docker compose -f services\docker-compose.scanner.yml up -d --force-recreate
 
 ### Scanner Webswing
 
-По умолчанию | или манифест `zap_mode=webswing` | `.zap` compose из стенда |
+По умолчанию | или манифест `scanner_mode=webswing` | `.scanner` compose из стенда |
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File services\zap-webswing-up.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File services\scanner-webswing-up.ps1
 ```
 
-UI: [http://127.0.0.1:8082/zap](http://127.0.0.1:8082/zap). Подробности: [Webswing и daemon](webswing-daemon-stand.md).
+UI: [http://127.0.0.1:8082/scanner](http://127.0.0.1:8082/scanner). Подробности: [Webswing и daemon](webswing-daemon-stand.md).
 
 ### DefectDojo
 
-DefectDojo не участвует в выполнении сценария (шаги/WebDriver). После прогона XML импортируется в finalize; **admission quality gate** читает ACTIVE severity counts из Dojo (ZAP — fallback, если Dojo skipped). Поднять для lab:
+DefectDojo не участвует в выполнении сценария (шаги/WebDriver). После прогона XML импортируется в finalize; **admission quality gate** читает ACTIVE severity counts из Dojo (scanner — fallback, если Dojo skipped). Поднять для lab:
 
 ```powershell
 docker compose -f services\docker-compose.defectdojo.yml up -d
@@ -303,7 +303,7 @@ UI: [http://127.0.0.1:9000/](http://127.0.0.1:9000/). Креды admin — в gi
 | Selenium недоступен | проверьте `:4444/status` и `docker compose ... ps` |
 | В Grid нет живого экрана | откройте noVNC `:7900`; для картинки нужен не headless-браузер |
 | PrettyK Live пуст | запустите `run_live_idle.py`; до первого шага пустая лента нормальна |
-| ZAP connection refused | дождитесь ответа API `:8080` |
+| scanner connection refused | дождитесь ответа API `:8080` |
 | Браузер не видит Juice Shop | внутри Docker используйте `http://juice-shop:3000`, не `localhost` |
 | allure3-secops не создал отчёт | проверьте `:5050/health` (`service=allure3-secops`) и файлы в `reports\allure-results` |
 

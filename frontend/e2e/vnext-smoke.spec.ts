@@ -148,7 +148,7 @@ test.describe('Ручной smoke (реальный UI)', () => {
     await expect(page.locator('.pk-monitor-label')).toBeVisible();
   });
 
-  test('11. Валидировать (default manifest)', async ({ page }) => {
+  test('11. Валидировать (default wired)', async ({ page }) => {
     await login(page);
     await page.locator('[data-testid="home-initiate"]').click();
     await page.locator('[data-testid="home-check-title"]').fill('smoke-validate');

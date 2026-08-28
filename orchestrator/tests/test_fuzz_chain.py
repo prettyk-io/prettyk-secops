@@ -13,6 +13,7 @@ if str(ROOT) not in sys.path:
 from core.errors import WiredError
 from core.fuzzing import FuzzAdapter
 from core.method_id import ensure_wire, lookup_method_id
+from models.wired import Wired
 from utils.chain_ops import chain_from_har, seed_prettyk_fuzz_chain
 
 
@@ -81,16 +82,16 @@ def test_fuzz_chain_module_prepare_and_wave():
         security_configuration=SimpleNamespace(base_url_override="https://api.example"),
     )
 
-    zap = SimpleNamespace(_wired_dir=None)
+    scanner = SimpleNamespace(_wired_dir=None)
     calls = []
 
     def fake_prepare(mid):
         calls.append(("prepare", mid))
         return True
 
-    zap.prepare_chain_module = fake_prepare
+    scanner.prepare_chain_module = fake_prepare
 
-    adapter = FuzzAdapter(Wired, zap)
+    adapter = FuzzAdapter(wired, scanner)
     adapter.bind(SimpleNamespace())
 
     def fake_wave(fid):
@@ -144,7 +145,7 @@ def test_fuzz_chain_missing_fuzzer():
             test_data_constructor=[mod], fuzzers=[], imports=[]
         )
     )
-    adapter = FuzzAdapter(Wired, SimpleNamespace(_wired_dir=None))
+    adapter = FuzzAdapter(wired, SimpleNamespace(_wired_dir=None))
     adapter.bind(SimpleNamespace())
     try:
         adapter.fuzz_chain_module("flow_x")

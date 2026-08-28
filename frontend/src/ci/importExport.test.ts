@@ -11,7 +11,7 @@ function makePipeline(): PipelineDefinition {
     requiredCapabilities: ['checks:create'],
     steps: [
       { id: 'disc', component: { name: 'Browser Discovery', version: '1.4.0' } },
-      { id: 'scan', component: { name: 'ZAP Active Scan', version: '2.15.0' } },
+      { id: 'scan', component: { name: 'scanner Active Scan', version: '2.15.0' } },
       { id: 'gate', component: { name: 'Quality Gate', version: '3.1.0' } },
     ],
     edges: [
@@ -28,7 +28,7 @@ describe('Import/Export Compatibility (PK-CI-8)', () => {
         pipelineId: 'p1',
         externalSteps: [
           { id: 's1', name: 'browser-discovery' },
-          { id: 's2', name: 'zap-active-scan' },
+          { id: 's2', name: 'scanner-active-scan' },
           { id: 's3', name: 'quality-gate' },
         ],
       });
@@ -50,7 +50,7 @@ describe('Import/Export Compatibility (PK-CI-8)', () => {
       const report = assessImport({
         pipelineId: 'p1',
         externalSteps: [
-          { id: 's1', name: 'zap-scan-custom' },
+          { id: 's1', name: 'scanner-scan-custom' },
         ],
       });
       expect(report.steps[0]!.level).toBe('degraded');

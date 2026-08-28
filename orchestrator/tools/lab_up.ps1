@@ -4,7 +4,7 @@
   Поднимает полный локальный lab-контур без очистки данных.
 
 .DESCRIPTION
-  Обязательный контур: Grid, allure3-secops (:5050, канон), scanner,
+  Обязательный контур: allure3-secops (:5050, канон), scanner,
   Juice Shop, pk-api-lab (REST/GraphQL/gRPC), Editor, playground и idle PrettyK Live.
   Webswing намеренно не запускается (см. global skill `prettyk-lab`).
   DefectDojo — только -IncludeDefectDojo.
@@ -31,7 +31,7 @@ $VenvPython = Join-Path $RepoRoot '.venv\Scripts\python.exe'
 
 function Test-PortListen {
     param([Parameter(Mandatory = $true)][int]$Port)
-    return $null -ne (Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue)
+    return [bool](netstat -ano | findstr /C:":$Port" | findstr /C:"LISTENING")
 }
 
 function Test-DockerEngine {
@@ -121,7 +121,7 @@ function Ensure-LiveIdle {
 }
 
 Ensure-DockerEngine
-Start-Compose 'services\docker-compose.yml'
+Start-Compose 'services\docker-compose.base.yml'
 Start-Compose 'services\docker-compose.scanner.yml'
 Start-Compose 'services\docker-compose.target.yml'
 Start-Compose 'services\docker-compose.api-lab.yml'

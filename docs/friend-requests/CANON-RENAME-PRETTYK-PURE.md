@@ -51,7 +51,7 @@
 ## 4. Что остаётся неизменным (Invariants)
 
 - **Архитектура коробки:** 100% автономность, работа в airgap, zero external dependencies.
-- **Внутренний стек:** Playwright Browser Core, QWEN AI Assistant, ZAP demon, Allure 3, DefectDojo, Live, Python/Node runtime.
+- **Внутренний стек:** Playwright Browser Core, QWEN AI Assistant, scanner demon, Allure 3, DefectDojo, Live, Python/Node runtime.
 - **Кастомный профиль `cosmo-custom`:** Сохраняет изоляцию в `sanctuary/custom/cosmo/` и локальный статус (в git не коммитится).
 - **Dual-read fallback:** Поддержка чтения legacy-переменных и старых манифестов сохраняется.
 

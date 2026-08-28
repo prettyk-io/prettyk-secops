@@ -1,0 +1,104 @@
+# PrettyK Pure — Helm chart values
+
+# ── System namespace ──
+systemNamespace: prettyk-system
+
+# ── System services (base) ──
+allure3:
+  enabled: true
+  image:
+    repository: pk-allure3-secops
+    tag: local
+  service:
+    port: 5050
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+  persistence:
+    enabled: true
+    size: 5Gi
+
+allureLight:
+  enabled: true
+  image:
+    repository: pk-allure-light-secops
+    tag: local
+  service:
+    port: 5051
+
+# ── LLM / AI (optional) ──
+ai:
+  enabled: false
+  llamaServer:
+    image: ghcr.io/ggml-org/llama.cpp:server
+    modelVolume:
+      enabled: true
+      size: 2Gi
+
+# ── Session workloads ──
+session:
+  # Labels applied to all session resources.
+  labels:
+    app.kubernetes.io/part-of: prettyk
+
+  scanner:
+    image:
+      repository: zaproxy/scanner-stable
+      tag: "2.17.0"
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 250m
+      limits:
+        memory: 2Gi
+        cpu: 1000m
+
+  browser:
+    image:
+      repository: pk-playwright-authoring
+      tag: local
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 250m
+      limits:
+        memory: 2Gi
+        cpu: 1000m
+    shmSize: 2Gi
+
+  target:
+    image:
+      repository: bkimminich/juice-shop
+      tag: v20.1.1
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 500m
+
+# ── Network policy ──
+networkPolicy:
+  enabled: true
+  # Межсессионный трафик запрещён, только pk-control может обращаться к сессии.
+  allowedNamespaces:
+    - prettyk-system
+
+# ── Service account ──
+serviceAccount:
+  create: true
+  name: prettyk-controller
+
+# ── RBAC ──
+rbac:
+  create: true
+
+# ── Node selector / tolerations (airgap) ──
+nodeSelector: {}
+tolerations: []
+affinity: {}

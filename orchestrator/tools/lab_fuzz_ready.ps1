@@ -4,7 +4,7 @@
   Проверяет (и при необходимости поднимает) lab-контур под Juice + DAST-fuzz labs.
 
 .DESCRIPTION
-  Без -StartOnlyCheck вызывает lab_up.ps1, затем HTTP-пробы ZAP/Juice/Live/Allure
+  Без -StartOnlyCheck вызывает lab_up.ps1, затем HTTP-пробы scanner/Juice/Live/Allure
   и печатает команды smoke. Webswing не трогает.
 
 .EXAMPLE
@@ -48,7 +48,7 @@ if (-not $CheckOnly) {
 }
 
 $probes = @(
-    @{ Name = 'ZAP demon'; Url = 'http://127.0.0.1:8080/JSON/core/view/version/' },
+    @{ Name = 'scanner demon'; Url = 'http://127.0.0.1:8080/JSON/core/view/version/' },
     @{ Name = 'Juice'; Url = 'http://127.0.0.1:3000/' },
     @{ Name = 'PrettyK Live'; Url = 'http://127.0.0.1:8767/api/meta' },
     @{ Name = 'Allure'; Url = 'http://127.0.0.1:5050/' }
@@ -93,5 +93,5 @@ if ($failed.Count -gt 0) {
     exit 2
 }
 
-Write-Host 'READY: Juice + ZAP demon + Live contour for fuzz labs'
+Write-Host 'READY: Juice + scanner demon + Live contour for fuzz labs'
 exit 0

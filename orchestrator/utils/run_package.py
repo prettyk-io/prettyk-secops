@@ -145,7 +145,7 @@ def _counts_source_label(raw: Any) -> str:
     return {
         "dojo_stats": "Dojo ACTIVE (stats)",
         "dojo_findings": "Dojo ACTIVE (findings)",
-        "zap": "ZAP fallback",
+        "scanner": "scanner fallback",
     }.get(key, key or "—")
 
 

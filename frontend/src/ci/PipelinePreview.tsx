@@ -78,7 +78,7 @@ export function PipelinePreview({ pipeline, onRun }: PipelinePreviewProps) {
   const totalSteps = pipeline.steps.length;
   const approvalsRequired = pipeline.steps.reduce((acc, s) => acc + (s.approvals?.length ?? 0), 0);
   const hasFuzzer = pipeline.steps.some((s) => s.component.name === 'fuzzer');
-  const hasScan = pipeline.steps.some((s) => s.component.name.includes('scan') || s.component.name.includes('spider'));
+  const hasScan = pipeline.steps.some((s) => s.component.name.includes('scan') || s.component.name.includes('crawl'));
 
   return (
     <Box sx={{ p: 3, maxWidth: 900, mx: 'auto' }}>

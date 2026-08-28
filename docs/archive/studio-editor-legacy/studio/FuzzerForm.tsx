@@ -271,7 +271,7 @@ export function FuzzerForm({
                     style={{ display: 'block', opacity: 0.75, fontSize: 12 }}
                   >
                     При запуске в цели волны добавляются имена параметров из
-                    журнала трафика ZAP (query и поля JSON). Если журнал пуст,
+                    журнала трафика scanner (query и поля JSON). Если журнал пуст,
                     список целей не меняется.
                   </Typography.Text>
                 </div>
@@ -419,7 +419,7 @@ export function FuzzerForm({
                     onChange({ session_replay: event.target.checked });
                   }}
                 >
-                  Повторить Cookie / Authorization из истории ZAP
+                  Повторить Cookie / Authorization из истории scanner
                 </Checkbox>
                 <Typography.Text type="secondary" className="pk-studio-fuzzer-hint">
                   Включать только после входа в сценарии. Иначе жёсткий отказ session_missing.

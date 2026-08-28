@@ -157,7 +157,7 @@ def compile_wired(ir_session: dict[str, Any]) -> dict[str, Any]:
         "infrastructure": {
             "base_url_override": ir_session.get("target_url") or "",
             "prod_base_url": ir_session.get("target_url") or "",
-            "zap_mode": "demon",
+            "scanner_mode": "demon",
             "browser_type": "chromium",
             "debug_mode": False,
         },

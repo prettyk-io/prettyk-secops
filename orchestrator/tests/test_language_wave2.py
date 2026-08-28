@@ -375,7 +375,7 @@ def test_controller_language_if_step():
     ctrl.language_engine = LanguageEngine()
     ctrl.adapters = {"data": data}
     ctrl._wired_problems = []
-    ctrl.last_zap_report = None
+    ctrl.last_scanner_report = None
     factory = ActionFactory()
     factory.register("data", "let", data.let)
     ctrl.action_factory = factory
@@ -429,7 +429,7 @@ def test_controller_run_step_loop_list_append():
     ctrl.page_resolver = None
     ctrl.adapters = {"data": data}
     ctrl._wired_problems = []
-    ctrl.last_zap_report = None
+    ctrl.last_scanner_report = None
     factory = ActionFactory()
     factory.register("data", "let", data.let)
     factory.register("data", "list_append", data.list_append)

@@ -7,7 +7,7 @@
 ## Тезис
 
 Qwen3-1.7B производит **семантическую компрессию (Semantic Collapse)** двух уровней:
-1. **Finding Cluster Synthesis:** Схлопывает 5000 сырых алертов ZAP в 4–5 осмысленных историй безопасности (Exploit Families), объединяя побочные эффекты одной уязвимости (например, SQL Injection + Error Disclosure на одном эндпоинте).
+1. **Finding Cluster Synthesis:** Схлопывает 5000 сырых алертов scanner в 4–5 осмысленных историй безопасности (Exploit Families), объединяя побочные эффекты одной уязвимости (например, SQL Injection + Error Disclosure на одном эндпоинте).
 2. **Scenario Phase Folding:** Схлопывает 32 строки элементарного конструктора сценария в 3–5 высокоуровневых фаз атаки (Bootstrap, Reconnaissance, Injection Surface, Extraction, Teardown).
 3. **Spider URL Hierarchy:** Группирует 982 найденных URL по функциональным доменам (`/api/*`, `/rest/*`, `/#/login`, `/assets/*`).
 
@@ -21,7 +21,7 @@ Qwen3-1.7B производит **семантическую компресси�
 ## Архитектура
 
 ```
-  [ Raw ZAP Alerts / Constructor Steps ]
+  [ Raw scanner Alerts / Constructor Steps ]
                    │
                    ▼ (Level 0)
      Deterministic Fingerprint Filter

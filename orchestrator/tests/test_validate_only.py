@@ -1,5 +1,5 @@
 ﻿# -*- coding: utf-8 -*-
-"""G-06 --validate-only без ZAP/Grid."""
+"""G-06 --validate-only без scanner/Grid."""
 from __future__ import annotations
 
 import subprocess

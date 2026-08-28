@@ -26,10 +26,10 @@ export interface BrickDef {
 
 const MOCK_BRICKS: BrickDef[] = [
   { id: 'b-sast-1', name: 'Semgrep SAST', type: 'sast', executor: 'semgrep', image: 'semgrep/semgrep:latest', inputs: ['src'], outputs: ['findings.json'], description: 'Static analysis' },
-  { id: 'b-sca-1', name: 'Dependency Check', type: 'sca', executor: 'owasp-dc', image: 'owasp/dependency-check:latest', inputs: ['manifest'], outputs: ['report.html'] },
+  { id: 'b-sca-1', name: 'Dependency Check', type: 'sca', executor: 'owasp-dc', image: 'owasp/dependency-check:latest', inputs: ['wired'], outputs: ['report.html'] },
   { id: 'b-build-1', name: 'Docker Build', type: 'build', executor: 'docker', image: 'docker:latest', inputs: ['Dockerfile'], outputs: ['image.tar'] },
   { id: 'b-deploy-1', name: 'K8s Deploy', type: 'deploy', executor: 'kubectl', image: 'bitnami/kubectl:latest', inputs: ['image:tag'], outputs: ['lb_url'] },
-  { id: 'b-dast-1', name: 'ZAP Full Scan', type: 'dast', executor: 'zap', image: 'zap-full:latest', inputs: ['target_url'], outputs: ['zap_report.json'], depends_on: ['b-deploy-1'] },
+  { id: 'b-dast-1', name: 'scanner Full Scan', type: 'dast', executor: 'scanner', image: 'scanner-full:latest', inputs: ['target_url'], outputs: ['scanner_report.json'], depends_on: ['b-deploy-1'] },
   { id: 'b-dast-2', name: 'Nuclei Scan', type: 'dast', executor: 'nuclei', image: 'projectdiscovery/nuclei:latest', inputs: ['target_url'], outputs: ['nuclei.json'] },
   { id: 'b-gate-1', name: 'Quality Gate', type: 'gate', executor: 'policy', image: 'prettyk/gate:latest', inputs: ['findings'], outputs: ['verdict'], depends_on: ['b-dast-1'] },
 ];

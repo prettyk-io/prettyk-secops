@@ -91,7 +91,7 @@ Keeper взял выводы Luna и Gemini, провёл refine по прото
 
 ### 5. Балансировка раннеров ≠ HTTP Load Balancer
 
-Нельзя сделать `round-robin` между worker'ами. Запуск требует конкретных capabilities (браузер, ZAP, сетевая зона), и worker должен быть не просто свободным, а подходящим. Это задача capability-aware scheduler'а, а не сетевого прокси.
+Нельзя сделать `round-robin` между worker'ами. Запуск требует конкретных capabilities (браузер, scanner, сетевая зона), и worker должен быть не просто свободным, а подходящим. Это задача capability-aware scheduler'а, а не сетевого прокси.
 
 ---
 
@@ -113,7 +113,7 @@ Keeper взял выводы Luna и Gemini, провёл refine по прото
    Run dispatcher / worker leases
           │
   Изолированные execution workers
-  (браузер/Grid, ZAP, fuzzer, connector probes)
+  (браузер/Grid, scanner, fuzzer, connector probes)
           │
      Live telemetry + evidence pipeline
           │

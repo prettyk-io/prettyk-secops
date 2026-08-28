@@ -80,7 +80,7 @@ def test_build_engagement_url():
 
 
 def test_import_detailed_check_mode_posts_auto_create(monkeypatch, tmp_path):
-    xml = tmp_path / "zap.xml"
+    xml = tmp_path / "scanner.xml"
     xml.write_text("<xml/>", encoding="utf-8")
     monkeypatch.setenv("PK_DEFECTDOJO_URL", "http://dojo.test")
     monkeypatch.setenv("PK_DEFECTDOJO_TOKEN", "tok")

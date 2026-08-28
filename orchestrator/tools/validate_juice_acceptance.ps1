@@ -1,4 +1,4 @@
-# T-juice-IDE: validate-only на sanitized juice fixture (без ZAP).
+# T-juice-IDE: validate-only на sanitized juice fixture (без scanner).
 # Из корня репо:
 #   .\orchestrator\tools\validate_juice_acceptance.ps1
 $ErrorActionPreference = "Stop"

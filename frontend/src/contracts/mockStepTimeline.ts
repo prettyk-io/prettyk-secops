@@ -31,8 +31,8 @@ export const MOCK_STEP_TIMELINE_SUMMARY: RunTimelineSummary = {
       ended_at: '2026-08-25T14:32:00.920Z',
     },
     {
-      step_id: 'step-03-spider-crawl',
-      name: 'Active Spider Crawl & Endpoint Discovery',
+      step_id: 'step-03-crawl',
+      name: 'Active Crawl & Endpoint Discovery',
       status: 'success',
       duration_ms: 1250,
       started_at: '2026-08-25T14:32:00.920Z',

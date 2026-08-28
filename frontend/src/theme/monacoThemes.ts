@@ -35,8 +35,8 @@ const BUNDLES: Record<ThemeId, MonacoThemeBundle> = {
         'pk.keyword': { foreground: '0e7490', fontStyle: 'bold' },
         'pk.scenario.failsafe': { foreground: 'ca8a04', fontStyle: 'bold' },
         'pk.facade': { foreground: '475569' },
-        // 3 оттенка PrettyK: keyword / zap(+локаторы) / selenium
-        'pk.method.zap': { foreground: '9a3412', fontStyle: 'bold' },
+        // 3 оттенка PrettyK: keyword / scanner(+локаторы) / selenium
+        'pk.method.scanner': { foreground: '9a3412', fontStyle: 'bold' },
         'pk.method.selenium': { foreground: '1d4ed8', fontStyle: 'bold' },
         'pk.locator': { foreground: '9a3412', fontStyle: 'bold' },
         'pk.atheader': { foreground: 'ca8a04', fontStyle: 'bold' },
@@ -88,7 +88,7 @@ const BUNDLES: Record<ThemeId, MonacoThemeBundle> = {
         'pk.keyword': { foreground: '2dd4bf', fontStyle: 'bold' },
         'pk.scenario.failsafe': { foreground: 'facc15', fontStyle: 'bold' },
         'pk.facade': { foreground: 'cbd5e1' },
-        'pk.method.zap': { foreground: 'fb923c', fontStyle: 'bold' },
+        'pk.method.scanner': { foreground: 'fb923c', fontStyle: 'bold' },
         'pk.method.selenium': { foreground: '60a5fa', fontStyle: 'bold' },
         'pk.locator': { foreground: 'fb923c', fontStyle: 'bold' },
         'pk.atheader': { foreground: 'facc15', fontStyle: 'bold' },

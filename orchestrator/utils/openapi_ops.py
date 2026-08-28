@@ -1,7 +1,7 @@
 ﻿# -*- coding: utf-8 -*-
 """Lab OpenAPI / Swagger → normalized operations (IMP-OA).
 
-Не запускает ZAP scan от галочки анкеты. SoT-манифест не трогает.
+Не запускает scanner scan от галочки анкеты. SoT-манифест не трогает.
 """
 from __future__ import annotations
 
@@ -195,14 +195,14 @@ def seed_prettyk_comments(operations: Sequence[Dict[str, Any]], *, limit: int = 
     return "\n".join(lines) + "\n"
 
 
-def try_zap_import_openapi(
+def try_scanner_import_openapi(
     spec_url_or_file: str,
     *,
-    zap_adapter: Any = None,
-    env_flag: str = "PK_OPENAPI_ZAP_IMPORT",
+    scanner_adapter: Any = None,
+    env_flag: str = "PK_OPENAPI_scanner_IMPORT",
 ) -> Dict[str, Any]:
     """
-    Opt-in ZAP OpenAPI import. Без флага / адаптера → skipped (не fail прогона).
+    Opt-in scanner OpenAPI import. Без флага / адаптера → skipped (не fail прогона).
     """
     result: Dict[str, Any] = {
         "attempted": False,
@@ -212,20 +212,20 @@ def try_zap_import_openapi(
     }
     flag = pk_env_name(env_flag).strip().lower()
     if flag not in ("1", "true", "yes", "on"):
-        result["notes"].append(f"{env_flag} не включён — ZAP import skipped")
+        result["notes"].append(f"{env_flag} не включён — scanner import skipped")
         return result
-    if zap_adapter is None:
-        result["notes"].append("zap_adapter не передан — skipped")
+    if scanner_adapter is None:
+        result["notes"].append("scanner_adapter не передан — skipped")
         return result
     result["skipped"] = False
     result["attempted"] = True
     try:
-        ok = bool(zap_adapter.import_openapi_spec(spec_url_or_file))
+        ok = bool(scanner_adapter.import_openapi_spec(spec_url_or_file))
         result["imported"] = ok
         if not ok:
             result["notes"].append("import_openapi_spec вернул false")
     except Exception as exc:  # pragma: no cover - adapter errors
-        result["notes"].append(f"ZAP import error: {exc}")
+        result["notes"].append(f"scanner import error: {exc}")
         result["imported"] = False
     return result
 

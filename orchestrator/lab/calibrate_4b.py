@@ -82,15 +82,15 @@ def run():
         output, ms = ask_4b(prompt, thinking=False, max_tokens=128, timeout=120)
         total_ms += ms
         result = extract_json(output)
-        entry = {"idx": i, "title": f["title"], "zap_severity": f.get("severity"), "cwe": f.get("cwe"), "latency_ms": round(ms, 1)}
+        entry = {"idx": i, "title": f["title"], "scanner_severity": f.get("severity"), "cwe": f.get("cwe"), "latency_ms": round(ms, 1)}
         if isinstance(result, dict) and result:
             ai_sev = str(result.get("severity", "info")).lower()
-            zap_sev = str(f.get("severity", "info")).lower()
+            scanner_sev = str(f.get("severity", "info")).lower()
             entry["ai_severity"] = ai_sev
             entry["ai_fp_confidence"] = result.get("fp_confidence", 0.5)
             entry["ai_reasoning"] = str(result.get("reasoning", ""))[:200]
-            entry["severity_match"] = ai_sev == zap_sev or ai_sev == zap_sev.replace("informational", "info")
-            print(f"  [{i+1}/{len(findings)}] {f['title'][:55]:<55} {zap_sev:>5} -> {ai_sev:>5} | match={entry['severity_match']} | fp={entry.get('ai_fp_confidence','.')} | {ms:.0f}ms")
+            entry["severity_match"] = ai_sev == scanner_sev or ai_sev == scanner_sev.replace("informational", "info")
+            print(f"  [{i+1}/{len(findings)}] {f['title'][:55]:<55} {scanner_sev:>5} -> {ai_sev:>5} | match={entry['severity_match']} | fp={entry.get('ai_fp_confidence','.')} | {ms:.0f}ms")
         else:
             entry["error"] = "parse_fail"
             print(f"  [{i+1}/{len(findings)}] {f['title'][:55]:<55} PARSE FAIL | {ms:.0f}ms")

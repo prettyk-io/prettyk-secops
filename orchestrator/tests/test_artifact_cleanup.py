@@ -27,16 +27,16 @@ def test_retention_candidates_and_disk_purge(tmp_path, monkeypatch):
     run_dir = tmp_path / "reports" / "runs" / "old"
     run_dir.mkdir(parents=True)
     (run_dir / "x.txt").write_text("x", encoding="utf-8")
-    zap = tmp_path / "reports" / "zap-results" / "z.xml"
-    zap.parent.mkdir(parents=True)
-    zap.write_text("<z/>", encoding="utf-8")
+    scanner = tmp_path / "reports" / "scanner-results" / "z.xml"
+    scanner.parent.mkdir(parents=True)
+    scanner.write_text("<z/>", encoding="utf-8")
 
     from utils import artifact_index as ai
     import utils.paths as paths_mod
 
     monkeypatch.setattr(paths_mod, "REPORTS_DIR", tmp_path / "reports")
     monkeypatch.setattr(paths_mod, "RUNS_DIR", tmp_path / "reports" / "runs")
-    monkeypatch.setattr(paths_mod, "ZAP_RESULTS_DIR", tmp_path / "reports" / "zap-results")
+    monkeypatch.setattr(paths_mod, "scanner_RESULTS_DIR", tmp_path / "reports" / "scanner-results")
     monkeypatch.setattr(
         paths_mod, "ALLURE_RESULTS_DIR", tmp_path / "reports" / "allure-results"
     )
@@ -45,7 +45,7 @@ def test_retention_candidates_and_disk_purge(tmp_path, monkeypatch):
         check_id="chk_old",
         run_id="old",
         run_dir=run_dir,
-        zap_xml=zap,
+        scanner_xml=scanner,
     )
     # age the recorded_at
     snap = ai.load_artifact_index()
@@ -128,7 +128,7 @@ def test_legal_hold_skips_retention_and_refuses_purge(tmp_path, monkeypatch):
 
     monkeypatch.setattr(paths_mod, "REPORTS_DIR", tmp_path / "reports")
     monkeypatch.setattr(paths_mod, "RUNS_DIR", tmp_path / "reports" / "runs")
-    monkeypatch.setattr(paths_mod, "ZAP_RESULTS_DIR", tmp_path / "reports" / "zap-results")
+    monkeypatch.setattr(paths_mod, "scanner_RESULTS_DIR", tmp_path / "reports" / "scanner-results")
     monkeypatch.setattr(
         paths_mod, "ALLURE_RESULTS_DIR", tmp_path / "reports" / "allure-results"
     )

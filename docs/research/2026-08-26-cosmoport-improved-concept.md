@@ -220,7 +220,7 @@ PrettyK Run Control Plane
        ├─ выполняет deployment
        ├─ получает deploy URL / target metadata
        ├─ выделяет PrettyK SecOps Lab instance_id
-       ├─ запускает Playwright + Fuzzer + ZAP
+       ├─ запускает Playwright + Fuzzer + scanner
        ├─ собирает Findings и Evidence
        ├─ формирует Gate decisions
        └─ выдаёт результат и отчёт
@@ -261,7 +261,7 @@ Domain Bootstrap
 | Group hierarchy | Строит Level 0–2 graph | Хранит canonical graph |
 | Policies | Предлагает defaults | Человек утверждает, PrettyK исполняет |
 | Build/deploy | Подготавливает draft | Run Control Plane запускает lifecycle |
-| Security checks | Может объяснить план | Запускает DAST, Fuzzer, Playwright, ZAP |
+| Security checks | Может объяснить план | Запускает DAST, Fuzzer, Playwright, scanner |
 | Evidence | Может показать preview | Создаёт immutable evidence chain |
 | Admission | Не принимает решение сам | Gate и ответственный принимают решение |
 

@@ -25,10 +25,10 @@ def _minimal_Wired(*, import_path: str, as_name: str = "urls") -> dict:
             "release_manager": "a@b.c",
         },
         "infrastructure": {
-            "zap_mode": "demon",
+            "scanner_mode": "demon",
             "browser_type": "chrome",
             "additional_local_server_port": 8085,
-            "zap_work_timeout_min": 10,
+            "scanner_work_timeout_min": 10,
             "idle_timeout_min": 5,
             "webswing_session_timeout_min": 60,
         },

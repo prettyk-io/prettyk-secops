@@ -11,7 +11,7 @@ import { useGraphTelemetry, type GraphTelemetryEvent } from './useGraphTelemetry
 afterEach(() => cleanup());
 
 describe('photonColor', () => {
-  it('spider → cyan', () => expect(photonColor('spider')).toBe('#00F0FF'));
+  it('crawl → cyan', () => expect(photonColor('crawl')).toBe('#00F0FF'));
   it('active_scan → violet', () => expect(photonColor('active_scan')).toBe('#A855F7'));
   it('fuzzing → amber', () => expect(photonColor('fuzzing')).toBe('#F59E0B'));
   it('success → emerald', () => expect(photonColor('success')).toBe('#10B981'));
@@ -74,7 +74,7 @@ describe('useGraphTelemetry', () => {
     const now = Date.now();
     const oldEvent: GraphTelemetryEvent = {
       event_id: 'old', run_id: 'r1', step_id: 's1', seq: 1,
-      kind: 'spider', status: 'done',
+      kind: 'crawl', status: 'done',
       occurred_at: new Date(now - 60_000).toISOString(),
     };
     // Хук фильтрует по maxAgeMs (default 30s), так что событие 60s назад должно уйти

@@ -41,7 +41,7 @@ def comparability_check(
     if baseline_provenance.finding_schema_version != current_provenance.finding_schema_version:
         return ComparisonStatus.incomparable
 
-    # Manifest hash must be present and match
+    # Wired hash must be present and match
     if not baseline_provenance.wired_hash or not current_provenance.wired_hash:
         return ComparisonStatus.artifact_incomplete
     if baseline_provenance.wired_hash != current_provenance.wired_hash:
@@ -53,7 +53,7 @@ def comparability_check(
     if baseline_provenance.target_scope_hash != current_provenance.target_scope_hash:
         return ComparisonStatus.incomparable
 
-    # Scan profile (browser, ZAP mode) must match
+    # Scan profile (browser, scanner mode) must match
     if baseline_provenance.scan_profile and current_provenance.scan_profile:
         if baseline_provenance.scan_profile != current_provenance.scan_profile:
             return ComparisonStatus.incomparable
@@ -194,9 +194,9 @@ def persist_deterministic_delta(result: DeltaResult, run_dir: str) -> str:
 
 def load_canonical_findings_from_fixture(fixture_path: str) -> list[CanonicalFinding]:
     """Load EXP-01 style fixture and return canonical findings."""
-    from utils.finding_identity import load_zap_alerts, build_canonical_findings_from_run
+    from utils.finding_identity import load_scanner_alerts, build_canonical_findings_from_run
 
-    alerts = load_zap_alerts(fixture_path)
+    alerts = load_scanner_alerts(fixture_path)
     if not alerts:
         return []
 

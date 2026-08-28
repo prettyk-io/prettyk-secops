@@ -1,5 +1,5 @@
 /**
- * PK-EC-8: Status Bar — 24px, checkId | DSL type | Line:Col | ZAP State | Last validation.
+ * PK-EC-8: Status Bar — 24px, checkId | DSL type | Line:Col | scanner State | Last validation.
  * Tailwind, monospace for coordinates.
  */
 export interface StatusBarProps {
@@ -7,8 +7,8 @@ export interface StatusBarProps {
   languageId?: string;
   /** Monaco position: { line, column }. */
   cursor?: { line: number; column: number };
-  /** ZAP state — static mock for now. */
-  zapState?: 'ready' | 'busy' | 'down';
+  /** scanner state — static mock for now. */
+  scannerState?: 'ready' | 'busy' | 'down';
   /** Last validation time (relative). */
   lastValidation?: string;
 }
@@ -17,10 +17,10 @@ export function StatusBar({
   checkId,
   languageId = 'PrettyK DSL',
   cursor = { line: 1, column: 1 },
-  zapState = 'ready',
+  scannerState = 'ready',
   lastValidation = '0.4s ago',
 }: StatusBarProps) {
-  const zapColors = {
+  const scannerColors = {
     ready: 'text-emerald-400',
     busy: 'text-cyan-400',
     down: 'text-red-400',
@@ -49,11 +49,11 @@ export function StatusBar({
 
       <span className="text-slate-600">·</span>
 
-      {/* ZAP State */}
+      {/* scanner State */}
       <div className="flex items-center gap-1">
-        <div className={`size-1.5 rounded-full ${zapColors[zapState]}`} />
-        <span className={`${zapColors[zapState]}`} style={{ fontFamily: '"Golos UI", sans-serif' }}>
-          ZAP {zapState === 'ready' ? 'Ready' : zapState === 'busy' ? 'Busy' : 'Down'}
+        <div className={`size-1.5 rounded-full ${scannerColors[scannerState]}`} />
+        <span className={`${scannerColors[scannerState]}`} style={{ fontFamily: '"Golos UI", sans-serif' }}>
+          scanner {scannerState === 'ready' ? 'Ready' : scannerState === 'busy' ? 'Busy' : 'Down'}
         </span>
       </div>
 

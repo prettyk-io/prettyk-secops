@@ -3,11 +3,11 @@
  * Только JSON.parse: валидация по схеме ушла вместе с RJSF.
  */
 
-export type ManifestImportResult =
+export type WiredImportResult =
   | { ok: true; formData: unknown }
   | { ok: false; reason: 'json' };
 
-export function importWiredJson(text: string): ManifestImportResult {
+export function importWiredJson(text: string): WiredImportResult {
   try {
     const parsed = JSON.parse(text) as unknown;
     return { ok: true, formData: parsed };

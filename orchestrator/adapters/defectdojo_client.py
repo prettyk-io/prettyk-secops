@@ -1,6 +1,6 @@
 ﻿# -*- coding: utf-8 -*-
 """
-Клиент DefectDojo: импорт ZAP XML. Вызов из utils.reporter.finalize_reports.
+Клиент DefectDojo: импорт scanner XML. Вызов из utils.reporter.finalize_reports.
 
 Базис пайпа: после прогона льём XML в Dojo.
 Lab-дефолты — services/defectdojo/.env.example (в репо; UI: admin/admin).
@@ -497,7 +497,7 @@ def trigger_defectdojo_import_detailed(
     dojo_url: Optional[str] = None,
     token: Optional[str] = None,
     engagement_id: Optional[str] = None,
-    scan_type: str = "ZAP Scan",
+    scan_type: str = "scanner Scan",
     minimum_severity: str = "Info",
     active: bool = True,
     verified: bool = False,
@@ -506,7 +506,7 @@ def trigger_defectdojo_import_detailed(
     product_name: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    POST /api/v2/import-scan/ с ZAP XML.
+    POST /api/v2/import-scan/ с scanner XML.
 
     Returns:
       ok: bool
@@ -636,13 +636,13 @@ def trigger_defectdojo_import(
     dojo_url: Optional[str] = None,
     token: Optional[str] = None,
     engagement_id: Optional[str] = None,
-    scan_type: str = "ZAP Scan",
+    scan_type: str = "scanner Scan",
     minimum_severity: str = "Info",
     active: bool = True,
     verified: bool = False,
 ) -> bool:
     """
-    POST /api/v2/import-scan/ с ZAP XML.
+    POST /api/v2/import-scan/ с scanner XML.
 
     Источник: os.environ, иначе services/defectdojo/.env.example.
       PK_DEFECTDOJO_URL / TOKEN / ENGAGEMENT
@@ -661,18 +661,18 @@ def trigger_defectdojo_import(
     return bool(result.get("ok"))
 
 
-def resolve_zap_xml_for_dojo(zap_report_path: Optional[str]) -> Optional[Path]:
+def resolve_scanner_xml_for_dojo(scanner_report_path: Optional[str]) -> Optional[Path]:
     """
-    Берём XML для Dojo: явный last_zap_report если .xml,
+    Берём XML для Dojo: явный last_scanner_report если .xml,
     иначе последний *.xml в reports/scanner-results.
     """
-    from utils.paths import ZAP_RESULTS_DIR
+    from utils.paths import scanner_RESULTS_DIR
 
-    if zap_report_path:
-        p = Path(zap_report_path)
+    if scanner_report_path:
+        p = Path(scanner_report_path)
         if p.is_file() and p.suffix.lower() == ".xml":
             return p
-    if not ZAP_RESULTS_DIR.is_dir():
+    if not scanner_RESULTS_DIR.is_dir():
         return None
-    xmls = sorted(ZAP_RESULTS_DIR.glob("*.xml"), key=lambda x: x.stat().st_mtime, reverse=True)
+    xmls = sorted(scanner_RESULTS_DIR.glob("*.xml"), key=lambda x: x.stat().st_mtime, reverse=True)
     return xmls[0] if xmls else None

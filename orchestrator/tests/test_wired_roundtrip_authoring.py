@@ -34,7 +34,7 @@ def test_authoring_roundtrip_fixture_zero_issues():
 
 def test_authoring_roundtrip_prettyk_preserved():
     """Режим A: PrettyK в pages/steps, без flatten."""
-    raw = json.loads(AUTHORING_OK.read_text(encoding="utf-8"))
+    raw = json.loads(AUTHORING_OK.read_text(encoding="utf-8-sig"))
     login_ctor = raw["test_suites"]["pages"]["login"]["constructor"]
     assert "Элемент email" in login_ctor
     assert "data|" not in login_ctor

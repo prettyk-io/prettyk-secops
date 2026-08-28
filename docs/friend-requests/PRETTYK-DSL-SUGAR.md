@@ -19,7 +19,7 @@
                                  │
          ┌───────────────────────┼───────────────────────┐
          ▼                       ▼                       ▼
-    Root UI (Клик,        Сессия (Куки,         Сканер (ZAP,
+    Root UI (Клик,        Сессия (Куки,         Сканер (scanner,
     Вставить, Ждать)      Storage, Заголовки)    Spider, Active Scan)
 
     Locator Strategies × 11:
@@ -45,7 +45,7 @@
 | **Root UI** | Клики, ввод, навигация, ожидания, скриншоты | `PlaywrightAdapter` | `Клик Войти`, `Вставить Логин admin` |
 | **Assert** | Pass/fail verdict и evidence | `PlaywrightAdapter` + `Inspector` | `ПроверитьURL /dashboard`, `ПроверитьТекст "Успешно"` |
 | **Сессия** | Cookies, storage state, заголовки, гео, эмуляция | `PlaywrightAdapter` context | `ОчиститьКуки`, `УстановитьКуки session abc` |
-| **Сканер** | Spider, Active Scan, OpenAPI, Auth | `ZapAdapter` | `Сканер АктивноеСканирование` |
+| **Сканер** | Spider, Active Scan, OpenAPI, Auth | `scannerAdapter` | `Сканер АктивноеСканирование` |
 | **HTTP** | Raw API, REST/GraphQL seed | `HttpAdapter` | `HTTP GET /api/status` |
 | **Драйвер** | Advanced/Legacy: frames, alerts, raw JS | `PlaywrightAdapter` low-level | `Драйвер ВыполнитьJS "..."` |
 

@@ -18,17 +18,17 @@ REPO = ROOT.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from adapters.zap_adapter import ZapAdapter
+from adapters.scanner_adapter import ScannerAdapter
 from core.errors import WiredError
 from core.fuzzing import SuiteFuzzerRunner, live_projection_titles
-from core.gate_policy import zap_api_key_from_env
+from core.gate_policy import scanner_api_key_from_env
 from utils.diary_bus import publish, set_meta
 
 BASE_URL = "http://juice-shop:3000"
 SEARCH_URL = f"{BASE_URL}/rest/products/search?q="
 
 
-def _manifest(corpus: str, max_requests: int) -> SimpleNamespace:
+def _make_wired(corpus: str, max_requests: int) -> SimpleNamespace:
     fuzzer = SimpleNamespace(
         id="juice_search_q",
         label="Juice search q",
@@ -70,24 +70,24 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Wave L: ФаззингВолна juice_search_q")
     parser.add_argument("--corpus", default="intent_boundary")
     parser.add_argument("--max-requests", type=int, default=5)
-    parser.add_argument("--zap-host", default=pk_env("ZAP_HOST", "127.0.0.1"))
+    parser.add_argument("--scanner-host", default=pk_env("SCANNER_HOST", "127.0.0.1"))
     parser.add_argument(
-        "--zap-port",
+        "--scanner-port",
         type=int,
-        default=int(pk_env("ZAP_PORT", "8080")),
+        default=int(pk_env("SCANNER_PORT", "8080")),
     )
     parser.add_argument("--no-live", action="store_true")
     args = parser.parse_args()
 
-    zap = ZapAdapter(
-        host=args.zap_host,
-        port=args.zap_port,
-        api_key=zap_api_key_from_env(),
+    scanner = ScannerAdapter(
+        host=args.scanner_host,
+        port=args.scanner_port,
+        api_key=scanner_api_key_from_env(),
         base_url=BASE_URL,
     )
     try:
         summary = SuiteFuzzerRunner(
-            _manifest(args.corpus, args.max_requests), zap, _EmptyStream()
+            _make_wired(args.corpus, args.max_requests), scanner, _EmptyStream()
         ).run("juice_search_q")
     except WiredError as exc:
         raise SystemExit(str(exc)) from exc

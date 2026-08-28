@@ -34,8 +34,8 @@ def test_wired(wired_path):
             controller.run()
 
         # После выполнения — прикрепляем алерты сканера к отчёту
-        if controller.adapters.get("zap"):
-            alerts = controller.adapters["zap"].get_alerts()
+        if controller.adapters.get("scanner"):
+            alerts = controller.adapters["scanner"].get_alerts()
             if alerts:
                 allure.attach(
                     json.dumps(alerts, indent=2, ensure_ascii=False),

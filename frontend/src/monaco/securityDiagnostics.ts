@@ -18,12 +18,12 @@ interface SecurityRule {
   check: (lines: string[], formData: unknown) => SecurityRuleResult[];
 }
 
-interface ManifestLike {
+interface WiredLike {
   meta?: { assessment_purpose?: string };
   infrastructure?: {
     base_url_override?: string;
     allowed_extra_domains?: string;
-    zap_mode?: string;
+    scanner_mode?: string;
     browser_type?: string;
   };
   auth_slots?: unknown[] | Record<string, unknown>;
@@ -31,7 +31,7 @@ interface ManifestLike {
     passive_scan?: boolean;
     active_scan?: boolean;
     fuzz_enabled?: boolean;
-    zap_mode?: string;
+    scanner_mode?: string;
   };
   test_suites?: {
     scenarios?: unknown[];
@@ -41,12 +41,12 @@ interface ManifestLike {
   data?: { resources?: unknown[] };
 }
 
-function toManifest(formData: unknown): ManifestLike | null {
+function toWired(formData: unknown): WiredLike | null {
   if (!formData || typeof formData !== 'object') return null;
-  return formData as ManifestLike;
+  return formData as WiredLike;
 }
 
-function hasAuth(m: ManifestLike): boolean {
+function hasAuth(m: WiredLike): boolean {
   if (m.auth_slots) {
     if (Array.isArray(m.auth_slots) && m.auth_slots.length > 0) return true;
     if (typeof m.auth_slots === 'object' && Object.keys(m.auth_slots).length > 0) return true;
@@ -54,25 +54,25 @@ function hasAuth(m: ManifestLike): boolean {
   return false;
 }
 
-function hasPassiveScan(m: ManifestLike): boolean {
+function hasPassiveScan(m: WiredLike): boolean {
   if (m.settings?.passive_scan !== undefined) return m.settings.passive_scan;
   return true;
 }
 
-function hasActiveScan(m: ManifestLike): boolean {
+function hasActiveScan(m: WiredLike): boolean {
   if (m.settings?.active_scan !== undefined) return m.settings.active_scan;
-  return m.infrastructure?.zap_mode !== undefined;
+  return m.infrastructure?.scanner_mode !== undefined;
 }
 
-function hasZapMode(m: ManifestLike): boolean {
-  return !!m.infrastructure?.zap_mode;
+function hasscannerMode(m: WiredLike): boolean {
+  return !!m.infrastructure?.scanner_mode;
 }
 
-function hasPages(m: ManifestLike): boolean {
+function hasPages(m: WiredLike): boolean {
   return !!(m.test_suites?.pages && (m.test_suites.pages as unknown[]).length > 0);
 }
 
-function hasScenarios(m: ManifestLike): boolean {
+function hasScenarios(m: WiredLike): boolean {
   return !!(m.test_suites?.scenarios && (m.test_suites.scenarios as unknown[]).length > 0);
 }
 
@@ -90,7 +90,7 @@ const RULES: SecurityRule[] = [
     category: 'Аутентификация',
 severity: 'hint',
         check: (_lines, formData) => {
-          const m = toManifest(formData);
+          const m = toWired(formData);
           if (!m) return [];
           if (!hasAuth(m)) {
             return [{
@@ -108,7 +108,7 @@ severity: 'hint',
     category: 'Сканирование',
     severity: 'info',
     check: (_lines, formData) => {
-      const m = toManifest(formData);
+      const m = toWired(formData);
       if (!m) return [];
       if (!hasPassiveScan(m) && hasActiveScan(m)) {
         return [{
@@ -126,13 +126,13 @@ severity: 'hint',
     category: 'Покрытие',
     severity: 'hint',
     check: (_lines, formData) => {
-      const m = toManifest(formData);
+      const m = toWired(formData);
       if (!m) return [];
       if (!hasPages(m) && hasScenarios(m)) {
         return [{
           lineNumber: 1,
           severity: 'hint',
-          message: 'Нет моделей страниц. Добавьте pages для лучшего покрытия (spider/discovery).',
+          message: 'Нет моделей страниц. Добавьте pages для лучшего покрытия (crawl/discovery).',
           category: 'Покрытие',
         }];
       }
@@ -144,7 +144,7 @@ severity: 'hint',
     category: 'Безопасность',
     severity: 'error',
     check: (lines, formData) => {
-      const m = toManifest(formData);
+      const m = toWired(formData);
       const results: SecurityRuleResult[] = [];
       const allowedDomains = (m?.infrastructure?.allowed_extra_domains || '')
         .split(',')
@@ -213,17 +213,17 @@ severity: 'hint',
     },
   },
   {
-    id: 'SEC-ZAP-001',
-    category: 'ZAP',
+    id: 'SEC-scanner-001',
+    category: 'scanner',
     severity: 'info',
     check: (_lines, formData) => {
-      const m = toManifest(formData);
-      if (!m?.infrastructure?.zap_mode) {
+      const m = toWired(formData);
+      if (!m?.infrastructure?.scanner_mode) {
         return [{
           lineNumber: 1,
           severity: 'info',
-          message: 'Не указан режим ZAP (demon/webswing). Active/passive сканирование не будет запущено.',
-          category: 'ZAP',
+          message: 'Не указан режим scanner (demon/webswing). Active/passive сканирование не будет запущено.',
+          category: 'scanner',
         }];
       }
       return [];
@@ -234,7 +234,7 @@ id: 'SEC-EMPTY-001',
       category: 'Конфигурация',
       severity: 'hint',
       check: (_lines, formData) => {
-        const m = toManifest(formData);
+        const m = toWired(formData);
         if (!m?.infrastructure?.base_url_override) {
           return [{
             lineNumber: 1,

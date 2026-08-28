@@ -285,7 +285,7 @@ def _purge_paths_from_entry(
 
 def purge_disk_for_check(check_id: str, *, dry_run: bool = False) -> Dict[str, Any]:
     """Delete paths listed in index for check_id. Never wipe allure-results wholesale."""
-    from utils.paths import REPORTS_DIR, ZAP_RESULTS_DIR, RUNS_DIR, ALLURE_RESULTS_DIR
+    from utils.paths import REPORTS_DIR, scanner_RESULTS_DIR, RUNS_DIR, ALLURE_RESULTS_DIR
 
     if check_legal_hold(check_id):
         return {
@@ -304,7 +304,7 @@ def purge_disk_for_check(check_id: str, *, dry_run: bool = False) -> Dict[str, A
     entry = get_check_entry(check_id)
     if not entry:
         return {"ok": False, "error": "index_empty", "deleted": [], "skipped": []}
-    allow = [REPORTS_DIR, RUNS_DIR, ZAP_RESULTS_DIR, ALLURE_RESULTS_DIR]
+    allow = [REPORTS_DIR, RUNS_DIR, scanner_RESULTS_DIR, ALLURE_RESULTS_DIR]
     deleted, skipped = _purge_paths_from_entry(entry, allow_roots=allow, dry_run=dry_run)
     event = {
         "action": "purge_disk",

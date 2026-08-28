@@ -1,7 +1,7 @@
 ﻿# -*- coding: utf-8 -*-
 """QWEN3-ALERT-ASSISTANT W1: canonical finding-v1 fingerprint.
 
-Stable cross-run identity for ZAP findings.
+Stable cross-run identity for scanner findings.
 
 Fingerprint formula:
   sha256(source|plugin_id|alert_ref|method|normalized_path|normalized_parameter)
@@ -70,7 +70,7 @@ def compute_fingerprint(
 ) -> str:
     """Stable finding-v1 fingerprint. Dojo ID NOT included."""
     raw = "|".join([
-        (source or "zap").strip(),
+        (source or "scanner").strip(),
         (plugin_id or "").strip(),
         (alert_ref or "").strip(),
         (method or "GET").strip().upper(),
@@ -82,25 +82,25 @@ def compute_fingerprint(
 
 
 def build_canonical_finding(
-    raw_zap_alert: dict[str, Any],
+    raw_scanner_alert: dict[str, Any],
     instance: Optional[dict[str, Any]] = None,
     dojo_id: Optional[int] = None,
     dojo_url: Optional[str] = None,
 ) -> Optional[CanonicalFinding]:
-    """Build one CanonicalFinding from a ZAP alert + optional instance + Dojo ref.
+    """Build one CanonicalFinding from a scanner alert + optional instance + Dojo ref.
 
-    One ZAP alert may have multiple instances — each with different path/parameter.
+    One scanner alert may have multiple instances — each with different path/parameter.
     If ``instance`` is None, the first instance is used.
     """
-    if not isinstance(raw_zap_alert, dict):
+    if not isinstance(raw_scanner_alert, dict):
         return None
 
-    plugin_id = str(raw_zap_alert.get("pluginid", ""))
-    alert_ref = str(raw_zap_alert.get("alertRef", ""))
+    plugin_id = str(raw_scanner_alert.get("pluginid", ""))
+    alert_ref = str(raw_scanner_alert.get("alertRef", ""))
     if not plugin_id or not alert_ref:
         return None
 
-    instances: list = raw_zap_alert.get("instances") or []
+    instances: list = raw_scanner_alert.get("instances") or []
     if not instance and instances:
         instance = instances[0] if isinstance(instances, list) else instances
 
@@ -116,7 +116,7 @@ def build_canonical_finding(
     parameter = normalize_parameter(raw_param)
 
     fingerprint = compute_fingerprint(
-        source="zap",
+        source="scanner",
         plugin_id=plugin_id,
         alert_ref=alert_ref,
         method=method,
@@ -126,16 +126,16 @@ def build_canonical_finding(
 
     return CanonicalFinding(
         finding_id=fingerprint,
-        source="zap",
+        source="scanner",
         plugin_id=plugin_id,
         alert_ref=alert_ref,
-        title=str(raw_zap_alert.get("name", "")),
-        severity=str(raw_zap_alert.get("risk", "info")).lower(),
-        cwe=str(raw_zap_alert.get("cwe", "")),
+        title=str(raw_scanner_alert.get("name", "")),
+        severity=str(raw_scanner_alert.get("risk", "info")).lower(),
+        cwe=str(raw_scanner_alert.get("cwe", "")),
         method=method,
         path=raw_uri,
         parameter=raw_param,
-        evidence_refs=[f"artifact://zap.xml#alert/{alert_ref}/instance/{getattr(instance, '__', 0)}"],
+        evidence_refs=[f"artifact://scanner.xml#alert/{alert_ref}/instance/{getattr(instance, '__', 0)}"],
         dojo_id=dojo_id,
         dojo_url=dojo_url,
     )
@@ -158,12 +158,12 @@ def _dojo_url_from_row(row: Optional[dict[str, Any]], fallback: str = "") -> Opt
 
 
 def build_canonical_findings_from_run(
-    zap_raw_alerts: list[dict[str, Any]],
+    scanner_raw_alerts: list[dict[str, Any]],
     dojo_findings: Optional[list[dict[str, Any]]] = None,
 ) -> list[CanonicalFinding]:
-    """Build canonical finding list from ZAP raw alerts.
+    """Build canonical finding list from scanner raw alerts.
 
-    Each ZAP alert instance becomes its own CanonicalFinding.
+    Each scanner alert instance becomes its own CanonicalFinding.
     Dojo findings are matched by title for display reference only (NOT identity).
     """
     dojo_lookup: dict[str, dict[str, Any]] = {}
@@ -176,7 +176,7 @@ def build_canonical_findings_from_run(
                     dojo_lookup[title] = f
 
     results: list[CanonicalFinding] = []
-    for alert in zap_raw_alerts:
+    for alert in scanner_raw_alerts:
         if not isinstance(alert, dict):
             continue
         instances: list = alert.get("instances") or []
@@ -194,8 +194,8 @@ def build_canonical_findings_from_run(
     return results
 
 
-def load_zap_alerts(path: str) -> list[dict[str, Any]]:
-    """Load ZAP raw alerts from a JSON file."""
+def load_scanner_alerts(path: str) -> list[dict[str, Any]]:
+    """Load scanner raw alerts from a JSON file."""
     import json
     with open(path, "r", encoding="utf-8") as fh:
         data = json.load(fh)

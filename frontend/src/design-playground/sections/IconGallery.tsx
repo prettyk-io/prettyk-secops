@@ -29,7 +29,7 @@ const STUDIO_ICONS: StudioIconEntry[] = [
   { name: 'Scenario Graph 3D', category: '3D Neon Studio', path: '/brand/studio-icons/scenario-3d.png', desc: '3D Isometric test scenario graph & execution flow', badge: '3D NEON' },
   { name: 'Home History', category: 'System Controls', path: '/src/assets/icons/home-history-icon.png', desc: 'Previous execution run logs and history' },
   { name: 'Home New Check', category: 'System Controls', path: '/src/assets/icons/home-new-check-icon.png', desc: 'Create fresh security check / blank' },
-  { name: 'Home Import', category: 'System Controls', path: '/src/assets/icons/home-import-icon.png', desc: 'Import wired JSON manifest package' },
+  { name: 'Home Import', category: 'System Controls', path: '/src/assets/icons/home-import-icon.png', desc: 'Import wired JSON wired package' },
   { name: 'Home Settings', category: 'System Controls', path: '/src/assets/icons/home-settings-icon.png', desc: 'Box policies and role settings' },
   { name: 'Home Lab', category: 'System Controls', path: '/src/assets/icons/home-lab-icon.png', desc: 'SecOps Lab attack workstation' },
   { name: 'Pipeline Start', category: 'Action Hub', path: '/src/assets/icons/pipeline-start.png', desc: 'Launch test pipeline trigger' },

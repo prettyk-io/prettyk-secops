@@ -32,7 +32,7 @@ export type RunLinks = {
   monitor?: string;
   allure?: string;
   dojo?: string;
-  zap_api?: string;
+  scanner_api?: string;
 };
 
 export type RunSummary = {
@@ -70,7 +70,7 @@ export type RunRecord = {
   run_id: string;
   started_at?: string;
   status: RunStatus;
-  manifest_hash?: string;
+  wired_hash?: string;
   links: RunLinks;
   gate?: RunGate;
   summary?: RunSummary;
@@ -95,7 +95,7 @@ export type BlankPayload = {
   explorer_tree: ExplorerNode[];
   run?: RunRecord;
   generated_at: string;
-  manifest_hash?: string;
+  wired_hash?: string;
 };
 
 import { LIVE_HOME } from '../api/apiBase';
@@ -104,14 +104,14 @@ export const BLANK_TEMPLATE_VERSION = 'res-blank-0.6';
 
 /** Lab defaults for waiting-room link grid. */
 export const LAB_RESULT_LINKS: Required<
-  Pick<RunLinks, 'live' | 'monitor' | 'allure' | 'dojo' | 'zap_api'>
+  Pick<RunLinks, 'live' | 'monitor' | 'allure' | 'dojo' | 'scanner_api'>
 > = {
   live: LIVE_HOME,
   monitor: LIVE_HOME,
   allure:
     'http://127.0.0.1:5050/',
   dojo: 'http://127.0.0.1:8081/',
-  zap_api: 'http://127.0.0.1:8080/',
+  scanner_api: 'http://127.0.0.1:8080/',
 };
 
 export type LiveMetaSnapshot = {
@@ -183,6 +183,6 @@ export type ResultsHookEntry = {
 export type ResultsHooksSnapshot = {
   allure?: ResultsHookEntry | null;
   dojo?: ResultsHookEntry | null;
-  /** RES-4: ZAP XML summary (counts / collapse) when finalize wrote hooks.zap */
-  zap?: ResultsHookEntry | null;
+  /** RES-4: scanner XML summary (counts / collapse) when finalize wrote hooks.scanner */
+  scanner?: ResultsHookEntry | null;
 };
