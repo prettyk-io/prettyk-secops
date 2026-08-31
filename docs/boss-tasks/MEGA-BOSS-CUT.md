@@ -161,16 +161,16 @@ Decision → durable storage + signature.
 
 ---
 
-## Блок 5: PK-COSMO-REPORT — ГОСТ-Акт & AppSecHub
+## Блок 5: PK-COSMO-REPORT — ГОСТ-Акт & SARIF Export
 
 ### COS-B15 — ГОСТ-Акт генератор (2h)
 Шаблон HTML с подстановкой: объект проверки, методика, нормативная база, таблица находок, заключение, подписи.
 Данные из Run → findings → evidence.
 Бланки из `cbr-specific/` (локально, не в git).
 
-### COS-B16 — AppSecHub JSON exporter (1h)
+### COS-B16 — SARIF findings exporter (1h)
 Формат: `{run_id, project_id, findings[{severity, title, description, cwe, evidence_refs}]}`.
-Совместимость с форматом Cosmoport.
+SARIF 2.1.0-совместимый вывод.
 
 ### COS-B17 — DeployStore: результаты с привязкой к деплою (1h)
 `POST /api/deploys/{id}/findings` — сохранить.

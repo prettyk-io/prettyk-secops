@@ -19,6 +19,7 @@
 | **Продукт** | KDT Framework | **PrettyK** |
 | **DSL** | KDT (Key-Driven Testing) | **PrettyK** (DSL) |
 | **Репозиторий** | `failed1/scanner-kdt` | **`prettyk-io/prettyk-dev`** |
+| **Cosmoport 2.0** | — | **`prettyk-io/cosmoport2`** (отдельная кодовая база, `D:\cosmoport2`) |
 | **Организация** | — | **`github.com/prettyk-io`** |
 | **Package FE** | `kdt-wired-editor` | **`prettyk-editor`** |
 | **Сканер** (публично) | scanner демон, scanner Webswing | **сканер, Scanner Webswing** |

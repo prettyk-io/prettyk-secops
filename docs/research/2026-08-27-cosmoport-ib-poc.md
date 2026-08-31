@@ -15,7 +15,7 @@
 разработчик →
   портал → кнопка «Запустить» →
   GitLab CI → scanner_universal_ci →
-  SARIF → AppSecHub
+  SARIF → findings intake
 ```
 
 Это **одноразовый неподписанный прогон**:
@@ -83,7 +83,7 @@ PrettyK выполняет:
 
 Администратор ИБ утверждает Акт:
   → admission gate пройден
-  → результаты дублируются в AppSecHub портала Cosmoport
+  → результаты дублируются в findings intake портала Cosmoport
   → Акт сохраняется в реестр деплоев (deployStore)
 ```
 
@@ -133,7 +133,7 @@ PrettyK выполняет:
   → подписи: Исполнитель / Проверил
 ```
 
-### 2.4. Интеграция с AppSecHub портала
+### 2.4. Интеграция с findings intake портала
 
 После прогона PrettyK отдаёт находки в формате, который Cosmoport может потребить:
 
@@ -193,7 +193,7 @@ run_id / project_id
 
 - PrettyK формирует Акт (HTML) с логотипом ЦБ и таблицей находок
 - Результаты сохраняются в deployStore с привязкой к project_id
-- Формируется payload для AppSecHub (JSON)
+- Формируется payload для findings intake (JSON)
 
 ---
 
@@ -241,5 +241,5 @@ run_id / project_id
 | Бланки ТЗ/Акта | Локально, HTML-примеры | Автогенерация из результатов прогона |
 | Execution View | В разработке (Major 1) | Показывать живой прогон оператору |
 | Fuzzer | Есть, threadpool | Работает, нужны словари под банковский профиль |
-| AppSecHub payload | Нет | JSON-экспорт находок с project_id |
+| Findings intake payload | Нет | JSON-экспорт находок с project_id |
 | DeployStore | Mock | Сохранять результаты с привязкой к деплою |

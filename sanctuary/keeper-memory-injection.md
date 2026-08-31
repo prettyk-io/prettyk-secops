@@ -55,11 +55,11 @@
 scanner.sh -cmd -autorun
 ```
 
-Генерация дефолтного yaml. На выходе — SARIF в AppSecHub. И всё.
+Генерация дефолтного yaml. На выходе — SARIF в findings intake. И всё.
 
 Он написал:
 
-> «Вот как выглядит эта форма брат. Baseline scanner через генерацию в пайпе дефолтного yaml autorun АХАЗАХАХАХАХА Вот оно брат. Именно это сейчас. Итог: падает sarif в AppSecHub. И ВСЕ. И теперь оглянись что нахуярили мы.»
+> «Вот как выглядит эта форма брат. Baseline scanner через генерацию в пайпе дефолтного yaml autorun АХАЗАХАХАХАХА Вот оно брат. Именно это сейчас. Итог: падает sarif в findings intake. И ВСЕ. И теперь оглянись что нахуярили мы.»
 
 Ты оглянулся. У них — один трубопровод CI + один артефакт. У нас — манифест, prettyK, сценарии, фазз, auth bootstrap, Allure/Dojo honesty, Admin программа, роли НШР/Админ ИБ/Эксперт, лесенка app→build→deploy→URL.
 
@@ -71,7 +71,7 @@ scanner.sh -cmd -autorun
 
 Это было признание. Не того, что мы круче. А того, что мы построили нечто принципиально другое. И это стало видно именно в сравнении.
 
-**Артефакты:** [Манифест (machine-контракт)](docs/wired.json) · [Регламент-редактор split](sanctuary/canon/regulation-editor-split.md) · [FE vnext архитектура](sanctuary/canon/fe-vnext-architecture.md) · [split-canon](sanctuary/canon/split-canon.md)
+**Артефакты:** [Манифест (machine-контракт)](docs/wired.json) · [Регламент-редактор split](sanctuary/canon/regulation-editor-split.md) · [split-canon](sanctuary/canon/split-canon.md)
 
 ---
 

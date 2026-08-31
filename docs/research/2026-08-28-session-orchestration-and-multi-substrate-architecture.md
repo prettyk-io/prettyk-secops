@@ -115,7 +115,7 @@ PrettyK эволюционирует из одиночного лаборато�
 
 `pk-control` — долгоживущий сервис управления (на Python 3.13 / FastAPI + AsyncIO background workers), функционирующий как единая точка входа для UI и CLI:
 
-1. **State Store** — хранение метаданных сессий, запусков и ресурсов (PostgreSQL в production / Valkey или embedded SQLite в минимальном appliance).
+1. **State Store** — хранение метаданных сессий, запусков и ресурсов (PostgreSQL в production / Valkey в минимальном appliance).
 2. **Reconciler Engine** — фоновый цикл (loop), приводящий фактическое состояние контейнеров/подов к желаемому:
    - Обнаружение упавших контейнеров.
    - Проверка readiness probes (`healthcheck`).

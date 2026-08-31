@@ -22,8 +22,8 @@
 ## As-built якорь
 
 - `docs/wired.json` — текущая простыня JSON Schema (2729 строк, смесь регламента и редактора)
-- `sanctuary/canon/fe-vnext-architecture.md` §1 (14 решений) — прямой маппер вместо RJSF, форма ≠ JSON Schema
-- `sanctuary/canon/fe-vnext-architecture.md` §5 — «манифест больше не SoT как раньше»
+- Прямой маппер вместо RJSF, форма ≠ JSON Schema
+- JSON-манифест — reference, не генератор формы
 - `sanctuary/canon/wired-sot.md` — роли: JSON-манифест → FE маппер, Pydantic → оркестратор
 - `sanctuary/canon/split-canon.md` — CANON BASE vs INTEGRATION
 - `.opencode/rules/schema-sot.mdc` — «JSON-манифест runtime-контракта, vnext форма = прямой маппер»

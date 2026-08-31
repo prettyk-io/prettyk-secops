@@ -2,6 +2,7 @@
 
 > **Canon repo:** https://github.com/prettyk-io/prettyk-dev  
 > **Org:** https://github.com/prettyk-io/  
+> **Cosmoport 2.0 repo:** https://github.com/prettyk-io/cosmoport2 (separate codebase; planning SoT в `sanctuary/cosmoport2/`)  
 > **Old:** `failed1/prettyk-dev` — no longer canon. 2026-08-21.
 
 Владелец: **Максим**. Тупая автоматика, которая жрёт время на stash/merge/«очистку дерева», здесь **запрещена**.  

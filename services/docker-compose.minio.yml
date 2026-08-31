@@ -1,0 +1,46 @@
+# PERS-D1: MinIO S3-compatible object storage for evidence artifacts.
+# Separate compose file — не мешает основному docker-compose.yml.
+# Старт: docker compose -f services/docker-compose.minio.yml up -d
+# MinIO Console: http://127.0.0.1:9001 (admin / minioadmin)
+
+version: "3.9"
+
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: pk-minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Web Console
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  # One-shot: создать бакет при первом старте
+  minio-create-bucket:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minioadmin minioadmin;
+      mc mb --ignore-existing local/prettyk-evidence;
+      mc anonymous set private local/prettyk-evidence;
+      echo 'Bucket prettyk-evidence ready';
+      "
+    deploy:
+      restart_policy:
+        condition: none
+
+volumes:
+  minio_data:

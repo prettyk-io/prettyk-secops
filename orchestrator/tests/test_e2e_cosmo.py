@@ -21,7 +21,7 @@ from orchestrator.reports import (
     GOSTAct, GOSTActHeader, GOSTActObject, GOSTFinding, GOSTSignature,
 )
 from orchestrator.reports.gost_act_renderer import render_gost_act_html
-from orchestrator.reports.appsechub_exporter import export_appsechub_json
+from orchestrator.reports.sarif_exporter import export_findings_sarif
 
 
 # ── Mock adapters ──
@@ -168,8 +168,8 @@ class TestE2ECosmo:
         assert "CWE-89" in html
         assert "Иванов" in html
 
-        # AppSecHub export
-        sarif = export_appsechub_json(act)
+        # SARIF export
+        sarif = export_findings_sarif(act)
         parsed = json.loads(sarif)
         assert len(parsed["runs"][0]["results"]) == 2
         assert parsed["version"] == "2.1.0"

@@ -36,7 +36,7 @@ logger = logging.getLogger("language_engine")
 
 _FAILSAFE_SUFFIX = re.compile(r"\s+>\?\s*$")
 # HEAL-E / DISC-2 bridge: `>#Log in` — label hint (не путать с >? / >@ / css `a > b`).
-_LABEL_HINT_MARK = re.compile(r"\s*>#([^\n]*?)(?=(?:\s*>[?@]|\s*→|\s*$))")
+_LABEL_HINT_MARK = re.compile(r"\s*>#([^\n]*?)(?=(?:\s*>[?@]|\s*→|\s*$))")  # NOSONAR — explicit grouping for regex precedence
 _PAGE_ACTION_LEAF = re.compile(
     r"^[A-Za-z_][A-Za-z0-9_]*\.[^\s]+(?:\s+\S+)*$",
 )

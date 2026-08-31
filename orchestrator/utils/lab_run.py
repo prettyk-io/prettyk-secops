@@ -582,6 +582,11 @@ def _watch_lab_process(proc, log_fh, run_id: str) -> None:
                 _finish_plane_run(run_id, int(code))
             except Exception:
                 pass
+            # PERS-B1: запись в БД при завершении
+            try:
+                _persist_run_finish(run_id=run_id, exit_code=int(code))
+            except Exception:
+                pass
 
     threading.Thread(target=_watch, name=f"lab-run-{run_id}", daemon=True).start()
 
@@ -618,14 +623,27 @@ def start_run(
     if env is not None and not isinstance(env, dict):
         raise ValueError("env must be an object")
 
+    # ── WIRE-RUNCTL: lifecycle через RunControlPlane ──
+    plane = _get_run_plane()
+    _plane_submitted = run_id is not None  # submit_run() уже создал запись
+    if not _plane_submitted:
+        # Прямой вызов start_run() без submit_run(): создать run в плоскости,
+        # но dedup не активируем (caller хочет новый run явно).
+        params = _runctl_params(
+            wired, session_name=session_name, stub=stub, check_id=check_id
+        )
+        run, _is_new = plane.create_run(params)
+        run_id = run.id
+
+    # Перевести run → RUNNING (атомарный переход через плоскость)
+    plane.start_tracking_run(run_id)
+
     with _lock:
         status = _sync_finished_if_dead(_read_status())
         if str(status.get("phase") or "") == "running":
             raise RuntimeError(
                 f"run already in progress (run_id={status.get('run_id')}, pid={status.get('pid')})"
             )
-
-        run_id = run_id or uuid.uuid4().hex[:12]
         run_dir = ensure_runs_dir() / run_id
         run_dir.mkdir(parents=True, exist_ok=True)
         log_path = run_dir / "runner.log"
@@ -717,6 +735,19 @@ def start_run(
                 "stub": bool(stub),
             }
         )
+        # PERS-B1: запись в БД при старте
+        try:
+            _persist_run_start(
+                run_id=run_id,
+                wired=wired,
+                check_id=check_id,
+                session_name=session_name,
+                wired_path=str(wired_path),
+                log_path=str(log_path),
+                owner_user_id=owner,
+            )
+        except Exception:
+            pass
         _watch_lab_process(proc, log_fh, run_id)
         return {
             "ok": True,
@@ -1044,3 +1075,109 @@ def get_run_control_plane_status(run_id: str) -> Dict[str, Any]:
         "started_at": run.started_at,
         "finished_at": run.finished_at,
     }
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# CF-B3: FuzzRun — фаза фаззинга после краулера
+# ═══════════════════════════════════════════════════════════════════════
+
+def run_fuzz_phase(
+    crawler_result: Any,  # CrawlerRunResult
+    *,
+    profile: str = "developer-safe",
+    allow_destructive: bool = False,
+    max_payloads_per_param: int = 15,
+    publish_sse: bool = True,
+) -> Dict[str, Any]:
+    """CF-B3: запустить фазу фаззинга после завершения краулера.
+
+    Не блокирует основной поток — запускается в background-потоке.
+    Прогресс публикуется через diary_bus (FUZZ_PROGRESS + FINDING).
+    """
+    from fuzzer.corpus_fuzzer import ProductionCorpusFuzzer
+
+    fuzzable = crawler_result.fuzzable_endpoints() if hasattr(crawler_result, 'fuzzable_endpoints') else []
+    if not fuzzable:
+        return {"status": "skipped", "reason": "no fuzzable endpoints"}
+
+    fuzzer = ProductionCorpusFuzzer(
+        profile=profile,
+        allow_destructive=allow_destructive,
+        max_payloads_per_param=max_payloads_per_param,
+        publish_sse=publish_sse,
+    )
+
+    result = fuzzer.run_from_crawler_result(crawler_result)
+
+    return {
+        **result,
+        "profile": profile,
+        "endpoints_fuzzed": len(fuzzable),
+    }
+
+
+def run_fuzz_phase_background(
+    crawler_result: Any,
+    *,
+    profile: str = "developer-safe",
+    allow_destructive: bool = False,
+) -> threading.Thread:
+    """CF-B3: запустить фаззинг в background-потоке (не блокирует main)."""
+    t = threading.Thread(
+        target=run_fuzz_phase,
+        args=(crawler_result,),
+        kwargs={
+            "profile": profile,
+            "allow_destructive": allow_destructive,
+        },
+        name=f"fuzz-{profile}",
+        daemon=True,
+    )
+    t.start()
+    return t
+
+
+# ── PERS-B1: Persistence helpers (non-blocking, best-effort) ──
+
+def _persist_run_start(
+    *,
+    run_id: str,
+    wired: dict,
+    check_id: str | None = None,
+    session_name: str | None = None,
+    wired_path: str = "",
+    log_path: str = "",
+    owner_user_id: str | None = None,
+) -> None:
+    try:
+        from api.runs_api import write_run_start
+
+        infra = wired.get("infrastructure") if isinstance(wired, dict) else {}
+        target_url = ""
+        if isinstance(infra, dict):
+            target_url = str(infra.get("base_url_override") or "").strip()
+        meta = wired.get("meta") if isinstance(wired, dict) else {}
+        profile = ""
+        if isinstance(meta, dict):
+            profile = str(meta.get("assessment_purpose") or "").strip()
+
+        write_run_start(
+            run_id=run_id,
+            check_id=check_id,
+            session_name=session_name,
+            target_url=target_url or None,
+            profile=profile or None,
+            wired_path=wired_path or None,
+            log_path=log_path or None,
+            owner_user_id=owner_user_id,
+        )
+    except Exception:
+        pass  # non-blocking
+
+
+def _persist_run_finish(*, run_id: str, exit_code: int) -> None:
+    try:
+        from api.runs_api import write_run_finish
+        write_run_finish(run_id=run_id, exit_code=exit_code)
+    except Exception:
+        pass  # non-blocking

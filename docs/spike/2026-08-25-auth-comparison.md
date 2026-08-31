@@ -14,7 +14,7 @@
 | | Better Auth v1.7.1 | Keycloak 26.1 |
 |---|---|---|
 | **Тип** | Библиотека (npm) | Платформа (Java/Quarkus) |
-| **База** | SQLite (spike) / Postgres (prod) | PostgreSQL |
+| **База** | Postgres | PostgreSQL |
 | **Размер** | ~200 KB bundled | ~400 MB Docker image |
 | **Порты** | :3001 (Express) | :8082 (Admin + API) |
 
@@ -47,7 +47,7 @@
 1. **TypeScript-native.** Схема, хуки, типы — всё из коробки. `customSession` маппит роли на capabilities без лишнего кода.
 2. **API Keys с префиксом `pk_live_`.** Родной плагин, CLI-совместимость.
 3. **Bundle size.** 15 KB клиент vs 120 KB keycloak-js.
-4. **PostgreSQL через Compose.** Pure Box поднимает PostgreSQL как часть docker-compose стека — тот же подход, что и для DefectDojo, SonarQube. Никакого SQLite в production. Никакого второго auth-провайдера «на всякий случай».
+4. **PostgreSQL через Compose.** Pure Box поднимает PostgreSQL как часть docker-compose стека — тот же подход, что и для DefectDojo, SonarQube. Никакого второго auth-провайдера «на всякий случай».
 
 ### Keycloak — в архив
 
@@ -69,7 +69,7 @@
 
 ### Аргументы:
 
-1. **PostgreSQL — единый source of truth.** Pure Box поднимает PostgreSQL через Docker Compose. DefectDojo и SonarQube уже на нём — не плодим зоопарк. SQLite не нужен.
+1. **PostgreSQL — единый source of truth.** Pure Box поднимает PostgreSQL через Docker Compose. DefectDojo и SonarQube уже на нём — не плодим зоопарк.
 2. **Один auth-провайдер.** Better Auth покрывает всё. Два провайдера = две схемы миграций, два пути отладки, две поверхности атаки. Неоправданно.
 3. **Keycloak (400 MB, Java, Quarkus) — в архив.** Docker Compose и скрипты настройки удалены из репо. OIDC/SAML — когда потребуется, Better Auth поддерживает OIDC federation через плагины, без поднятия отдельного IdP-сервера.
 4. **Enterprise-сценарии (Банки) — отложенный слот.** Не через Keycloak, а через OIDC-плагин Better Auth.
@@ -91,8 +91,8 @@
 
 | Файл | Назначение |
 |---|---|
-| `src/auth/server/betterAuth.ts` | Better Auth конфигурация (SQLite, плагины) |
-| `src/auth/server/db/index.ts` | Drizzle ORM + SQLite |
+| `src/auth/server/betterAuth.ts` | Better Auth конфигурация (PG, плагины) |
+| `src/auth/server/db/index.ts` | Drizzle ORM + PG |
 | `auth-server.ts` | Node.js HTTP сервер (entry point) |
 | `scripts/migrate-db.ts` | SQL schema (5 таблиц) |
 | `scripts/create-admin.ts` | Создание admin-пользователя |

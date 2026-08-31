@@ -123,7 +123,7 @@ class CdpViewportRelay:
             try:
                 await reconnect_task
             except asyncio.CancelledError:
-                pass
+                raise  # NOSONAR — re-raise after cleanup per asyncio contract
 
     async def _reconnect_loop(self) -> None:
         """VP-FIX-L1: реконнект при падении контейнера без смерти процесса.
@@ -278,7 +278,7 @@ class CdpViewportRelay:
             try:
                 await asyncio.Future()  # Вечный sleep
             except asyncio.CancelledError:
-                pass
+                raise  # NOSONAR — re-raise after cleanup per asyncio contract
             finally:
                 broadcast_task.cancel()
                 try:

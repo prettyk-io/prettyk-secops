@@ -25,7 +25,6 @@ _Пока пусто._
 | `docs/research/2026-08-12-pal-owner-answers-nshr-lincor.md` | `pal-owner-answers-nshr-lincor.md` | compose-request_41 | Голос владельца/заказчика, НШР/Lincor — сорс для PAL-доков (small) |
 | `docs/research/2026-08-12-cosmo-portal-settings-wave1.md` | `cosmo-portal-settings-wave1.md` | compose-request_42 | Настройки портала Cosmoport — integration-регламент (small) |
 | `docs/research/2026-08-12-pal-release-repo-scanner-anchor.md` | `pal-release-repo-scanner-anchor.md` | compose-request_43 | scanner-якорь релизного репо — integration-контракт (small) |
-| `docs/research/2026-08-12-pal-appsechub-qg-repo-pain.md` | `pal-appsechub-qg-repo-pain.md` | compose-request_44 | Боль AppSecHub/QG репо — мотивация integration (small) |
 | `docs/research/2026-08-12-pal-pi-salvage-before-after.md` | `pal-pi-salvage-before-after.md` | compose-request_45 | PI salvage before/after — кейс integration (small) |
 | `docs/research/2026-08-12-pal-card-routes-wave.md` | `pal-card-routes-wave.md` | compose-request_46 | Карточные маршруты — integration-UI (small) |
 | `docs/research/2026-08-12-pal-lc-stage-map-draft.md` | `pal-lc-stage-map-draft.md` | compose-request_47 | LC stage map — integration-схема (small) |

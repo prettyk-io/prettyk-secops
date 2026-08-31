@@ -67,7 +67,7 @@ def test_fingerprint_stable():
 def test_unique_id_stable_and_different_on_param():
     a = _finding()
     b = _finding(param="other")
-    assert finding_unique_id(a) == finding_unique_id(a)
+    assert finding_unique_id(a) == finding_unique_id(a)  # NOSONAR — idempotency check: same input → same output
     assert finding_unique_id(a) != finding_unique_id(b)
     assert finding_unique_id(a).startswith("pk-")
 

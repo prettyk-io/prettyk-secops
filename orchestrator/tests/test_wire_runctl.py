@@ -124,3 +124,84 @@ class TestGetStatus:
         assert s["state"] == RunState.RUNNING.value
         assert s["attempt"] == 1
         assert s["worker_id"] == "lab-single-flight"
+
+
+class TestPlaneTrackingRunLifecycle:
+    """WIRE-RUNCTL: start_tracking_run + finish_plane_run — полный цикл."""
+
+    def test_start_tracking_queued_to_running(self):
+        plane = lab_run._get_run_plane()
+        run, _ = plane.create_run({"scenario": "track"})
+        assert run.state == RunState.RUNNING  # _dispatch сразу перевёл
+        s = lab_run.get_run_control_plane_status(run.id)
+        assert s["state"] == RunState.RUNNING.value
+
+    def test_start_tracking_transition(self):
+        """start_tracking_run явно переводит QUEUED→RUNNING."""
+        from core.run_control_plane import RunControlPlane
+
+        # Создаём плоскость без workers — dispatch не сработает
+        plane = RunControlPlane(max_concurrent=0)
+        run, is_new = plane.create_run({"s": "t"})
+        assert run.state == RunState.QUEUED  # нет worker'ов
+
+        plane.start_tracking_run(run.id)
+        run2 = plane.get_run(run.id)
+        assert run2 is not None
+        assert run2.state == RunState.RUNNING
+        assert run2.started_at is not None
+
+    def test_start_tracking_idempotent_on_running(self):
+        """start_tracking_run на уже RUNNING — не ломается."""
+        from core.run_control_plane import RunControlPlane
+
+        plane = RunControlPlane(max_concurrent=0)
+        run, _ = plane.create_run({"s": "t"})
+        plane.start_tracking_run(run.id)
+        # Второй вызов — не должен упасть
+        plane.start_tracking_run(run.id)
+        assert plane.get_run(run.id).state == RunState.RUNNING
+
+    def test_start_tracking_noop_on_terminal(self):
+        from core.run_control_plane import RunControlPlane
+
+        plane = RunControlPlane(max_concurrent=0)
+        run, _ = plane.create_run({"s": "t"})
+        plane.start_tracking_run(run.id)
+        plane.succeed_run(run.id)
+        # На терминальном — noop
+        plane.start_tracking_run(run.id)
+        assert plane.get_run(run.id).state == RunState.SUCCEEDED
+
+    def test_full_lifecycle_submit_finish(self, fake_start_run):
+        """submit → RUNNING → _finish_plane_run(0) → SUCCEEDED."""
+        r = lab_run.submit_run({"scenario": "lifecycle"})
+        run_id = r["run_id"]
+
+        # Должен быть RUNNING
+        s1 = lab_run.get_run_control_plane_status(run_id)
+        assert s1["state"] == RunState.RUNNING.value
+
+        # Завершаем успешно
+        lab_run._finish_plane_run(run_id, 0)
+        s2 = lab_run.get_run_control_plane_status(run_id)
+        assert s2["state"] == RunState.SUCCEEDED.value
+
+    def test_full_lifecycle_submit_fail(self, fake_start_run):
+        """submit → RUNNING → _finish_plane_run(1) → FAILED."""
+        r = lab_run.submit_run({"scenario": "failed-lifecycle"})
+        run_id = r["run_id"]
+        lab_run._finish_plane_run(run_id, 1)
+        s = lab_run.get_run_control_plane_status(run_id)
+        assert s["state"] == RunState.FAILED.value
+        assert s["failure_class"] == FailureClass.INFRA.value
+
+    def test_already_terminal_finish_noop(self, fake_start_run):
+        """Повторный finish на terminal — noop."""
+        r = lab_run.submit_run({"scenario": "terminal"})
+        run_id = r["run_id"]
+        lab_run._finish_plane_run(run_id, 0)
+        # Повторный вызов не должен падать
+        lab_run._finish_plane_run(run_id, 0)
+        s = lab_run.get_run_control_plane_status(run_id)
+        assert s["state"] == RunState.SUCCEEDED.value

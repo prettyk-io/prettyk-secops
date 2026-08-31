@@ -114,7 +114,7 @@ class TestDeterminismInvariant:
         # прямой проход: последовательно вызываем state_at
         # и прямой seek на те же t — hash одинаков
         for t in (0.5, 1.5, 2.5, 4.0, 6.0):
-            assert j.state_hash(t) == j.state_hash(t)
+            assert j.state_hash(t) == j.state_hash(t)  # NOSONAR — WZ determinism invariant: same t always same hash
 
     def test_verify_determinism_checkpoints(self):
         j = self._journal()

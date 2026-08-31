@@ -29,7 +29,7 @@ Space (группа / «экспедиция» / AD-видимость)
 
 ### DAST as-is (не сущность портала)
 
-`scannerRun` / `BlackBoxRun` живут в CI: variables + autorun file + optional auth script + SARIF → AppSecHub.  
+`scannerRun` / `BlackBoxRun` живут в CI: variables + autorun file + optional auth script + SARIF → findings intake.  
 В портале — модалка параметров и галочка ЖЦ, не объект «проверка».
 
 ## Связь с коробкой (пак, не SoT)

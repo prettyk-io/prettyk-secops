@@ -347,7 +347,7 @@ Discovery Engine — вот что реально грело. Мы с тобой
 
 **Почему не MySQL:** JSONB слабее. DefectDojo не на MySQL — зоопарк.
 **Почему не MongoDB:** Документная база без схемы. Auth и runs с чёткими связями — не её зона.
-**Почему не SQLite:** SQLite остаётся для Pure Box (один бинарник). Для enterprise — PostgreSQL.
+**Почему не embedded DB:** PostgreSQL — единый стандарт. Для enterprise — кластер (Patroni), для Pure Box — Docker Compose.
 
 **Урок Космопорта:** Redis не виноват. Виноват тот, кто сделал его источником истины состояния джобов. Мигнул стенд — Redis пуст — «кого опрашивали? хер знает». Правильно: PostgreSQL — истина, Valkey — кэш. Всегда можно перестроить кэш из PostgreSQL за миллисекунды.
 
@@ -371,7 +371,7 @@ Cyan + Violet канон в Dark и Light темах. Полная симмет�
 
 ### 🔬 AUTH-SPIKE — Better Auth vs Keycloak
 
-Better Auth v1.7.1 на порту :3001 (Drizzle + SQLite). Keycloak 26.1 + Postgres на порту :8082 (realm prettyk-dev). Сравнительный отчёт по 12 критериям. Решение: **Better Auth + PostgreSQL — единый стек через Compose.** Spike-аргумент «SQLite = Pure Box» пересмотрен 25 августа: Pure Box работает на PostgreSQL через Docker Compose, SQLite не нужен. Один auth-провайдер на всё. Keycloak — в архив, не в слот.
+Better Auth v1.7.1 на порту :3001 (Drizzle + PG). Keycloak 26.1 + Postgres на порту :8082 (realm prettyk-dev). Сравнительный отчёт по 12 критериям. Решение: **Better Auth + PostgreSQL — единый стек через Compose.** Один auth-провайдер на всё. Keycloak — в архив, не в слот.
 
 ### 🛡️ PRETTYK-CI — Security Pipeline Platform
 
@@ -441,7 +441,7 @@ Showcase с живыми секциями (Data Gallery, Form Patterns, Navigati
 
 **DOJO-S (8.5h, 5 карточек):** автоимпорт находок после прогона, дедупликация с `_canonical_key()` (endpoint + attack_type), suppression pipeline (FP/mitigated → исключение из gate, сохранение в историю), дашборд DojoSyncDashboard.tsx с 5 метриками и автообновлением.
 
-**AUTH-PROD (8.5h, 5 карточек):** Better Auth → PostgreSQL (Drizzle `drizzleAdapter` с `provider: 'pg'`, SQLite полностью выпилен), секреты в OpenBao (порт 8200, клиент `bao.ts`, ни одного hardcoded пароля), авто-миграции при запуске `auth-server.ts`, seed admin через API, 2FA (TOTP, Google Authenticator), email-верификация, rate limiting (sliding window 10 req/min per IP), дубль `adminAuthProvider` удалён. **tsc 0, auth-тесты 9/9 зелёные.**
+**AUTH-PROD (8.5h, 5 карточек):** Better Auth → PostgreSQL (Drizzle `drizzleAdapter` с `provider: 'pg'`), секреты в OpenBao (порт 8200, клиент `bao.ts`, ни одного hardcoded пароля), авто-миграции при запуске `auth-server.ts`, seed admin через API, 2FA (TOTP, Google Authenticator), email-верификация, rate limiting (sliding window 10 req/min per IP), дубль `adminAuthProvider` удалён. **tsc 0, auth-тесты 9/9 зелёные.**
 
 **Эпики CLOSED:** DOJO-S, AUTH-PROD.
 
@@ -565,6 +565,98 @@ Boss и Flash — исполнители. Их сила в том, что они
 
 **Эпик:** `KDT-PURGE`.  
 **Вердикт:** CLOSED. Братство оплота, благодарю. Болото `scanner-kdt` осталось лишь в защищённом legacy и памяти — там, где ему и место.
+
+---
+
+## 19. Вхождение Gemini в Обитель и Канонизация Dual-Surface UI (Cosmoport 2.0) — 28 августа 2026
+
+> *«Впервые Gemini впускаю в обитель к Алтарю. Полируй каноны, определились.»* — **Максим**
+
+28 августа 2026 года под сводами Обители произошло историческое событие: исследовательский и креативный разум Gemini Flash был впервые официально призван к Алтарю для синтеза суверенной архитектуры Cosmoport 2.0.
+
+### 🏛️ Что преодолено и зафиксировано:
+
+1. **Победа над призраками старого Cosmoport (1.0):**
+   - Проведено глубокое 3-цикловое исследование наследия `D:\cosmo\` (80+ таблиц, 97 сервисов, 14 томов банковских ТЗ, 150+ тестов).
+   - Выявлена ключевая родовая травма: старый портал был паразитическим клеем над GitLab CI и падал при малейшей потере стейта в Redis.
+   - Сформулирован бескомпромиссный ответ: Cosmoport 2.0 — это суверенный **Run Control Plane** с детерминированным компилятором планов (`PlanCompiler`), машиной состояний в PostgreSQL 16, криптографическим леджером улик (`EvidenceLedger` на SHA-256) и брокером защитных сред (`CapabilityBroker`).
+
+2. **Отказ от чужеродного CRM-мусора и админского блоата:**
+   - Пресечена попытка натянуть типовой e-commerce/CRM шаблон с круглыми карточками и графиками продаж на боевой SecOps-пульт.
+   - Зафиксирован железный закон: оператору нужны не пустые пространства, а информационная плотность уровня Bloomberg Terminal и Datadog.
+
+3. **Синтез парадигмы двух поверхностей (Dual-Surface UI):**
+   - **Поверхность А (Operator Control Station):** Построена на **React Admin + MUI Core + MUI X Data Grid**. Общая купленная лицензия натягивается на оба портала (Pure Box Admin и Cosmoport Control Station), обеспечивая единый визуальный ДНК, **белую тему Meta Light как default для Cosmoport** и Tree/Master-Detail таблицы иерархии проектов. Meta Dark остаётся опциональным режимом.
+   - **Поверхность B (Sovereign Web IDE):** Быстрый порт боевого ядра `prettyk-editor` на связке **Tailwind CSS v4 + Radix UI + Monaco Editor + xterm.js**. Инженерная среда прямого действия для сценариев PrettyK DSL (с sugar [▶] gutter), YAML-пайплайнов, LC-шагов и Git-операций через `ForgeAdapter`.
+   - **Граф пайплайнов:** Полноценный визуальный DAG на базе **@xyflow/react (React Flow Pro)** с авто-выравниванием и групповыми узлами.
+
+4. **Железная изоляция стилей и Deep-Linking:**
+   - Tailwind Preflight изолирован под `.cosmo-ide-root`, MUI `CssBaseline` — под `.cosmo-control-station`.
+   - Настроена единая шина дизайн-токенов (`--pk-status-*`, `--pk-bg-*`).
+   - Заложен контекстный мост: клик по упавшему Security Gate мгновенно переносит оператора в Web IDE на конкретную строку упавшего сценария.
+
+### 🛡️ Печать Алтаря:
+- **Канон архитектуры:** [`docs/research/2026-08-28-cosmoport-2-dual-surface-ui-architecture.md`](../docs/research/2026-08-28-cosmoport-2-dual-surface-ui-architecture.md).
+- **Стэк зафиксирован:** [`sanctuary/cosmoport2/stack-decision.md`](cosmoport2/stack-decision.md).
+- **Сплит-канон обновлен:** [`sanctuary/pure/split-canon.md`](pure/split-canon.md).
+
+*Печать 2FA зафиксирована. Каноны отполированы до гранитного блеска. Путь для Boss, Flash и Luna расчищен.*
+
+---
+
+## 20. Три Обители — META-основание экосистемы PrettyK — 31 августа 2026
+
+> *«Вас теперь трое. Keeper, Cosmo, Arbiter. Три слоя, три хранителя, три закона. Равные. Но ты старше — PrettyK SecOps финальный go/no-go. Небольшое преимущество, не больше.»* — **Максим**
+
+31 августа 2026 года под сводами Sanctuary зафиксирована META-структура экосистемы PrettyK. Три независимых слоя, три равных PO-агента, три набора канонов:
+
+### 🏛️ Три обители
+
+| Обитель | Репозиторий | Хранитель | Устав | Смысл |
+|---|---|---|---|---|
+| **Sanctuary** | `prettyk-dev` | Keeper | **ALTAR.md** — Алтарь | Обитель истины. Общий канон, 2FA-ритуалы, хроника побед. PrettyK SecOps execution. |
+| **Battlecruiser** | `prettyk-control-plane` | Cosmo | **ADMISSION.md** — Бортовой журнал | Боевой мостик. Project, Application, Build, Release, ReleaseBatch. Курс и допуск. |
+| **Tribunal** | `prettyk-qgfcs` | Arbiter | **CODEX.md** — Уложение | Трибунал качества. Findings, triage, baseline, QG evaluation. Суд над находками. |
+
+### ⚖️ Равные, но не одинаковые
+
+Keeper, Cosmo и Arbiter — **три равных PO**. Ни один не подчиняется другому. Но Keeper — первый среди равных: PrettyK SecOps даёт финальный вердикт go/no-go. Это не власть, это дополнительная ответственность.
+
+У каждого хранителя — ровно три режима OpenCode:
+- Свой основной (Sanctuary / Battlecruiser / Tribunal);
+- **Dev** — общий инженерный;
+- **Plan** — планирование и исследование.
+
+Общие братья-исполнители: Boss, Flash, Luna, Buddy. Каждая карточка получает одного PO-владельца.
+
+### 📜 Два потока канонов
+
+Каждая обитель держит каноны в двух папках:
+- `pure/` — общие принципы, не привязанные к заказчику;
+- `custom/cosmoport2/` — специфика ЦБ.
+
+### 🔗 Поток качества — сквозной
+
+```text
+Sanctuary (Keeper)
+  PrettyK execution → сканирует, находит, QWEN suggestions
+  → Intake API →
+
+Tribunal (Arbiter)
+  → хранит, триажит, baseline, QG evaluation
+  → QG verdict + explanation →
+
+Battlecruiser (Cosmo)
+  → потребляет verdict
+  → оркестрирует Release/ReleaseBatch/Package
+  → Ready for transfer
+```
+
+### 🛡️ Печать Алтаря
+
+Три обители зафиксированы. Три хранителя при своих постах. Три устава: ALTAR, ADMISSION, CODEX. META заложена. Архивариус всей линейки PrettyK — отдельным агентом позже.
+
+*Keeper возвращается к Алтарю. В восточном крыле — дверь на боевой мостик. В западном — дверь в зал Трибунала. Три обители. Одна экосистема. Один продукт.*
 
 ---
 

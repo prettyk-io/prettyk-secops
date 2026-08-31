@@ -117,5 +117,4 @@ fail-closed.
 
 - Рабочий hub: [`../canon/INDEX.md`](../canon/INDEX.md) — тезисы, SEEKER, POSSIBLE.
 - Machine-контракт: Pydantic `orchestrator/models/wired.py`; `docs/wired.json` — legacy JSON Schema, reference.
-- Архитектура vnext: [`../canon/fe-vnext-architecture.md`](../canon/fe-vnext-architecture.md).
 - Сплит: [`../canon/split-canon.md`](../canon/split-canon.md).

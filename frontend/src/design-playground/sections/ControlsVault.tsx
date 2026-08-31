@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import {
   Copy,
-  scanner,
+  ScanLine,
   Rocket,
   Check,
   Settings,
@@ -90,7 +90,7 @@ export function ControlsVault({
             gap: 8,
           }}
         >
-          <scanner className="size-4" /> Active Fuzz Engine
+          <ScanLine className="size-4" /> Active Fuzz Engine
         </button>
       ),
       code: '<button style={{ background: "linear-gradient(135deg, #38bdf8 0%, #7a1fa2 50%, #522e90 100%)" }}>Active Fuzz</button>',

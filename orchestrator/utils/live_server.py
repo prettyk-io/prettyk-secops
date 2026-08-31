@@ -206,6 +206,22 @@ class _LiveHandler(BaseHTTPRequestHandler):
         if path == "/api/journal/latest":
             self._serve_journal_latest()
             return
+        # ── CF-B3: Fuzzer API ──
+        if path == "/api/fuzzer/status":
+            self._serve_fuzzer_status()
+            return
+        if path == "/api/fuzzer/findings":
+            qs = parse_qs(parsed.query)
+            try:
+                limit = int((qs.get("limit") or ["100"])[0])
+            except ValueError:
+                limit = 100
+            severity_f = (qs.get("severity") or [""])[0]
+            self._serve_fuzzer_findings(limit=limit, severity=severity_f)
+            return
+        if path == "/api/fuzzer/findings/sse":
+            self._serve_fuzzer_findings_sse()
+            return
         if path == "/api/run_summary/latest":
             self._serve_run_summary_latest()
             return
@@ -245,6 +261,48 @@ class _LiveHandler(BaseHTTPRequestHandler):
                 self._json_error(400, "t must be a number")
                 return
             self._serve_warzone_scene_at(t)
+            return
+        # ── PERS-B1: Run Registry API ──
+        if path == "/api/runs":
+            qs = parse_qs(parsed.query)
+            try:
+                limit = int((qs.get("limit") or ["50"])[0])
+            except ValueError:
+                limit = 50
+            try:
+                offset = int((qs.get("offset") or ["0"])[0])
+            except ValueError:
+                offset = 0
+            status_f = (qs.get("status") or [""])[0]
+            check_f = (qs.get("check_id") or [""])[0]
+            sort = (qs.get("sort") or ["-created_at"])[0]
+            self._serve_runs_list(limit=limit, offset=offset, status_f=status_f, check_id=check_f, sort=sort)
+            return
+        if path.startswith("/api/runs/") and len(path) > len("/api/runs/"):
+            rest = path[len("/api/runs/"):].split("?")[0].strip("/")
+            if rest.count("/") == 1 and rest.endswith("/evidence"):
+                run_id = rest.split("/")[0]
+                self._serve_run_evidence(run_id)
+                return
+            if rest.count("/") == 1 and rest.endswith("/events"):
+                run_id = rest.split("/")[0]
+                self._serve_run_events(run_id)
+                return
+            if rest and "/" not in rest:
+                self._serve_run_detail(rest)
+                return
+        # ── PERS-B4: Live stream SSE ──
+        if path == "/api/live/stream":
+            self._serve_live_stream_sse()
+            return
+        # ── PERS-B4: Summary trend ──
+        if path == "/api/summary/trend":
+            qs = parse_qs(parsed.query)
+            try:
+                days = int((qs.get("days") or ["30"])[0])
+            except ValueError:
+                days = 30
+            self._serve_summary_trend(days=days)
             return
         self.send_error(404, "Not Found")
 
@@ -2272,6 +2330,199 @@ class _LiveHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    # ── PERS-B1: Run Registry API handlers ──
+
+    def _serve_runs_list(self, *, limit=50, offset=0, status_f="", check_id="", sort="-created_at"):
+        try:
+            from api.runs_api import handle_list_runs
+            data = handle_list_runs(limit=limit, offset=offset,
+                                    status=status_f, check_id=check_id, sort=sort)
+        except Exception as exc:
+            self._json_error(500, "runs_list_failed")
+            return
+        body = json.dumps(data, ensure_ascii=False).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self._cors_headers()
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _serve_run_detail(self, run_id: str):
+        try:
+            from api.runs_api import handle_get_run
+            data = handle_get_run(run_id)
+        except Exception as exc:
+            self._json_error(500, "run_detail_failed")
+            return
+        status = 200 if data.get("ok") else 404
+        body = json.dumps(data, ensure_ascii=False).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self._cors_headers()
+        self.end_headers()
+        self.wfile.write(body)
+
+    # ── PERS-B4: Run events ──
+
+    def _serve_run_events(self, run_id: str):
+        try:
+            from api.runs_api import handle_get_run_events
+            data = handle_get_run_events(run_id)
+        except Exception:
+            self._json_error(500, "run_events_failed")
+            return
+        status = 200 if data.get("ok") else 404
+        body = json.dumps(data, ensure_ascii=False).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self._cors_headers()
+        self.end_headers()
+        self.wfile.write(body)
+
+    # ── PERS-B4: Live stream SSE ──
+
+    def _serve_live_stream_sse(self):
+        """SSE-стрим статуса активного прогона. На каждое обновление run_records
+        клиент получает текущий статус + последние evidence."""
+        from api.runs_api import handle_get_run, handle_get_run_events
+        from models.db import get_session
+        from models.run_record import RunRecord
+
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Connection", "keep-alive")
+        self._cors_headers()
+        self.end_headers()
+
+        last_count = 0
+        while True:
+            try:
+                s = get_session()
+                total = s.query(RunRecord).count()
+                s.close()
+            except Exception:
+                total = last_count
+
+            if total != last_count:
+                last_count = total
+                payload = {
+                    "type": "live_stream",
+                    "total_runs": total,
+                    "active_runs": _count_active_runs(),
+                }
+                self._write_sse(payload)
+            else:
+                self.wfile.write(b": keepalive\n\n")
+                self.wfile.flush()
+
+            time.sleep(2)
+
+    # ── PERS-B4: Summary trend ──
+
+    def _serve_summary_trend(self, days: int = 30):
+        try:
+            from api.runs_api import handle_get_trend
+            data = handle_get_trend(days=days)
+        except Exception:
+            self._json_error(500, "trend_failed")
+            return
+        body = json.dumps(data, ensure_ascii=False).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self._cors_headers()
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _serve_run_evidence(self, run_id: str):
+        """PERS-B5: evidence proxy — список артефактов прогона с presigned URLs."""
+        try:
+            from api.runs_api import handle_get_run_evidence
+            data = handle_get_run_evidence(run_id)
+        except Exception:
+            # Fallback: reports/ директория (Pure Box без PG)
+            data = _fallback_run_evidence(run_id)
+        status = 200 if data.get("ok") else 404
+        body = json.dumps(data, ensure_ascii=False).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self._cors_headers()
+        self.end_headers()
+        self.wfile.write(body)
+
+
+def _fallback_run_evidence(run_id: str) -> dict:
+    """PERS-B5 fallback: evidence из reports/ когда PG/MinIO не готовы."""
+    reports_dir = Path(__file__).resolve().parents[1] / "reports"
+    run_dir = reports_dir / run_id
+    if not run_dir.is_dir():
+        return {"ok": False, "error": f"run {run_id} not found"}
+    items = []
+    for fpath in sorted(run_dir.rglob("*")):
+        if not fpath.is_file():
+            continue
+        rel = str(fpath.relative_to(reports_dir))
+        kind: str
+        if fpath.suffix in (".mp4", ".webm"):
+            kind = "video"
+        elif fpath.suffix in (".png", ".jpg"):
+            kind = "screenshot"
+        elif fpath.suffix == ".har":
+            kind = "har"
+        elif fpath.suffix in (".json", ".html", ".xml", ".txt"):
+            kind = "report"
+        else:
+            kind = "other"
+        import hashlib
+        sha = hashlib.sha256(fpath.read_bytes()).hexdigest()[:16]
+        items.append({
+            "id": f"ev-{run_id}-{fpath.stem}",
+            "runId": run_id,
+            "kind": kind,
+            "label": rel,
+            "sha256": sha,
+            "sizeBytes": fpath.stat().st_size,
+            "createdAt": _time_module.strftime("%Y-%m-%dT%H:%M:%SZ", _time_module.gmtime(fpath.stat().st_mtime)),
+            "localPath": str(fpath),
+            "presignedUrl": "",
+        })
+    return {"ok": True, "items": items}
+
+
+# ── PERS-B4: helper count ──
+
+def _count_active_runs() -> int:
+    """Best-effort подсчёт активных запусков (running status)."""
+    try:
+        from models.db import get_session
+        from models.run_record import RunRecord
+        s = get_session()
+        count = s.query(RunRecord).filter(RunRecord.status == "running").count()
+        s.close()
+        return count
+    except Exception:
+        return 0
+
+
+
+# ── PERS-B4: helper count ──
+
+def _count_active_runs() -> int:
+    """Best-effort подсчёт активных запусков (running status)."""
+    try:
+        from models.db import get_session
+        from models.run_record import RunRecord
+        s = get_session()
+        count = s.query(RunRecord).filter(RunRecord.status == "running").count()
+        s.close()
+        return count
+    except Exception:
+        return 0
 
 def build_scene_graph_from_wired(wired: dict) -> dict[str, list]:
     """B-6: извлечь ноды и рёбра боевой сцены из wired манифеста."""
@@ -2281,6 +2532,82 @@ def build_scene_graph_from_wired(wired: dict) -> dict[str, list]:
     suites = wired.get("test_suites") if isinstance(wired, dict) else getattr(wired, "test_suites", None)
     if not suites:
         return {"nodes": nodes, "edges": edges}
+
+    # ── CF-B3: Fuzzer API handlers ──
+
+    def _serve_fuzzer_status(self):
+        """GET /api/fuzzer/status — текущее состояние фаззера."""
+        from fuzzer.findings import _LAST_FUZZ_RESULT
+
+        result = _LAST_FUZZ_RESULT if _LAST_FUZZ_RESULT else {"status": "idle", "findings": 0}
+        body = json.dumps(result, ensure_ascii=False).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self._cors_headers()
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _serve_fuzzer_findings(self, limit: int = 100, severity: str = ""):
+        """GET /api/fuzzer/findings — список находок."""
+        from fuzzer.findings import _LAST_FINDINGS
+
+        findings = list(_LAST_FINDINGS)
+        if severity:
+            findings = [f for f in findings if f.get("severity") == severity]
+        findings = findings[:limit]
+
+        body = json.dumps({
+            "total": len(findings),
+            "findings": findings,
+        }, ensure_ascii=False).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self._cors_headers()
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _serve_fuzzer_findings_sse(self):
+        """GET /api/fuzzer/findings/sse — SSE finding.created поток."""
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Connection", "keep-alive")
+        self.end_headers()
+
+        # Отдать существующие находки как backlog
+        from fuzzer.findings import _LAST_FINDINGS
+        for finding in list(_LAST_FINDINGS):
+            event = {"type": "finding.created", "finding": finding}
+            self._write_sse(event)
+
+        offset = diary_bus.file_size()
+        keepalive_every = 50
+        idle_ticks = 0
+        try:
+            while True:
+                new_events, offset = diary_bus.read_file_since(offset, "diary")
+                if new_events:
+                    idle_ticks = 0
+                    for ev in new_events:
+                        if ev.get("kind", "").startswith("FINDING") or ev.get("kind", "").startswith("finding."):
+                            try:
+                                self._write_sse(ev)
+                            except (BrokenPipeError, ConnectionResetError, OSError):
+                                return
+                else:
+                    idle_ticks += 1
+                    if idle_ticks >= keepalive_every:
+                        idle_ticks = 0
+                        try:
+                            self.wfile.write(b": keepalive\n\n")
+                            self.wfile.flush()
+                        except (BrokenPipeError, ConnectionResetError, OSError):
+                            break
+                time.sleep(0.3)
+        except (BrokenPipeError, ConnectionResetError, OSError):
+            return
     si = suites if isinstance(suites, dict) else suites.model_dump() if hasattr(suites, "model_dump") else {}
     imports = si.get("imports") or []
     pages = si.get("pages") or {}

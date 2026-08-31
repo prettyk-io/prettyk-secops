@@ -158,11 +158,11 @@
 - Тесты: `vitest` targeted/auth — 39/39 pass, tsc 0.
 
 ### AUTH-SPIKE (Сравнение Better Auth vs Keycloak · 24 авг)
-- Better Auth v1.7.1 на порту :3001 (Drizzle + SQLite) vs Keycloak 26.1 на :8082.
+- Better Auth v1.7.1 на порту :3001 (Drizzle + PG) vs Keycloak 26.1 на :8082.
 - 48/48 тестов зелёные. Решение: Better Auth + PostgreSQL — единый стек через Compose.
 
 ### AUTH-PROD (Production Auth Boundary · 25 авг)
-- Better Auth → PostgreSQL 16 (Drizzle `drizzleAdapter` с `provider: 'pg'`, SQLite выпилен).
+- Better Auth → PostgreSQL 16 (Drizzle `drizzleAdapter` с `provider: 'pg'`).
 - Секреты в OpenBao (порт 8200, клиент `bao.ts`, ноль hardcoded паролей).
 - Авто-миграции при запуске `auth-server.ts`, seed admin через API.
 - 2FA (TOTP, Google Authenticator), email-верификация, rate limiting (sliding window 10 req/min).

@@ -94,7 +94,7 @@ class LeaseController:
             try:
                 await self._task
             except asyncio.CancelledError:
-                pass
+                raise  # NOSONAR — re-raise after cleanup
             self._task = None
         logger.info("LeaseController stopped")
 

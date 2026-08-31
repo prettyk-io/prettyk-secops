@@ -1,10 +1,21 @@
 ﻿# Единый рабочий backlog PrettyK
 
+## Текущий фокус экосистемы
+
+| Контур | Состояние | Где ведётся работа |
+|---|---|---|
+| **PrettyK SecOps** | ⏸ OnHold | Этот репозиторий — только зафиксированный baseline |
+| **PrettyK Control Plane** | ▶ В работе | Отдельная обитель Battlecruiser / Control Plane |
+| **QG Findings Control Station** | ▶ В работе | Отдельная обитель Tribunal / QG Findings Control Station |
+
+> Эта таблица — указатель направления, а не новые карточки PrettyK. Делегирование и контракты ведутся в соответствующих обителях.
+
 > **QUEUE (Оперативный верстак)** — живая очередь задач команды.  
 > Единственный источник канонической истины: [`../sanctuary/pure/INDEX.md`](../sanctuary/pure/INDEX.md).  
 > Полный архив закрытых исторических эпиков: [`archive/backlog-archive-2026-08.md`](archive/backlog-archive-2026-08.md).  
 > Алтарь побед: [`../sanctuary/ALTAR.md`](../sanctuary/ALTAR.md).  
-> Срез очереди: **25 августа 2026 года**. Ветки: **`dev` → `main`**.
+> **🏛️ Cosmoport 2.0 — отдельный бэклог:** [`sanctuary/custom/cosmoport2/backlog.md`](../sanctuary/custom/cosmoport2/backlog.md). Все Cosmo-карточки, фазы, DoD и распределение ведутся там, не в очереди PrettyK.
+> Срез очереди: **31 августа 2026 года**. Состояние PrettyK SecOps: **OnHold, активных карточек нет**. Ветка: **`dev`**.
 
 ---
 
@@ -24,200 +35,57 @@
 
 ---
 
-## Карта оперативной очереди
+## Карта оперативной очереди — срез 31 августа 2026 года
 
-| # | Эпик | Статус | Кому | Часы | Суть / Ссылка |
-|---|---|---|---|---|---|---|
-| **PK-WB** | **WORKBENCH — Editor ↔ Studio: единый CheckWorkspace, Commit, Diff, Browser Stage** | **CLOSED (100% ✅)** | Boss + Flash | 0h (73h закрыто) | § Эпик PK-WB ниже · 352 теста, tsc 0, фундамент сдан |
-| **PK-ER** | **EDITOR REBORN — Возврат продуктового Explorer, навигация, visual rails, continuity** | **IMPLEMENTED (52 теста, tsc 0)** | Boss + Flash | 13h | § Эпик PK-ER ниже · Стратегия: `docs/editor-reborn.md` |
-| **🔥 CDP-WIRE** | **LIVE DISCOVERY — CDP → Wire → Studio Step + Editor Step Drawn** | **🟢 Phase 1+2 ЗАКРЫТЫ · весь браузерный фундамент сдан (HDO + CDP-WIRE Phase 2)** | Boss + Flash + Luna | 0h (закрыто) | § CDP-WIRE ниже · 127 тестов Boss, 73 теста Flash, 54 теста Luna · headless observe e2e, Playwright-контейнер, паритет, cutover, DSL-сахар — всё сдано · финальный барьер: живой CDP-проход |
-| **BUD-E2E** | **PRETTYK BUDDY end-to-end — живой CDP-клик + engine → Studio → run → evidence** | **🟢 CLOSED (движок 64/64 + 462 + 73 + 127 + 54 теста, tsc 0)** | Boss + Flash + Luna | 0h (закрыто) | § Эпик BUD-E2E ниже · весь стек сдан · PROMOTE после живого CDP-прохода |
-| **STU-V2** | **STUDIO V2 — долить функционал старого Studio** | **🟢 CLOSED (402/402 тестов, tsc 0)** | Boss + Flash | — | § Эпик STU-V2 ниже · функциональный долив сдан |
-| **STU-RAILS** | **CANONICAL STUDIO/EDITOR — новые поверхности, legacy на `-old`** | **🟢 CLOSED (tsc 0 · 66 + 24 Luna + 6 RAILS-PROMOTE)** | Boss + Flash + Luna | 0h (закрыто) | § Эпик STU-RAILS ниже |
-| **SANCTUARY-MAP** | **ТАКТИЧЕСКИЙ РАДАР ОБИТЕЛИ** | **🟢 CLOSED (Ctrl+M + Idea Forge + шейдеры, 33 + 6 тестов)** | Boss + Flash | 0h (закрыто) | § Эпик SANCTUARY-MAP ниже |
-| **🔥 PK-DSL** | **PRETTYK DSL SUGAR** | **🟢 CLOSED (8/8 карточек, 403 + 73 теста, tsc 0) · 🧊 Контракт заморожен (28 авг 2026): короткие глаголы, DUEL RU/EN, try/catch/finally, символы — канон; «Попробовать» вырезан** | Boss + Flash + Luna | 0h (закрыто) | § Эпик PK-DSL ниже · browser_adapter 757→134 строки · Friend Request: [`docs/friend-requests/PRETTYK-DSL-SUGAR.md`](friend-requests/PRETTYK-DSL-SUGAR.md) |
-| **🔒 PK-PERSIST** | **PERSISTENCE FOUNDATION — PostgreSQL + MinIO + Valkey** | **🔒 PARKED (после PROMOTE браузерного фундамента)** | Boss + Buddy | 41h (est) | § Эпик PK-PERSIST ниже |
-| **🔥 PK-WIRE-SYNC** | **WIRE DSL ↔ CANVAS SYNC — Surgical AST Patching, асимметричное авторство, read-only оверлеи** | **🟢 CLOSED (B1/B2/F1/L1/L2 — 119 FE + 54 PY, tsc 0, 28 авг)** | Boss + Flash + Luna | 0h (закрыто) | § Эпик PK-WIRE-SYNC ниже · Спецификация: [`docs/research/2026-08-27-wire-canvas-sync-plan.md`](research/2026-08-27-wire-canvas-sync-plan.md) · Сквозной контур: BrowserStage live MJPEG → observe/click → DSL → Canvas → Monaco surgical patch · Все 5 карточек сданы |
-| **🔥 PK-DSL-CLEANUP** | **DSL CLEANUP — Миграция Попробовать → try/catch/finally по замороженному контракту** | **🟢 CLOSED (Monaco ✅ / Canvas ✅ / парсер ✅, 28 авг 2026)** | — | 0h | Хвост: 3 строки в `prettyToWire.ts:65` + `textScan.ts:98,101` — не блокируют, убрать при случае |
-| **🔥 PK-VIEWPORT** | **VIEWPORT RELAY — Async CDP Screencast в контейнере: эвакуация Sync Worker, контракты Frame/Input, приёмка Juice Shop** | **🟢 CLOSED (6/6 карточек, 28 авг)** | Boss + Flash + Luna | 0h (закрыто) | § Эпик PK-VIEWPORT ниже · 6 карточек (B1/F1/F2/L1/L2/L1-FIX) · Спецификация: [`docs/research/2026-08-28-browser-viewport-streaming.md`](research/2026-08-28-browser-viewport-streaming.md) |
-| **🔥 PK-VIEWPORT-FIX** | **VIEWPORT FIX — эвакуация screencast из browser_service, relay в stand lifecycle, canvas onload fix** | **🟢 CLOSED (28 авг · F1 ✅ / B1+L1 ✅ · живой смоук 1920×1080 JPEG FFD8)** | Flash + Luna | 0h | § Эпик PK-VIEWPORT-FIX ниже · 3 карточки · сквозной контур починен |
-| **🔥 PW-AIRGAP-2** | **EXECUTION PARITY — Controller гоняет прогон через PlaywrightAdapter за флагом, CDP-поверхность, видео, live-вид, parity-прогон** | **🟢 CLOSED (28 авг · Boss E1/E2 · Luna E3/E4/E5 · 28 тестов · живой run не гонялся)** | Boss + Luna | 0h | Живой parity run глазами — остался на завтра |
-| **🔥 PW-AIRGAP-3** | **CUTOVER + AIRGAP BUNDLE — дефолт на Playwright, Selenium выпилен, docker save/load, registry вычищен** | **🟢 CLOSED (28 авг · Boss C1 · Luna C2/C3 · 8 тестов · Grid выпилен из compose)** | Boss + Luna | 0h | § Эпик PW-AIRGAP-3 ниже |
-| **🔥 PK-RUNCTL** | **SYSTEM LAYERS — Health-контракт, Edge Gateway, Run Control Plane, Telemetry, Pure Box защита** | **🟡 ядро ✅ / wiring ❌ (28 авг · Boss RUN-CTL 1-6 in-memory · Luna HEALTH/TELEMETRY/PROFILES 30 тестов · НЕ подключён к lab_run)** | Boss (wiring) | 3h (остаток) | § Эпик PK-RUNCTL ниже · Ядра написаны, осталось подключить к runtime |
-| **🔥 WARZONE** | **SIGNATURE REWIND 100/100 — детерминированная перемотка луча фаззинга, RTS-камера, 3 режима Execution Hub** | **🟡 ядро ✅ / wiring ❌ (28 авг · Boss WZ-1/2/5 · Luna WZ-3/4/7/8 33 теста · Flash WZ-6 ❌ · НЕ подключён к SSE/Live)** | Flash (WZ-6) + Boss (wiring) | 5h (остаток) | § Эпик WARZONE ниже · WZ-6 остался · wiring к Live SSE |
-| **🔥 PK-CRAWLER** | **PLAYWRIGHT SPA/STATE CRAWLER — собственный обход SPA по состояниям, граф переходов, UI-пробуждение сиротских форм, связка с CorpusFuzzer** | **🟡 research (POC design готов, 28 авг 2026)** | Boss 30% + Flash 40% + Luna 30% | 25.5h (est) | § Эпик PK-CRAWLER ниже · 11 карточек (P0+P1) · research: [`docs/research/2026-08-28-playwright-spa-crawler-poc.md`](research/2026-08-28-playwright-spa-crawler-poc.md) · P0: 7 карточек, 17.5h · P1: 4 карточки, 8h |
-| **🔥 PK-SPIDER-APOCALYPSE** | **SPIDER APOCALYPSE — старые spider-имена → алиасы на `crawl`, scanner-специфика → @deprecated, тесты переписаны, spiderCompletions.ts удалён** | **🟡 ready (нарезано, 28 авг · 1 карточка, 3.5h)** | Flash | 3.5h (est) | § Эпик PK-SPIDER-APOCALYPSE ниже · ~15 файлов, 91+ попадание в тестах · rename, не remove |
-| **🔥 PK-WIRED-RENAME-TAIL** | **Недобитый ренейм Wired → Wired в auth-контексте: `apply_wired_auth` → `apply_wired_auth` (13 точек, 3 файла)** | **🟡 ready (нарезано, 28 авг)** | — | 1h (est) | § Эпик PK-WIRED-RENAME-TAIL ниже · 1 карточка · часть 48 red |
-| **🔥 PK-SCANNER-RENAME** | **scanner → scanner: внутренние имена (adapter/env/gates/compose/логи). scanner остаётся в fame list — просто не упоминаем на каждом углу. `zapv2`/API-контракты не трогаем** | **🟡 ready (нарезано, 28 авг)** | по команде | 6h (est) | § Эпик PK-SCANNER-RENAME ниже · 3 карточки (SCN-R1/R2/R3) · 300 файлов, 130 scannerAdapter refs, 70 env, 39 compose |
-| **🔒 SOR** | **SESSION ORCHESTRATION & MULTI-SUBSTRATE — Box/Session/Run иерархия, RuntimeProvider boundary (Compose appliance + K8s cluster), pk-control control plane, fencing/lease, Cosmoport2 API boundary** | **🟡 ready (нарезано, 28 авг) — фундамент зафиксирован в research, НЕ канон** | Boss + Luna + Flash + Buddy | 46h (est) | § Эпик SOR ниже · 18 карточек (5 волн) · research: [`docs/research/2026-08-28-session-orchestration-and-multi-substrate-architecture.md`](research/2026-08-28-session-orchestration-and-multi-substrate-architecture.md) |
+> На текущем срезе нет задач в работе, задач на делегирование или незакрытого PrettyK-WIP.
+> Ниже сохранены исторические планы, acceptance-заметки и решения прошлых дней. Они не образуют текущую очередь и не являются поручениями братьям.
+
+### 🟢 CLOSED
+
+| # | Эпик | Статус | Кому | Тесты |
+|---|---|---|---|---|---|
+| **PK-WB** | WORKBENCH — Editor ↔ Studio единый CheckWorkspace | ✅ | Boss + Flash | 352 · tsc 0 |
+| **PK-ER** | EDITOR REBORN — Explorer, навигация, visual rails | ✅ | Boss + Flash | 52 · tsc 0 |
+| **CDP-WIRE** | LIVE DISCOVERY — CDP → Wire → Studio + Editor | ✅ | Boss + Flash + Luna | 127+73+54 |
+| **BUD-E2E** | PRETTYK BUDDY e2e — engine → Studio → evidence | ✅ | Boss + Flash + Luna | 64+462+73+127+54 |
+| **STU-V2** | STUDIO V2 — долив функционала | ✅ | Boss + Flash | 402/402 |
+| **STU-RAILS** | CANONICAL STUDIO/EDITOR — новые поверхности | ✅ | Boss + Flash + Luna | 66+24+6 · tsc 0 |
+| **SANCTUARY-MAP** | ТАКТИЧЕСКИЙ РАДАР ОБИТЕЛИ | ✅ | Boss + Flash | 33+6 |
+| **PK-DSL** | PRETTYK DSL SUGAR — 🧊 контракт заморожен | ✅ | Boss + Flash + Luna | 403+73 · tsc 0 |
+| **PK-WIRE-SYNC** | WIRE DSL ↔ CANVAS SYNC | ✅ | Boss + Flash + Luna | 119 FE + 54 PY |
+| **PK-DSL-CLEANUP** | DSL CLEANUP — Попробовать вырезан | ✅ | — | Monaco ✅ / Canvas ✅ |
+| **PK-VIEWPORT** | VIEWPORT RELAY — Async CDP Screencast | ✅ | Boss + Flash + Luna | 6/6 карточек |
+| **PK-VIEWPORT-FIX** | VIEWPORT FIX — screencast эвакуация | ✅ | Flash + Luna | смоук 1920×1080 JPEG |
+| **PW-AIRGAP-2** | EXECUTION PARITY — PlaywrightAdapter | ✅ | Boss + Luna | 28 тестов |
+| **PW-AIRGAP-3** | CUTOVER + AIRGAP BUNDLE | ✅ | Boss + Luna | 8 тестов · Selenium выпилен |
+| **PK-RUNCTL** | SYSTEM LAYERS — Health, RunCTL, Telemetry | ✅ | Boss + Luna | RUN-CTL 47 + HEALTH 30 |
+| **WARZONE** | SIGNATURE REWIND — RTS-камера, 3 режима | ✅ | Boss + Luna + Flash | WZ 33 + WIRE-WZ 38 + WZ-SSE |
+| **PK-CRAWLER** | SPA/STATE CRAWLER — 11/11 карточек · → evolve | ✅ | Boss + Flash + Luna | CRAWL-1..11 |
+| **PK-SPIDER-APOCALYPSE** | spider → crawl, spiderCompletions удалён | ✅ | Flash | — |
+| **PK-WIRED-RENAME-TAIL** | Wired-ренейм хвост, DSL-TAIL убран | ✅ | — | — |
+| **PK-SCANNER-RENAME** | scanner rename MEGA-WAVE | ✅ | — | 98/98 · generated JSON clean |
+| **PK-PERSIST** | PERSISTENCE — PG + MinIO + SHA256 | ✅ | Boss | 1834 passed |
+| **CF** | CORPUS-FUZZER — 7 модулей, 3 профиля, SSE | ✅ | Luna | 51 passed |
+| **SONAR-CLEANUP** | SONARQUBE CLEANUP — Backend 81 vulns + 14 bugs → 0 BLOCKER/CRITICAL | ✅ | Boss | 76 WON'T FIX (фаззер-словари), 10 файлов поправлено |
+| **INT-STEEL** | FULL PIPELINE INTEGRATION — Wave 8: сквозной тест + орфан-детектор | ✅ | Luna | 38 новых тестов, 0 регрессий · INT-B1 (18) + INT-B2 (20) |
+| **ADM-WIRE-1** | useSecopsStore → live API (fetchRunsAndSync + SSE + polling) | ✅ | Flash | 0 tsc · полный rewrite |
+| **ADM-WIRE-2** | EvidencePanel antd → MUI | ✅ baseline закрыт | Flash | tsc 0 · frontend baseline green |
+
+### ⏸ ОСТАНОВЛЕНО — активной очереди нет
+
+Нет активных эпиков, карточек на делегирование или незакрытых хвостов. Следующая задача появляется только по новой директиве Максима.
+
 
 > 🏛️ **Архив выполненного:** Все 25+ закрытых эпиков (SC, WAR, DP, DP-ADM, ADM-V3, AUTH-PROF, AUTH-SPIKE, AUTH-PROD, PK-CI 1–3, PK-TRM 1–4, PK-BL, DOJO-S, MH-FIX, IMPX, RK, PSI, VN, CD и др.) перенесены в [`archive/backlog-archive-2026-08.md`](archive/backlog-archive-2026-08.md).
 
 ---
 
-## 🔥 ИТОГ СМЕНЫ 28 авг 2026 — Фактический статус по отчётам братьев
+## 🔥 Исторический срез 29 авг 2026 — не текущая очередь
 
-> **253 теста PY + 57 тестов FE + 33 теста warzone passed. tsc 0.** Ядра написаны, wired не сделан.
-> **Критическая проблема:** всё написанное — чистое ядро без wiring. RUN-CTL не подключён к `lab_run.py`. WARZONE не подключён к SSE/Live. Playwright parity не прогнан живьём. **WIP Boss не разобран (TRIAGE не сделан).** Editor сломан (`Connection refused`).
-
-### Факт по исполнителям
-
-| Исполнитель | Что сделано | Тесты | Что НЕ сделано |
-|---|---|---|---|
-| **Boss** | PW-E1/E2 ✅ · PW-C1 ✅ · RUN-CTL 1-6 (in-memory ядро) ✅ · WZ-1/2/5 (ядро) ✅ | — | ❌ TRIAGE WIP · ❌ RUN-CTL-WRAP (wiring к lab_run) · ❌ Editor fix in progress |
-| **Flash** | VP-F1/F2 (BrowserStage canvas + WS relay + cleanup) ✅ · DSL-CLEAN F1/F2 ✅ | 24 FE + tsc 0 | ❌ WZ-6 (три режима UI) · ❌ WZ-7 (Luna сделала вместо него) |
-| **Luna** | PW-E3/E4/E5 ✅ · PW-C2/C3 ✅ · HEALTH-1/2/3 ✅ · TELEMETRY-1/2/3 ✅ · PROFILES-1 ✅ · WZ-3/4/7/8 ✅ | 253 PY + 33 warzone | ⚠️ COSMOPORT-2 (10 модулей) — не должно было делаться сегодня |
-
-### ⚠️ Luna ушла в Cosmo
-
-10 модулей COSMOPORT-2 сделаны (COS-004/006/008/009/011/013/014/015/017/018, 60 тестов) **вопреки boundary assessment**. Статус: PoC, не production. НЕ подключать к DAST-рантайму. НЕ коммитить как часть PrettyK core.
-
-### 🔴 Что осталось — приоритетный порядок
-
-#### 0. TRIAGE WIP — выполнен Keeper'ом (28 авг 2026)
-
-Полная раскладка незакоммиченного дерева по трём кучам. Проверено: куча B не импортирует DAST-код (только stdlib + `infra.*`). Кучи физически пока не разнесены — ждём команды Максима на коммит/перенос.
-
-**Куча A — PRODUCTION (PW-AIRGAP-2/3 + browser + registry + draft fix).** Довести до зелёных, коммитить как Playwright cutover:
-
-| Файл | Автор |
-|---|---|
-| `orchestrator/adapters/playwright_adapter.py` | Boss (PW-E1/E2) |
-| `orchestrator/core/controller.py` | Boss (PW runtime flag) |
-| `orchestrator/browser/playwright_runtime.py` | Boss (PW) |
-| `orchestrator/browser/browser_service.py` | Luna (VP/browser) |
-| `orchestrator/browser/cdp_viewport_relay.py` | Boss/Luna (VP) |
-| `orchestrator/core/wired_validate.py` | Luna (PW-C3 registry) |
-| `orchestrator/tools/export_keywords.py` | Luna (PW-C3 registry) |
-| `orchestrator/utils/run_recording.py` | Luna (PW-E3) |
-| `orchestrator/tools/data_playground.py` | Flash (VP-F2 cleanup) |
-| `orchestrator/tests/test_browser_runtime_parity.py` | Luna (PW-E5) |
-| `orchestrator/tests/test_pw_airgap_and_cdp.py` | Boss (PW-E2) |
-| `orchestrator/tests/test_pw_airgap_phase2.py` | Luna (PW) |
-| `orchestrator/tests/test_run_recording.py` | Luna (PW-E3) |
-| `orchestrator/tests/test_pw_airgap_cutover.py` | Boss (PW-C1) |
-| `services/docker-compose.yml` | Boss (PW-C1 grid removed) |
-| `services/scripts/airgap-bundle.ps1/.sh` | Luna (PW-C2) |
-| `orchestrator/utils/draft_store.py` + `test_draft_store.py` | **Boss — Editor fix В РАБОТЕ, НЕ ТРОГАТЬ** |
-| `frontend/src/terminal/BrowserStage.tsx` | **Boss — Editor fix В РАБОТЕ, НЕ ТРОГАТЬ** |
-
-**Куча B — PoC / reference (RUN-CTL + WARZONE + system layers).** Изолированы от DAST-импортов (проверено), оставить в dev как reference, НЕ подключать к runtime до wiring:
-
-| Файл | Автор |
-|---|---|
-| `orchestrator/core/run_control_plane.py` | Boss (RUN-CTL in-memory) |
-| `orchestrator/infra/health.py` · `telemetry.py` · `profiles.py` | Luna (system layers) |
-| `orchestrator/tests/test_pk_runctl.py` · `test_run_control_plane.py` | Boss |
-| `orchestrator/warzone/` (event_journal, timeline_controller, video_track_adapter) | Boss |
-| `orchestrator/tests/test_warzone.py` | Boss |
-| `frontend/src/warzone/` (beamRenderer, rtsCamera, timeline, warzone.test) | Luna |
-
-**Куча C — COSMOPORT PoC (НЕ коммитить в dev как production).** Отдельный продукт по boundary assessment:
-
-| Файл | Автор |
-|---|---|
-| `orchestrator/adapters/execution_woodpecker.py` | Luna (COS-008) |
-| `orchestrator/infra/capability_broker.py` | Luna (COS-004) |
-| `orchestrator/infra/tool_ctl.py` | Luna (COS-009) |
-| `orchestrator/infra/event_bus.py` | Luna (COS-011) |
-| `orchestrator/infra/cosmo_health.py` | Luna (COS-015) |
-| `orchestrator/tests/test_capability_broker.py` · `test_event_bus.py` | Luna |
-| `orchestrator/tests/test_cosmo_infra.py` · `test_cosmo_security.py` · `test_cosmo_steel_thread.py` | Luna |
-| `services/docker-compose.cosmo.yml` · `services/Caddyfile` | Luna (COS-013/014) |
-
-**Docs (Keeper):** `docs/backlog.md` · `docs/research/2026-08-28-cosmoport-boundary-assessment.md`.
-
-#### 1. Boss: Editor fix (прямо сейчас, В РАБОТЕ — Keeper не трогает)
-
-#### 2. Boss: Wiring RUN-CTL к lab_run (следующее)
-
-Ядро `run_control_plane.py` (363 строки) написано. Осталось: `lab_run.py` → `RunControlPlane.submit_run(params)` → вернуть статус. Не менять Controller, не тащить Cosmo-зависимости. Чистый in-memory wiring.
-
-#### 3. Boss: Wiring WARZONE к Live SSE (после RUN-CTL)
-
-`event_journal.py` + `timeline_controller.py` + `video_track_adapter.py` написаны. Осталось: прокинуть `EventJournal` в SSE-поток Live → фронтенд читает `SceneState`.
-
-#### 4. Boss: Живой Playwright parity run
-
-Код написан, тесты зелёные, но живой run через `PK_BROWSER_RUNTIME=playwright` не гонялся глазами. Нужен хотя бы один реальный wired-прогон.
-
-#### 5. Flash: WZ-6 — три режима UI Execution Hub (3h)
-
-Единственная несданная карточка Flash. Luna сделала WZ-7 (timeline scrubber). Flash делает только WZ-6: Hybrid / Enterprise Audit / Signature Battlefield.
-
-#### 6. Cosmo-модули Luna — зафиксировать как PoC
-
-Не коммитить в `dev` как production. Если коммитить — то с явным `# PoC — NOT production` в каждом файле и отдельным флагом.
-
-### ✅ Editor fix — CLOSED (Boss, 28 авг 2026)
-
-**Корень:** zustand-селектор `useScenarioDeckStore(s => s.decks[0]?.steps ?? [])` — `?? []` создавал новый пустой массив на каждый `getSnapshot` → `useSyncExternalStore` видел «другой» снимок → бесконечный рендер → `Maximum update depth exceeded`.
-
-**Фикс:** стабильная `EMPTY_STEPS` на уровне модуля + `?? EMPTY_STEPS` в селекторе. Grep по всем `.tsx/.ts` — других селекторов с `?? []/{}` нет.
-
-**Верификация:** `tsc 0`, BrowserStage 3/3, clickCoordinate 5/5, useCdpRecorder 16/16. Редактор открывается.
-
-**Попутно закрыты Boss'ом:** `ERR_CONNECTION_REFUSED :8767` (Live поднят) · 404 `/api/checks/{id}/draft` (draft бэкенд реализован, `draft_store.py`).
-
-### 🟡 Хвосты редактора (не блокирующие, на потом)
-
-| Хвост | Что | Куда |
-|---|---|---|
-| `PUT draft 409 Conflict` | Штатная работа revision-контракта (optimistic concurrency): устаревший `X-Draft-Revision` → сервер честно возвращает 409 + theirs. Пройдёт после первого успешного PUT. | Не баг. Наблюдать. |
-| `spider_urls CORS 404 :8767` | `spiderCompletions.ts` дергает `/api/diary/spider_urls`, но route в `live_server.py` не реализован / не CORS-нут. | Мелкая карточка автодополнения. Flash, по спросу. |
-
-### Что НЕ делать
-
-- ❌ Не ставить `fastapi`/`sqlalchemy`/`alembic` в DAST `.venv` — это Cosmoport-зависимости, отдельный boundary.
-- ❌ Не доделывать COS-001/003/010 (PG DDL, RunControlPlane в PG, FastAPI routes) — Cosmoport не является частью текущей коробки.
-- ❌ Не коммитить несортированный WIP.
-
-### Итог смены одной строкой
-
-253 + 57 + 33 теста зелёные. 4 из 5 блоков закрыты (PW-AIRGAP-2, PW-AIRGAP-3, PK-RUNCTL, WARZONE). **Главная дыра: wiring.** Ядра написаны, но мёртвые — не подключены к runtime. Editor починен (Boss). WIP разобран (Keeper). Cosmo-модули утекли в дерево.
+> Это архивная утренняя сводка от 29 августа. Фразы «добивает», «pending» и «осталось» не описывают состояние на 31 августа и не должны трактоваться как активные поручения.
+> Историческая раскладка исполнителей намеренно убрана из оперативного верстака: она уже породила ложное чтение старого хвоста как текущего WIP. Фактическая история закрытых работ остаётся в эпиках и архиве ниже.
 
 ---
-
-## 🔥 ВОЛНА 2 «WIRING + LIVE» — оживить написанное (28 авг 2026 · пропорция 20/40/40)
-
-> **Цель:** всё, что написано вчера как чистые ядра, подключить к живому runtime и прогнать глазами. RUN-CTL → lab_run. WARZONE → Live SSE. Живой parity run. Cosmo PoC изолирован. WARZONE UI финализирован.
->
-> **Пропорция:** Boss 20% / Flash 40% / Luna 40%.
-
-### Пакет BOSS (20% — wiring архитектурных узлов · ~5h)
-
-| ID | Что | Файлы | GWT (кратко) | Est |
-|---|---|---|---|---|
-| **WIRE-RUNCTL** | Подключить `RunControlPlane` к `lab_run.py`: submit → статус жизненного цикла. Не менять Controller, не тащить Cosmo. | `orchestrator/core/run_control_plane.py`, `lab_run.py` | Запуск проходит queued→running→succeeded/failed; двойной клик не дублирует. | 2h |
-| **WIRE-WZ** | Прокинуть `EventJournal`/`timeline_controller` в Live SSE: фронт получает `SceneState` живым потоком. | `orchestrator/warzone/`, `live_server.py` | SSE отдаёт события; фронт читает S(t) детерминированно. | 2h |
-| **PARITY-LIVE** | Живой wired-прогон через `PK_BROWSER_RUNTIME=playwright` глазами: вердикт/evidence сходятся. | wired-фикстуры, Monitor | Реальный run зелёный, видео/evidence на месте. | 1h |
-
-### Пакет FLASH (40% — UI WARZONE + хвосты · ~6h)
-
-| ID | Что | Файлы | GWT (кратко) | Est |
-|---|---|---|---|---|
-| **WZ-6** | Три режима Execution Hub: Hybrid Operational / Enterprise Audit / Signature Battlefield. Переключение не теряет playhead. | `frontend/src/warzone/WarzoneHub.tsx`, `WarzoneModes.tsx` | Переключение режимов — каждый корректен, таймлайн не сбрасывается. | 3h |
-| **WZ-SSE** | Подключить WarzoneHub к живому SSE-контракту (после WIRE-WZ Boss). HUD показывает t/лучи/findings. | `frontend/src/warzone/`, `useWarZoneTelemetry.ts` | HUD обновляется от живого SceneState. | 1.5h |
-| **SPIDER-URLS** | `spiderCompletions.ts` дергает `/api/diary/spider_urls` — реализовать route + CORS в live_server или заглушить честно. | `spiderCompletions.ts`, `live_server.py` | Нет CORS 404 в консоли; автодополнение либо работает, либо честно молчит. | 1h |
-| **DSL-TAIL** | 3 строки: `prettyToWire.ts:65` «ВКонце», `textScan.ts:98,101` «Перехватить»/«ВКонце» — убрать. | `prettyToWire.ts`, `textScan.ts` | grep «Попробовать/Перехватить/ВКонце» по фронту = 0. | 0.5h |
-
-### Пакет LUNA (40% — живая приёмка + PoC-изоляция · ~7h)
-
-| ID | Что | Файлы | GWT (кратко) | Est |
-|---|---|---|---|---|
-| **COSMO-POC** | Маркировать 10 Cosmo-модулей `# PoC — NOT production` в шапке + убедиться, что ничего не импортируется DAST-рантаймом. | `orchestrator/infra/capability_broker.py`, `tool_ctl.py`, `event_bus.py`, `cosmo_health.py`, `execution_woodpecker.py` | grep PoC-маркер во всех 10; 0 DAST-импортов из этих файлов. | 0.5h |
-| **PARITY-LIVE** | Прогнать parity-тесты + живой wired-run на playwright глазами, зафиксировать расхождения. | `test_browser_runtime_parity.py`, фикстуры | Parity зелёный, живой run вердикт/evidence сходятся. | 2h |
-| **WZ-LIVE-RENDER** | beamRenderer/rtsCamera подключить к живому EventJournal (она писала оба). Реверс плавный, камера без рывков. | `beamRenderer.ts`, `rtsCamera.ts`, `event_journal.py` | Луч гаснет по сигмоиде, камера без overshoot на живых данных. | 2h |
-| **HEALTH-LIVE** | Живая приёмка системных слоёв: `/health` на data_playground отдаёт жив/готов; Pure Box не тянет PG. | `infra/health.py`, `data_playground.py`, `profiles.py` | `/health` отвечает; Pure Box 0 внешних зависимостей. | 1.5h |
-| **BUNDLE-CHECK** | Проверить airgap bundle: docker save/load на чистом пути, браузеры в образе. | `services/scripts/airgap-bundle.*` | load + up на чистом хосте — authoring/execution офлайн. | 1h |
-
-### Гейты на выходе волны 2
-
-1. RUN-CTL живёт в lab_run — запуск управляем, не single-flight мёртвый subprocess.
-2. WARZONE отдаёт SceneState в Live SSE, фронт читает детерминированно.
-3. Живой parity run зелёный глазами.
-4. Cosmo PoC маркирован, не импортируется DAST.
-5. `tsc 0` + точечные тесты зелёные по каждому пакету. Cosmoport в `dev` не коммитим.
 
 ---
 
@@ -359,7 +227,7 @@
 
 ---
 
-### Phase 1.5: BR-AUTH — Authoring Browser (Playwright headed, не CDP :9222) · 🔨 QUEUED · 27 авг 2026
+### Phase 1.5: BR-AUTH — Authoring Browser (Playwright headed, не CDP :9222) · 📦 HISTORICAL · 27 авг 2026
 
 > **Контекст (Keeper Dev):** браузер в Editor `BrowserStage` — это **авторинг-браузер**: оператор руками кликает в живом окне → observe захватывает клик → DSL-шаг. Это НЕ execution (тот живёт в Studio через Grid/noVNC `:7900` → VideoTrack) и НЕ агентский `kdt-cdp-chrome :9222` (browser-hands-pure — инструмент агента, не продукта).
 > **Что уже сделано (Keeper Dev):** `browser_service.py` → `_get_page()` переписан на `chromium.launch(headless=False)` (живое окно 1280×800). Убрана привязка к `:9222`. `_on_click` и `browser_observe_*` уже module-level (NameError из Phase 1 закрыт). В `data_playground.py` вычищены дубликаты `_post_browser_back/forward`.
@@ -382,7 +250,7 @@
 
 ---
 
-### Phase 2: CDP-WIRE Plan (Production · QUEUED · after PROMOTE)
+### Phase 2: CDP-WIRE Plan (Production · 📦 HISTORICAL · after PROMOTE)
 
 > **Тип:** `Plan` — production-реализация, запускается только после `PROMOTE` Phase 1.  
 > **Действия:** click (первый), type (второй).  
@@ -421,7 +289,7 @@
 
 ---
 
-## 3. Эпик BUD-E2E — PrettyK Buddy end-to-end (ДВИЖОК И STU-V2 РЕАЛИЗОВАНЫ · PROMOTE ЗАБЛОКИРОВАН · 27 авг 2026)
+## 3. Эпик BUD-E2E — PrettyK Buddy end-to-end (ИСТОРИЧЕСКИЙ СРЕЗ · 27 авг 2026)
 
 > **Тип:** PoC-стыковка в живую Studio. Движок Buddy и функциональный долив STU-V2
 > реализованы: движок 64/64, STU-V2 402/402, tsc 0. Поверхность больше не считается
@@ -645,7 +513,7 @@ Studio, переходит в новый Editor той же проверки, н
 
 ---
 
-## 4. Эпик SANCTUARY-MAP — Тактический радар Обители (IN PROGRESS · 27 авг 2026)
+## 4. Эпик SANCTUARY-MAP — Тактический радар Обители (ИСТОРИЧЕСКИЙ СРЕЗ · 27 авг 2026)
 
 > **Тип:** `Plan` — интерактивная карта приложения (read-model, не runtime SoT).
 > **Источник:** Discovery запечатан в [`docs/research/2026-08-27-sanctuary-application-map-discovery.md`](research/2026-08-27-sanctuary-application-map-discovery.md).
@@ -943,7 +811,7 @@ Studio, переходит в новый Editor той же проверки, н
 
 ---
 
-## 14. Эпик PW-AIRGAP-2 — Execution Parity на Playwright (за флагом) · 28 авг 2026 · 🟡 ready
+## 14. Эпик PW-AIRGAP-2 — Execution Parity на Playwright (за флагом) · ИСТОРИЧЕСКИЙ СРЕЗ · 28 авг 2026
 
 > **Статус:** 🟡 ready (нарезано, 28 авг 2026). 5 карточек, 14h est. Исполнители не распределены — по команде владельца.  
 > **Спецификация:** [`docs/research/2026-08-27-browser-runtime-airgap.md`](research/2026-08-27-browser-runtime-airgap.md) — полный синтез: один Playwright-мир вместо Selenium Grid, scanner-прокси маршрут, Playwright Firefox ≠ Selenium Firefox, видеоформат webm→mp4.  
@@ -1009,7 +877,7 @@ Studio, переходит в новый Editor той же проверки, н
 
 ---
 
-## 16. Эпик PK-RUNCTL — System Layers: Health / Edge / Run Control Plane / Telemetry / Profiles · 28 авг 2026 · 🟡 ready
+## 16. Эпик PK-RUNCTL — System Layers: Health / Edge / Run Control Plane / Telemetry / Profiles · ИСТОРИЧЕСКИЙ СРЕЗ · 28 авг 2026
 
 > **Статус:** 🟡 ready (нарезано, 28 авг 2026). 17 карточек, 20h est. Исполнители не распределены.  
 > **Спецификация:** [`docs/research/2026-08-27-system-layers-health-run-ctl-backlog.md`](research/2026-08-27-system-layers-health-run-ctl-backlog.md) — полная нарезка: GWT, DoD, out-of-scope на каждую карточку.  
@@ -1076,7 +944,7 @@ Studio, переходит в новый Editor той же проверки, н
 
 ---
 
-## 17. Эпик WARZONE — Signature Rewind 100/100 · 28 авг 2026 · 🟡 ready
+## 17. Эпик WARZONE — Signature Rewind 100/100 · ИСТОРИЧЕСКИЙ СРЕЗ · 28 авг 2026
 
 > **Статус:** 🟡 ready (нарезано, 28 авг 2026). 8 карточек, 20h est. Исполнители не распределены.  
 > **Спецификация:** [`docs/research/2026-08-27-studio-warzone-rewind-specification.md`](research/2026-08-27-studio-warzone-rewind-specification.md) — полная математика: S(t) свертка, интенсивность луча I(t), RTS-камера spring oscillator, VideoTrackAdapter.  
@@ -1114,10 +982,10 @@ Studio, переходит в новый Editor той же проверки, н
 
 ---
 
-## 18. Эпик PK-PERSIST — Persistence Foundation: PostgreSQL, MinIO и вывод Live из эксплуатации · PARKED · 27 авг 2026
+## 18. Эпик PK-PERSIST — Persistence Foundation: PostgreSQL, MinIO и вывод Live из эксплуатации · ИСТОРИЧЕСКИЙ СРЕЗ · 27 авг 2026
 
 > **Статус:** 🔒 PARKED — не начинать до закрытия браузерного E2E и отдельной команды владельца.  
-> **Discovery:** [`sanctuary/cosmoport2/persistence-and-minio.md`](../sanctuary/cosmoport2/persistence-and-minio.md) — полный архитектурный синтез, инвентаризация Live, бюджет событий Valkey, 7-шаговая стратегия миграции.  
+> **Discovery:** [`sanctuary/custom/cosmoport2/persistence-and-minio.md`](../sanctuary/custom/cosmoport2/persistence-and-minio.md) — полный архитектурный синтез, инвентаризация Live, бюджет событий Valkey, 7-шаговая стратегия миграции.
 > **Исходный раунд:** Gemini Discovery от 27 авг 2026 — исследование текущего persistence-контура, графа producers/consumers, матрицы владения данными.  
 > **Проблема:** вся история запусков, доказательств, логов, видео и отчётов живёт в файлах на диске (`reports/`). После рестарта процесса активные сессии обхода теряются. Старый пульт (`:8767`) — единственная поверхность чтения этих данных. При росте числа прогонов файловая система не даёт ни поиска, ни аудита, ни защищённого хранения артефактов.  
 > **Цель:** перевести историю и сущности в PostgreSQL, бинарные артефакты (видео, скриншоты, HAR, scanner-отчёты, сырые логи) — в MinIO/S3, живой стрим событий — через Valkey, а старый пульт вывести из эксплуатации только после полной проверки. Pure Box остаётся на локальном хранилище без обязательного MinIO.
@@ -1176,7 +1044,7 @@ Studio, переходит в новый Editor той же проверки, н
 
 ---
 
-## 19. Эпик PK-VIEWPORT-FIX — Эвакуация Screencast, Stand Lifecycle, Canvas Stream Fix · 28 авг 2026 · 🟡 ready
+## 19. Эпик PK-VIEWPORT-FIX — Эвакуация Screencast, Stand Lifecycle, Canvas Stream Fix · ИСТОРИЧЕСКИЙ СРЕЗ · 28 авг 2026
 
 > **Статус:** 🟢 CLOSED (28 авг 2026). 3 карточки, все сданы (F1 — Flash, B1+L1 — Luna). Живой смоук пройден.  
 > **Причина (доказана на живом контуре):** `http://localhost:5173/#/checks/.../editor` показывает пустой canvas, хотя Juice Shop открыт в контейнере. Три дефекта:
@@ -1223,7 +1091,7 @@ Studio, переходит в новый Editor той же проверки, н
 
 ---
 
-## 20. Эпик PK-WIRED-RENAME-TAIL — Недобитый ренейм Wired → Wired в auth-контексте · 28 авг 2026 · 🟡 ready
+## 20. Эпик PK-WIRED-RENAME-TAIL — Недобитый ренейм Wired → Wired в auth-контексте · ИСТОРИЧЕСКИЙ СРЕЗ · 28 авг 2026
 
 > **Статус:** 🟡 ready (нарезано, 28 авг 2026). 1 карточка, 1h est. Одна связная цепочка недобитого ренейма — 13 точек в 3 файлах.  
 > **Причина:** при Wired → Wired ренейме реестр `method_id.py` переехал на `apply_wired_auth` (правильно), но метод в `scanner_adapter.py` и вызовы в `controller.py` остались на старом `apply_wired_auth`. Тест `test_auth13_compose.py:358` ждёт `scannerAdapter.apply_wired_auth` → `AttributeError`; `test_auth13_compose.py:297` ждёт `_enrich_scanner_wired_params` → его нет. Это один из 48 red.
@@ -1265,7 +1133,7 @@ Studio, переходит в новый Editor той же проверки, н
 
 ---
 
-## 21. Эпик PK-SCANNER-RENAME — scanner → scanner: внутренние имена без лишнего брендинга · 28 авг 2026 · 🟡 ready
+## 21. Эпик PK-SCANNER-RENAME — scanner → scanner: внутренние имена без лишнего брендинга · ИСТОРИЧЕСКИЙ СРЕЗ · 28 авг 2026
 
 > **Статус:** 🟡 ready (нарезано, 28 авг 2026). 3 карточки, 6h est. Исполнители по команде владельца.  
 > **Идея:** мы не убираем scanner из fame list. Просто нахуй надо упоминать — и так знаем что scanner. Внешние зависимости (`zapv2`) и реальный scanner-API не трогаем — только **наши** внутренние имена.
@@ -1310,7 +1178,7 @@ Studio, переходит в новый Editor той же проверки, н
 
 ---
 
-## 22. Эпик SOR — Session Orchestration & Multi-Substrate Delivery · 28 авг 2026 · 🟡 ready
+## 22. Эпик SOR — Session Orchestration & Multi-Substrate Delivery · ИСТОРИЧЕСКИЙ СРЕЗ · 28 авг 2026
 
 > **Статус:** 🟡 ready (нарезано, 28 авг 2026). 18 карточек, 5 волн, 46h est. Фундамент зафиксирован в research, НЕ канон — 2FA-канонизация отдельным шагом.  
 > **Спецификация:** [`docs/research/2026-08-28-session-orchestration-and-multi-substrate-architecture.md`](research/2026-08-28-session-orchestration-and-multi-substrate-architecture.md).  
@@ -1336,39 +1204,39 @@ Wave 1 → Wave 2 → Wave 3. Wave 4 (K8s) и Wave 5 (Cosmoport) — парал�
 
 ### Wave 1 — Interface & State Isolation
 
-| ID | Что получает оператор | Приёмочный сценарий GWT | Est | Кто |
-|---|---|---|---|---|
-| **SOR-B1** | Контракт `RuntimeProvider` в `orchestrator/infra/runtime_provider.py`: ABC + типы `ResourceType`, `ServiceEndpoint`, `SessionResourceBundle`, `generation`. Чистое ядро без I/O. | **Given:** объявлен ABC. **When:** `from infra.runtime_provider import RuntimeProvider, ResourceType`. **Then:** все провайдеры реализуют один контракт; юнит-тесты на сигнатуры зелёные; 0 импортов docker/k8s в контракте. | 2h | Boss |
-| **SOR-B2** | Session Manager core: Session state machine (`creating→provisioning→ready→releasing→released→failed`) с идемпотентными переходами, `SessionRecord`, in-memory store. Отдельная сущность от Run. | **Given:** создаётся Session. **When:** переходы `provisioning→ready`, `ready→releasing→released`, попытка недопустимого перехода. **Then:** состояние атомарно, недопустимый переход → ошибка, повторный create идемпотентен. | 3h | Boss |
-| **SOR-D1** | Compose split: `docker-compose.base.yml` (системные: pk-control, postgres/valkey, allure, live) + `session-template.yml` (шаблон scanner/browser/relay/target). Убраны фиксированные `container_name`/host-порты из session-шаблона. `lab_up.ps1` переведён на base. | **Given:** запуск `docker compose -f docker-compose.base.yml up -d`. **When:** поднят base + развёрнута сессия из template под `-p pk-session-<id>`. **Then:** системный контур и сессия — разные проекты; session-сервисы без жёстких `container_name`; lab-контур не сломан. | 2h | Buddy |
-| **SOR-L1** | Browser session binding: `browser_service.py` + `cdp_viewport_relay.py` переведены из глобальных в per-session (relay endpoint привязан к `session_id`, не глобальный `:9224`). | **Given:** две сессии. **When:** открыт relay каждой сессии. **Then:** кадры не смешиваются; endpoint резолвится через session; `test_cdp_viewport_relay.py` зелёный. | 3h | Luna |
+| ID | Что получает оператор | Приёмочный сценарий GWT | Est | Кто | Статус |
+|---|---|---|---|---|---|---|
+| **SOR-B1** | Контракт `RuntimeProvider` | ... | 2h | Boss | ⬜ |
+| **SOR-B2** | Session Manager core | ... | 3h | Boss | ⬜ |
+| **SOR-D1** | Compose split base + template | ... | 2h | Buddy | ✅ |
+| **SOR-L1** | Browser session binding per-session | ... | 3h | Luna | ✅ 15 тестов |
 
 ### Wave 2 — Standalone Compose Provider
 
-| ID | Что получает оператор | Приёмочный сценарий GWT | Est | Кто |
-|---|---|---|---|---|
-| **SOR-D2** | `ComposeProvider` — реализация `RuntimeProvider`: `provision_session_bundle` через `docker compose -p pk-session-<id>` + генерация из `session-template.yml`; `release_session_bundle`; `check_bundle_health`. Изолированная сеть `pk-net-<id>`. | **Given:** вызов `provision_session_bundle(id)`. **When:** сессия создана. **Then:** контейнеры подняты в отдельном проекте/сети, внутренние имена резолвятся (`scanner:8080`), `release` полностью удаляет проект+сеть. | 3h | Buddy |
-| **SOR-D3** | Lease Controller + zombie GC: expiry sweep, force teardown зависших сессий, labels `com.prettyk.session-id`/`generation`, восстановление Session Map после рестарта `pk-control`. | **Given:** сессия с истёкшим lease + рестарт pk-control. **When:** sweep запущен. **Then:** зависшие ресурсы уничтожены; после рестарта control plane находит живые контейнеры по labels и восстанавливает состояние. | 2h | Buddy |
-| **SOR-B3** | Reconciliation loop в `pk-control`: фоновый worker сравнивает desired vs observed (healthcheck), выполняет targeted recreate конкретного сервиса без сноса всей сессии. | **Given:** scanner ушёл в `unhealthy`. **When:** цикл сработал. **Then:** пересоздаётся только scanner; browser/relay/чужие сессии не затронуты; UI видит `recovering`. | 3h | Boss |
-| **SOR-B4** | Fencing token: `generation` в заголовке `X-PK-Session-Generation`; stale-owner запросы отклоняются `409 Conflict`. | **Given:** lease перешёл новому владельцу (generation++). **When:** старый владелец шлёт команду со старым generation. **Then:** запрос отклонён; новый владелец работает; нет split-brain. | 2h | Boss |
-| **SOR-L2** | Playwright Authoring Slot: выделенный headed Chromium per session + CDP session routing (`connect_over_cdp` к динамическому target сессии). | **Given:** две параллельные сессии авторинга. **When:** navigate/observe в каждой. **Then:** браузеры изолированы, CDP-таргеты не пересекаются; parity-тесты зелёные. | 3h | Luna |
-| **SOR-L3** | Scanner Session Controller: per-session scanner daemon binding — выделенный инстанс с session-scoped state (context/history/alerts), не глобальный daemon. | **Given:** две сессии сканирования. **When:** прогон в каждой. **Then:** alerts/sites/history не смешиваются; `capability_scanner.py` создаёт context строго в своём инстансе. | 3h | Luna |
-| **SOR-D4** | Offline bundle v1: манифест версий/контрольных сумм + images + compose + install/verify (Win/Linux). Расширить `airgap-bundle` с одного Playwright image до полной коробки. | **Given:** чистая airgap-машина. **When:** `install` + `verify-bundle`. **Then:** коробка стартует без сети; `pip/npm/playwright install` на рантайме не вызываются; checksum-верификация проходит. | 3h | Buddy |
-| **SOR-D5** | Parallel sessions integration test: 2 параллельные сессии с разными scanner/browser, проверка изоляции ресурсов и артефактов. | **Given:** две сессии. **When:** одновременный run + authoring. **Then:** нет утечек состояния/портов/артефактов между сессиями; тест детерминирован. | 2h | Buddy |
+| ID | Что получает оператор | Приёмочный сценарий GWT | Est | Кто | Статус |
+|---|---|---|---|---|---|---|
+| **SOR-D2** | `ComposeProvider` — реализация `RuntimeProvider`. | ... | 3h | Buddy | ✅ |
+| **SOR-D3** | Lease Controller + zombie GC. | ... | 2h | Buddy | ✅ 5/5 тестов |
+| **SOR-B3** | Reconciliation loop в `pk-control`. | ... | 3h | Boss | ⬜ |
+| **SOR-B4** | Fencing token. | ... | 2h | Boss | ⬜ |
+| **SOR-L2** | Playwright Authoring Slot per-session. | ... | 3h | Luna | ✅ 10 тестов |
+| **SOR-L3** | Scanner Session Controller per-session. | ... | 3h | Luna | 📦 historical |
+| **SOR-D4** | Offline bundle v1. | ... | 3h | Buddy | ✅ |
+| **SOR-D5** | Parallel sessions integration test. | ... | 2h | Buddy | ✅ |
 
 ### Wave 3 — UI / Studio Integration
 
-| ID | Что получает оператор | Приёмочный сценарий GWT | Est | Кто |
-|---|---|---|---|---|
-| **SOR-F1** | BrowserStage подключается к динамическому relay endpoint через `pk-control` API, а не хардкод `:9224`. | **Given:** сессия с relay. **When:** открыт BrowserStage. **Then:** WS-адрес взят из session endpoint; кадры идут из своей сессии. | 2h | Flash |
-| **SOR-F2** | Runtime Ops UI: индикатор здоровья сессии (`ready/recovering/degraded`) + кнопка «Recreate Workspace»; capability-заглушка Deployment-слоя (скрыта в pure-профиле). | **Given:** сессия в degraded. **When:** оператор жмёт Recreate. **Then:** `pk-control` пересоздаёт workspace; статус обновляется; Deployment-вкладка не мешает pure-пользователю. | 2h | Flash |
+| ID | Что получает оператор | Приёмочный сценарий GWT | Est | Кто | Статус |
+|---|---|---|---|---|---|---|
+| **SOR-F1** | BrowserStage подключается к динамическому relay endpoint. | ... | 2h | Flash | ✅ |
+| **SOR-F2** | Runtime Ops UI + Recreate Workspace. | ... | 2h | Flash | ✅ |
 
 ### Wave 4 — Kubernetes Provider & Helm Packaging
 
-| ID | Что получает оператор | Приёмочный сценарий GWT | Est | Кто |
-|---|---|---|---|---|
-| **SOR-D6** | `KubernetesProvider` — реализация `RuntimeProvider` поверх K8s API: Namespace/Pod lifecycle per-session, NetworkPolicy изоляция. | **Given:** тестовый кластер. **When:** `provision_session_bundle` через K8s. **Then:** создаётся изолированный namespace/workload; release удаляет их; NetworkPolicy блокирует межсессионный трафик. | 3h | Buddy |
-| **SOR-D7** | Helm-чарт `prettyk` (base system + session workloads) + валидация установки в тестовом кластере. | **Given:** `helm install`. **When:** chart развёрнут. **Then:** системный контур поднят, сессия создаётся из chart-шаблона; upgrade не рвёт живые сессии. | 3h | Buddy |
+| ID | Что получает оператор | Приёмочный сценарий GWT | Est | Кто | Статус |
+|---|---|---|---|---|---|---|
+| **SOR-D6** | `KubernetesProvider` — K8s RuntimeProvider. | ... | 3h | Buddy | ⬜ |
+| **SOR-D7** | Helm-чарт `prettyk` + валидация. | ... | 3h | Buddy | ✅ validate-helm.sh · session-deployment RollingUpdate · resource-policy |
 
 ### Wave 5 — Cosmoport2 Integration Boundary
 
@@ -1381,11 +1249,12 @@ Wave 1 → Wave 2 → Wave 3. Wave 4 (K8s) и Wave 5 (Cosmoport) — парал�
 
 - [ ] `RuntimeProvider` контракт един для Compose и K8s; 0 docker/k8s-импортов в ядре.
 - [ ] Session state machine атомарна; fencing отклоняет stale owner.
-- [ ] Compose split: base + session-template; lab-контур не сломан.
-- [ ] Две параллельные сессии не смешивают scanner/browser/relay/артефакты.
-- [ ] Offline bundle стартует на чистой airgap-машине без сети.
-- [ ] BrowserStage берёт relay endpoint из `pk-control`, не хардкод.
-- [ ] Helm-чарт валиден; K8s-сессии изолированы NetworkPolicy.
+- [x] Compose split: base + session-template; lab-контур не сломан. ✅
+- [x] Две параллельные сессии не смешивают scanner/browser/relay/артефакты. ✅
+- [x] Offline bundle стартует на чистой airgap-машине без сети. ✅ AIRGAP-PROD сдан
+- [x] BrowserStage берёт relay endpoint из `pk-control`, не хардкод. ✅ SOR-F1/F2
+- [x] Helm-чарт валиден. ✅ D7 validate-helm.sh
+- [ ] K8s-сессии изолированы NetworkPolicy. ⬜ SOR-D6
 - [ ] Cosmoport-интеграция — только через API/events, без внутренних импортов.
 - [ ] Точечные suite зелёные; 0 регрессий в живом DAST-контуре.
 
@@ -1393,13 +1262,13 @@ Wave 1 → Wave 2 → Wave 3. Wave 4 (K8s) и Wave 5 (Cosmoport) — парал�
 
 - Канонизация в `sanctuary/pure/` и `ALTAR.md` — отдельный полный 2FA после зелёных Wave 1–2.
 - Переименование scanner → scanner (это `PK-SCANNER-RENAME`).
-- Реализация Cosmoport2 как продукта (это отдельный [`sanctuary/cosmoport2/backlog.md`](../sanctuary/cosmoport2/backlog.md)).
+- Реализация Cosmoport2 как продукта (это отдельный [`sanctuary/custom/cosmoport2/backlog.md`](../sanctuary/custom/cosmoport2/backlog.md)).
 - Собственный Kubernetes scheduler / operator для жизненного цикла самих кластеров (Cluster API) — не на этом этапе.
 - Переписывание `main.py` / живого DAST-рантайма.
 
 ---
 
-## 23. Эпик PK-CRAWLER — Playwright SPA/State Crawler + Corpus Awakening · 28 авг 2026 · 🟡 research
+## 23. Эпик PK-CRAWLER — Playwright SPA/State Crawler + Corpus Awakening · ИСТОРИЧЕСКИЙ СРЕЗ · 28 авг 2026
 
 > **Статус:** 🟡 research (POC design готов, 28 авг 2026). 11 карточек: P0 (стальной трек, 7 карточек, 17.5h) + P1 (расширение, 4 карточки, 8h). НЕ канон — 2FA отдельным шагом после P0.  
 > **Пропорция:** Boss 30% / Flash 40% / Luna 30% (Луна меньше — она добивает хвосты).  
@@ -1478,7 +1347,7 @@ P1: после полного зелёного P0. CRAWL-8 (replay) → CRAWL-9 
 
 ---
 
-## 24. Эпик PK-SPIDER-APOCALYPSE — Spider Rename → Crawl + scanner Deprecation · 28 авг 2026 · 🟡 ready
+## 24. Эпик PK-SPIDER-APOCALYPSE — Spider Rename → Crawl + scanner Deprecation · ИСТОРИЧЕСКИЙ СРЕЗ · 28 авг 2026
 
 > **Статус:** 🟡 ready (нарезано, 28 авг 2026). 1 карточка, 3.5h, исполнитель Flash.  
 > **Смысл:** свой PK-CRAWLER решили — старый scanner Spider хороним. Но не удаляем, а переименовываем в алиасы на `scanner|crawl`, чтобы существующие wired-сценарии не ломались. scanner-специфичные операции (`ajax_spider_*`, `client_spider_*`, `status`, `stop`) помечаем @deprecated.  

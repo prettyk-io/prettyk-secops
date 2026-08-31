@@ -67,7 +67,6 @@ SOLID для канона — в rule [`docs-canon.mdc`](../../.opencode/rules/d
 | Split CANON (BASE vs INTEGRATION) | [`split-canon.md`](split-canon.md) | Product / Governance |
 | FRIEND lifecycle (коридоры и переходы) | [`friend-lifecycle.md`](friend-lifecycle.md) | Product / Governance |
 | AUTH-ROLES: сплит учёток и ролей коробки | [`auth-roles.md`](auth-roles.md) | Product / Governance |
-| FE vnext architecture (seeker) | [`fe-vnext-architecture.md`](fe-vnext-architecture.md) | Product / Authoring — **seeker** |
 | REGULATION-EDITOR-SPLIT | [`regulation-editor-split.md`](regulation-editor-split.md) | Product / Authoring |
 | Auth module (Studio → IR → apply) | [`auth-module.md`](auth-module.md) | Product / Authoring |
 | Auth slots (legacy enum / bank gaps) | [`auth-slots.md`](auth-slots.md) | Product / Honesty |

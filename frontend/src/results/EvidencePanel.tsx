@@ -1,16 +1,9 @@
 /**
- * PERS-B2: Evidence Panel — MinIO evidence card browser.
- *
- * Читает evidence[] из /api/runs/:id/evidence (PERS-B1 API).
- * presigned_url — временная ссылка на объект в MinIO.
- * Pure Box: локальный fallback на reports/.
+ * PERS-B2 / ADM-WIRE-2: Evidence Panel — MUI (Paper/Box/Typography only).
  */
 import { useState, useEffect } from 'react';
-import { Card, Tag, Typography, Spin, Empty, Button, Tooltip, message } from 'antd';
-import {
-  VideoCameraOutlined, CameraOutlined, FileTextOutlined,
-  LinkOutlined, CopyOutlined, SafetyCertificateOutlined,
-} from '@ant-design/icons';
+import { Paper, Typography, CircularProgress, Button } from '@mui/material';
+import { VerifiedUser } from '@mui/icons-material';
 
 export type EvidenceKind = 'video' | 'screenshot' | 'har' | 'report' | 'other';
 
@@ -22,93 +15,62 @@ export interface EvidenceRecord {
 
 export interface EvidencePanelProps { runId: string | null; }
 
-const KIND_ICONS: Record<EvidenceKind, React.ReactNode> = {
-  video: <VideoCameraOutlined style={{ color: '#a855f7' }} />,
-  screenshot: <CameraOutlined style={{ color: '#22d3ee' }} />,
-  har: <FileTextOutlined style={{ color: '#f59e0b' }} />,
-  report: <FileTextOutlined style={{ color: '#ef4444' }} />,
-  other: <FileTextOutlined style={{ color: '#94a3b8' }} />,
-};
+const KIND_EMOJI: Record<EvidenceKind, string> = { video: '🎬', screenshot: '📸', har: '📄', report: '📊', other: '📎' };
 
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
+function fmt(n: number): string { return n < 1024 ? `${n} B` : n < 1024*1024 ? `${(n/1024).toFixed(1)} KB` : `${(n/(1024*1024)).toFixed(1)} MB`; }
 
 async function fetchEvidence(runId: string): Promise<EvidenceRecord[]> {
-  try {
-    const r = await fetch(`/api/runs/${runId}/evidence`);
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return (await r.json()) as EvidenceRecord[];
-  } catch { return []; }
+  try { const r = await fetch(`/api/runs/${runId}/evidence`); if (!r.ok) return []; const data = await r.json(); return (Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : [])) as EvidenceRecord[]; } catch { return []; }
 }
 
-function EvidenceCard({ record }: { record: EvidenceRecord }) {
-  const handleCopySha = () => {
-    navigator.clipboard.writeText(record.sha256).then(
-      () => message.success('SHA256 скопирован'),
-      () => message.error('Не удалось скопировать'),
-    );
-  };
-
-  return (
-    <Card size="small" style={{ background: '#0F172A', borderColor: '#1E293B', marginBottom: 8 }} bodyStyle={{ padding: 10 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        {KIND_ICONS[record.kind]}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <Typography.Text strong style={{ color: '#E2E8F0', fontSize: 13 }}>{record.label}</Typography.Text>
-          <div style={{ display: 'flex', gap: 4, marginTop: 2, flexWrap: 'wrap' }}>
-            <Tag color="cyan" style={{ fontSize: 10 }}>{record.kind}</Tag>
-            <Tag style={{ fontSize: 10, background: '#1E293B', color: '#64748B', border: 'none' }}>{formatBytes(record.sizeBytes)}</Tag>
-            <Tooltip title={record.sha256}>
-              <Tag onClick={handleCopySha} style={{ fontSize: 9, background: '#1E293B', color: '#475569', border: 'none', cursor: 'pointer', maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {record.sha256.slice(0, 12)}…<CopyOutlined style={{ marginLeft: 4, fontSize: 10 }} />
-              </Tag>
-            </Tooltip>
-          </div>
-        </div>
-        <Button size="small" icon={<LinkOutlined />} href={record.presignedUrl} target="_blank" rel="noreferrer" type="link" style={{ color: '#38BDF8' }}>Открыть</Button>
-      </div>
-    </Card>
-  );
+function tag(text: string, bg: string, color: string): string {
+  return `<span style="display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;background:${bg};color:${color};border:1px solid ${color}40">${text}</span>`;
 }
 
 export function EvidencePanel({ runId }: EvidencePanelProps) {
   const [records, setRecords] = useState<EvidenceRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!runId) { setRecords([]); return; }
     let cancelled = false;
     setLoading(true); setError(null);
-    fetchEvidence(runId).then((data: EvidenceRecord[]) => {
-      if (cancelled) return;
-      setRecords(data); setLoading(false);
-    }).catch(() => {
-      if (cancelled) return;
-      setError('Не удалось загрузить evidence'); setLoading(false);
-    });
+    fetchEvidence(runId).then((data) => { if (cancelled) return; setRecords(data); setLoading(false); }).catch(() => { if (cancelled) return; setError('Не удалось загрузить evidence'); setLoading(false); });
     return () => { cancelled = true; };
   }, [runId]);
 
-  if (loading) return <div style={{ textAlign: 'center', padding: 24 }}><Spin /></div>;
-  if (error) return <div style={{ textAlign: 'center', padding: 24, color: '#EF4444', fontSize: 13 }}>{error}</div>;
-  if (records.length === 0 && runId) return <Empty description="Нет evidence для этого прогона" />;
-  if (!runId) return <Empty description="Выберите прогон" />;
+  useEffect(() => { if (copied) { const t = setTimeout(() => setCopied(false), 2000); return () => clearTimeout(t); } }, [copied]);
+
+  if (loading) return <div style={{ textAlign: 'center', padding: 24 }}><CircularProgress size={24} /></div>;
+  if (error) return <Typography color="error" textAlign="center" p={2}>{error}</Typography>;
+  if (records.length === 0 && runId) return <Typography color="text.secondary" textAlign="center" p={2}>Нет evidence</Typography>;
+  if (!runId) return <Typography color="text.secondary" textAlign="center" p={2}>Выберите прогон</Typography>;
 
   const totalSize = records.reduce((sum, r) => sum + r.sizeBytes, 0);
 
   return (
     <div style={{ padding: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-        <SafetyCertificateOutlined style={{ color: '#22D3EE' }} />
-        <Typography.Text strong style={{ color: '#E2E8F0', fontSize: 14, flex: 1 }}>Evidence</Typography.Text>
-        <Tag color="blue">{records.length} файлов</Tag>
-        <Tag style={{ background: '#1E293B', color: '#94A3B8', border: 'none' }}>{formatBytes(totalSize)}</Tag>
+        <VerifiedUser sx={{ color: '#22D3EE' }} />
+        <Typography variant="body1" fontWeight={600} color="#E2E8F0" style={{ flex: 1 }}>Evidence</Typography>
+        <span style={{ padding: '2px 6px', borderRadius: 4, fontSize: 10, background: 'rgba(59,130,246,0.1)', color: '#3b82f6', fontWeight: 600 }}>{records.length} файлов</span>
+        <span style={{ padding: '2px 6px', borderRadius: 4, fontSize: 10, background: '#1E293B', color: '#94A3B8' }}>{fmt(totalSize)}</span>
       </div>
-      {records.map((r) => <EvidenceCard key={r.id} record={r} />)}
+      {records.map((r) => (
+        <Paper key={r.id} sx={{ p: 1.5, background: '#0F172A', border: '1px solid #1E293B', borderRadius: 2, mb: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 18 }}>{KIND_EMOJI[r.kind]}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="body2" fontWeight={600} color="#E2E8F0" noWrap>{r.label}</Typography>
+              <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }} dangerouslySetInnerHTML={{ __html: tag(r.kind, 'rgba(56,189,248,0.1)', '#38bdf8') + tag(fmt(r.sizeBytes), '#1E293B', '#64748B') + `<span title="${r.sha256}" onclick="navigator.clipboard.writeText('${r.sha256}')" style="display:inline-block;padding:1px 6px;border-radius:4px;font-size:9px;background:#1E293B;color:#475569;cursor:pointer;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.sha256.slice(0,12)}…</span>` }} />
+            </div>
+            {r.presignedUrl && <Button size="small" href={r.presignedUrl} target="_blank" rel="noreferrer" sx={{ color: '#38BDF8', fontSize: 11, minWidth: 'auto', textTransform: 'none' }}>Открыть</Button>}
+          </div>
+        </Paper>
+      ))}
+      {copied && <div style={{ position: 'fixed', bottom: 16, left: '50%', transform: 'translateX(-50%)', padding: '6px 16px', background: '#22c55e', color: '#fff', borderRadius: 6, fontSize: 12, zIndex: 9999 }}>SHA256 скопирован</div>}
     </div>
   );
 }

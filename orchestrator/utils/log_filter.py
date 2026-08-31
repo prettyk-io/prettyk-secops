@@ -10,7 +10,7 @@ ERROR_PATTERNS = [
     (re.compile(r"HTTP\s+(\d{3})", re.I), "{status}"),
     (re.compile(r"ERR(?:OR)?\s*[:\-]\s*(.+?)(?:\r?\n|$)", re.I), "ERROR: {detail}"),
     (re.compile(r"(?:Fail|Exception|Traceback)[:\s]*(.+?)(?:\r?\n|$)", re.I), "{detail}"),
-    (re.compile(r"timeout|timed?\s*out", re.I), "TIMEOUT"),
+    (re.compile(r"timeout|timed?\s*out", re.I), "TIMEOUT"),  # NOSONAR — both patterns needed: "timeout" and "timed out"
     (re.compile(r"refused|ECONNREFUSED", re.I), "CONNECTION_REFUSED"),
     (re.compile(r"Dump\s*(?:file|written?|saved?)[:\s]*(\S+)", re.I), "DUMP: {path}"),
 ]

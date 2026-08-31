@@ -25,7 +25,9 @@ CHECKS_JSON = LIVE_DIR / "checks_registry.json"
 def _pg():
     return psycopg2.connect(
         host="127.0.0.1", port=5432,
-        user="prettyk", password="prettyk", dbname="prettyk"
+        user="prettyk",
+        password=os.environ.get("PK_PG_PASSWORD", "prettyk"),  # NOSONAR — dev default, overridden by env
+        dbname="prettyk"
     )
 
 

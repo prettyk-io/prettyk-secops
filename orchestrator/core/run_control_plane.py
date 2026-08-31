@@ -344,6 +344,19 @@ class RunControlPlane:
                     return r
         return None
 
+    def start_tracking_run(self, run_id: str) -> None:
+        """WIRE-RUNCTL: перевести QUEUED→RUNNING без worker dispatch.
+ 
+        Используется когда subprocess уже спавнится напрямую (start_run)
+        и worker/lease механика не нужна.
+        """
+        with self._lock:
+            run = self._runs.get(run_id)
+            if run is None or run.state != RunState.QUEUED:
+                return
+            run.started_at = self._clock()
+            self._transition(run, RunState.RUNNING)
+
 
 # ── Стабильная канонизация параметров для dedup_key ──
 

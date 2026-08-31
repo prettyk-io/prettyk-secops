@@ -160,12 +160,12 @@ Jinja2-шаблон HTML.
 Стилизация под ГОСТ (шрифт, отступы, таблицы).
 Приёмка: `test_gost_renderer.py` → рендер из тестовых данных, проверка ключевых полей. 5+ тестов.
 
-### COS-L15 — AppSecHub Exporter (1h)
-Файл: `orchestrator/reports/appsechub_exporter.py`
-SARIF-подобный JSON.
-Маппинг: PrettyK finding → AppSecHub формат.
+### COS-L15 — SARIF Findings Exporter (1h)
+Файл: `orchestrator/reports/sarif_exporter.py`
+SARIF 2.1.0 JSON.
+Маппинг: PrettyK finding → normalized findings формат.
 CWE mapping: SQLi → CWE-89, XSS → CWE-79.
-Приёмка: `test_appsechub_exporter.py` → 5+ тестов.
+Приёмка: `test_sarif_exporter.py` → 5+ тестов.
 
 ---
 

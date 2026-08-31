@@ -20,7 +20,7 @@ import {
   ChevronRight,
   Copy,
   Eye,
-  scanner,
+  ScanLine,
   Bot,
 } from 'lucide-react';
 import type { AiSuggestion } from './aiSuggestionEngine';
@@ -261,7 +261,7 @@ export function AiSuggestionPanel({
         {/* Generating indicator */}
         {isGenerating && (
           <div className="flex items-center gap-2 px-2 py-2 rounded bg-violet-500/10 border border-violet-500/20">
-            <scanner className="size-3 text-violet-400 animate-pulse" />
+            <ScanLine className="size-3 text-violet-400 animate-pulse" />
             <span className="text-[10px] text-violet-300">AI is analyzing your scenario…</span>
           </div>
         )}

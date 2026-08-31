@@ -211,13 +211,8 @@ class AutomationRunner:
 
         wired_data = json.loads(self._wired_path.read_text(encoding="utf-8"))
 
-        # Accept both flat and legacy wired formats
-        if "meta" in wired_data and "test_suites" in wired_data:
-            wired = Wired.model_validate(wired_data)
-        elif "regulation" in wired_data:
-            wired = Wired.model_validate(wired_data)
-        else:
-            wired = Wired.model_validate(wired_data)
+        # Accept wired formats: flat (meta+test_suites), regulation, or raw
+        wired = Wired.model_validate(wired_data)
 
         scenarios = []
         if wired.test_suites:

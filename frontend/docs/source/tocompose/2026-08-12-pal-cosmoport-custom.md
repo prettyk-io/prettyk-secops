@@ -22,7 +22,7 @@
 
 - Имя/реклама внутреннего продукта в PoC Stage 2.  
 - Live API Cosmoport = уже есть.  
-- Снос AppSecHub / BRPO.  
+- Снос legacy findings-агрегатора / BRPO.  
 - Автосоздание git `pack/*`.  
 - Авто-promote в CANON FRIEND.
 

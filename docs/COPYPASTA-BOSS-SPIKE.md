@@ -21,7 +21,7 @@
 #### 1. `SPIKE-B-1: Развернуть Better Auth service`
 
 - Установить Better Auth в `cosmo/` или отдельном сервисе.
-- Настроить SQLite (для spike) или Postgres.
+- Настроить Postgres.
 - Email/password auth, sessions, admin plugin.
 - Создать первого admin-пользователя через CLI.
 - Миграции применены, сервис отвечает.

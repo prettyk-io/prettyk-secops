@@ -10,16 +10,15 @@
 
 services:
   scanner:
-    image: zaproxy/scanner-stable:2.17.0
+    image: zaproxy/zap-stable:2.17.0
     container_name: scanner
     restart: unless-stopped
     ports:
       - "8080:8080"
       - "8099:8099"
     volumes:
-      - ../scanner/plugins:/scanner/plugins:ro
       # IMP-HAR: host reports/runs → scanner importHar (harFile path rewrite in scanner_adapter)
-      - ../reports/runs:/scanner/wrk/pk-runs
+      - ../reports/runs:/zap/wrk/pk-runs
     networks:
       - pk-net
     # Main слушатель — как в официальном docker guide (-port 8080).
@@ -27,7 +26,7 @@ services:
     # https://www.zaproxy.org/docs/docker/about/
     # https://www.zaproxy.org/docs/desktop/addons/network/options/localservers/
     command:
-      - scanner.sh
+      - zap.sh
       - -daemon
       - -port
       - "8080"

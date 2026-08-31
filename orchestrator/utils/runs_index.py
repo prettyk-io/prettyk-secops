@@ -184,6 +184,26 @@ def list_run_index(*, limit: int = 200) -> List[Dict[str, Any]]:
     return _dedupe_runs_newest_first(_parse_run_index_lines(text), limit)
 
 
+def read_runs_index() -> List[Dict[str, Any]]:
+    """Прочитать все записи из runs_index.ndjson без дедупликации (для тестов)."""
+    path = runs_index_path()
+    if not path.is_file():
+        return []
+    rows: List[Dict[str, Any]] = []
+    try:
+        for line in path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rows.append(json.loads(line))
+            except json.JSONDecodeError:
+                pass
+    except OSError:
+        return []
+    return rows
+
+
 def append_from_ci_payload(payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     run_id = str(payload.get("run_id") or payload.get("session") or "").strip()
     if not run_id:

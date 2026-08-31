@@ -15,6 +15,10 @@ services:
   sonarqube:
     image: sonarqube:community
     container_name: sonarqube
+    # SONAR-MEM: WSL2 has 16GB — Qube gets 4GB, TS scanner gets 4GB.
+    # With 64GB host this is comfortable; lower back to 2.5GB if on 6GB WSL2.
+    mem_limit: 4096m
+    mem_reservation: 2048m
     depends_on:
       sonarqube-db:
         condition: service_healthy

@@ -14,7 +14,7 @@
   → GitLab job scanner_universal_ci
   → генерация autorun YAML в job
   → scanner.sh -cmd -autorun
-  → report.sarif.json → AppSecHub
+  → report.sarif.json → findings intake
 ```
 
 Ожидаемый заказчиком слой: **CI-трубопровод** + сток. Без акта / Admin-программы / GatePolicy / Live / PrettyK — это не дыра ТЗ, это другой JTBD.
@@ -30,7 +30,7 @@ SecOps Lab (коробка secops-lab-pure)
   → (пак) cosmoport-custom: лесенка app → build → deploy → URL
 ```
 
-**Операторский контур проверки**, параллельно SARIF→AppSecHub, не замена пайпа.
+**Операторский контур проверки**, параллельно SARIF→findings intake, не замена пайпа.
 
 ## Стык (когда скажем)
 
@@ -40,7 +40,7 @@ SecOps Lab (коробка secops-lab-pure)
 | сборка (домен/метка, коммит) | ladder `builds[]` |
 | развёртывание | ladder `deploys[]` |
 | `TARGET_URL` в модалке | `infrastructure.base_url_override` |
-| SARIF → AppSecHub | параллельный контур; не ломать пайп |
+| SARIF → findings intake | параллельный контур; не ломать пайп |
 
 **Правило:** пайп священен. Коробка — апсайд, не долг. Показ — когда выберем момент, одним кадром «CI+SARIF ‖ Lab+акт/гейты».
 

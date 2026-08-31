@@ -978,3 +978,68 @@ def _push_results_hooks(evidence: Dict[str, Any]) -> None:
             path=scanner_meta.get("path"),
             status="ok",
         )
+
+
+# ── PERS-B2: Evidence persistence (SHA256 + MinIO / local) ──
+
+def record_evidence_artifact(
+    *,
+    run_id: str,
+    file_path: str,
+    artifact_type: str = "",
+    artifact_name: str = "",
+) -> dict:
+    """
+    Записать evidence-артефакт: SHA256 → MinIO (if available) или local → EvidenceRecord.
+
+    Вызывается из Controller teardown / lab_run после завершения прогона.
+    Не бросает исключений — возвращает dict с ok/error.
+    """
+    import os
+    try:
+        from api.evidence_api import write_evidence_from_file
+
+        if not artifact_type:
+            # Autodetect from extension
+            ext = os.path.splitext(file_path)[1].lower()
+            artifact_type = {
+                ".webm": "video", ".mp4": "video",
+                ".png": "screenshot", ".jpg": "screenshot", ".jpeg": "screenshot",
+                ".har": "har",
+                ".html": "report_html", ".xml": "report_xml", ".json": "report_json",
+                ".log": "log", ".txt": "log",
+            }.get(ext, "unknown")
+
+        return write_evidence_from_file(
+            run_id=run_id,
+            file_path=file_path,
+            artifact_type=artifact_type,
+            artifact_name=artifact_name,
+        )
+    except Exception as exc:
+        return {"ok": False, "error": str(exc), "path": file_path}
+
+
+def record_all_artifacts_in_dir(run_id: str, directory: str) -> list[dict]:
+    """
+    Обойти каталог артефактов и записать EvidenceRecord для каждого релевантного файла.
+
+    Рекурсивно (один уровень): видео, скриншоты, HAR, отчёты, логи.
+    """
+    import os
+    results = []
+    if not os.path.isdir(directory):
+        return results
+    for entry in sorted(os.scandir(directory), key=lambda e: e.name):
+        if not entry.is_file():
+            continue
+        ext = os.path.splitext(entry.name)[1].lower()
+        if ext in {".webm", ".mp4", ".png", ".jpg", ".jpeg", ".har",
+                   ".html", ".xml", ".json", ".log", ".txt", ".pdf"}:
+            result = record_evidence_artifact(
+                run_id=run_id,
+                file_path=entry.path,
+            )
+            if result.get("ok"):
+                results.append(result)
+    return results

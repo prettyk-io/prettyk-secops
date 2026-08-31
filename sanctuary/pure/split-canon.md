@@ -68,7 +68,7 @@
 
 | Зона | Что в CANON | Что в INTEGRATION |
 |---|---|---|
-| Admin shell | ProLayout, роутинг, меню, секции | EvidencePanel (Dojo-брендинг), PoliciesPanel (шаблоны ЦБ) |
+| Admin shell | React Admin + MUI Core + Data Grid (общая лицензия для Pure Box Admin и Cosmoport Control Station) | EvidencePanel (Dojo-брендинг), PoliciesPanel (шаблоны ЦБ) |
 | Admin integrations | Типы, fetchDojo* | liveFetchHeaders (auth токены банка) |
 | Form templates | `templates.tsx` (базовые) | `CosmoLadderFields*` (банковский регламент) |
 

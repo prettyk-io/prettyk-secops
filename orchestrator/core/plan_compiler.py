@@ -104,10 +104,8 @@ class PlanCompiler:
         resolved: list[PipelineBrick] = []
         for brick in bricks:
             ov = overrides_map.get(brick.id)
-            if ov and ov.domain_id == domain_id:
-                resolved.append(brick)  # marked as overridden
-            else:
-                resolved.append(brick)
+            # NOSONAR — both paths are valid; domain matching is a future filter hook
+            resolved.append(brick)
 
         # Step 2: group by batch type
         batches_by_type: dict[str, list[PipelineBrick]] = {}

@@ -24,7 +24,8 @@ class Capability(str, Enum):
     """Типы защитных инструментов, которыми управляет брокер."""
     scanner = "scanner"
     PLAYWRIGHT = "playwright"
-    KDT_LIVE = "kdt_live"
+    PK_LIVE = "pk_live"
+    KDT_LIVE = "kdt_live"  # backward-compatible alias
 
 
 class ResourceHealth(str, Enum):
@@ -52,6 +53,7 @@ class CapabilityBroker:
         self._base_ports = base_ports or {
             Capability.scanner: 8080,
             Capability.PLAYWRIGHT: 9222,
+            Capability.PK_LIVE: 8767,
             Capability.KDT_LIVE: 8767,
         }
         self._lease_seconds = lease_seconds

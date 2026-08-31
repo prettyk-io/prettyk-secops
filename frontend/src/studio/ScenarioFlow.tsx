@@ -7,7 +7,7 @@ import { useScenarioDeckStore } from "./ScenarioDeckStore";
 import { useWarRoomTelemetry } from "./useWarRoomTelemetry";
 import { FuzzerStrikeOverlay } from "./FuzzerStrikeOverlay";
 import type { ActionKind, ScenarioStepModel, StrategyKind } from "./scenarioStepModel";
-import { scanner, X, ShieldCheck, ShieldAlert } from "lucide-react";
+import { ScanLine, X, ShieldCheck, ShieldAlert } from "lucide-react";
 
 const nodeTypes = { scenarioDeck: ScenarioDeckNode };
 
@@ -36,7 +36,7 @@ function SynthesisBar(){
   const isDone=runPhase==="passed"||runPhase==="failed";const isRunning=runPhase==="warming"||runPhase==="executing"||runPhase==="synthesizing";
   return <div className="flex items-center justify-between px-4 py-2 shrink-0" style={{background:isDone?(runPhase==="passed"?"rgba(34,197,94,0.08)":"rgba(239,68,68,0.08)"):"rgba(56,189,248,0.06)",borderBottom:"1px solid #1e293b"}}>
     <div className="flex items-center gap-2">
-      {isRunning&&<><scanner className="size-4" style={{color:"#38bdf8"}}/><span className="text-xs font-semibold" style={{color:"#38bdf8"}}>WAR ROOM</span></>}
+      {isRunning&&<><ScanLine className="size-4" style={{color:"#38bdf8"}}/><span className="text-xs font-semibold" style={{color:"#38bdf8"}}>WAR ROOM</span></>}
       {runPhase==="passed"&&<><ShieldCheck className="size-4" style={{color:"#22c55e"}}/><span className="text-xs font-semibold" style={{color:"#22c55e"}}>VERDICT: PASSED</span></>}
       {runPhase==="failed"&&<><ShieldAlert className="size-4" style={{color:"#ef4444"}}/><span className="text-xs font-semibold" style={{color:"#ef4444"}}>VERDICT: FAILED</span></>}
     </div>
@@ -73,7 +73,7 @@ export function ScenarioFlow(){
       {warRoom&&<FuzzerStrikeOverlay/>}
     </div>
     {!warRoom&&<div className="absolute bottom-4 right-4 z-20">
-      <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all" style={{background:"linear-gradient(135deg, #0ea5e9, #7c3aed)",color:"#fff",boxShadow:"0 0 20px rgba(14,165,233,0.3)"}} onClick={activateWarRoom}><scanner className="size-4"/>WAR ROOM</button>
+       <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all" style={{background:"linear-gradient(135deg, #0ea5e9, #7c3aed)",color:"#fff",boxShadow:"0 0 20px rgba(14,165,233,0.3)"}} onClick={activateWarRoom}><ScanLine className="size-4"/>WAR ROOM</button>
     </div>}
   </div></ReactFlowProvider>;
 }

@@ -1096,8 +1096,9 @@ def _resolve_execution_title_meta(
     comp: str, act: str, params: Dict[str, object]
 ) -> tuple[str, str, tuple]:
     descriptor = _STEP_DESCRIPTORS.get((comp, act))
-    if not descriptor and comp in ("scanner", "scanner"):
-        alt_comp = "scanner" if comp == "scanner" else "scanner"
+    if not descriptor and comp == "zap":
+        # SCN-RENAME: legacy zap component → scanner
+        alt_comp = "scanner"
         descriptor = _STEP_DESCRIPTORS.get((alt_comp, act))
     category = descriptor.category if descriptor else _CATEGORY_LABELS.get(comp, comp or "PK")
     if descriptor:

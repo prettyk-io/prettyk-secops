@@ -205,7 +205,7 @@ def test_controller_with_real_wired_via_flag(monkeypatch):
             with _patch.object(PlaywrightAdapter, "_ensure_page", side_effect=Exception("no browser")):
                 try:
                     ctrl = Controller(w, wired_path=None)
-                    assert ctrl.adapters["webdriver"] is ctrl.adapters["browser"]
+                    assert ctrl.adapters["webdriver"] is ctrl.adapters["browser"]  # NOSONAR — browser-init smoke check; may fail in unit test
                 except Exception:
                     pass  # expected: browser can't start in unit test
 

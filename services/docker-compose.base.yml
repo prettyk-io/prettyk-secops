@@ -20,30 +20,10 @@
 # Сеть: pk-net (external, общая с сессионными проектами и infra).
 
 services:
-  allure-light-secops:
-    build:
-      context: ./allure-light-secops
-    image: pk-allure-light-secops:local
-    container_name: allure-light-secops
-    restart: unless-stopped
-    ports:
-      - "5051:5051"
-    volumes:
-      - ../reports/allure-results:/app/allure-results
-      - ../reports/allure-report:/app/default-reports
-    environment:
-      - KEEP_HISTORY=1
-      - KEEP_HISTORY_LATEST=20
-      - ALLURE_RESULTS_DIR=/app/allure-results
-      - ALLURE_REPORT_DIR=/app/default-reports
-      - ALLURE_LANG=ru
-
-  # Allure 3 Awesome (dark + SecOps logo + ru). Дефолт lab — канон :5050.
-  allure3-secops:
-    build:
-      context: ./allure3-secops
-    image: pk-allure3-secops:local
-    container_name: allure3-secops
+  # prettyk-allure3 (Allure 3 Awesome: dark + ru). Канон :5050.
+  prettyk-allure3:
+    image: prettyk-allure3:local
+    container_name: prettyk-allure3
     restart: unless-stopped
     ports:
       - "5050:5050"

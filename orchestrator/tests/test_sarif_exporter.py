@@ -1,10 +1,10 @@
-"""COS-L15: Тесты AppSecHub Exporter."""
+"""COS-L15: Тесты SARIF findings exporter."""
 import json
 import pytest
 from orchestrator.reports import (
     GOSTAct, GOSTActHeader, GOSTActObject, GOSTFinding,
 )
-from orchestrator.reports.appsechub_exporter import export_appsechub_json, _map_cwe
+from orchestrator.reports.sarif_exporter import export_findings_sarif, _map_cwe
 
 
 class TestCWEMapping:
@@ -25,7 +25,7 @@ class TestCWEMapping:
         assert _map_cwe(f) == "CWE-200"
 
 
-class TestExportAppSecHub:
+class TestExportFindingsSarif:
     def test_export_is_valid_json(self):
         act = GOSTAct(
             header=GOSTActHeader(project_name="Test"),
@@ -35,7 +35,7 @@ class TestExportAppSecHub:
                 GOSTFinding(severity="Medium", title="XSS", cwe="CWE-79"),
             ],
         )
-        result = export_appsechub_json(act)
+        result = export_findings_sarif(act)
         parsed = json.loads(result)
         assert parsed["version"] == "2.1.0"
         assert parsed["$schema"].startswith("https://")
@@ -46,7 +46,7 @@ class TestExportAppSecHub:
             header=GOSTActHeader(project_name="Test"),
             object=GOSTActObject(name="App"),
         )
-        result = export_appsechub_json(act)
+        result = export_findings_sarif(act)
         parsed = json.loads(result)
         assert len(parsed["runs"][0]["results"]) == 0
 
@@ -55,7 +55,7 @@ class TestExportAppSecHub:
             header=GOSTActHeader(project_name="MyProject"),
             object=GOSTActObject(name="App"),
         )
-        result = export_appsechub_json(act)
+        result = export_findings_sarif(act)
         parsed = json.loads(result)
         props = parsed["runs"][0]["properties"]
         assert props["project_name"] == "MyProject"

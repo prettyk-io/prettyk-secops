@@ -34,7 +34,7 @@ import {
   ChevronDown,
   Sparkles,
   Search,
-  scanner,
+  ScanLine,
   Sliders,
   Shield,
   CheckCircle2,
@@ -1103,7 +1103,7 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
                   </div>
                   <div className="px-2 py-1.5 rounded-md text-slate-400 hover:bg-white/5 hover:text-slate-200 font-medium flex items-center justify-between cursor-pointer">
                     <span className="flex items-center gap-2">
-                      <scanner className="size-3.5 text-amber-400" />
+                      <ScanLine className="size-3.5 text-amber-400" />
                       <span>Token Fuzzer Matrix</span>
                     </span>
                     <span className="text-[10px] font-mono text-slate-500">3 probes</span>

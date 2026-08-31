@@ -122,9 +122,12 @@ function Ensure-LiveIdle {
 
 Ensure-DockerEngine
 Start-Compose 'services\docker-compose.base.yml'
-Start-Compose 'services\docker-compose.scanner.yml'
+Start-Compose 'services\docker-compose.zap.yml'
 Start-Compose 'services\docker-compose.target.yml'
-Start-Compose 'services\docker-compose.api-lab.yml'
+$hasApiLab = Test-Path (Join-Path $RepoRoot 'services\pk-api-lab\Dockerfile')
+if ($hasApiLab) {
+    Start-Compose 'services\docker-compose.api-lab.yml'
+}
 if ($IncludeDefectDojo) {
     Start-Compose 'services\docker-compose.defectdojo.yml'
 }
@@ -132,7 +135,7 @@ if ($IncludeSonarQube) {
     Start-Compose 'services\docker-compose.sonarqube.yml'
 }
 
-& (Join-Path $RepoRoot '.cursor\scripts\lab_ensure_ui.ps1') -StartIfDown
+& (Join-Path $RepoRoot 'orchestrator\tools\lab_ensure_ui.ps1') -StartIfDown
 if ($LASTEXITCODE -ne 0) {
     throw "Editor/playground readiness failed (exit $LASTEXITCODE)"
 }
@@ -141,7 +144,9 @@ Ensure-LiveIdle
 Wait-Http -Name 'Allure' -Url 'http://127.0.0.1:5050/health'
 Wait-Http -Name 'scanner daemon' -Url 'http://127.0.0.1:8080/JSON/core/view/version/'
 Wait-Http -Name 'Juice Shop' -Url 'http://127.0.0.1:3000/'
-Wait-Http -Name 'pk-api-lab' -Url 'http://127.0.0.1:8090/health' -TimeoutSeconds 120
+if ($hasApiLab) {
+    Wait-Http -Name 'pk-api-lab' -Url 'http://127.0.0.1:8090/health' -TimeoutSeconds 120
+}
 if ($IncludeDefectDojo) {
     Wait-Http -Name 'DefectDojo' -Url 'http://127.0.0.1:8081/' -TimeoutSeconds 120
 }

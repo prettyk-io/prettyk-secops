@@ -31,18 +31,17 @@ Valkey — только кэш, очереди и pub/sub. Никогда не �
 
 ## 3. Два профиля развёртывания
 
-### Pure Box — один бинарник, без Docker
+### Pure Box — один Docker Compose стек
 
 ```text
-SQLite (встроенная)
-├─ WAL-режим для конкурентного доступа
-├─ Все таблицы те же, что в PostgreSQL
-├─ Better Auth: SQLite adapter
-└─ Ноль внешних сервисов
+PostgreSQL 16 (Docker Compose)
+├─ Все таблицы: users, sessions, profiles, capabilities, runs, findings
+├─ Better Auth: PG adapter (Drizzle)
+└─ DefectDojo, SonarQube на том же PostgreSQL
 ```
 
-**Когда:** QA-отдел качает один exe. «Скачал → запустил → работает.»  
-**Ограничение:** не для многопользовательского enterprise.
+**Когда:** QA-отдел, airgap. Один compose up — и весь стек жив.  
+**Ограничение:** не для многопользовательского enterprise (нужен кластер).
 
 ### Enterprise — Docker Compose / Kubernetes
 
@@ -80,7 +79,6 @@ Valkey 8
 | **PostgreSQL 16** | ✅ JSONB для semi-structured (wired DSL). ✅ Бесплатно. ✅ DefectDojo + SonarQube уже на нём. ✅ Better Auth рекомендует. ✅ 30 лет истории. |
 | **MySQL** | ⚠️ Почти как PG, но JSON слабее. DefectDojo не на MySQL — зоопарк. |
 | **MongoDB** | ❌ Документная без схемы. Auth и runs с foreign keys — не её зона. |
-| **SQLite** | ✅ Для Pure Box. Не для enterprise. |
 
 ## 6. Что Valkey НЕ делает (урок Космопорта)
 
@@ -118,7 +116,7 @@ Valkey 8
 ## 8. История принятия
 
 1. **24 августа 2026, утро.** Keeper: аудит текущего persistence-слоя. NDJSON/JSON-файлы без схемы. Вывод: нужна база.
-2. **24 августа 2026, обед.** Обсуждение с Максимом. Рассмотрены: SQLite, PostgreSQL, MySQL, MongoDB. Redis vs Valkey. Урок Космопорта.
+2. **24 августа 2026, обед.** Обсуждение с Максимом. Рассмотрены: PostgreSQL, MySQL, MongoDB. Redis vs Valkey. Урок Космопорта.
 3. **24 августа 2026, вечер.** Решение: PostgreSQL 16 + Valkey 8. Зачислены на Алтарь. Канон оформлен.
 
 ---

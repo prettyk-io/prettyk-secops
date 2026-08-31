@@ -90,7 +90,7 @@ def apply_encoders(payload: str, encoders: Sequence[str]) -> str:
         elif enc == "hex":
             res = res.encode("utf-8").hex()
         elif enc in ("md5", "md5sum"):
-            res = hashlib.md5(res.encode("utf-8")).hexdigest()
+            res = hashlib.md5(res.encode("utf-8")).hexdigest()  # NOSONAR — Burp-like intruder feature, not security
     return res
 
 

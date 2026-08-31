@@ -87,7 +87,7 @@ Keeper взял выводы Luna и Gemini, провёл refine по прото
 
 ### 4. Pure Box нельзя сломать
 
-Все системные улучшения — только для Enterprise-профиля. Pure Box остаётся single-process, SQLite, без очереди и worker pool.
+Все системные улучшения — только для Enterprise-профиля. Pure Box остаётся single-process, без очереди и worker pool.
 
 ### 5. Балансировка раннеров ≠ HTTP Load Balancer
 
