@@ -12,8 +12,7 @@
 #
 #       docker tag zaproxy/zap-stable:2.17.0           $REGISTRY/scanner:2.17.0
 #       docker tag pk-playwright-authoring:local        $REGISTRY/browser:latest
-#       docker tag pk-allure3-secops:local              $REGISTRY/allure3:latest
-#       docker tag pk-allure-light-secops:local         $REGISTRY/allure-light:latest
+#       docker tag prettyk-allure3:local                $REGISTRY/allure3:latest
 #       docker tag pk-api-lab:local                     $REGISTRY/api-lab:latest
 #       docker tag bkimminich/juice-shop:v20.1.1        $REGISTRY/target:latest
 #
@@ -22,7 +21,6 @@
 #       docker push $REGISTRY/scanner:2.17.0
 #       docker push $REGISTRY/browser:latest
 #       docker push $REGISTRY/allure3:latest
-#       docker push $REGISTRY/allure-light:latest
 #       docker push $REGISTRY/api-lab:latest
 #       docker push $REGISTRY/target:latest
 #

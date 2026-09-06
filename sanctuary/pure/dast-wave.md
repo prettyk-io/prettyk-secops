@@ -52,7 +52,7 @@ flowchart LR
 ## 4. Targets и observed feed
 
 1. Конфиг волны (режимы, corpus, policy) — в Fuzzer entity; feed **не** заменяет entity и **не** поле SoT.  
-2. **Observed** — ключи, уже видимые в History (lab: query + top-level JSON scalars); merge в targets только при opt-in (`KDT_TRAFFIC_INSERTION_FEED` и код runner).  
+2. **Observed** — ключи, уже видимые в History (lab: query + top-level JSON scalars); merge в targets только при opt-in (`PK_TRAFFIC_INSERTION_FEED` и код runner).  
 3. Пустой History / feed off → поведение как без feed; не spider и не «полный охват».  
 4. **Не смешивать:** observed ≠ active guess (Param Miner-класс) ≠ карта подмен Цепи (`slots[]`).  
 5. **`corpus=auto` ≠ observed feed:** первое выбирает pack; второе — список дыр.

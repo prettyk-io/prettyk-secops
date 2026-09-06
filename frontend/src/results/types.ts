@@ -1,6 +1,6 @@
 /**
  * RES data contract — Results / blanks / waiting room.
- * Канон: docs/results-epic.md. G-20 orchestrator: docs/run_summary.schema.json.
+ * Канон: docs/results-epic.md. Контракт оркестратора: run_summary.json.
  */
 
 export type RunStatus = 'idle' | 'running' | 'success' | 'failed' | 'unknown';

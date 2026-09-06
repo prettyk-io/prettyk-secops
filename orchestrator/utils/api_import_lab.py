@@ -25,7 +25,7 @@ def lab_search_roots() -> List[Path]:
         roots.append(Path(env))
     # orchestrator/utils → repo root
     here = Path(__file__).resolve()
-    roots.append(here.parents[2])  # prettyk-dev
+    roots.append(here.parents[2])  # prettyk-secops
     roots.append(Path.cwd())
     out: List[Path] = []
     seen: set[str] = set()

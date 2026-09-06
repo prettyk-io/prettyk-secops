@@ -27,7 +27,7 @@ SOLID для канона — в rule [`docs-canon.mdc`](../../.opencode/rules/d
 |---|---|
 | **FRIEND** | Файл в этой папке + строка ниже + шапка `> **CANON**` |
 | **CANON SEEKER** | FRIEND на птичьих правах — тезис канонизирован, мясо дозревает. Шапка `> **CANON SEEKER**`. Полный 2FA → member. |
-| **QUEUE** | [`../backlog.md`](../backlog.md), эпики — статусы, не истина |
+| **QUEUE** | [`../../docs/backlog.md`](../../docs/backlog.md), эпики — статусы, не истина |
 | **EVIDENCE** | [`../acceptance/`](../acceptance/), [`../history/`](../history/) |
 | **VOID** | § Void — не воскрешать |
 | **PUBLIC** | [`../README.md`](../README.md) — переписывать от hub при конфликте |
@@ -101,6 +101,7 @@ SOLID для канона — в rule [`docs-canon.mdc`](../../.opencode/rules/d
 |---|---|---|
 | DESIGN-WORKBENCH: живой дизайн-полигон (Theme Studio, Catalog, Patterns, Tailwind Sandbox) | [`../DESIGN-WORKBENCH.md`](../DESIGN-WORKBENCH.md) | `service-needs` (2FA sealed) |
 | ROLE-MATRIX (4×4): ролевая архитектура агентов, модели 3.1–3.7, Sanctuary-лор, 2FA-ритуалы | [`ROLE-MATRIX.md`](ROLE-MATRIX.md) | `service-needs` (2FA sealed · 23 авг 2026) |
+| PrettyK Product Aliases: словарь имён трёх продуктов | [`../../docs/prettyk_aliases.md`](../../docs/prettyk_aliases.md) | `service-needs` (2FA sealed · 31 авг 2026) |
 
 ### Скелет презентации (из hub)
 
@@ -116,7 +117,7 @@ SOLID для канона — в rule [`docs-canon.mdc`](../../.opencode/rules/d
 
 | Что | Путь |
 |---|---|
-| Живая очередь | [`../backlog.md`](../backlog.md) |
+| Живая очередь | [`../../docs/backlog.md`](../../docs/backlog.md) |
 | Честный утренний долг | [`../agent-suggested-not-tested.md`](../agent-suggested-not-tested.md) |
 | План эпиков | [`../future-plans.md`](../future-plans.md) |
 | Results as-built | [`../internal/results-as-built.md`](../internal/results-as-built.md) |

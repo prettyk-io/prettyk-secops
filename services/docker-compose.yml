@@ -8,8 +8,8 @@
 #
 # Порты:
 #   7902 — noVNC Chromium (Playwright authoring, headed под Xvfb)   ← PW-A1
-#   5050 — allure3-secops (Allure 3 Awesome: dark/ru/SecOps logo, канон)
-#   5051 — allure-light-secops (Allure 2 legacy, запасной контур)
+#   5050 — prettyk-allure3 (Allure 3 Awesome: dark/ru/SecOps logo, канон)
+#   5051 — [свободен] legacy allure-light-secops выпилен 2026-09-02
 #   8766 — LLM server (llama.cpp Qwen3-1.7B Q5_K_M, CPU inference)
 #   EXP-01: PK_AI_ASSISTANT_ENABLED=0 toggles AI off for baseline runs
 #

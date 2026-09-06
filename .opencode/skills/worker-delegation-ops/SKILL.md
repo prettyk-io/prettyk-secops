@@ -26,11 +26,12 @@ updates its own backlog, and evaluates reports with its own tools. It does not
 create a child session, invoke a subagent, start a temporary worker, or wait for
 another agent to finish. There is no hidden PO-to-worker transport.
 
-A worker assignment is an **output artifact addressed to Максим**: a separate
-copy-paste box that Максим may personally place into the corresponding worker
-session. Write `Prepared box for <worker>`; do not claim that the task was sent,
-handed off, triggered, or delivered. Do not end with a question asking whether
-to pass it on. The PO's job ends at producing a clear box.
+A worker assignment is an **output artifact addressed to Максим**: a one-line
+dispatch that Максим may personally place into the corresponding worker
+session. Write `Prepared dispatch for <worker>`; do not claim that the task
+was sent, handed off, triggered, or delivered. Do not end with a question
+asking whether to pass it on. The PO's job ends at producing the line and a
+complete card behind it.
 
 This topology is the meaning of “multi-agent” here: several independent
 sessions selected and started by Максим, not an internal orchestration tree.
@@ -54,6 +55,28 @@ note or friend-request in the PO's own `research/` or `friends`/
 `friend-requests/` surface, then prepare a copy-paste note for Максим. Do not
 edit a foreign backlog, canon, admission record, or working document. Do not
 “fix the other repository” from the current PO session.
+
+## 0. Session startup — PROGRESS convention
+
+Before any work, every worker MUST read the repository state in this order:
+
+1. `PROGRESS.md` — what was done last, current state (broken/blocked/working), what's next
+2. `git log --oneline -10` — recent commits for context
+
+This replaces guessing state from context. A worker that skips this will
+reinvent understanding that already exists, potentially working on broken code.
+
+After completing work, the worker appends one line to the `История` section of
+`PROGRESS.md`:
+```
+YYYY-MM-DD | worker | что сделано | commit/артефакт
+```
+and updates `Последнее действие`, `Текущее состояние`, `Следующее действие`.
+No more than 5 history lines — oldest drops off. PO may also update PROGRESS
+between worker sessions.
+
+**Template:** `D:\prettyk\docs\PROGRESS.template.md` — each PO copies it into
+their own repo root as `PROGRESS.md`.
 
 ## 1. Partition before dispatch
 
@@ -110,49 +133,42 @@ CP-OWN-001B → Luna — persistence/integration slice
 The PO decides the split from scope and worker availability. The user should
 not have to resolve who owns a vague shared card.
 
-## 5. Copy-paste dispatch format
+## 5. Dispatch format: one line, nothing else
 
-Every worker receives its **own fenced box**. Never bundle several workers into
-one box and never write “Boss + Luna” as an owner. The box must contain:
+The transfer command is **one line**. No packets, no boxes with DoD/scope/
+acceptance prose — the worker reads the card, and the discipline (one-owner,
+stay-in-scope, report format) loads from the worker's own `AGENTS.md`.
 
 ```text
-[WORKER: <one name>]
-[PACKET: <20–30h packet name>]
+WorkerName > <ID(s)> -> <absolute path to backlog surface>
 
-Outcome:
-<one sentence describing the shipped behaviour or document result>
-
-Scope:
-- <explicit included unit>
-- <explicit included unit>
-
-Dependencies / starting point:
-- <only what this worker needs>
-
-Out of scope:
-- <what this worker must not touch>
-
-Acceptance:
-- <observable, verifiable result>
-- <relevant edge case or negative case>
-
-Report back:
-- changed surfaces
-- verification performed and result
-- remaining gaps / follow-ups
-- blockers
+Luna > COS-082 -> D:\prettyk-airlock\docs\BACKLOG.md
 ```
 
-The box is written for direct selection and paste. Do not make the worker
-infer the intended ownership, split, or acceptance criteria.
+**Precondition: the card is complete.** All substance lives in the card on the
+backlog surface. Before dispatching, the PO verifies the card has:
+
+- a one-sentence DoD (what must be true when done);
+- out-of-scope with neighbor card IDs and frozen items;
+- checkable acceptance bullets (observable results, negative cases);
+- report expectations (unless already covered by the worker's `AGENTS.md`).
+
+Anything missing → fix the **card**, never the dispatch. Cutting complete
+cards is PO work, derived from Maxim's one-line input
+(`Cosmo, COS-082, <surface>`). Maxim never carries feature text.
+
+Never bundle several workers into one dispatch and never write
+"Boss + Luna" as an owner — one line, one named worker. If two workers are
+needed, that is two cards and two lines.
 
 ## 6. Rolling worker queue
 
 When a worker finishes and Максим brings the report into the PO session,
 immediately prepare that worker's next independent packet sized for
 approximately **20–30 hours** of useful work. Repeat this cycle while backlog
-and worker availability remain. Preparation means writing the next box in the
-PO response; it never means starting or contacting a worker session.
+and worker availability remain. Preparation means cutting complete cards and
+writing the next one-line dispatch in the PO response; it never means starting
+or contacting a worker session.
 
 The next packet may contain several related cards, but it still has one named
 owner, one coherent scope, and one copy-paste box. Do not wait for a ceremonial
@@ -169,11 +185,10 @@ packet:
 3. Record uncovered gaps as follow-up work; do not hide them in a “done” note.
 4. Add newly discovered requirements or constraints when the report exposes
    them.
-5. Prepare a new copy-paste box for that same worker as the PO response.
+5. Prepare the next one-line dispatch for that same worker as the PO response.
 
-If `N` worker reports arrive, produce `N` separate new copy-paste boxes — one
-for each reporting worker. Never answer several reports with one combined
-assignment.
+If `N` worker reports arrive, produce `N` separate dispatches — one for each
+reporting worker. Never answer several reports with one combined assignment.
 
 ## 8. Backlog horizon and acceptance
 
@@ -200,10 +215,10 @@ The same workflow applies to all three PO agents:
 - Battlecruiser / PrettyK Control Plane;
 - Tribunal / Findings Control Station.
 
-They share the worker pool, but they do not share ambiguous ownership. Each PO
-must state repository, scope, one worker, dependencies, out-of-scope, and
-acceptance in every dispatch box. Cross-repository work is split into separate
-boxes and sequenced at the contract boundary.
+They share the worker pool, but they do not share ambiguous ownership. In
+every dispatch the PO guarantees: one named worker, complete card (scope,
+out-of-scope, acceptance), absolute surface path. Cross-repository work is
+split into separate cards and sequenced at the contract boundary.
 
 ## 10. Anti-automation rules
 

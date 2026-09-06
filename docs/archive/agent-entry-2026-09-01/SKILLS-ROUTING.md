@@ -69,12 +69,12 @@
 ### Проёб 1: переписали форму/студию/интеграции вместо «выдрать RJSF»
 - **Что было:** Максим сказал «просто портируем, выдрав RJSF». Вы построили всё с нуля.
 - **Следствие:** полный откат, `/to-sanitize`, потерянное время.
-- **Разбор:** [`docs/investigation-vnext-fuckup.md`](investigation-vnext-fuckup.md). Читать всем.
+- **Разбор:** [`docs/archive/handoffs-2026-08/investigation-vnext-fuckup.md`](archive/handoffs-2026-08/investigation-vnext-fuckup.md). Читать всем.
 - **Правило:** «выпилить X» ≠ «заменить с нуля». Сначала скриншот «как было», потом «как станет», утвердить — только потом кодить.
 
 ### Проёб 2: путались в портах
 - **Что было:** путали Editor-порт с мёртвым портом старой эпохи.
-- **Истина (бетон): CANON → [`sanctuary/canon/stand-port-meta.md`](../sanctuary/canon/stand-port-meta.md)** — единственный источник.
+- **Истина (бетон): CANON → [`stand-port-meta.md`](../stand-port-meta.md)** — единственный источник.
 - **Правило:** порт Editor брать **только** из `vite.config.ts`, не хардкодить руками. Проверять порт через `netstat -ano | findstr :PORT`. Никогда `Get-NetTCPConnection` (не видит IPv6-слушателей `[::]`).
 
 ### Проёб 3: браузер в мелком окне
@@ -97,7 +97,7 @@
 ## 6. Boot chain (каждый раз, перед задачей)
 
 ```text
-1. Прочитай NEW_AGENT_MANDATORY.md (если первый раз).
+1. Прочитай `agent-entrypoint.md` + `internal/agent-primer.md` (если первый раз). <!-- ARCHIVED 2026-09-01: NEW_AGENT_MANDATORY описывал vnext-структуру 14 авг (cosmo/ workspace), устарел. Живой вход: agent-entrypoint.md + agent-entry.md. -->
 2. Определи трек по сигналам задачи (UI? браузер? дебаг? стек?).
 3. Открой нужный глобальный скилл (таблица в §2).
 4. Только потом трогай код.

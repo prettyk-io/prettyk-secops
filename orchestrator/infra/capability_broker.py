@@ -4,7 +4,7 @@ COS-004: CapabilityBroker — аллокатор портов и сессий п
 
 Единый брокер, управляющий изолированными сессиями защитных инструментов:
   - привязка к run_id
-  - аллокация портов (scanner, Playwright CDP, KDT Live)
+  - аллокация портов (scanner, Playwright CDP, PK Live)
   - health check: инструмент жив / готов / занят
   - освобождение при завершении run
   - таймаут сессии (зависший run)
@@ -25,7 +25,6 @@ class Capability(str, Enum):
     scanner = "scanner"
     PLAYWRIGHT = "playwright"
     PK_LIVE = "pk_live"
-    KDT_LIVE = "kdt_live"  # backward-compatible alias
 
 
 class ResourceHealth(str, Enum):
@@ -54,7 +53,6 @@ class CapabilityBroker:
             Capability.scanner: 8080,
             Capability.PLAYWRIGHT: 9222,
             Capability.PK_LIVE: 8767,
-            Capability.KDT_LIVE: 8767,
         }
         self._lease_seconds = lease_seconds
         self._allocations: dict[Capability, dict[str, AllocatedPort]] = {

@@ -13,7 +13,8 @@
 param(
     [string]$Version = "0.1.0",
     [string]$OutDir = "bundle-out",
-    [switch]$Sign                      # подписать cosign
+    [switch]$Sign,                      # подписать cosign
+    [switch]$DryRun                     # валидация без pull/save/pack
 )
 
 $ErrorActionPreference = "Stop"
@@ -35,8 +36,8 @@ $LicenseMap = @{
     "zaproxy/zap-stable"            = @{ license_spdx = "Apache-2.0"; license_url = "https://github.com/zaproxy/zaproxy/blob/main/LICENSE" }
     "bkimminich/juice-shop"         = @{ license_spdx = "MIT";        license_url = "https://github.com/juice-shop/juice-shop/blob/master/LICENSE" }
     "pk-playwright-authoring"       = @{ license_spdx = "Apache-2.0"; license_url = "https://github.com/microsoft/playwright/blob/main/LICENSE" }
+    "prettyk-allure3"               = @{ license_spdx = "Apache-2.0"; license_url = "https://github.com/allure-framework/allure3/blob/main/LICENSE" }
     "pk-allure3-secops"             = @{ license_spdx = "Apache-2.0"; license_url = "https://github.com/allure-framework/allure3/blob/main/LICENSE" }
-    "pk-allure-light-secops"        = @{ license_spdx = "Apache-2.0"; license_url = "https://github.com/allure-framework/allure2/blob/main/LICENSE" }
     "pk-llm-server"                 = @{ license_spdx = "MIT";        license_url = "" }
     "pk-api-lab"                    = @{ license_spdx = "MIT";        license_url = "" }
 }
@@ -44,33 +45,49 @@ $LicenseMap = @{
 # Build images (сборка локальных).
 $BuildImages = @(
     @{ Name = "pk-playwright-authoring"; Tag = "local"; ComposeSvc = "playwright-authoring"; ComposeFile = "session-template.yml" },
-    @{ Name = "pk-allure3-secops";        Tag = "local"; ComposeSvc = "allure3-secops";        ComposeFile = "base.yml" },
-    @{ Name = "pk-allure-light-secops";   Tag = "local"; ComposeSvc = "allure-light-secops";   ComposeFile = "base.yml" },
-    @{ Name = "pk-llm-server";            Tag = "dev";  ComposeSvc = "llm-server";             ComposeFile = "base.yml" },
+    @{ Name = "prettyk-allure3";          Tag = "local"; ComposeSvc = "prettyk-allure3";        ComposeFile = "docker-compose.base.yml" },
+    @{ Name = "pk-llm-server";            Tag = "dev";  ComposeSvc = "llm-server";             ComposeFile = "docker-compose.base.yml" },
     @{ Name = "pk-api-lab";               Tag = "local"; ComposeSvc = "pk-api-lab";             ComposeFile = "session-template.yml" }
 )
 
 Write-Host "=== PrettyK Pure Airgap Bundle v2 (digest-pinned) $Version ==="
 
 # 1. Подготовка
-if (Test-Path $BundleWork) { Remove-Item -Recurse -Force $BundleWork }
-New-Item -ItemType Directory -Path "$BundleWork\images" -Force | Out-Null
-New-Item -ItemType Directory -Path "$BundleWork\compose" -Force | Out-Null
-New-Item -ItemType Directory -Path "$BundleWork\scripts" -Force | Out-Null
-New-Item -ItemType Directory -Path "$BundleWork\sbom" -Force | Out-Null
-New-Item -ItemType Directory -Path "$BundleWork\migrations" -Force | Out-Null
+if ($DryRun) {
+    Write-Host "[bundle-v2] Dry-run mode: skipping bundle dir preparation"
+} else {
+    if (Test-Path $BundleWork) { Remove-Item -Recurse -Force $BundleWork }
+    New-Item -ItemType Directory -Path "$BundleWork\images" -Force | Out-Null
+    New-Item -ItemType Directory -Path "$BundleWork\compose" -Force | Out-Null
+    New-Item -ItemType Directory -Path "$BundleWork\scripts" -Force | Out-Null
+    New-Item -ItemType Directory -Path "$BundleWork\sbom" -Force | Out-Null
+    New-Item -ItemType Directory -Path "$BundleWork\migrations" -Force | Out-Null
+}
 
 # 2. Сборка локальных образов
-Write-Host "[bundle-v2] build images"
+Write-Host "[bundle-v2] build images$(if ($DryRun) { ' (dry-run)' })"
 Push-Location $RepoRoot
 try {
     foreach ($img in $BuildImages) {
-        Write-Host "  build $($img.Name):$($img.Tag)"
-        docker compose -f "services\$($img.ComposeFile)" build $img.ComposeSvc
+        Write-Host "  build $($img.Name):$($img.Tag) [svc: $($img.ComposeSvc)]"
+        $composePath = "services\$($img.ComposeFile)"
+        if (-not (Test-Path $composePath) -and (Test-Path "services\docker-compose.$($img.ComposeFile)")) {
+            $composePath = "services\docker-compose.$($img.ComposeFile)"
+        }
+        if ($DryRun) {
+            docker compose -f $composePath build --dry-run $img.ComposeSvc
+        } else {
+            docker compose -f $composePath build $img.ComposeSvc
+        }
         if ($LASTEXITCODE -ne 0) { throw "build failed: $($img.Name)" }
     }
 } finally {
     Pop-Location
+}
+
+if ($DryRun) {
+    Write-Host "[bundle-v2] Dry-run complete. All compose services validated successfully."
+    return
 }
 
 # 3. Pull + pin digest внешних образов
@@ -226,7 +243,7 @@ if ($Sign) {
         & cosign sign-blob --yes "$BundleWork\sbom\supply-chain.cdx.json"
         & cosign sign-blob --yes "$BundleWork\checksums.sha256"
     } else {
-        Write-Host "  cosign not found — skip (install: choco install cosign)"
+        Write-Host "  cosign not found - skip (install: choco install cosign)"
     }
 }
 

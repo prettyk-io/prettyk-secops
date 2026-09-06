@@ -18,8 +18,8 @@
 |---|---|---|
 | **Продукт** | KDT Framework | **PrettyK** |
 | **DSL** | KDT (Key-Driven Testing) | **PrettyK** (DSL) |
-| **Репозиторий** | `failed1/scanner-kdt` | **`prettyk-io/prettyk-dev`** |
-| **Cosmoport 2.0** | — | **`prettyk-io/cosmoport2`** (отдельная кодовая база, `D:\cosmoport2`) |
+| **Репозиторий** | `failed1/scanner-kdt` | **`prettyk-io/prettyk-secops`** (до 01.09.2026 `prettyk-dev`) |
+| **Cosmoport 2.0** | — | **`prettyk-io/prettyk-control-plane`** (отдельная кодовая база, `D:\prettyk-control-plane`) |
 | **Организация** | — | **`github.com/prettyk-io`** |
 | **Package FE** | `kdt-wired-editor` | **`prettyk-editor`** |
 | **Сканер** (публично) | scanner демон, scanner Webswing | **сканер, Scanner Webswing** |
@@ -61,7 +61,7 @@
 Добавлен **dual-read helper** `orchestrator/utils/env_dual.py`:
 
 ```python
-pk_env("LIVE")  # PK_LIVE || KDT_LIVE
+pk_env("LIVE")  # PK_LIVE || PK_LIVE
 pk_env_flag("ALLURE_WAIT")  # bool
 pk_env_int("ELEMENT_TIMEOUT")  # int
 ```
@@ -114,6 +114,6 @@ Wire `"scanner"` не тронут. Обновлены display-слои:
 ## Стены
 
 - Исторические документы (`sanctuary/history/`, acceptance evidence) не переписывать механически.
-- `services/` не входит в `prettyk-dev` — compose/service renames там отдельно.
+- `services/` не входит в `prettyk-secops` — compose/service renames там отдельно.
 - `friend-requests/`, `backlog.md` — рабочие/архивные документы, оставлены без изменений.
 - `cosmo/docs/source/tocompose/` (PAL-доки) — архив Cosmo, не трогать без отдельного решения.

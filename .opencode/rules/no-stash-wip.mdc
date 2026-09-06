@@ -8,7 +8,7 @@ alwaysApply: true
 **Почему:** тупая автоматика (слепой stash «чтобы переключить ветку») жрала часы Максима. Он не еблан — ебланили настройку. Больше так нельзя.
 
 Канон: [`AGENTS.md`](../../AGENTS.md) · тиски [`agent-git-vise.mdc`](agent-git-vise.mdc).  
-Git-политика: [`docs/agent-entrypoint.md`](../../docs/agent-entrypoint.md) § Git.
+Git-политика: [`../AGENTS.md`](../../AGENTS.md) § Политика коммитов + rule `agent-git-vise.mdc`.
 
 **Hook на каждый git не вешаем.** Скрипт `.cursor/hooks/block-destructive-git.ps1` может лежать в репо, но **не** в `beforeShellExecution` — иначе approval-спам поверх Run Everything (урок 2026-08-05). Дисциплина = rule + мозг агента.
 

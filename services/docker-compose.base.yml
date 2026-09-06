@@ -7,8 +7,8 @@
 #   docker compose -f services/docker-compose.base.yml up -d
 #
 # Порты (системные):
-#   5050 — allure3-secops (Allure 3 Awesome: dark/ru/SecOps logo, канон)
-#   5051 — allure-light-secops (Allure 2 legacy, запасной контур)
+#   5050 — prettyk-allure3 (Allure 3 Awesome: dark/ru/SecOps logo, канон)
+#   5051 — [свободен] legacy allure-light-secops выпилен 2026-09-02
 #   8766 — LLM server (llama.cpp Qwen3, опционально: PK_AI_ASSISTANT_ENABLED=0 отключает AI)
 #   8768 — llama-server (Qwen3-1.7B Q5_K_M, CPU inference)
 #   8769 — llama-server-reasoning (Qwen3-4B-Instruct Q5_K_M)

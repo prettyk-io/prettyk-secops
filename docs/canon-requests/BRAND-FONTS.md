@@ -1,6 +1,6 @@
 # BRAND-FONTS: библия шрифтов (wordmark / UI / code / docs)
 
-`lane: ready` → **принят 16 авг 2026 (2FA одобрен).** Зачислен в hub как `brand-fonts.md`. См. `sanctuary/canon/brand-fonts.md`.
+`lane: ready` → **принят 16 авг 2026 (2FA одобрен).** Зачислен в hub как `brand-fonts.md`. См. `brand-fonts.md`.
 
 ## Тезис
 
@@ -26,4 +26,4 @@
 
 ## Статус
 
-Принят. Канон: [`brand-fonts.md`](../sanctuary/canon/brand-fonts.md). Полировка `brand-strategy.md` §3 — там же.
+Принят. Канон: [`brand-fonts.md`](../brand-fonts.md). Полировка `brand-strategy.md` §3 — там же.

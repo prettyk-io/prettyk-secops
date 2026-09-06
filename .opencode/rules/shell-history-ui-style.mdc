@@ -12,4 +12,4 @@ globs: frontend/src/shell/**/*.{tsx,css}
 - Тёмный фон + мягкие radial accents; hover entry = inset accent bar, не «пухлая» card.
 - Home / History / Регламент (form) — один язык (`pk-home-*` / `pk-history-*` / `pk-form-page`): атмосфера, radius 5–6px, SecOps mark в хедере.
 - Editor (`studio`) — только PrettyK mark, без SecOps.
-- **Disabled / locked CANON:** `--kdt-disabled-fg` + `--kdt-disabled-opacity` (как Home «политики»). Кнопки `:disabled` и `.kdt-field-locked-input` — только этот цвет, без «чуть иначе для primary».
+- **Disabled / locked CANON:** `--pk-disabled-fg` + `--pk-disabled-opacity` (как Home «политики»). Кнопки `:disabled` и `.pk-field-locked-input` — только этот цвет, без «чуть иначе для primary».

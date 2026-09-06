@@ -1,6 +1,6 @@
 # BRAND-VIDEO: фоновое видео бренда на LoginPage и HomePage
 
-`lane: ready` → **принят 15 авг 2026 (2FA одобрен).** Зачислен в hub как `CANON`. См. `sanctuary/canon/brand-video.md`.
+`lane: ready` → **принят 15 авг 2026 (2FA одобрен).** Зачислен в hub как `CANON`. См. `brand-video.md`.
 
 ## Тезис
 

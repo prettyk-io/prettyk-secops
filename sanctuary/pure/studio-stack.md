@@ -28,6 +28,7 @@
 |---|---|---|---|---|
 | **Canvas-редактор** | `@xyflow/react` (React Flow v12) | MIT | **Установлен** | Smoke: `ScenarioCanvas.tsx`, 7 нод, custom node, minimap, controls. Роут `#/canvas`. |
 | **UI-примитивы** | `shadcn/ui` (Radix UI) | MIT | **Установлен** | `components.json`, `src/lib/utils.ts`, Button, Input. Tailwind v4 + dark theme. |
+| **Admin-контур** | `@mui/material` + `@mui/x-data-grid` + `@mui/icons-material` | MIT | **установлено** | Зона `src/admin/` (Findings/Runs/Overview, Evidence) и `src/design-admin/`. Двухконтурная стилистика: MUI — админка, shadcn/Radix — Studio. |
 | **Стилизация** | `tailwindcss` v4 | MIT | **Установлен** | Плагин `@tailwindcss/vite`, файл `src/tailwind.css`, CSS-переменные shadcn. |
 
 ---

@@ -7,7 +7,7 @@ systemNamespace: prettyk-system
 allure3:
   enabled: true
   image:
-    repository: pk-allure3-secops
+    repository: prettyk-allure3
     tag: local
   service:
     port: 5050
@@ -22,13 +22,7 @@ allure3:
     enabled: true
     size: 5Gi
 
-allureLight:
-  enabled: true
-  image:
-    repository: pk-allure-light-secops
-    tag: local
-  service:
-    port: 5051
+# allureLight (:5051) выпилен 2026-09-02 (PK-ALIAS-1/2: legacy Allure 2 упразднён, порт свободен)
 
 # ── LLM / AI (optional) ──
 ai:

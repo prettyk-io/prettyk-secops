@@ -10,8 +10,8 @@ Sanctuary — место, где живут **только финальные о
 
 | Путь | Роль |
 |---|---|
-| [`canon-temple/CHARTER.md`](canon-temple/CHARTER.md) | **Устав Святилища канона**: общие положения + положение о 2FA |
-| [`canon-temple/TEMPLE-CORE.md`](canon-temple/TEMPLE-CORE.md) | **Temple Core**: иерархия братства (Boss → Flash ‖ Buddy; Keeper вне иерархии), поток от карточки до канона |
+| [`pure/CHARTER.md`](pure/CHARTER.md) | **Устав Святилища канона**: общие положения + положение о 2FA |
+| [`pure/TEMPLE-CORE.md`](pure/TEMPLE-CORE.md) | **Temple Core**: иерархия братства (Boss → Flash ‖ Buddy; Keeper вне иерархии), поток от карточки до канона |
 | [`2FA.md`](2FA.md) | Ритуал двухфакторной промоции в Sanctuary |
 | [`keeper-discipline.md`](keeper-discipline.md) | Канон роли Keeper: три столпа + правило ЧИСТО + антипаттерны нарезки |
 | [`skills/`](skills/) | Архивные копии личных skills Keeper'а (po-keeper и др.) |
@@ -36,11 +36,11 @@ Sanctuary **не заменяет** hub. Hub остаётся рабочим и 
 - Агент не заносит файл в Sanctuary без явного прохода через 2FA и беседы с хранителем.
 - Keeper может **сам инициировать запрос** владельцу, когда вещь у его дверей дозрела
   (искатель, possible friend, прошедший evolve/research). Ведёт, но не решает.
-- Иерархия братства и поток verified-списков — [`canon-temple/TEMPLE-CORE.md`](canon-temple/TEMPLE-CORE.md).
+- Иерархия братства и поток verified-списков — [`pure/TEMPLE-CORE.md`](pure/TEMPLE-CORE.md).
 
 ## Правила
 
-1. Любой патч файла в Sanctuary — **только через 2FA** (см. `canon-temple/CHARTER.md` и `2FA.md`).
+1. Любой патч файла в Sanctuary — **только через 2FA** (см. `pure/CHARTER.md` и `2FA.md`).
 2. Никакого кода — только доки.
 3. Без имени внутреннего продукта, без привязки к конкретному заказчику/банку.
 4. `docs/wired.json` — legacy JSON Schema, здесь не дублируется и не подменяется.

@@ -2,7 +2,7 @@
 
 PrettyK — среда для функциональных и динамических проверок безопасности веб-приложений. Автор описывает сценарий в Редакторе на языке PrettyK, оркестратор выполняет его через браузер и OWASP scanner (scanner), а результат появляется в PrettyK Live, Allure и `run_summary.json`.
 
-Статус проекта: **alpha, подготовка к beta**. Формат манифеста и язык ещё могут меняться.
+Статус проекта: **alpha, подготовка к beta**. Формат Wired и язык ещё могут меняться.
 
 > [!WARNING]
 > Активное сканирование создаёт нагрузку и может изменить данные цели. Используйте PrettyK только в согласованном контуре. Локальный стенд предназначен для Juice Shop и других изолированных тестовых систем.
@@ -22,13 +22,12 @@ Set-Location ..
 .\.cursor\scripts\lab_ensure_ui.ps1
 ```
 
-Откройте [http://localhost:5173/](http://localhost:5173/). Редактор позволяет создать сценарий и скачать манифест без запуска браузера или сканирования.
+Откройте [http://localhost:5173/](http://localhost:5173/). Редактор позволяет создать Wired-сценарий без запуска браузера или сканирования.
 
 Дальше:
 
-1. [Создайте первый сценарий](docs/getting-started.md).
-2. [Запустите локальную проверку Juice Shop](docs/guides/first-juice-check.md).
-3. [Откройте всю документацию](docs/README.md).
+1. [Запустите локальную проверку Juice Shop](docs/guides/first-juice-check.md).
+2. [Откройте технический паспорт](docs/prettyk.md).
 
 ## Что входит в PrettyK
 
@@ -49,9 +48,9 @@ Set-Location ..
 
 ## Для интеграции и разработки
 
-- [структура манифеста](docs/wired.md);
+- [структура Wired](docs/prettyk.md);
 - [технический паспорт](docs/prettyk.md);
 - [безопасная эксплуатация](docs/security.md);
 - [разработка и тесты](docs/development.md);
 - [`docs/wired.json`](docs/wired.json) — JSON Schema;
-- [`docs/run_summary.schema.json`](docs/run_summary.schema.json) — итог прогона.
+- `run_summary.json` — итог прогона, создаваемый оркестратором.

@@ -1,9 +1,9 @@
 # Feature-routing backlog — живая очередь тоннеля
 
 > **Путь:** `docs/feature-routing-backlog.md`
-> **Правила конвейера:** [`sanctuary/canon/feature-admission.md`](../sanctuary/canon/feature-admission.md) (CANON) · заявка [`docs/canon-requests/FEATURE-ROUTING.md`](canon-requests/FEATURE-ROUTING.md).
+> **Правила конвейера:** [`feature-admission.md`](../feature-admission.md) (CANON) · заявка [`docs/canon-requests/FEATURE-ROUTING.md`](canon-requests/FEATURE-ROUTING.md).
 > **Это НЕ hub и НЕ machine SoT.** Это живая очередь движения фич. Канон по-прежнему через 2FA.
-> Правило git: [`split-canon.md`](../sanctuary/canon/split-canon.md) — ветки `dev`→`main`, интеграция = каталоги, не ветка.
+> Правило git: [`split-canon.md`](../split-canon.md) — ветки `dev`→`main`, интеграция = каталоги, не ветка.
 
 ## Статусы
 
@@ -19,7 +19,7 @@ _Пусто — первая фича войдёт после route-вердик
 
 ## Extract-кандидаты (Cosmo → Pure)
 
-_Сюда попадают ништяки из `cosmo/` и `sanctuary/canon/custom/cosmo/`, дозревшие до генерализации._
+_Сюда попадают ништяки из `cosmo/` и `sanctuary/custom/cosmoport2/cosmo/`, дозревшие до генерализации._
 
 | ID | Исходник | Что генерализовать | Вердикт | Статус |
 |---|---|---|---|---|

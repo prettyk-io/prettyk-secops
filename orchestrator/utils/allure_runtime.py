@@ -19,7 +19,7 @@ from allure_commons.reporter import AllureReporter
 from allure_commons.utils import format_exception, format_traceback, now, uuid4
 
 
-class KdtAllureListener:
+class PkAllureListener:
     """Проксирует allure.step / allure.attach → AllureReporter."""
 
     def __init__(self, reporter: AllureReporter):
@@ -64,17 +64,17 @@ class KdtAllureListener:
         )
 
 
-def bind_allure(results_dir: str) -> tuple[AllureReporter, KdtAllureListener, AllureFileLogger]:
+def bind_allure(results_dir: str) -> tuple[AllureReporter, PkAllureListener, AllureFileLogger]:
     """Регистрирует FileLogger + listener. Возвращает (reporter, listener, file_logger)."""
     reporter = AllureReporter()
-    listener = KdtAllureListener(reporter)
+    listener = PkAllureListener(reporter)
     file_logger = AllureFileLogger(results_dir)
     plugin_manager.register(file_logger)
     plugin_manager.register(listener)
     return reporter, listener, file_logger
 
 
-def unbind_allure(listener: KdtAllureListener, file_logger: AllureFileLogger) -> None:
+def unbind_allure(listener: PkAllureListener, file_logger: AllureFileLogger) -> None:
     """Снимает плагины, чтобы повторные сценарии не дублировали хуки."""
     try:
         plugin_manager.unregister(plugin=listener)

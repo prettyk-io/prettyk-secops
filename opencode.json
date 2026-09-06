@@ -1,25 +1,59 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "openrouter/deepseek/deepseek-v4-pro",
+  "model": "openrouter/google/gemini-3.8-flash",
   "default_agent": "sanctuary",
-  "instructions": ["docs/internal/agent-primer.md"],
+  "instructions": [
+    "docs/internal/agent-primer.md"
+  ],
   "shell": "powershell",
   "autoupdate": "notify",
-  "plugin": [
-    "opencode-supermemory",
-    "opencode-background-agents"
+  "plugin": ["opencode-supermemory",
+    "opencode-background-agents",
+    "opencode-multimodal"
   ],
   "compaction": {
-    "auto": false
+    "auto": true,
+    "prune": false,
+    "reserved": 12000
+  },
+  "provider": {
+    "openrouter": {
+      "models": {
+        "google/gemini-3.8-flash": {
+          "limit": { "context": 128000, "output": 131072 }
+        }
+      }
+    }
   },
   "agent": {
-    "build": { "disable": true }
+    "build": {
+      "disable": true
+    },
+    "plan": {
+      "disable": true
+    }
+  },
+  "references": {
+    "airlock": {
+      "path": "D:\\prettyk-airlock",
+      "description": "PrettyK Airlock: суверенная система допуска и межзонной передачи релизов. Читать контракты, не править."
+    },
+    "hub": {
+      "path": "D:\\prettyk-hub",
+      "description": "PrettyK Hub: findings, triage, QG-вердикты. Читать вердикты и intake-контракты, не править."
+    },
+    "board": {
+      "path": "D:\\prettyk.io\\docs\\board",
+      "description": "Доска директив линейки PrettyK."
+    }
   },
   "permission": {
     "bash": {
       "*": "allow"
     },
     "edit": {
+      "D:\\prettyk-airlock\\**": "deny",
+      "D:\\prettyk-hub\\**": "deny",
       "*": "allow"
     },
     "webfetch": "allow",
@@ -31,5 +65,6 @@
     "websearch": "allow",
     "describe_image": "allow",
     "apply_patch": "allow"
-  }
+  },
+  "small_model": "openrouter/google/gemini-3.8-flash"
 }

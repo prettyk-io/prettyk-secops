@@ -7,18 +7,18 @@ alwaysApply: true
 
 Владелец говорит коротко — агент делает **полный** lab-контур.  
 Подробный чеклист и ловушки: global skill **`prettyk-lab`** (читать при старте/чистке).  
-**Порты — CANON: [`sanctuary/canon/stand-port-meta.md`](../../sanctuary/canon/stand-port-meta.md).** Хардкод порта = инцидент.
+**Порты — CANON: [`stand-port-meta.md`](../../stand-port-meta.md).** Хардкод порта = инцидент.
 
 ## Имена
 
-- Сервис отчётов: **allure3-secops** (`:5050/`, compose `allure3-secops`, канон). Legacy: `allure-light-secops` (`:5051/`).
-- Токен чистки: `-Target allure` **или** `-Target allure3-secops` **или** `-Target allure-light-secops` (одно и то же).
+- Сервис отчётов: **prettyk-allure3** (`:5050/`, compose `prettyk-allure3`, канон). Порт :5051 свободен (legacy allure-light-secops выпилен 2026-09-02).
+- Токен чистки: `-Target allure` **или** `-Target allure3-secops` (одно и то же).
 - Запрещены строки/URL: `allure-docker-service`, `allure-lite`, `frankescobar`, `Allure Lite`.
 
 ## Пульты (после любого «подними / стартуй» — кидать автоматом)
 
 ```text
-allure3-secops (канон)
+prettyk-allure3 (канон)
 http://127.0.0.1:5050/
 DefectDojo
 http://127.0.0.1:8081/  admin/admin
@@ -53,7 +53,7 @@ http://127.0.0.1:8080/
 
 - Python API playground / generate keywords|method-ids → рестарт playground (`lab_ensure_ui.ps1`).
 - Только UI → HMR; мёртвый :5173 → ensure, не ждать просьбы.
-- **Инвазивный FE** (shell / Studio boot / providers / vite): DoD **живого Editor** — [`agent-entrypoint.md`](docs/agent-entrypoint.md) § «DoD: живой Editor после инвазивного FE». HTTP + глазами (логин или shell, не белый экран). Упало → логи и **корень** в коде, не «рестарт и сдал».
+- **Инвазивный FE** (shell / Studio boot / providers / vite): DoD **живого Editor** — [`docs/internal/agent-primer.md`](../../docs/internal/agent-primer.md) §15 § «DoD: живой Editor после инвазивного FE». HTTP + глазами (логин или shell, не белый экран). Упало → логи и **корень** в коде, не «рестарт и сдал».
 
 ## Запреты
 

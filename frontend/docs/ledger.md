@@ -2,8 +2,8 @@
 
 > Учётный лист миграции доков legacy → spaceport-secops-lab. Slice: 13 августа 2026.
 > Бакеты: `ready` / `smallfix` / `bigfix` / `tocompose` + `drop`.
-> Правила поведения: [`../../docs/NEW_AGENT_MANDATORY.md`](../../docs/NEW_AGENT_MANDATORY.md).
-> Правило изоляции: CBR-пакет — только локально в `sanctuary/canon/custom/cosmo/cbr-specific/` (rule `cbr-cosmo-only.mdc`).
+> Правила поведения: [`../../docs/internal/agent-primer.md`](../../docs/internal/agent-primer.md).
+> Правило изоляции: CBR-пакет — только локально в `sanctuary/custom/cosmoport2/cosmo/cbr-specific/` (rule `cbr-cosmo-only.mdc`).
 
 ## ready — скопировано как есть (✓ сделано)
 
@@ -35,5 +35,5 @@ _Пока пусто._
 
 ## drop — не копируем (purge отдельной сессией)
 
-- CBR-пакет `sanctuary/canon/custom/cosmo/cbr-specific/*` — только локально, в git не коммитить (rule `cbr-cosmo-only.mdc`).
+- CBR-пакет `sanctuary/custom/cosmoport2/cosmo/cbr-specific/*` — только локально, в git не коммитить (rule `cbr-cosmo-only.mdc`).
 - Остальной `docs/research/*` (не-cosmoport) — RnD-шляпа, остаётся в legacy.

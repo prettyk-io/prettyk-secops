@@ -45,5 +45,5 @@ const result = await page.evaluate(() => {
 console.log(JSON.stringify(result, null, 2));
 
 // Сохраняем ID для дальнейшего использования
-writeFileSync('D:\\prettyk-dev\\orchestrator\\tests\\autotest_check_id.txt', result.id);
+writeFileSync('D:\\prettyk-secops\\orchestrator\\tests\\autotest_check_id.txt', result.id);
 console.log('Saved check_id:', result.id);

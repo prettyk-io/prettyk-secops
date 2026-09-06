@@ -31,7 +31,7 @@
 
 1. Boss присылает verified → Keeper сортирует friend/possible/seeker.
 2. Карточка `ready` попадает сюда → ждёт ближайшего 2FA.
-3. Keeper с Максимом: беседа → 2FA → зачисление в `sanctuary/canon/`.
+3. Keeper с Максимом: беседа → 2FA → зачисление в `sanctuary/pure/`.
 
 ## Текущий реестр заявок (19 авг 2026)
 
@@ -96,3 +96,11 @@ BRAND-VIDEO, MONITOR-MAINPAGE-AND-SPACE, MONITOR-HEADER, MONITOR-AUTH-BINDING, M
 | [`CANVAS-EXECUTION-WAR-ROOM.md`](CANVAS-EXECUTION-WAR-ROOM.md) | Тактический War Room и интерактивный конвейер запуска на @xyflow/react | `evolve` |
 | [`SCENARIO-CANVAS-STEP-DECK.md`](SCENARIO-CANVAS-STEP-DECK.md) | Капсульные ноды сценариев и Pill-Based конструктор шагов на @xyflow/react | `evolve` |
 | [`LAB-INTRUDER-STATION.md`](LAB-INTRUDER-STATION.md) | Станция Intruder /lab (canon-request) | `evolve` |
+
+### Cross-PO — исходящие в соседние обители
+
+> Не inbox для 2FA Обители: это outward-запросы другим PO (`Battlecruiser`/CP, `Arbiter`/QGFCS). Статус ведёт отправитель.
+
+| Файл | Тезис | Статус |
+|---|---|---|
+| [`CP-ADMIN-SEC-DECISION-SURFACE.md`](CP-ADMIN-SEC-DECISION-SURFACE.md) | Решение Admin Sec go/no-go — только в QGFCS; коробка выпускает Exception Act как evidence-факт; CP потребляет clearance. Выровнять до joint 2FA контрактов A/B | `ready` — ждёт ответ Cosmo |

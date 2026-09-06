@@ -24,8 +24,8 @@
 - `docs/wired.json` — текущая простыня JSON Schema (2729 строк, смесь регламента и редактора)
 - Прямой маппер вместо RJSF, форма ≠ JSON Schema
 - JSON-манифест — reference, не генератор формы
-- `sanctuary/canon/wired-sot.md` — роли: JSON-манифест → FE маппер, Pydantic → оркестратор
-- `sanctuary/canon/split-canon.md` — CANON BASE vs INTEGRATION
+- `manifest-sot.md` — роли: JSON-манифест → FE маппер, Pydantic → оркестратор
+- `split-canon.md` — CANON BASE vs INTEGRATION
 - `.opencode/rules/schema-sot.mdc` — «JSON-манифест runtime-контракта, vnext форма = прямой маппер»
 - `orchestrator/models/wired.py` — Pydantic-модели исполнения
 - `cosmo/src/` — текущий работоспособный фронт с RJSF (легаси-рестор от 14 авг)
@@ -68,6 +68,8 @@
 | `ajv`, `json-schema`, `json-schema-merge-allof` | npm | Валидация схемы |
 | `docs/wired.json` как JSON Schema | 1 | Заменяется на `docs/regulation.schema.json` + `docs/editor-payload.json` |
 
+<!-- VOID 2026-09-01: editor-payload.json никогда не материализовался (255-байт скелет от 19.08, удалён). Split-канон в этой части не исполнен: единственная schema — docs/wired.json. -->
+
 ## Что Pydantic продолжает делать
 
 | Модель | Зачем |
@@ -85,3 +87,5 @@
 - Интерпретатор (`orchestrator/core/controller.py`) не переписывается — только адаптируется к новому формату на входе.
 - Pydantic-модели эволюционируют, не переписываются с нуля.
 - Wire-парсинг и «чистый степ» — бонус следующего шага, не этого.
+
+<!-- VOID 2026-09-01: docs/regulation.schema.json удалён (сэмпл-payload, 467 байт, ноль консьюмеров в коде). Пример wired — docs/wired.json + manifest.md. -->

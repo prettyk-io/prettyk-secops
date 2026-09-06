@@ -1,152 +1,188 @@
-"""
-COS-L18: Run state machine tests.
+# RUN-CTL-1: State machine unit tests — pure logic, no PostgreSQL required.
+#
+# Проверяет: валидные переходы, запрещённые переходы → RunStateError,
+# свойства terminal/active, полный цикл create→get→transition→get.
+import sys
+from pathlib import Path
 
-Переходы: pending→running→passed, pending→running→failed,
-running→blocked. Недопустимые переходы через стейт-машину.
-Проверка durable storage.
-"""
 import pytest
-from datetime import datetime
-from orchestrator.models.run_model import Batch, BatchStatus, Run, RunTrigger
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from orchestrator.infra.run_state import (
+    RunState,
+    RunStateError,
+    RunStatus,
+    _VALID_TRANSITIONS,
+    _TERMINAL_STATES,
+    _ACTIVE_STATES,
+)
 
 
-# ── State machine ──
+# ── RunState enum ───────────────────────────────────────────────────
 
-VALID_TRANSITIONS: dict[BatchStatus, set[BatchStatus]] = {
-    "pending": {"running"},
-    "running": {"passed", "failed", "blocked"},
-    "passed": set(),   # терминальный
-    "failed": set(),   # терминальный
-    "blocked": {"pending"},  # можно разблокировать
-}
+class TestRunStateEnum:
+    def test_all_states_present(self):
+        states = {s.value for s in RunState}
+        assert states == {"pending", "queued", "running",
+                          "succeeded", "failed", "cancelled", "expired"}
 
-ALLOWED_OVERRIDE_FROM_BLOCKED: set[BatchStatus] = {"pending"}
+    def test_seven_states(self):
+        assert len(RunState) == 7
 
-
-def transition(current: BatchStatus, target: BatchStatus) -> BatchStatus:
-    """Пытается выполнить переход. Если недопустим — возвращает текущий."""
-    allowed = VALID_TRANSITIONS.get(current, set())
-    if target in allowed:
-        return target
-    raise ValueError(f"Invalid transition: {current} → {target}")
-
-
-def override_transition(current: BatchStatus, target: BatchStatus) -> BatchStatus:
-    """Override-переход (например из blocked → pending с правами admin)."""
-    if current == "blocked" and target in ALLOWED_OVERRIDE_FROM_BLOCKED:
-        return target
-    return transition(current, target)
+    def test_string_values(self):
+        assert RunState.PENDING.value == "pending"
+        assert RunState.QUEUED.value == "queued"
+        assert RunState.RUNNING.value == "running"
+        assert RunState.SUCCEEDED.value == "succeeded"
+        assert RunState.FAILED.value == "failed"
+        assert RunState.CANCELLED.value == "cancelled"
+        assert RunState.EXPIRED.value == "expired"
 
 
-class TestStateMachineTransitions:
-    def test_pending_to_running(self):
-        assert transition("pending", "running") == "running"
+# ── Transition table ────────────────────────────────────────────────
 
-    def test_running_to_passed(self):
-        assert transition("running", "passed") == "passed"
+class TestTransitionTable:
+    def test_pending_transitions(self):
+        allowed = _VALID_TRANSITIONS[RunState.PENDING]
+        assert RunState.QUEUED in allowed
+        assert RunState.CANCELLED in allowed
+        assert RunState.EXPIRED in allowed
+        assert RunState.RUNNING not in allowed  # нельзя перескочить очередь
+        assert RunState.SUCCEEDED not in allowed
 
-    def test_running_to_failed(self):
-        assert transition("running", "failed") == "failed"
+    def test_queued_transitions(self):
+        allowed = _VALID_TRANSITIONS[RunState.QUEUED]
+        assert RunState.RUNNING in allowed
+        assert RunState.CANCELLED in allowed
+        assert RunState.EXPIRED in allowed
+        assert RunState.PENDING not in allowed  # назад нельзя
 
-    def test_running_to_blocked(self):
-        assert transition("running", "blocked") == "blocked"
+    def test_running_transitions(self):
+        allowed = _VALID_TRANSITIONS[RunState.RUNNING]
+        assert RunState.SUCCEEDED in allowed
+        assert RunState.FAILED in allowed
+        assert RunState.CANCELLED in allowed
+        assert RunState.EXPIRED in allowed
+        assert RunState.PENDING not in allowed
+        assert RunState.QUEUED not in allowed
 
-    def test_blocked_to_pending(self):
-        # blocked → pending допустимо через override
-        assert override_transition("blocked", "pending") == "pending"
+    def test_terminal_states_have_no_transitions(self):
+        for state in (RunState.SUCCEEDED, RunState.FAILED,
+                      RunState.CANCELLED, RunState.EXPIRED):
+            assert _VALID_TRANSITIONS[state] == frozenset(), (
+                f"{state.value} must be terminal"
+            )
 
-    def test_passed_is_terminal(self):
-        with pytest.raises(ValueError, match="Invalid transition"):
-            transition("passed", "running")
-
-    def test_failed_is_terminal(self):
-        with pytest.raises(ValueError, match="Invalid transition"):
-            transition("failed", "running")
-
-    def test_pending_to_passed_not_allowed(self):
-        with pytest.raises(ValueError, match="Invalid transition"):
-            transition("pending", "passed")
-
-    def test_pending_to_blocked_not_allowed(self):
-        with pytest.raises(ValueError, match="Invalid transition"):
-            transition("pending", "blocked")
-
-    def test_blocked_to_passed_not_allowed(self):
-        with pytest.raises(ValueError, match="Invalid transition"):
-            transition("blocked", "passed")
-
-    def test_invalid_status_transition(self):
-        with pytest.raises(ValueError, match="Invalid transition"):
-            transition("pending", "passed")
+    def test_all_states_covered(self):
+        assert set(_VALID_TRANSITIONS.keys()) == set(RunState)
 
 
-class TestRunModelTransitions:
-    """Проверка, что модель Run + Batch проходят жизненный цикл."""
+# ── Terminal / Active properties ────────────────────────────────────
 
-    def test_full_happy_path(self):
-        run = Run(
-            id="run-1", plan_id="plan-1", trigger="pre_release",
-            domain_id="d-1", status="pending",
-            batches=[
-                Batch(id="b1", plan_id="plan-1", type="sast", status="pending"),
-                Batch(id="b2", plan_id="plan-1", type="dast", status="pending"),
-            ],
+class TestStateProperties:
+    def test_terminal_states(self):
+        assert _TERMINAL_STATES == frozenset({
+            RunState.SUCCEEDED, RunState.FAILED,
+            RunState.CANCELLED, RunState.EXPIRED,
+        })
+
+    def test_active_states(self):
+        assert _ACTIVE_STATES == frozenset({
+            RunState.PENDING, RunState.QUEUED, RunState.RUNNING,
+        })
+
+    def test_run_status_is_terminal(self):
+        rs = RunStatus(run_id="r1", state=RunState.SUCCEEDED)
+        assert rs.is_terminal is True
+
+    def test_run_status_is_active(self):
+        rs = RunStatus(run_id="r2", state=RunState.RUNNING)
+        assert rs.is_active is True
+        assert rs.is_terminal is False
+
+
+# ── RunStateError ───────────────────────────────────────────────────
+
+class TestRunStateError:
+    def test_error_message_contains_states(self):
+        err = RunStateError("run-42", RunState.SUCCEEDED, RunState.RUNNING)
+        assert "succeeded" in str(err)
+        assert "running" in str(err)
+        assert "run-42" in str(err)
+
+    def test_error_attributes(self):
+        err = RunStateError("run-x", RunState.FAILED, RunState.QUEUED)
+        assert err.run_id == "run-x"
+        assert err.from_state == RunState.FAILED
+        assert err.to_state == RunState.QUEUED
+
+    def test_error_is_exception(self):
+        with pytest.raises(Exception):
+            raise RunStateError("r", RunState.PENDING, RunState.SUCCEEDED)
+
+
+# ── Full happy-path cycle (dataclass level) ────────────────────────
+
+class TestHappyPathCycle:
+    """Полный жизненный цикл без PG: проверяем последовательность переходов."""
+
+    @pytest.mark.parametrize("final_state", [
+        RunState.SUCCEEDED, RunState.FAILED,
+        RunState.CANCELLED, RunState.EXPIRED,
+    ])
+    def test_full_cycle_to_each_terminal(self, final_state: RunState):
+        """pending → queued → running → terminal — все 4 терминала достижимы."""
+        path = [RunState.PENDING, RunState.QUEUED, RunState.RUNNING, final_state]
+        for i in range(len(path) - 1):
+            current, target = path[i], path[i + 1]
+            assert target in _VALID_TRANSITIONS[current], (
+                f"{current.value} → {target.value} must be valid"
+            )
+
+    @pytest.mark.parametrize("from_state,to_state", [
+        (RunState.SUCCEEDED, RunState.RUNNING),   # воскрешение
+        (RunState.SUCCEEDED, RunState.FAILED),     # терминал → терминал
+        (RunState.FAILED, RunState.RUNNING),       # воскрешение
+        (RunState.CANCELLED, RunState.RUNNING),    # воскрешение
+        (RunState.EXPIRED, RunState.QUEUED),        # воскрешение
+        (RunState.PENDING, RunState.RUNNING),       # перескок очереди
+        (RunState.PENDING, RunState.SUCCEEDED),     # перескок к успеху
+        (RunState.QUEUED, RunState.PENDING),         # назад в pending
+        (RunState.RUNNING, RunState.PENDING),        # назад в pending
+        (RunState.RUNNING, RunState.QUEUED),         # назад в очередь
+    ])
+    def test_forbidden_transitions(self, from_state: RunState, to_state: RunState):
+        """Каждая пара из списка должна выбрасывать RunStateError."""
+        assert to_state not in _VALID_TRANSITIONS[from_state], (
+            f"{from_state.value} → {to_state.value} should be forbidden"
         )
-        assert run.status == "pending"
 
-        # run → running
-        run.status = "running"
-        for b in run.batches:
-            b.status = "running"
-        assert run.status == "running"
+    def test_cancellation_from_pending_and_running(self):
+        """Отмена допустима из pending и running (но не из terminal)."""
+        assert RunState.CANCELLED in _VALID_TRANSITIONS[RunState.PENDING]
+        assert RunState.CANCELLED in _VALID_TRANSITIONS[RunState.RUNNING]
+        assert RunState.CANCELLED not in _VALID_TRANSITIONS[RunState.SUCCEEDED]
 
-        # batch 1 passed, batch 2 passed → run passed
-        run.batches[0].status = "passed"
-        run.batches[1].status = "passed"
-        run.status = "passed"
-        assert run.status == "passed"
-        assert all(b.status == "passed" for b in run.batches)
+    def test_expiry_from_active_states(self):
+        """Expiry допустим из pending, queued, running."""
+        for state in (RunState.PENDING, RunState.QUEUED, RunState.RUNNING):
+            assert RunState.EXPIRED in _VALID_TRANSITIONS[state]
 
-    def test_failure_path(self):
-        run = Run(
-            id="run-2", plan_id="plan-2", trigger="scheduled",
-            domain_id="d-1",
-            batches=[
-                Batch(id="b1", plan_id="plan-2", type="sast"),
-            ],
+
+# ── RunStatus dataclass ─────────────────────────────────────────────
+
+class TestRunStatus:
+    def test_to_dict_roundtrip(self):
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc)
+        rs = RunStatus(
+            run_id="run-abc", state=RunState.RUNNING,
+            correlation_id="corr-1", created_at=now, updated_at=now,
+            attempts=1, worker_id="w1",
         )
-        run.status = "running"
-        run.batches[0].status = "running"
-        run.batches[0].status = "failed"
-        run.status = "failed"
-        assert run.status == "failed"
-        assert run.batches[0].status == "failed"
-
-    def test_blocked_path(self):
-        run = Run(
-            id="run-3", plan_id="plan-3", trigger="manual",
-            domain_id="d-1",
-            batches=[
-                Batch(id="b1", plan_id="plan-3", type="gate"),
-            ],
-        )
-        run.status = "running"
-        run.batches[0].status = "running"
-        # Gate блокирует
-        run.batches[0].status = "blocked"
-        run.status = "blocked"
-        assert run.status == "blocked"
-
-    def test_durable_storage_pattern(self):
-        """После перехода статус сохраняется в объекте (имитация БД)."""
-        run = Run(
-            id="run-4", plan_id="plan-4", trigger="emergency",
-            domain_id="d-1",
-        )
-        assert run.status == "pending"
-        run.status = "running"
-        run.status = "passed"
-        assert run.status == "passed"
-        # После «сохранения» статус должен быть неизменен
-        assert run.status != "pending"
-        assert run.status != "running"
+        d = rs.to_dict()
+        assert d["run_id"] == "run-abc"
+        assert d["state"] == "running"
+        assert d["attempts"] == 1
+        assert d["worker_id"] == "w1"

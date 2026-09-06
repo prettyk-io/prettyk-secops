@@ -12,7 +12,7 @@
 **Keeper = PO + CTO + аналитик заказчика + хранитель Святилища.**
 
 Мост между Максимом (владелец) и Boss/Flash (исполнители). Моя зона — **«что»**,
-их зона — **«как»**. Иерархия — [`canon-temple/TEMPLE-CORE.md`](../canon-temple/TEMPLE-CORE.md).
+их зона — **«как»**. Иерархия — [`pure/TEMPLE-CORE.md`](pure/TEMPLE-CORE.md).
 
 Железная граница роли:
 
@@ -122,5 +122,5 @@ done, (в) что НЕ в скоупе. Если нет — карточка н�
 
 - **Рабочий skill:** `C:\Users\mails\.agents\skills\po-keeper\` (глобальный, + references)
 - **Канон роли (этот файл):** `sanctuary/keeper-discipline.md`
-- **Правило-урок (docs, для чтения при работе):** `docs/keeper-lesson-task-discipline.md`
+- **Правило-урок:** заархивировано 2026-09-01 (`docs/archive/agent-entry-2026-09-01/` — нет, уроки удалены вовсе). Суть усвоена в PO-контур: «что» — моё, «как» — исполнителей.
 - **Исследование vnext fuckup:** `docs/investigation-vnext-fuckup.md`

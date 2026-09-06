@@ -55,7 +55,8 @@ Monitor вырастает из «одна страница на один про
 | Компонент | Что |
 |---|---|
 | Split admin | `live_pers_acl.ADMIN_USERS = frozenset({"admin", "admin_appsec", "admin_abnormal"})` |
-| Bind-токен | HMAC-SHA256: `issue_monitor_token(run_id, owner, ttl=…)` → `<payload_b64>.<signature_b64>`, payload `{run_id, owner, exp}`, TTL 7 дней (`KDT_MONITOR_TOKEN_TTL`) |
+<!-- VOID 2026-09-01: Bind-токен (issue_monitor_token / PK_MONITOR_TOKEN_TTL) никогда не реализован в коде — только friend-request MONITOR-AUTH-BINDING. Строка ниже — план, не факт. -->
+| Bind-токен | HMAC-SHA256: `issue_monitor_token(run_id, owner, ttl=…)` → `<payload_b64>.<signature_b64>`, payload `{run_id, owner, exp}`, TTL 7 дней (`PK_MONITOR_TOKEN_TTL`) |
 | Проверка | `verify_monitor_token(token, run_id)` + `may_view_run(caller, run_id, token)` (приоритет token → ACL) |
 | Mint | `POST /api/monitor/token` (playground) + авто-mint в `lab_run.start_run()` |
 | Live server | Читает `?token=` из query → приоритет bind-токен → `X-KDT-User`/cookie |
@@ -82,7 +83,7 @@ Monitor вырастает из «одна страница на один про
 |---|---|
 | `monitor_retention.py` | `purge_by_run_id(run_id, dry_run=False)` — удаляет NDJSON+sidecar+MP4, не трогая meta; `lazy_sweep_monitor_artifacts()` — TTL-свип раз в час |
 | `live_server.py` | `GET /api/artifacts/orphans`, `POST /api/artifacts/purge`, `POST /api/monitor/purge`, `POST /api/artifacts/hold` |
-| Env | `KDT_MONITOR_RETENTION_DAYS` (default 7) |
+| Env | `PK_MONITOR_RETENTION_DAYS` (default 7) |
 | Тесты | `test_monitor_retention.py` — 18 passed (вместе с ACL) |
 
 ---

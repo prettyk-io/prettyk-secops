@@ -14,8 +14,8 @@
 > Единственный источник канонической истины: [`../sanctuary/pure/INDEX.md`](../sanctuary/pure/INDEX.md).  
 > Полный архив закрытых исторических эпиков: [`archive/backlog-archive-2026-08.md`](archive/backlog-archive-2026-08.md).  
 > Алтарь побед: [`../sanctuary/ALTAR.md`](../sanctuary/ALTAR.md).  
-> **🏛️ Cosmoport 2.0 — отдельный бэклог:** [`sanctuary/custom/cosmoport2/backlog.md`](../sanctuary/custom/cosmoport2/backlog.md). Все Cosmo-карточки, фазы, DoD и распределение ведутся там, не в очереди PrettyK.
-> Срез очереди: **31 августа 2026 года**. Состояние PrettyK SecOps: **OnHold, активных карточек нет**. Ветка: **`dev`**.
+> **🚀 PrettyK Airlock (Cosmo) — суверенная репа и бэклог:** `D:\prettyk-airlock\docs\BACKLOG.md`. Карточки допуска и межзонного трансфера ведутся там (PO Cosmo). Cross-product handoff: Коробка → Hub → Airlock.
+> Срез очереди: **03 сентября 2026 года**. Состояние PrettyK SecOps: **OnHold** (обновлено 2026-09-03: `PK-ALIAS-1/2` и `PK-BRIDGE-1/2` закрыты ✅; открыта `PK-ALIAS-3` под решение Максима; гэпы G1–G7 подготовлены под Contract A). Ветка: **`dev`**.
 
 ---
 
@@ -40,10 +40,52 @@
 > На текущем срезе нет задач в работе, задач на делегирование или незакрытого PrettyK-WIP.
 > Ниже сохранены исторические планы, acceptance-заметки и решения прошлых дней. Они не образуют текущую очередь и не являются поручениями братьям.
 
+### 🔵 В РАБОТЕ (2026-09-04) — PK-C-009: Contract A finalize (Studio outputs DTO для Hub intake)
+
+> Директива PK-DIR-008 · Мастер-карточка: `D:\prettyk.io\docs\backlog\MASTER.md` → **PK-C-009**.
+> Evidence база: `docs/research/2026-09-03-studio-outputs-contract-a-inventory.md` (гэпы G1–G7).
+> Блокирует: PK-C-008 (HUB-001 в PrettyK Hub).
+
+| # | Карточка | Кому | Граница / DoD |
+|---|---|---|---|
+| **PK-C-009.1** | **Joint 2FA Contract A** | Keeper | Vector + Keeper + Arbiter + Cosmo согласовали DTO и hand-off протокол |
+| **PK-C-009.2** | **Заморозить DTO `StudioRunOutput`** | Boss | Pydantic v2 модели + JSON Schema в `orchestrator/contracts/` (`run_id`, `findings[]`, `evidence_refs[]`, `box_verdict`, `act_ref`, `gost_act`, `provenance_tuple`), закрыты гэпы G1–G3, G6 |
+| **PK-C-009.3** | **Канонический документ контракта** | Boss | `docs/contracts/studio-to-hub-intake.md`: DTO спецификация, hand-off протокол, error cases, SLA, эталонный payload |
+| **PK-C-009.4** | **Hand-off в Hub** | Keeper | Arbiter подтверждает чтение DTO, HUB-001 разблокирован |
+| **PK-C-009.5** | **Вычистка references `qgfcs` → `hub`** | Flash | grep `qgfcs` по активному контуру secops (AGENTS.md, ALTAR.md, MAP.md, INDEX.md) = 0 stale упоминаний |
+
+### 🔵 ОТКРЫТО (2026-09-02) — хвосты PK-DIR-004
+
+> GitHub-репа = `prettyk-io/prettyk-secops`; `prettyk-dev` — только redirect.
+> Инвентарь протухших упоминаний: `D:\prettyk\docs\research\2026-09-02-po-routing-and-compaction-tuning.md` § Stale prettyk-dev Alias Inventory.
+
+| # | Карточка | Кому | Граница / DoD |
+|---|---|---|---|
+| **PK-ALIAS-3** | **Миграции, не переименования (каждое — отдельное решение Максима / 2FA).** Sonar-ключи `prettyk-dev-backend` / `prettyk-dev-frontend` (`sonar-access.md` в корне репы + сам Sonar); Keycloak realm `prettyk-dev` (`frontend/src/auth/keycloakAuth.ts`, `frontend/scripts/setup-keycloak.ts`, `assign-keycloak-roles.ts`, `docker-compose.keycloak.yml`). | Boss (после явного решения Максима) | новые ключи/realm создаются миграцией; старые не сломаны молча; статус отражён в Sonar/Keycloak |
+
+### 🟡 FOLLOW-UPS / Кандидаты Contract A (гэпы G1–G7 из PK-BRIDGE-1/2)
+
+> Выявлены Aspect'ом в `docs/research/2026-09-03-studio-outputs-contract-a-inventory.md`.  
+> Ждут согласования мостового контракта (Joint 2FA с Vector, Arbiter, Cosmo).
+
+| # | Кандидат | Суть | Решение |
+|---|---|---|---|
+| **G1** | Корреляция fuzz `run_id` | Fuzz `run_id` (`fuzz-<module>-<hash>`) ≠ runner `run_id` (12 hex). Связи нет. | В контракте: `scan_id = runner run_id`; в fuzz-pack добавить `parent_run_id` |
+| **G2** | Персистентный `act_ref` | Акт рендерится on-demand, нет стабильного ID в хранилище. | Ввести `act_ref = sha256(gost_model)`, сохранять `act.html` + `act.json` в Evidence |
+| **G3** | Канонизация `artifact://` URI | URI-схема `artifact://` используется только в одном месте (scanner.xml alert instance). | Зафиксировать схему как стандарт для Contract A |
+| **G4** | Исходящий подписанный webhook | Студия только принимает входящие и шлёт в Dojo. Нет исходящих подписных колбэков. | Создать outbound envelope `{contract_version, scan_id, event_type, signature, ts}` + HMAC-клиент |
+| **G5** | Идемпотентность приёма у соседей | Студия имеет `run_idempotency` на запуск, но соседям нужна идемпотентность по `scan_id`. | Зафиксировать `scan_id = run_id` студии и правило дедупликации на приёмнике |
+| **G6** | Публикация кортежа PASS scope | Кортеж DeltaProvenance существует, но не зафиксирован как контрактный scope PASS. | Опубликовать `(project_id, release_domain, wired_hash, target_scope_hash, scan_profile, finding_schema_version)` |
+| **G7** | Профиль API отдачи (pull vs push) | Live API — loopback/UI инструмент, а не внешний контрактный интерфейс. | Решить: использовать pull-эндпоинты Live API или выделить contract-API эндпоинты |
+
 ### 🟢 CLOSED
 
-| # | Эпик | Статус | Кому | Тесты |
-|---|---|---|---|---|---|
+| # | Эпик / Задача | Статус | Кому | Артефакт / Тесты |
+|---|---|---|---|---|
+| **PK-ALIAS-1** | Airgap-бандл и Helm под prettyk-secops / prettyk-allure3 | ✅ | Flash | `bundle.ps1 -DryRun` ✅, `bundle-v2.ps1 -DryRun` ✅, Helm values |
+| **PK-ALIAS-2** | Док-вычистка stale prettyk-dev и void :5051 | ✅ | Flash | `sanctuary/ALTAR.md`, `stand-port-meta.md`, 0 stale в живом каноне |
+| **PK-BRIDGE-1** | Инвентаризация выходов Studio для Contract A | ✅ | Aspect | `docs/research/2026-09-03-studio-outputs-contract-a-inventory.md` (Q1–Q4) |
+| **PK-BRIDGE-2** | Airgap-транспортная способность для Contract A | ✅ | Aspect | `docs/research/2026-09-03-studio-outputs-contract-a-inventory.md` (§5, Q5) |
 | **PK-WB** | WORKBENCH — Editor ↔ Studio единый CheckWorkspace | ✅ | Boss + Flash | 352 · tsc 0 |
 | **PK-ER** | EDITOR REBORN — Explorer, навигация, visual rails | ✅ | Boss + Flash | 52 · tsc 0 |
 | **CDP-WIRE** | LIVE DISCOVERY — CDP → Wire → Studio + Editor | ✅ | Boss + Flash + Luna | 127+73+54 |
@@ -382,7 +424,7 @@ assertions, trace intent_received→…→evidence_evaluated прослежив�
 
 ## 3½. Перепокрытие UI-тестами → вынесено в отдельный бэклог
 
-> По просьбе Максима — отдельный бэклог: [`atest-backlog.md`](atest-backlog.md).
+> По просьбе Максима — отдельный бэклог: `docs/archive/agent-entry-2026-09-01/atest-backlog.md` (архив).
 > Ответственный Buddy (prettyk-atest) как босс. Там: что уже покрыто (64 теста),
 > 6 кандидатов на добивку, формат ведения и контекст BUD-E2E.
 

@@ -29,14 +29,14 @@ Set-Location ..
 | Путь | Назначение |
 |---|---|
 | `orchestrator/main.py` | публичная точка запуска alpha |
-| `orchestrator/models/` | Pydantic-модели манифеста |
+| `orchestrator/models/` | Pydantic-модели wired |
 | `orchestrator/core/` | Controller, язык, MethodId, DataStream |
 | `orchestrator/adapters/` | интеграции с WebDriver, сканером, HTTP, данными и DefectDojo |
 | `orchestrator/tools/` | генераторы каталогов; опц. API `data_playground.py` |
 | `orchestrator/tests/` | Python-тесты |
 | `frontend/` | Форма + Редактор-IDE (PrettyK / WireK; без UI-песочницы) |
 | `frontend/src/generated/` | производные schema, keywords и MethodId |
-| `docs/wired.json` | редактируемая JSON Schema |
+| `docs/wired.json` | legacy JSON Schema и reference |
 | `services/` | лабораторные compose-конфигурации и allure3-secops |
 | `reports/` | локальные результаты; не исходный код |
 
@@ -49,7 +49,7 @@ Set-Location ..
 .\.venv\Scripts\python.exe orchestrator\main.py --wired <path> --validate-only
 ```
 
-`--validate-only` — JSON Schema (`docs/wired.json`) + Pydantic + конструкторы языка; без Controller/Scanner/Grid. Код выхода: `0` ок, `1` ошибки валидации. Фикстуры: `orchestrator/fixtures/validate_ok.json`, `validate_bad_ctor.json`.
+`--validate-only` — wired validation + Pydantic + конструкторы языка; без Controller/Scanner/Grid. Код выхода: `0` ок, `1` ошибки валидации. Фикстуры: `orchestrator/fixtures/validate_ok.json`, `validate_bad_ctor.json`.
 
 `orchestrator/cli/parser.py` не подключён к `main.py`. Его параметры `--scanner-host`, `--scanner-port` и `--headless` не являются публичным контрактом.
 
@@ -59,13 +59,13 @@ Set-Location ..
 
 | Контракт | Редактируемый источник | Производный артефакт |
 |---|---|---|
-| схема манифеста (SoT формы/Редактора) | `docs/wired.json` | `frontend/src/generated/wired.schema.json` |
+| legacy schema/reference формы | `docs/wired.json` | `frontend/src/generated/wired.schema.json` |
 | runtime-модель | `orchestrator/models/wired.py` | — |
 | исполнение | `orchestrator/core/controller.py` и адаптеры | — |
 | wire-сигнатуры | публичные методы адаптеров и Reporter | `frontend/src/generated/keywords.json` |
 | MethodId | `orchestrator/core/method_id.py` | `frontend/src/generated/method_ids.json` |
 | слова языка | `orchestrator/core/language_words.py` и парсер | подсказки frontend |
-| `run_summary.json` | `orchestrator/utils/reporter.py` | `docs/run_summary.schema.json` — машиночитаемое описание фактического payload |
+| `run_summary.json` | `orchestrator/utils/reporter.py` | структура описана в `reporter.py` (write_run_summary_from_controller) |
 
 Производные JSON-файлы запрещено править вручную.
 
@@ -149,15 +149,15 @@ docker compose -f services\docker-compose.defectdojo.yml config
 
 Интеграционный прогон выполняется по [`stand.md`](stand.md). Запуск active scan не входит в обычный unit test и требует разрешённой цели.
 
-## 7. Изменение манифеста
+## 7. Изменение wired-контракта
 
 Изменение поля считается контрактным и выполняется в одной поставке:
 
-1. получить решение владельца и изменить `docs/wired.json`;
+1. получить решение владельца и изменить Pydantic-модель `orchestrator/models/wired.py`;
 2. изменить Pydantic-модель либо явно оставить поле декларативным;
 3. определить поведение Controller;
 4. добавить тесты валидного и невалидного ввода;
-5. обновить `docs/wired.md` (и Форма/Редактор UX, если меняется поверхность авторства);
+5. обновить `docs/prettyk.md` и `docs/manifest.md` (а также Форму/Редактор UX, если меняется поверхность авторства);
 6. перегенерировать schema (`npm run generate:schema`);
 7. проверить **Форму**, **Редактор**, tests и build (зона FE — ветка `frontend`).
 
@@ -181,7 +181,7 @@ docker compose -f services\docker-compose.defectdojo.yml config
 3. Не дублировать весь домен в корневом автодополнении.
 4. Добавить тест resolve и тест раскладки (`tests/test_methods_placement_smoke.py`).
 5. Обновить `method_ids.json`.
-6. Проверить автодополнение вручную по [`../logic-construction.md`](../logic-construction.md) §2.1 и [`stand.md`](stand.md) §4.1.
+6. Проверить автодополнение вручную по справочник языка (Studio autocomplete: `frontend/src/generated/keywords.json`) и [`stand.md`](stand.md) §4.1.
 
 Предпочтительные ворота:
 
@@ -190,7 +190,7 @@ docker compose -f services\docker-compose.defectdojo.yml config
 - `Сессия` — `browser|*`;
 - `Драйвер` — `webdriver|*`.
 
-Первая стрелка AC в Monaco Редактора (Ctrl+Space): язык + `?` + короткий ui + `Проверить*` + ворота + `Операция`. Не светить util dump, сырой `webdriver|…`, корневые `ПолучитьАлерты` / `Отчётscanner` / `Паук*`. Resolve при execute шире AC. Исторические идеи переименования RU без смены wire — в [`history/2026-08-editor-wave/`](history/2026-08-editor-wave/README.md).
+Первая стрелка AC в Monaco Редактора (Ctrl+Space): язык + `?` + короткий ui + `Проверить*` + ворота + `Операция`. Не светить util dump, сырой `webdriver|…`, корневые `ПолучитьАлерты` / `Отчётscanner` / `Паук*`. Resolve при execute шире AC. Исторические идеи переименования RU без смены wire — в `sanctuary/ALTAR.md`.
 
 ## 10. Изменение языка
 
@@ -203,7 +203,7 @@ docker compose -f services\docker-compose.defectdojo.yml config
 3. изменить executor;
 4. добавить положительные, граничные и отрицательные тесты;
 5. обновить автодополнение;
-6. обновить `logic-construction.md`;
+6. обновить справочник ключевых слов (`frontend/src/generated/keywords.json`);
 7. проверить, что старые алиасы не расширяют канон случайно.
 
 Запрещено разбирать новый синтаксис набором несвязанных regex в Controller, если он относится к LanguageEngine.
@@ -224,4 +224,4 @@ docker compose -f services\docker-compose.defectdojo.yml config
 - **Ширина WireK:** выезжает за сплиттер до 50% ширины всего экрана (`window.innerWidth` / `workspaceRef`), со свободой растягивания поверх центральной области.
 
 
-Текущая инженерная очередь — [`backlog.md`](backlog.md); долг Release 1 — историческая запись в [`history/releases/alpha-1.0.0/`](history/releases/alpha-1.0.0/README.md).
+Текущая инженерная очередь — [`backlog.md`](backlog.md); долг Release 1 — закрыт; история релизов в `sanctuary/ALTAR.md`.

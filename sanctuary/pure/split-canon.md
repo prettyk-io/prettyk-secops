@@ -10,7 +10,7 @@
 | ID | Продукт | Назначение | Где живёт | CI/Пайплайн |
 |---|---|---|---|---|
 | `prettyk-pure` | **CANON BASE** | Коробка для отрасли. Без кастомизации под конкретный банк. | `dev` (работа) → `main` (stable срез) | **Нет спецификации** — коробка поддерживает любой рантайм (GitHub Actions, GitLab CI, Jenkins). |
-| `cosmo` | **INTEGRATION** | Пилот для банка (ЦБ). Кастомизация поверх коробки. | каталоги `cosmo/` + `sanctuary/canon/custom/cosmo/` (не ветка) | **GitLab CI** (на базе DjiGit — РФ-approved форк GitLab, далее по тексту «GitLab»). |
+| `cosmo` | **INTEGRATION** | Пилот для банка (ЦБ). Кастомизация поверх коробки. | каталоги `cosmo/` + `sanctuary/custom/cosmoport2/cosmo/` (не ветка) | **GitLab CI** (на базе DjiGit — РФ-approved форк GitLab, далее по тексту «GitLab»). |
 
 **Правило:** CANON-код никогда не импортирует из INTEGRATION. INTEGRATION может импортировать из CANON.
 
@@ -26,6 +26,8 @@
 | `editor.*` | PrettyK, auth-модули, цепочки, фаззеры, data-модули | **Полный** (все модули) | **Тот же** (общий редактор) |
 
 **Формат хранения:** плоский typed JSON (без `oneOf`/`allOf`/`$ref`). JSON Schema выпиливается как формат — заменяется на `docs/regulation.schema.json` + `docs/editor-payload.json`.
+
+<!-- VOID 2026-09-01: editor-payload.json никогда не материализовался (255-байт скелет от 19.08, удалён). Split-канон в этой части не исполнен: единственная schema — docs/wired.json. -->
 
 **Что это значит для матрицы ниже:**
 - Регламент (форма) из §2 «INTEGRATION» — это `regulation.*` разной полноты
@@ -61,7 +63,7 @@
 | App code → deploy chain | `frontend/src/admin/appCode.ts`, `buildWiredFromDeploy.ts` | Специфика ЦБ |
 | Deploy registry | `frontend/src/admin/deployStore.ts` | Банковские деплои |
 | Admin page | `frontend/src/shell/AdminPage.tsx` | Частично общее см. ниже |
-| Docs ЦБ | `sanctuary/canon/custom/cosmo/cbr-specific/` | Только локально, не в git |
+| Docs ЦБ | `sanctuary/custom/cosmoport2/cosmo/cbr-specific/` | Только локально, не в git |
 | Wired demo | `docs/wired.json` | Демо под банк |
 
 ### Спорные — частично общее
@@ -93,11 +95,11 @@ dev ─────────────────────────>
 
 **Порядок:** CANON правится в `dev` → FF в `main` по вехам. Версии фиксируются тегами на `main` (`vX.Y`), не отдельными ветками. Отдельных `release-vX` / `stable` / `hotfix` веток нет.
 
-**Интеграция Cosmo** — не ветка, а каталоги в дереве (`cosmo/`, `sanctuary/canon/custom/cosmo/`). Кастомизация правится в `dev` поверх коробки; ништяки дозревают до коробки по маршруту feature-routing (см. отдельный backlog).
+**Интеграция Cosmo** — не ветка, а каталоги в дереве (`cosmo/`, `sanctuary/custom/cosmoport2/cosmo/`). Кастомизация правится в `dev` поверх коробки; ништяки дозревают до коробки по маршруту feature-routing (см. отдельный backlog).
 
 ## 4. Что запрещено
 
-- `git push` в `cosmo` без проверки: не тащить CBR-пакет (`sanctuary/canon/custom/cosmo/cbr-specific/`) в git.
+- `git push` в `cosmo` без проверки: не тащить CBR-пакет (`sanctuary/custom/cosmoport2/cosmo/cbr-specific/`) в git.
 - Импорт из `Cosmo*` в общий код.
 - CBR-пакет — только локально, не в git (rule `cbr-cosmo-only.mdc`).
 - Упоминание конкретного банка в CANON BASE.

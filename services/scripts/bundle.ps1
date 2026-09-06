@@ -15,7 +15,8 @@
 # pip install / npm install / playwright install / scanner-плагины — только на этапе сборки.
 param(
     [string]$Version = "0.1.0",
-    [string]$OutDir = "bundle-out"
+    [string]$OutDir = "bundle-out",
+    [switch]$DryRun
 )
 
 $ErrorActionPreference = "Stop"
@@ -27,9 +28,8 @@ $BundleName = "prettyk-pure-v$Version-airgap"
 # Образы для включения в бандл.
 $Images = @(
     @{ Name = "pk-playwright-authoring"; Tag = "local"; ComposeSvc = "playwright-authoring"; ComposeFile = "session-template.yml" },
-    @{ Name = "pk-allure3-secops";        Tag = "local"; ComposeSvc = "allure3-secops";        ComposeFile = "base.yml" },
-    @{ Name = "pk-allure-light-secops";   Tag = "local"; ComposeSvc = "allure-light-secops";   ComposeFile = "base.yml" },
-    @{ Name = "pk-llm-server";            Tag = "dev";  ComposeSvc = "llm-server";             ComposeFile = "base.yml" },
+    @{ Name = "prettyk-allure3";          Tag = "local"; ComposeSvc = "prettyk-allure3";        ComposeFile = "docker-compose.base.yml" },
+    @{ Name = "pk-llm-server";            Tag = "dev";  ComposeSvc = "llm-server";             ComposeFile = "docker-compose.base.yml" },
     @{ Name = "pk-api-lab";               Tag = "local"; ComposeSvc = "pk-api-lab";             ComposeFile = "session-template.yml" }
 )
 
@@ -42,23 +42,40 @@ $PullImages = @(
 Write-Host "=== PrettyK Pure Airgap Bundle v$Version ==="
 
 # 1. Подготовка
-if (Test-Path $BundleWork) { Remove-Item -Recurse -Force $BundleWork }
-New-Item -ItemType Directory -Path "$BundleWork\images" -Force | Out-Null
-New-Item -ItemType Directory -Path "$BundleWork\compose" -Force | Out-Null
-New-Item -ItemType Directory -Path "$BundleWork\scripts" -Force | Out-Null
-New-Item -ItemType Directory -Path "$BundleWork\migrations" -Force | Out-Null
+if ($DryRun) {
+    Write-Host "[bundle] Dry-run mode: skipping bundle dir preparation"
+} else {
+    if (Test-Path $BundleWork) { Remove-Item -Recurse -Force $BundleWork }
+    New-Item -ItemType Directory -Path "$BundleWork\images" -Force | Out-Null
+    New-Item -ItemType Directory -Path "$BundleWork\compose" -Force | Out-Null
+    New-Item -ItemType Directory -Path "$BundleWork\scripts" -Force | Out-Null
+    New-Item -ItemType Directory -Path "$BundleWork\migrations" -Force | Out-Null
+}
 
 # 2. Сборка build-образов
-Write-Host "[bundle] build images"
+Write-Host "[bundle] build images$(if ($DryRun) { ' (dry-run)' })"
 Push-Location $RepoRoot
 try {
     foreach ($img in $Images) {
-        Write-Host "  build $($img.Name):$($img.Tag)"
-        docker compose -f "services\$($img.ComposeFile)" build $img.ComposeSvc
+        Write-Host "  build $($img.Name):$($img.Tag) [svc: $($img.ComposeSvc)]"
+        $composePath = "services\$($img.ComposeFile)"
+        if (-not (Test-Path $composePath) -and (Test-Path "services\docker-compose.$($img.ComposeFile)")) {
+            $composePath = "services\docker-compose.$($img.ComposeFile)"
+        }
+        if ($DryRun) {
+            docker compose -f $composePath build --dry-run $img.ComposeSvc
+        } else {
+            docker compose -f $composePath build $img.ComposeSvc
+        }
         if ($LASTEXITCODE -ne 0) { throw "build failed: $($img.Name)" }
     }
 } finally {
     Pop-Location
+}
+
+if ($DryRun) {
+    Write-Host "[bundle] Dry-run complete. All compose services validated successfully."
+    return
 }
 
 # 3. Pull внешних образов

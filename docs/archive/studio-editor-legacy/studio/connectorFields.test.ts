@@ -53,7 +53,7 @@ describe('connectorFields admin-init', () => {
       ...DEFAULT_AIRGAP_CONNECTORS,
       ssh_host: 'jump.lab',
       ssh_port: '22',
-      ssh_username: 'kdt',
+      ssh_username: 'pk',
     });
     const next = applyConnectorFieldsPatch(emptyConnectorFields(), {
       connector_type: 'SSH',

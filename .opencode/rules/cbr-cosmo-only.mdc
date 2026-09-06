@@ -1,5 +1,5 @@
 ---
-description: CBR/ЦБ пакет живёт только локально в sanctuary/custom/cosmo/cbr-specific; в git не коммитить
+description: CBR/ЦБ пакет живёт только локально в sanctuary/custom/cosmoport2/cosmo/cbr-specific; в git не коммитить
 alwaysApply: true
 ---
 
@@ -8,13 +8,13 @@ alwaysApply: true
 Отраслевой пакет бланков/ассетов под кейс Банка России (ЦБ) живёт **только на диске**:
 
 ```
-sanctuary/custom/cosmo/cbr-specific/
+sanctuary/custom/cosmoport2/cosmo/cbr-specific/
 ```
 
 ## Правила
 
 - В git (`dev`, `main`, любые ветки) каталог **не коммитить**, не `git add -f`, не stash, не cherry-pick.
-- Путь закрыт в корневом `.gitignore` (`/sanctuary/custom/cosmo/cbr-specific/`).
+- Путь закрыт в корневом `.gitignore` (`/sanctuary/custom/cosmoport2/cosmo/cbr-specific/`).
 - Источник правды о структуре — `README.md` внутри пакета.
 - Бэкап вне репы: `%USERPROFILE%\cbr-backup-*.zip` (собирать `git archive` / вручную перед важными правками).
 

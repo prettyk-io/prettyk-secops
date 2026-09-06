@@ -2,7 +2,7 @@
 
 > **Дата:** 28 августа 2026
 > **Статус:** research / PoC design, не канон
-> **Связанные материалы:** [`exploratory-page-model-poc.md`](../exploratory-page-model-poc.md), [`pw-browser-core.md`](../../sanctuary/pure/pw-browser-core.md), [`2026-08-28-session-orchestration-and-multi-substrate-architecture.md`](2026-08-28-session-orchestration-and-multi-substrate-architecture.md)
+> **Связанные материалы:** [`exploratory-page-model-poc.md`](../archive/handoffs-2026-08/exploratory-page-model-poc.md), [`pw-browser-core.md`](../../sanctuary/pure/pw-browser-core.md), [`2026-08-28-session-orchestration-and-multi-substrate-architecture.md`](2026-08-28-session-orchestration-and-multi-substrate-architecture.md)
 
 ## 1. Решение
 

@@ -10,15 +10,15 @@
 ```text
 1. Read THIS file.
 2. Load global skill `ru-text` → chat with Maxim = clear Russian.
-3. Read `internal/owner-voice.md` (#maxim-principles, #non-routine-delivery).
+3. Read `internal/agent-primer.md` (owner profile: речевые привычки, инварианты).
 4. Track BASE always. FE as OPTION (below) — only when task signals geometry/Reglament/form.
-5. Docs / canon → `sanctuary/canon/INDEX.md` + rule `docs-canon.mdc`.
+5. Docs / canon → `sanctuary/pure/INDEX.md` + rule `docs-canon.mdc`.
 6. Open ONLY your track's docs. Then follow the chain.
 ```
 
 Hard rules: [`../AGENTS.md`](../AGENTS.md).  
-Owner voice: [`internal/owner-voice.md`](internal/owner-voice.md).  
-Two-contour posture (product vs bankvm infra): [`agent-posture.md`](agent-posture.md).
+Owner profile: [`internal/agent-primer.md`](internal/agent-primer.md).  
+Two-contour posture (product vs bankvm infra): see `.opencode/rules/`.
 
 ### Language with Maxim
 
@@ -36,7 +36,7 @@ Two-contour posture (product vs bankvm infra): [`agent-posture.md`](agent-postur
 | **Deep / Pro / Архитектор** | **DeepSeek V4 Pro** | **Heavy Execution, Boss (90%), Flash (80%), Keeper (30%).** Плотная кодовая реализация, сквозной рефакторинг по модулям, монолитные патчи без потери контекста. Медленно, без vision, но надёжно и глубоко. |
 | **Skip** | DeepSeek V4 Flash | Not used. |
 
-Swearing from Maxim ≠ anger ≠ P0. Displeasure is said **explicitly**. Full profile: owner-voice.
+Swearing from Maxim ≠ anger ≠ P0. Displeasure is said **explicitly**. Full profile: `internal/agent-primer.md`.
 
 ---
 
@@ -49,8 +49,8 @@ Swearing from Maxim ≠ anger ≠ P0. Displeasure is said **explicitly**. Full p
 | [`#git-light`](#git-light) | Git |
 | [`#cursor-favorites`](#cursor-favorites) | `/babysit` `/split-to-prs` |
 | [`#fe-triggers`](#fe-triggers) | When to enable OPTION FE |
-| [owner `#maxim-principles`](internal/owner-voice.md#maxim-principles) | Minimalism / no hacks / debt todo |
-| [owner `#non-routine-delivery`](internal/owner-voice.md#non-routine-delivery) | Waves / tests / commit >100 LOC |
+| owner principles (`internal/agent-primer.md`) | Minimalism / no hacks / debt todo |
+| non-routine delivery (`internal/agent-primer.md`) | Waves / tests / commit >100 LOC |
 
 ---
 
@@ -63,18 +63,18 @@ Load / obey — **no** FE OPTION yet:
 | Load | Path |
 |---|---|
 | **1. `ru-text`** | global skill — Russian chat quality |
-| Owner principles | [`internal/owner-voice.md`](internal/owner-voice.md) |
+| Owner principles | [`internal/agent-primer.md`](internal/agent-primer.md) |
 | Rules | `.opencode/rules/` — git-vise, no-stash, stand-lab-ops, schema-sot, VPS/tests, product-pm |
 | Git | See [`#git-light`](#git-light) below — commit >100 LOC, push only on order |
 | Sonar | **Only on Maxim's order.** Inline: `orchestrator/tools/sonar_scan.ps1 -Target backend|frontend`. No auto-scan. |
-| `sanctuary/canon/custom/cosmo/cbr-specific/` | Rule `cbr-cosmo-only.mdc` — local only, never commit to git. |
+| `sanctuary/custom/cosmoport2/cosmo/cbr-specific/` | Rule `cbr-cosmo-only.mdc` — local only, never commit to git. |
 | Queue | [`backlog.md`](backlog.md) |
-| Feature tunnel | [`feature-routing-backlog.md`](feature-routing-backlog.md) + [`sanctuary/canon/feature-admission.md`](sanctuary/canon/feature-admission.md) — route-вердикт перед фичей (`pure`/`custom`/`evolve`), extract-карта для ништяков из Cosmo |
+| Feature tunnel | [`feature-routing-backlog.md`](feature-routing-backlog.md) + [`../sanctuary/pure/feature-admission.md`](../sanctuary/pure/feature-admission.md) — route-вердикт перед фичей (`pure`/`custom`/`evolve`), extract-карта для ништяков из Cosmo |
 | Lab / prettyk-lab | Global skill **`prettyk-lab`** (Docker stack: SonarQube, Selenium Grid, scanner, Juice Shop, Allure3). Startup: `lab_up.ps1` ([`stand.md`](stand.md)). Service `allure3-secops` (`:5050/`, канон). Legacy `allure-light-secops` (`:5051/`). |
-| Posture / JTBD | [`agent-posture.md`](agent-posture.md) — product vs bankvm; compare via S1–S7 only |
+| Posture / JTBD | two-contour: product vs bankvm infra (`.opencode/rules/`) |
 | Non-routine research | Global skill `research-and-sense` → google practices before coding |
 
-**Do not open on BASE:** FE-related docs, `legacy/debug-tools`, `frontend/`.
+**Do not open on BASE:** FE-related docs, `frontend/` internals.
 
 ### Maxim principles (one screen)
 
@@ -113,7 +113,7 @@ Measure UI — numbers, hit-stack, reflow. Not "patch Studio blind".
 
 **Локаторная стратегия:** global skill **`playwright-skill/core/locators.md`** — role+name → label → text → tippy → testid → CSS (last).
 
-**Geometry tools (legacy reference):** `legacy/debug-tools/core/` — vitest tests for computed CSS, hit-test, reflow. Playbooks in `legacy/debug-tools/tdd-skills/`:
+**Geometry tools (legacy reference):** удалены; контракты геометрии живут в Studio-тестах (`frontend/src/**/*.test.ts`)/`:
 - `css-discrepancy-playbook.md` — CSS not applied
 - `hit-reflow-playbook.md` — click/overlay/resize
 
@@ -130,7 +130,7 @@ Product work under `frontend/` only.
 **Браузер:** global skill **`browser-hands-pure`** (localhost Editor `:5173`).
 
 **Frontend chain:**
-1. `docs/frontend-spec.md` + `docs/frontend-passport.md` — specs
+1. `docs/editor-reborn.md` + `sanctuary/pure/studio-stack.md` — specs
 2. Geometry tools: `legacy/debug-tools/core/` (vitest contracts: spacing, clickability, overlap, reflow) + playbooks `legacy/debug-tools/tdd-skills/{css-discrepancy,hit-reflow}-playbook.md`
 3. Reglament ~50%: `legacy/docs/internal/portal-layout-autotests.md` → vitest geometry
 4. Geometry / click / resize → ALSO FE_DEBUG chain above
@@ -142,7 +142,7 @@ Product work under `frontend/` only.
 - Не патчить CSS до контракта / skeleton relations
 - После **инвазивного FE-захода** → **DoD живого стенда** (below)
 
-Passport: [`frontend-passport.md`](frontend-passport.md) · [`frontend-spec.md`](frontend-spec.md).
+Editor state: [`editor-reborn.md`](editor-reborn.md) · stack: [`../sanctuary/pure/studio-stack.md`](../sanctuary/pure/studio-stack.md).
 
 ### DoD: живой Editor после инвазивного FE (обязательно)
 
@@ -203,10 +203,10 @@ No awesome deploy skills. Lab: `lab_up.ps1`. VPS: order only (don't mention depl
 
 | Topic | Doc |
 |---|---|
-| Owner / principles / delivery | [`internal/owner-voice.md`](internal/owner-voice.md) |
-| Pack for a friend | [`internal/agent-skills-pack.md`](internal/agent-skills-pack.md) |
-| Industry notes | [`internal/agent-skills-industry.md`](internal/agent-skills-industry.md) |
-| Geometry tooling (vitest + playbooks) | [`../legacy/debug-tools/tdd-skills/`](../legacy/debug-tools/tdd-skills/) |
+| Owner / principles / delivery | [`internal/agent-primer.md`](internal/agent-primer.md) |
+| Pack for a friend | global skills (`C:\Users\mails\.agents\skills\`) |
+| Industry notes | `docs/research/` |
+| Studio UI tests | `frontend/src/**/*.test.ts` |
 | Wave queue | [`backlog.md`](backlog.md) |
 
 ## Mantra

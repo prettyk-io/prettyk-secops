@@ -1,6 +1,6 @@
 # AUTH-ROLES-5: внедрение 5 ролей
 
-> `lane: ready` · 19 авг 2026. Канон: [`sanctuary/canon/auth-roles.md`](../../sanctuary/canon/auth-roles.md).
+> `lane: ready` · 19 авг 2026. Канон: [`auth-roles.md`](../../auth-roles.md).
 
 ## Что есть сейчас
 3 учётки в `auth.ts` (appsec-operator, appsec-admin, admin-abnormal). `RoleCaps` поддерживает 3 профиля.

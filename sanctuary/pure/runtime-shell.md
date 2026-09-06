@@ -36,15 +36,15 @@
 
 | Переменная | Смысл |
 |---|---|
-| `KDT_WEBDRIVER_MODE` | `remote` \| `local` (не поле манифеста) |
-| `KDT_SELENIUM_URL` | хаб Grid; legacy alias `KDT_SELENOID_URL` |
-| `KDT_SELENIUM_VIDEO` | `0` — без записи sidecar |
-| `KDT_LIVE` / `KDT_LIVE_PORT` | монитор вкл/порт (default `8767`); `0` — без HTTP |
-| `KDT_PROXY_HOST_FROM_CONTAINER` | подмена loopback прокси для remote WD |
+| `PK_WEBDRIVER_MODE` | `remote` \| `local` (не поле манифеста) |
+| `PK_SELENIUM_URL` | хаб Grid; legacy alias `KDT_SELENOID_URL` |
+| `PK_SELENIUM_VIDEO` | `0` — без записи sidecar |
+| `PK_LIVE` / `PK_LIVE_PORT` | монитор вкл/порт (default `8767`); `0` — без HTTP |
+| `PK_PROXY_HOST_FROM_CONTAINER` | подмена loopback прокси для remote WD |
 
 ## 4. Live: idle vs work
 
-1. **Work** — прогон с `KDT_LIVE≠0`: runner пишет diary/meta; конец прогона **не** гасит HTTP.
+1. **Work** — прогон с `PK_LIVE≠0`: runner пишет diary/meta; конец прогона **не** гасит HTTP.
 2. **Idle** — `run_live_idle.py`: long-lived оболочка; порт занят → soft-bind (NDJSON на диск, процесс жив).
 3. Чёрный iframe — норма при headless / нет сессии / idle без браузера.
 4. Два вида UI (рабочая сцена / наблюдатель) — lab UX, не SLA/SOC.
@@ -58,8 +58,8 @@
 |---|---|
 | scanner + WebDriver | Нет прогона UI/DAST-контура |
 | Grid | Можно `local` WD |
-| Live | Можно `KDT_LIVE=0` |
-| Allure / Dojo | Опциональны; `KDT_REQUIRE_*=1` делает fail-closed |
+| Live | Можно `PK_LIVE=0` |
+| Allure / Dojo | Опциональны; `PK_REQUIRE_*=1` делает fail-closed |
 
 ## 6. Честные границы
 

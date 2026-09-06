@@ -14,7 +14,7 @@ flowchart TB
   LabUp --> Demon[scanner_demon]
   LabUp --> Juice[Juice_Shop]
   LabUp --> UI[Editor_plus_playground]
-  LabUp --> Live[KDT_Live_idle]
+  LabUp --> Live[PK_Live_idle]
   LabUp -.->|flag| Dojo[DefectDojo]
 ```
 

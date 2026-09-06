@@ -3223,7 +3223,7 @@ class Controller:
     Интегрирован с Allure для отчётности (ручной режим, без pytest).
 
 Особенности:
-    - AllureReporter + AllureFileLogger + KdtAllureListener (utils/allure_runtime.py).
+    - AllureReporter + AllureFileLogger + PkAllureListener (utils/allure_runtime.py).
     - Listener нужен: без него allure.step/attach не попадают в result.json.
     - Каждый шаг сценария — `with allure.step(step_name)`; аттачи внутри шага.
     - В консоль логируется человекочитаемое имя шага (step_name).

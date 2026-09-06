@@ -45,7 +45,7 @@ Cosmo (портал ЦБ)
 
 - **Не** брендируем Cosmo; это чужой портал, не наш SKU.
 - **Не** делаем mock прод-API Cosmo нормой — mock = заглушка до реального API.
-- **Не** тащим CBR-пакет (`sanctuary/canon/custom/cosmo/cbr-specific/`) в git — только локально (rule `cbr-cosmo-only.mdc`).
+- **Не** тащим CBR-пакет (`sanctuary/custom/cosmoport2/cosmo/cbr-specific/`) в git — только локально (rule `cbr-cosmo-only.mdc`).
 - **Не** делаем второй `docs/wired.json` — SoT один.
 - **Не** создаём git worktree / `fork/*` / `pack/*` без явного приказа.
 
@@ -58,7 +58,7 @@ Cosmo (портал ЦБ)
 | Admin Deploy registry | mock | `frontend/src/admin/deployStore.ts` |
 | CI пака | GitLab CI (DjiGit — РФ-approved форк) | [`canon/split-canon.md`](canon/split-canon.md) §2.5 |
 | ТЗ на интеграцию | skeleton | [`TZ-INTEGRATION.md`](TZ-INTEGRATION.md) |
-| Документация ЦБ | `sanctuary/canon/custom/cosmo/cbr-specific/**` | только локально, не в git |
+| Документация ЦБ | `sanctuary/custom/cosmoport2/cosmo/cbr-specific/**` | только локально, не в git |
 
 ## 6. Следующие шаги пилота
 
@@ -70,4 +70,4 @@ Cosmo (портал ЦБ)
 ## 7. Правило утечки
 
 Банкинг как домен ИБ — ок. Утечка **этого** пака/кейса в общий контур (dev/main/docs) — нет.
-CBR-пакет (`sanctuary/canon/custom/cosmo/cbr-specific/`) — только локально, не в git. См. rule `cbr-cosmo-only.mdc`.
+CBR-пакет (`sanctuary/custom/cosmoport2/cosmo/cbr-specific/`) — только локально, не в git. См. rule `cbr-cosmo-only.mdc`.

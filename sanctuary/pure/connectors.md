@@ -29,7 +29,7 @@ flowchart LR
 | `ИнициализироватьКоннектор` | bind слота | — |
 | `ЗапроситьМетрикиКоннектора` | Prom pack | live Prom URL |
 | `ВыполнитьКомандуSSH` | remote cmd | SSH creds |
-| `ЗапроситьЛогиКоннектора` | SIEM/logs query | `KDT_CONNECTOR_LOGS=1` |
+| `ЗапроситьЛогиКоннектора` | SIEM/logs query | `PK_CONNECTOR_LOGS=1` |
 | `ПроверитьОчередьКоннектора` | MQ TCP/topic probe | MQ env |
 | `ПроверитьБазуКоннектора` | DB TCP/RO probe | DB env |
 

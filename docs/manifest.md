@@ -1,6 +1,6 @@
-# Манифест PrettyK
+# Wired — параметры и сценарии PrettyK
 
-> Граница SoT (hub): [`canon/wired-sot.md`](canon/wired-sot.md) (**CANON**). Machine-контракт: Pydantic `orchestrator/models/wired.py`. Legacy JSON Schema: [`wired.json`](wired.json).
+> Граница SoT (hub): [`../sanctuary/pure/manifest-sot.md`](../sanctuary/pure/manifest-sot.md) (**CANON**). Machine-контракт: Pydantic `orchestrator/models/wired.py`. Legacy JSON Schema: [`wired.json`](wired.json).
 
 Манифест — JSON-файл с параметрами окружения, правилами безопасности и сценариями. Его можно создать в Редакторе или собрать программно по JSON Schema [`wired.json`](wired.json).
 
@@ -80,7 +80,7 @@
 | `webswing_session_timeout_min` | число | тайм-аут Webswing |
 | `debug_mode` | bool, default `false` | режим отладки: пауза Live, all-failsafe, без idle/work kill; допуск VOID |
 
-Remote- или local-WebDriver выбирается переменной `KDT_WEBDRIVER_MODE`, а не полем манифеста.
+Remote- или local-WebDriver выбирается переменной `PK_WEBDRIVER_MODE`, а не полем манифеста.
 
 ## `security_configuration`
 
@@ -143,7 +143,7 @@ Studio синхронизирует его с названием папки. Б�
 
 `continue_on_failure` на **сценарии** — scenario failsafe: падение не валит этап-1
 (остальные сценарии продолжают). Авторский маркер в canvas: первая строка
-`<!>` (см. [справочник языка](reference/language.md)); Редактор синхронизирует
+`<!>` (см. Studio autocomplete); Редактор синхронизирует
 флаг с маркером. Не путать с `>?` / `failsafe` на **шаге**.
 
 В шаге обязателен только `constructor`. Остальные поля:
@@ -154,7 +154,7 @@ Studio синхронизирует его с названием папки. Б�
 - `continue_on_failure` — продолжить после ошибки шага;
 - `save_as` — сохранить результат в поток данных.
 
-Синтаксис `constructor` описан в [справочнике языка](reference/language.md).
+Синтаксис `constructor` описан в Studio autocomplete (`frontend/src/generated/keywords.json`).
 
 ### Модели данных
 
@@ -266,7 +266,7 @@ Studio синхронизирует его с названием папки. Б�
 Машиночитаемые контракты:
 
 - [`wired.json`](wired.json) — JSON Schema;
-- [`run_summary.schema.json`](run_summary.schema.json) — итог прогона;
+- `run_summary.json` (пишется `reporter.py`) — итог прогона;
 - [`../frontend/src/generated/keywords.json`](../frontend/src/generated/keywords.json) — действия runtime;
 - [`../frontend/src/generated/method_ids.json`](../frontend/src/generated/method_ids.json) — команды PrettyK.
 

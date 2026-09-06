@@ -7,6 +7,25 @@
 
 ---
 
+## 📊 Статус исполнения (1 сентября 2026 — Волна 1, GLM-5.3-Flash workers)
+
+| Карточка | Статус | Кто | Доказательство |
+|---|---|---|---|
+| RUN-CTL-1 | ✅ DONE | Boss | `run_state.py` + `run_timeline.py`, 32 passed + 36 PG-ready (skip без PG), SELECT FOR UPDATE атомарность |
+| RUN-CTL-2 | ✅ DONE | Flash | `run_idempotency.py`, 12 passed, dedup-key sha256 + TTL 30с, nonce-фабрика |
+| RUN-CTL-3 | ✅ DONE | Flash | `run_queue.py` + `run_queue_position.py`, 19 passed, InMemory/Valkey dual backend, LMOVE backup recovery |
+| RUN-CTL-4 | ✅ DONE | Buddy | `run_dispatch.py`, 19 passed, WorkerRegistry/RunDispatcher, draining |
+| RUN-CTL-6 | ✅ DONE | Buddy | `retry_policy.py` + `retry_executor.py`, 32 passed, ErrorClass классификация, backoff 30с |
+| RUN-CTL-5 | 🔨 в работе | Luna | Lease bridge + Valkey Streams — отчёт ожидается |
+
+**Follow-ups волны 2:**
+- Integration facade: связать run_state + idempotency + queue + dispatch + retry в единый RunControlPlane, сквозные integration-тесты.
+- ConnectionRefusedError → TARGET (решение Buddy: acceptance-критерии авторитетнее текста спеки) — отразить в спецификации карточки при канонизации.
+- Boss заменил старый `test_run_state_machine.py` (тестировал `models.run_model.BatchStatus`, слой COS-L18) — проверено: `test_run_model.py` покрывает старый слой, разрыва нет.
+- TELEMETRY-1/2/3, EDGE-1/2, PROFILES-1 verification — не начаты, в волне 2.
+
+---
+
 ## Что здесь
 
 Полная нарезка карточек по четырём эпикам:

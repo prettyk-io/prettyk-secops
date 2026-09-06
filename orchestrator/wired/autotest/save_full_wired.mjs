@@ -33,7 +33,7 @@ wired.infrastructure.idle_timeout_min = 30;
 wired.meta.project_id = 'autotest-js-20260822';
 wired.meta.assessment_purpose = 'emergency';
 
-const path = 'D:\\prettyk-dev\\orchestrator\\wired\\autotest\\wired_full.json';
+const path = 'D:\\prettyk-secops\\orchestrator\\wired\\autotest\\wired_full.json';
 writeFileSync(path, JSON.stringify(wired, null, 2), 'utf-8');
 console.log('Saved', JSON.stringify(wired).length, 'bytes to', path);
 

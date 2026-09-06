@@ -33,7 +33,7 @@ flowchart LR
 ## 3. Тезисы
 
 1. Unsupported → `applied: false` + `notes[]`, не фейковый success.  
-2. Http bootstrap (`KDT_AUTH_BOOTSTRAP` default on) ≠ авто-scanner (`KDT_scanner_AUTH_BOOTSTRAP` default off).  
+2. Http bootstrap (`PK_AUTH_BOOTSTRAP` default on) ≠ авто-scanner (`PK_SCANNER_AUTH_BOOTSTRAP` default off).  
 3. API Key / Query Key / form / action — **не** «слот AUTH-12»: lab основа зачислена; residual UI/harden — QUEUE.  
 4. Не добрить enum «для красоты» без банка.  
 5. Детали keys/env/тесты — только [`auth-matrix.md`](../internal/auth-matrix.md).

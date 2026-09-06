@@ -81,7 +81,7 @@ npm run typecheck
 - Не использовать subagents и worktree.
 - Не commit/push/stash.
 - Не трогать `docs/wired.json`.
-- Не менять канон-документы в `sanctuary/canon/` без 2FA.
+- Не менять канон-документы в `sanctuary/pure/` без 2FA.
 - Не поднимать/не перезапускать стенд из-за shell abort. Для UI-проверки сначала проверить текущий Vite через `netstat -ano | findstr :5173`; при browser action прочитать skill `browser-hands-pure`.
 - Для кода: MAP → BATCH → VERIFY. Не делать широкие PowerShell regex-замены по TS/JSX.
 

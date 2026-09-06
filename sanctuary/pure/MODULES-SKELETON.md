@@ -37,7 +37,7 @@ flowchart TB
     Orch[Orchestrator]
     WD[WebDriver_plus_Grid]
     scanner[scanner_MITM_API]
-    Live[KDT_Live_shell]
+    Live[PK_Live_shell]
   end
   subgraph evidence [Evidence_gate]
     Allure[allure_light_secops]

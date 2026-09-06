@@ -155,7 +155,7 @@ frontend/playwright-report/
 
 # Отраслевой пакет бланков/ассетов (CBR / ЦБ) — только локально, в git не коммитить
 # (см. rule .opencode/rules/cbr-cosmo-only.mdc). Бэкап: %USERPROFILE%\cbr-backup-*.zip
-/sanctuary/custom/cosmo/cbr-specific/
+/sanctuary/custom/cosmoport2/cosmo/cbr-specific/
 
 
 # LLM model (QWEN3-ALERT-ASSISTANT) — 1.2GB, не коммитить

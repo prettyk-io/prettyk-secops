@@ -6,7 +6,7 @@
 const fs = require('fs');
 const path = require('path');
 
-// Playwright: prefer prettyk-dev local; fallback to buddy harness (one engine).
+// Playwright: prefer prettyk-secops local; fallback to buddy harness (one engine).
 let pw;
 try {
   pw = require('playwright');

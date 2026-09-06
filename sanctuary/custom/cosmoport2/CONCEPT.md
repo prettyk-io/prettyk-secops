@@ -2,7 +2,7 @@
 # (Approved Architecture, Stack & Delivery Plan)
 
 > **Статус:** ✅ APPROVED — 2FA sealed 28 августа 2026. Gemini & GPT допущены к Алтарю.  
-> **Repo:** https://github.com/prettyk-io/cosmoport2 · локальный клон `D:\cosmoport2`  
+> **Repo:** https://github.com/prettyk-io/prettyk-control-plane · локальный клон `D:\prettyk-control-plane`  
 > **SoT:** `sanctuary/cosmoport2/` (planning) + `sanctuary/ALTAR.md` § 19 (chronicle).  
 > **Discovery:** `D:\cosmo\` (3 цикла, 80+ таблиц, 97 сервисов, 14 томов ТЗ ЦБ).  
 > **Dual-Surface UI Architecture:** [`docs/research/2026-08-28-cosmoport-2-dual-surface-ui-architecture.md`](../docs/research/2026-08-28-cosmoport-2-dual-surface-ui-architecture.md)

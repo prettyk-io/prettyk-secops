@@ -1,11 +1,11 @@
 ﻿# Приказ 66 — старт стенда после перезагрузки
 
-> Канон-репо: `D:\prettyk-dev`. Старый `C:\Users\mails\Documents\prettyk-dev` — справочно, не стартовать оттуда.
+> Канон-репо: `D:\prettyk-secops`. Старый `D:\prettyk-dev` — переименован 01.09.2026.
 
 ## 1. Docker (основной стек)
 
 ```powershell
-cd D:\prettyk-dev\services
+cd D:\prettyk-secops\services
 docker network create pk-net 2>$null
 
 # Основной стек
@@ -18,9 +18,9 @@ docker ps --filter "name=selenium-hub" --format "{{.Status}}"
 ## 2. Dojo
 
 ```powershell
-# Файлы скопированы из старого репо единожды:
-#   D:\prettyk-dev\services\docker-compose.defectdojo.yml
-#   D:\prettyk-dev\services\defectdojo\.env.example
+# Файлы скопированы:
+#   D:\prettyk-secops\services\docker-compose.defectdojo.yml
+#   D:\prettyk-secops\services\defectdojo\.env.example
 
 docker compose -f docker-compose.defectdojo.yml up -d
 
@@ -32,7 +32,7 @@ curl.exe -sS --max-time 5 http://127.0.0.1:8081/ -o NUL -w "%{http_code}"
 
 ```powershell
 # Канон-способ (без окон):
-powershell -NoProfile -ExecutionPolicy Bypass -File "D:\prettyk-dev\orchestrator\tools\lab_ensure_ui.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -File "D:\prettyk-secops\orchestrator\tools\lab_ensure_ui.ps1"
 
 # Если нужен QWEN AI assistant:
 $env:PK_AI_ASSISTANT_ENABLED = "1"
@@ -47,7 +47,7 @@ docker ps --format "table {{.Names}}\t{{.Status}}"
 
 # Должны быть: selenium-hub, chrome, firefox, chrome-video (Grid)
 #   scanner, juice-shop, pk-api-lab (сканер/цель)
-#   allure3-secops, allure-light-secops (отчёты)
+#   prettyk-allure3 (канон :5050; порт :5051 свободен)
 #   defectdojo-* (6 штук)
 #   llm-server, llama-server, llama-server-reasoning (QWEN)
 #   sonarqube, sonarqube-db (SAST — если надо)

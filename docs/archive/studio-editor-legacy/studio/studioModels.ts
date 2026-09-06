@@ -35,15 +35,15 @@ export function modelPathForTab(tab: StudioTab): string | undefined {
 /** `pk://suite/pages|modules|scenarios/…` → tab id (для go-to-definition opener). */
 export function tabIdFromSuiteModelUri(uri: { toString(): string }): StudioTabId | undefined {
   const raw = uri.toString().split(/[?#]/, 1)[0] ?? '';
-  const page = /^(kdt|pk):\/\/suite\/pages\/(.+)\.(kdt|pk)$/i.exec(raw);
+  const page = /^pk:\/\/suite\/pages\/(.+)\.pk$/i.exec(raw);
   if (page?.[2] !== undefined) {
     return pageTabId(decodeURIComponent(page[2]));
   }
-  const mod = /^(kdt|pk):\/\/suite\/modules\/(\d+)\.(kdt|pk)$/i.exec(raw);
+  const mod = /^pk:\/\/suite\/modules\/(\d+)\.pk$/i.exec(raw);
   if (mod?.[2] !== undefined) {
     return moduleTabId(Number(mod[2]));
   }
-  const scenario = /^(kdt|pk):\/\/suite\/scenarios\/(\d+)\.(kdt|pk)$/i.exec(raw);
+  const scenario = /^pk:\/\/suite\/scenarios\/(\d+)\.pk$/i.exec(raw);
   if (scenario?.[2] !== undefined) {
     return scenarioTabId(Number(scenario[2]));
   }

@@ -36,7 +36,7 @@ flowchart LR
 | **static** | `bearer\|basic\|cookie\|header\|apikey\|querykey\|none` | Http bootstrap |
 | **chain** | HTTP call-chain + Capture → bearer | Http |
 | **compose** | `modules=id1,id2` или CSV active | static ∪ chain ∪ form/action |
-| **form** | Selenium login + locators `тип значение` | `KDT_AUTH_FORM_BROWSER=1` |
+| **form** | Selenium login + locators `тип значение` | `PK_AUTH_FORM_BROWSER=1` |
 | **action** | form + MFA TOTP/SMS + `otp_locator` | тот же browser gate |
 
 Browser cookies → Http jar **и** scanner Replacer `Cookie` (acceptance 37).  

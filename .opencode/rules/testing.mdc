@@ -1,5 +1,5 @@
 ﻿---
-description: Тесты prettyk-dev — pytest / vitest, политика прогона и написания тестов
+description: Тесты prettyk-secops — pytest / vitest, политика прогона и написания тестов
 globs: orchestrator/tests/**,frontend/src/**/*.test.ts,frontend/src/**/*.test.tsx,**/test_*.py
 alwaysApply: true
 ---
@@ -13,7 +13,7 @@ alwaysApply: true
 ## 2. Политика прогона тестов (Строго!)
 - **При изменениях и дебаге:** запускать тесты **строго ограниченно и точечно** (только изменяемый тест или конкретный файл, например `npx vitest run src/studio/StudioBlocksTree.test.tsx` или `pytest orchestrator/tests/test_specific.py`).
 - **ЗАПРЕЩЕНО гонять все тесты целиком** во время локальной разработки и отладки (`npm test` без параметров / полный `vitest run` / глобальный `pytest` без фильтра не запускать).
-- **Sonar dig / Open rematch:** сначала большой скоуп кода без прогона после каждого файла; тесты — **скопом в конце цикла** по зоне (список связанных test-файлов). Упало → чинишь → снова batch. Канон: [`docs/agent-entrypoint.md`](../../docs/agent-entrypoint.md) § Sonar.
+- **Sonar dig / Open rematch:** сначала большой скоуп кода без прогона после каждого файла; тесты — **скопом в конце цикла** по зоне (список связанных test-файлов). Упало → чинишь → снова batch. Канон: `sanctuary/pure/honest-contract.md` § Sonar.
 
 ## 3. Слои
 1. **Unit** — parse, MethodId, schema, language, factories.

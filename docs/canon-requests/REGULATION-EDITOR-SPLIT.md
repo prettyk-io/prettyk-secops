@@ -1,6 +1,6 @@
 ﻿# REGULATION-EDITOR-SPLIT: разделить Регламент и Редактор, выпилить RJSF окончательно
 
-`lane: ready` → **принят 15 авг 2026 (2FA одобрен).** Зачислен в hub как `CANON SEEKER`. См. `sanctuary/canon/regulation-editor-split.md`.
+`lane: ready` → **принят 15 авг 2026 (2FA одобрен).** Зачислен в hub как `CANON SEEKER`. См. `regulation-editor-split.md`.
 
 ## Тезис
 
@@ -17,10 +17,10 @@
 ## As-built якорь
 
 - `docs/wired.json` — текущая простыня JSON Schema (2729 строк, смесь регламента и редактора)
-- `sanctuary/canon/fe-vnext-architecture.md` §1 (14 решений) — прямой маппер вместо RJSF, форма ≠ JSON Schema
-- `sanctuary/canon/fe-vnext-architecture.md` §5 — «манифест больше не SoT как раньше»
-- `sanctuary/canon/wired-sot.md` — роли: JSON-манифест → FE маппер, Pydantic → оркестратор
-- `sanctuary/canon/split-canon.md` — CANON BASE vs INTEGRATION
+- ~~`sanctuary/canon/fe-vnext-architecture.md`~~ — файл не существует; решения в `sanctuary/pure/studio-stack.md`
+- «манифест больше не SoT» — зафиксировано в `sanctuary/pure/manifest-sot.md`
+- `sanctuary/pure/manifest-sot.md` — роли: JSON → FE маппер, Pydantic → оркестратор
+- `split-canon.md` — CANON BASE vs INTEGRATION
 - `.opencode/rules/schema-sot.mdc` — «JSON-манифест runtime-контракта, vnext форма = прямой маппер»
 - `orchestrator/models/wired.py` — Pydantic-модели исполнения
 - `cosmo/src/` — текущий работоспособный фронт с RJSF (легаси-рестор от 14 авг)
@@ -63,6 +63,8 @@
 | `ajv`, `json-schema`, `json-schema-merge-allof` | npm | Валидация схемы |
 | `docs/wired.json` как JSON Schema | 1 | Заменяется на `docs/regulation.schema.json` + `docs/editor-payload.json` |
 
+<!-- VOID 2026-09-01: editor-payload.json никогда не материализовался (255-байт скелет от 19.08, удалён). Split-канон в этой части не исполнен: единственная schema — docs/wired.json. -->
+
 ## Что Pydantic продолжает делать
 
 | Модель | Зачем |
@@ -80,3 +82,5 @@
 - Интерпретатор (`orchestrator/core/controller.py`) не переписывается — только адаптируется к новому формату на входе.
 - Pydantic-модели эволюционируют, не переписываются с нуля.
 - Wire-парсинг и «чистый степ» — бонус следующего шага, не этого.
+
+<!-- VOID 2026-09-01: docs/regulation.schema.json удалён (сэмпл-payload, 467 байт, ноль консьюмеров в коде). Пример wired — docs/wired.json + manifest.md. -->

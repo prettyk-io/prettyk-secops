@@ -8,7 +8,7 @@ alwaysApply: false
 
 ## Канон
 
-Сначала [`docs/agent-entry.md`](docs/agent-entry.md) → [`docs/prettyk.md`](docs/prettyk.md), `logic-construction.md`, код (`method_id.py`, `language_*`). Паспорт честен: Controller гоняет suites/keyword'и, не всю форму.
+Сначала [`docs/internal/agent-primer.md`](../../docs/internal/agent-primer.md) → [`docs/prettyk.md`](docs/prettyk.md), `logic-construction.md`, код (`method_id.py`, `language_*`). Паспорт честен: Controller гоняет suites/keyword'и, не всю форму.
 
 ## Ворота и MethodId
 

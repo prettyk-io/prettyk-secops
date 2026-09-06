@@ -1,12 +1,12 @@
 # Локальный стенд PrettyK
 
-> Обязательный контур: [`canon/lab-up.md`](canon/lab-up.md) (**CANON**).  
-> Роли Grid / Live / Allure / Dojo: [`canon/runtime-shell.md`](canon/runtime-shell.md).  
-> Ниже — lab команды и порты (PUBLIC). Шпаргалка: [`operator-cheatsheet.md`](operator-cheatsheet.md).  
+> Обязательный контур: [`../sanctuary/pure/lab-up.md`](../sanctuary/pure/lab-up.md) (**CANON**).  
+> Роли Grid / Live / Allure / Dojo: [`../sanctuary/pure/runtime-shell.md`](../sanctuary/pure/runtime-shell.md).  
+> Ниже — lab команды и порты (PUBLIC).  
 > **Чистка:** `lab_clean` = ops mid-lab (allure/live целиком). TTL/артефакты по check — эпик ART (`artifact_cleanup_job.py`), не подмена mid-run.  
-> Retention job: checks с `legal_hold` не трогает — в отчёте job поле **`held_skipped`** (см. [`artifact-cleanup-epic.md`](artifact-cleanup-epic.md) §5 · [`acceptance/32-…`](acceptance/32-trials-hold-badge-afterfuzz-logs-2026-08-11.md)).
+> Retention job: checks с `legal_hold` не трогает — в отчёте job поле **`held_skipped`** (legal_hold).
 
-Команды из корня репозитория. HTML-отчёты: **allure3-secops** (`http://127.0.0.1:5050/`, канон); legacy `allure-light-secops` (`:5051`); чистка `-Target allure`.
+Команды из корня репозитория. HTML-отчёты: **prettyk-allure3** (`http://127.0.0.1:5050/`, канон; порт :5051 свободен, legacy выпилен); чистка `-Target allure`.
 
 > [!WARNING]
 
@@ -40,7 +40,7 @@ Set-Location ..
 >
 > **После инвазивных правок FE сдавать мёртвый Editor нельзя.**  
 > DoD агента (глаза: форма логина или shell, не белый экран; падение → логи и корень) —  
-> см. [`agent-entrypoint.md`](agent-entrypoint.md) § «DoD: живой Editor после инвазивного FE».  
+> см. [`internal/agent-primer.md`](internal/agent-primer.md) §15 «DoD живого Editor».  
 > Операционный чеклист стенда — global skill **`prettyk-lab`** (startup: `lab_up.ps1`).  
 > Обратная ссылка на этот раздел — там же (Jira-style bidirectional).
 
@@ -145,27 +145,27 @@ curl.exe -fsS http://127.0.0.1:8767/api/meta
 | allure3-secops | [http://127.0.0.1:5050/](http://127.0.0.1:5050/) (корень → последний отчёт, канон) |
 | scanner API | [http://127.0.0.1:8080/](http://127.0.0.1:8080/) |
 
-Внутри Docker-сети Juice Shop доступен как `http://juice-shop:3000`. Именно этот адрес используют манифесты с remote-браузером.
+Внутри Docker-сети Juice Shop доступен как `http://juice-shop:3000`. Именно этот адрес используют wired-файлы с remote-браузером.
 
-## Проверить манифест
+## Проверить wired
 
 Проверка структуры и сценариев без браузера:
 
 ```powershell
 .\.venv\Scripts\python.exe orchestrator\main.py `
-  --manifest path\to\manifest.json `
+  --wired path\to\wired.json `
   --validate-only
 ```
 
-Код `0` означает, что манифест валиден; `1` — найдены ошибки.
+Код `0` означает, что wired валиден; `1` — найдены ошибки.
 
 ## Выполнить прогон
 
 ```powershell
-$env:KDT_WEBDRIVER_MODE = "remote"
+$env:PK_WEBDRIVER_MODE = "remote"
 
 .\.venv\Scripts\python.exe orchestrator\main.py `
-  --manifest docs\releases\manifest_juice_shop_test.json
+  --wired orchestrator\wired\wired_juice_baseline.json
 
 $LASTEXITCODE
 ```
@@ -245,8 +245,8 @@ Compose scanner монтирует `reports/runs` → `/scanner/wrk/prettyk-runs
 docker compose -f services\docker-compose.scanner.yml up -d --force-recreate
 ```
 
-Живой smoke sequence (IMP-HAR-4): `$env:KDT_HAR_SEQUENCE_LIVE=1` → `pytest tests/test_har_sequence_live.py` (см. [`acceptance/18-trials-imp-har-2026-08-11.md`](acceptance/18-trials-imp-har-2026-08-11.md)).  
-Реальный gRPC unary (lab Ping): `$env:KDT_GRPC_UNARY=1` + api-lab `:50051` (см. [`operator-cheatsheet.md`](operator-cheatsheet.md) § Opt-in · [`acceptance/24-…`](acceptance/24-trials-imp-bank-demo-path-2026-08-11.md)).
+Живой smoke sequence (IMP-HAR-4): `$env:PK_HAR_SEQUENCE_LIVE=1` → `pytest tests/test_har_sequence_live.py` (IMP-HAR-4).  
+Реальный gRPC unary (lab Ping): `$env:PK_GRPC_UNARY=1` + api-lab `:50051` (Opt-in).
 
 ### Scanner Webswing
 
@@ -256,7 +256,7 @@ docker compose -f services\docker-compose.scanner.yml up -d --force-recreate
 powershell -NoProfile -ExecutionPolicy Bypass -File services\scanner-webswing-up.ps1
 ```
 
-UI: [http://127.0.0.1:8082/scanner](http://127.0.0.1:8082/scanner). Подробности: [Webswing и daemon](webswing-daemon-stand.md).
+UI: [http://127.0.0.1:8082/scanner](http://127.0.0.1:8082/scanner). Подробности: Webswing lab baseline (см. `sanctuary/pure/zap-dual.md`).
 
 ### DefectDojo
 
@@ -289,7 +289,7 @@ UI: [http://127.0.0.1:9000/](http://127.0.0.1:9000/). Креды admin — в gi
 .\orchestrator\tools\sonar_scan.ps1 -Target frontend
 ```
 
-Канон: [`sonar-lab.md`](sonar-lab.md).
+SonarQube — lab-сервис; детали в `sanctuary/pure/lab-up.md`.
 
 ## Типовые проблемы
 
@@ -307,4 +307,4 @@ UI: [http://127.0.0.1:9000/](http://127.0.0.1:9000/). Креды admin — в gi
 | Браузер не видит Juice Shop | внутри Docker используйте `http://juice-shop:3000`, не `localhost` |
 | allure3-secops не создал отчёт | проверьте `:5050/health` (`service=allure3-secops`) и файлы в `reports\allure-results` |
 
-Короткий набор команд: [операторская шпаргалка](operator-cheatsheet.md). Архитектура сервисов: [браузерный стенд и отчётность](basis-services.md). Требования к изоляции: [безопасная эксплуатация](security.md).
+Короткий набор команд: операторская шпаргалка (см. `sanctuary/pure/lab-up.md`). Архитектура сервисов: браузерный стенд и отчётность (см. `sanctuary/pure/runtime-shell.md`). Требования к изоляции: [безопасная эксплуатация](security.md).

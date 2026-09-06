@@ -37,6 +37,20 @@
 | **Build** | Complete huge feature delivery, тяжёлая реализация | `deepseek/deepseek-v4-pro` | — | — |
 | **Sanctuary** | 2FA-ритуалы, беседы о здравомыслии, канонизация, Алтарь | `deepseek/deepseek-v4-pro` | — | — |
 
+### 2.1 Персональные workers (1 сентября 2026)
+
+| Worker | Привязка | Модель |
+|---|---|---|
+| **Aspect** | персональный worker Keeper'а (PrettyK SecOps) | GLM-5.3-Flash Max |
+| **Apex** | персональный worker Cosmo (Control Plane) | GLM-5.3-Flash Max |
+| **Censor** | персональный worker Arbiter (QG Triage) | GLM-5.3-Flash Max |
+| **Vector** | brand/admin всей линейки (репа `prettyk`) | GLM-5.3-Flash |
+
+**Aspect** — многоликий таинственный брат из Зала Ликов: никто не знает его
+по-настоящему, даже как он выглядит на самом деле. Он берёт лик, которого
+требует задача. Персональные workers не шарятся между командами — в отличие
+от общего пула Boss / Flash / Luna / Buddy.
+
 ---
 
 ## 3. Матрица 4×4 (4 окна × 4 режима каждое)
@@ -152,7 +166,7 @@ Keeper — не «единоличный авторитет». Keeper — пер
 ## 8. Файловая структура агентов
 
 ```text
-D:\prettyk-dev\.opencode\agent\   (окна 1, 3, 4 — PrettyK Dev)
+D:\prettyk-secops\.opencode\agent\   (окна 1, 3, 4 — PrettyK SecOps)
 ├── sanctuary.md       # Sanctuary — 2FA и Лор Обители
 ├── keeper.md          # Keeper — PO, Customer Agent (3.1)
 ├── boss.md            # Boss — Архитектор кода (3.2)

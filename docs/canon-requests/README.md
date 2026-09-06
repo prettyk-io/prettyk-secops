@@ -15,7 +15,7 @@
 
 1. Evolve canon-request дозревает → переводится в `ready`.
 2. Keeper поднимает ready-пакеты на лист тезисов перед 2FA.
-3. 2FA с Максимом → polish → зачисление в `sanctuary/canon/`.
+3. 2FA с Максимом → polish → зачисление в `sanctuary/pure/`.
 
 Снос/rewrite монолита — отклонять. Evolve canon-request **не** запускает полировку сам.
 

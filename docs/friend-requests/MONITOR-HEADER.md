@@ -1,6 +1,6 @@
 # MONITOR-HEADER: унификация бренда SecOps Lab в хедере Monitor
 
-`lane: ready` → **принят 15 авг 2026 (2FA одобрен).** Зачислен в hub как `CANON`. См. `sanctuary/canon/monitor-header.md`.
+`lane: ready` → **принят 15 авг 2026 (2FA одобрен).** Зачислен в hub как `CANON`. См. `monitor-header.md`.
 
 ## Тезис
 

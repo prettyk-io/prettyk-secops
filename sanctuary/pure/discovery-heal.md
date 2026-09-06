@@ -51,7 +51,7 @@ Evidence: [acc 54](../acceptance/54-trials-disc-label-2026-08-12.md) · [acc 55]
 Отдельный кейворд `Heal` в PrettyK **не** вводим. Soft-маркеры открывают путь; heal — слой подстраховки на miss локатора.
 
 ```text
-soft (<!> / >? / discovery / KDT_LOCATOR_HEAL)
+soft (<!> / >? / discovery / PK_LOCATOR_HEAL)
   → miss
   → heal (fingerprint → score → кандидат)
   → OK → continue + diary HEAL (info)

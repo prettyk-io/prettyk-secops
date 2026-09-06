@@ -25,7 +25,7 @@ alwaysApply: true
 | Пушить на каждый чих / мелкую правку по всем веткам | Гитовский театр и спам; разработка идёт локально в рабочей ветке |
 | Вешать `beforeShellExecution` на каждый `git` | Ложные approval-карточки поверх **Run Everything** |
 | Пихать `terminalAllowlist` / `mcpAllowlist` в `permissions.json` | Ломает Run Everything; файлы держать `{}` |
-| `git worktree add` / клоны `prettyk-dev-*` рядом | [`operator-no-subagents-no-worktree`](operator-no-subagents-no-worktree.mdc) |
+| `git worktree add` / клоны `prettyk-secops-*` рядом | [`operator-no-subagents-no-worktree`](operator-no-subagents-no-worktree.mdc) |
 | Force-push / hard reset / clean -fdx «для порядка» | Без приказа — никогда |
 
 ## Политический канон пушей (3 постулата)

@@ -26,7 +26,7 @@
 ## Текущий эпик / фокус
 
 - **Продукт = DAST сканер SecOps.** Приоритет — довести DAST/SecOps до нормы, прежде чем двигаться дальше.
-- **Cosmoport** (Gitea/forge/контрол-плейн) — на паузе; концепты лежат в `docs/research/`.
+- **PrettyK Airlock** (суверенный допуск и межзонная передача релизов Cosmo, бывший Cosmoport/control-plane) — концепты лежат в `docs/research/`.
 - **War Zone / Signature Rewind** — вижн-фича (RTS-перемотка луча фаззинга), под стеклом до готовности DAST.
 - **Что горит сейчас** — смотри `docs/backlog.md` (волны, статусы карточек). Волатильные факты живут в supermemory, не здесь.
 
@@ -41,3 +41,31 @@
 7. **Нерутина → исследование → backlog → волны.** Гугли до кода (research-and-sense).
 
 Полный свод правил — в `AGENTS.md` + `.opencode/rules/`.
+
+
+---
+
+## 14. Maxim principles (one screen) — перенос из agent-entrypoint (2FA волна 01.09)
+
+1. Prefer proven/simple composition over homemade monoliths.
+2. Clean code only — hacks are not "done".
+3. Если Максим просит хак: скажи ему; **без вопросов** создай todo с точным текстом: `тут забили сделать нормально сразу` (+ backlog row, если эпик).
+4. "Enterprise" = он просит best practices — research, не выдумывай.
+
+Non-routine flow: google → идеи → backlog epic → Plan/волны → per-iteration remaining estimate → targeted tests → backlog update → docs если полезно → **commit если feature-код >100 LOC** (без push); **≤100 → не коммитить**. Push только по приказу.
+
+## 15. DoD живого Editor после инвазивного FE — перенос из agent-entrypoint
+
+Мёртвый стенд / белый экран после «готово» = брак агента.
+
+**Инвазивный FE:** App.tsx / shell / router / theme / auth gate / login; Studio workspace / Hub / Monaco bind / дерево / store на старте; Vite/config, package.json, generated schema/keywords, playground API; массовый рефактор импортов / новых top-level providers; всё, что может уронить boot React или `:5173`/`:8765`.
+
+Микро-CSS одного класса без boot-path — не этот DoD (HMR достаточно).
+
+**Чеклист перед «готово» (глаза + HTTP):**
+1. Порт Listen: `5173` (Editor), при нужде `8765` (playground) — `netstat -ano | findstr :5173`.
+2. HTTP: `http://localhost:5173/` — открыть Editor, не белый экран, форма логина или shell.
+3. Мёртвый Vite → поднять через штатный ensure-скрипт, потом снова п.2.
+4. Если упало — корень (import cycle, bad export), не симптомы (рестарт).
+
+**Если упало — корень, не симптомы:** читать логи Vite/console; не глушить ошибку try/catch; не лечить только ensure/reboot в цикле; сдать с фиксацией: URL + что увидел.

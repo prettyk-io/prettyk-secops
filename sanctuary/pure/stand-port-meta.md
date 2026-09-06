@@ -12,8 +12,8 @@
 | **Editor (Vite)** | **5173** | `cosmo/vite.config.ts` → `server.port: 5173` | `netstat -ano \| findstr :5173` |
 | **Playground API** | 8765 | `lab_ensure_ui.ps1` → `$PlaygroundUrl` | `netstat -ano \| findstr :8765` |
 | **PrettyK Live / Monitor** | 8767 | `lab_up.ps1` → `run_live_idle.py` | `netstat -ano \| findstr :8767` |
-| **Allure 3** | 5050 | `services/docker-compose.yml` → `allure3-secops` | `curl http://127.0.0.1:5050/health` |
-| **Allure 2** (legacy) | 5051 | `services/docker-compose.yml` → `allure-light-secops` | `curl http://127.0.0.1:5051/health` |
+| **Allure 3** | 5050 | `services/docker-compose.yml` → `prettyk-allure3` | `curl http://127.0.0.1:5050/health` |
+| **[VOID] Allure 2** (legacy) | 5051 | выпилен 2026-09-02 (решение Максима: legacy-контур в топку, порт свободен) | — |
 | **scanner demon API** | 8080 | `services/docker-compose.scanner.yml` | `curl http://127.0.0.1:8080/JSON/core/view/version/` |
 | **scanner** | 8080 | default | `netstat -ano \| findstr :8080` |
 | **Selenium Grid** | 4444 | `services/docker-compose.yml` | `curl http://127.0.0.1:4444/status` |
@@ -61,7 +61,7 @@
 ### Проверка портов (железобетон)
 
 ```powershell
-netstat -ano | findstr ":5173 :8765 :8767 :5050 :5051 :8080 :4444 :3000"
+netstat -ano | findstr ":5173 :8765 :8767 :5050 :8080 :4444 :3000"
 ```
 
 ## 3. Роутинг агентов
@@ -90,8 +90,8 @@ netstat -ano | findstr ":5173 :8765 :8767 :5050 :5051 :8080 :4444 :3000"
 ## 6. Пульты (живой стенд)
 
 ```
-allure-light-secops (legacy)  http://127.0.0.1:5051/
-allure3-secops (канон)      http://127.0.0.1:5050/
+[свободен] :5051              allure-light-secops выпилен 2026-09-02 (решение Максима)
+prettyk-allure3 (канон)       http://127.0.0.1:5050/
 DefectDojo            http://127.0.0.1:8081/ admin/admin
 PrettyK Live              http://127.0.0.1:8767/
 Editor                http://localhost:5173/

@@ -39,5 +39,5 @@ Skill опирается на:
 
 - Рабочий skill: `C:\Users\mails\.agents\skills\po-keeper\`
 - Архив (этот файл): `sanctuary/skills/po-keeper.md`
-- Правило-урок: `docs/keeper-lesson-task-discipline.md`
+- Правило-урок усвоено в PO-контур (урок-файл удалён 2026-09-01): «что» — PO, «как» — исполнители.
 - Исследование vnext fuckup: `docs/investigation-vnext-fuckup.md`

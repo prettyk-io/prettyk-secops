@@ -1,7 +1,7 @@
 # 2FA — ритуал промоции в Sanctuary
 
 > Канонизированный ритуал слоя Sanctuary. Slice: 13 августа 2026.
-> Источник: rule `docs-canon.mdc` (SOLID-полировка hub) + `new-canon/docs/NEW_AGENT_MANDATORY.md`.
+> Источник: rule `docs-canon.mdc` (SOLID-полировка hub) + `docs/internal/agent-primer.md`.
 > Здесь — финальная, отполированная форма. Не заменяет hub-2FA, а обобщает её для верхней полки.
 
 ## Зачем

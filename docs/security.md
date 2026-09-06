@@ -1,6 +1,6 @@
 # Безопасная эксплуатация PrettyK
 
-> PUBLIC detail. Тезисы hub: [`canon/security-lab.md`](canon/security-lab.md) (**CANON**). Roles: [`canon/runtime-shell.md`](canon/runtime-shell.md).
+> PUBLIC detail. Тезисы hub: [`../sanctuary/pure/security-lab.md`](../sanctuary/pure/security-lab.md) (**CANON**). Roles: [`../sanctuary/pure/runtime-shell.md`](../sanctuary/pure/runtime-shell.md).
 
 Лабораторные compose-файлы демонстрируют интеграцию и не являются защищённой конфигурацией.
 
@@ -63,7 +63,7 @@ api.addrs.addr.regex=true
 4. фильтровать исходящий трафик scanner;
 5. журналировать управляющие обращения.
 
-Industrial-профиль: [`services/docker-compose.scanner.industrial.yml`](../services/docker-compose.scanner.industrial.yml) (`SCANNER_API_KEY`, `scanner_API_ADDRS`; оркестратор — `KDT_scanner_API_KEY` / `SCANNER_API_KEY`). Lab default `disablekey` не обещаем в прод. Порт `8099` / Webswing `:8199` также не должны быть доступны из недоверенной сети: MITM-прокси.
+Industrial-профиль: industrial-профиль compose (см. `services/`) (`SCANNER_API_KEY`, `scanner_API_ADDRS`; оркестратор — `PK_SCANNER_API_KEY` / `SCANNER_API_KEY`). Lab default `disablekey` не обещаем в прод. Порт `8099` / Webswing `:8199` также не должны быть доступны из недоверенной сети: MITM-прокси.
 
 ### 3.2 Браузерная ферма (Selenium Grid)
 
@@ -109,7 +109,7 @@ API симулирует действия и не является изоли�
 - **Шифрование в JSON** — значение можно хранить как `pk:enc:v1:…` (Fernet); при загрузке манифеста оно расшифровывается по `PK_MANIFEST_KEY`. Утилита: `orchestrator/tools/encrypt_manifest_secret.py`. Ключ не хранится в репозитории.
 - **Ссылка на секрет** — `${ENV:VAR}` или `secretref:VAR` получает значение из окружения при загрузке; оно попадает в список маскирования.
 
-«Везде скрыто» при MITM scanner недостижимо: прокси видит трафик; цель — не светить секреты в git, логах, Allure и на диске. Лента Live маскирует известные значения потока — не замена политике стенда; см. [`monitoring.md`](monitoring.md) §4.
+«Везде скрыто» при MITM scanner недостижимо: прокси видит трафик; цель — не светить секреты в git, логах, Allure и на диске. Лента Live маскирует известные значения потока — не замена политике стенда; см. `../sanctuary/pure/monitor-hub.md` §4.
 
 Authoring UI (Форма/Редактор): режим B маскирует известные секретные поля в preview/export, но authoring draft в `localStorage` остаётся рабочими данными. Поэтому production-секреты нельзя вводить в форму или конструкторы: используйте `${ENV:VAR}` / `secretref:VAR` и защищённое окружение. Это ограничение authoring UI, а не замена ASVS 14.3.
 
@@ -140,8 +140,8 @@ Alpha принимает часть auth-данных из манифеста. 
 |---:|---|---|
 | `4444` | Selenium Grid / UI (`/ui/`) | запуск сессий; список сессий в Grid UI |
 | `7900` / `7901` | noVNC (Chrome / Firefox) | живой экран браузера во время прогона |
-| `5050` | allure3-secops (канон) | чтение отчётов, запуск генерации и очистка результатов |
-| `5051` | allure-light-secops (legacy) | чтение отчётов, запуск генерации и очистка результатов |
+| `5050` | prettyk-allure3 (канон) | чтение отчётов, запуск генерации и очистка результатов |
+| `5051` | [VOID] allure-light-secops (выпилен 2026-09-02; порт свободен) | — |
 | `8080` | scanner API (daemon) | полное управление сканером |
 | `8099` | прокси scanner (daemon) | перехват и маршрутизация трафика |
 | `8082` | scanner Webswing UI | удалённый Desktop scanner (concurrent stand) |
@@ -152,7 +152,7 @@ Alpha принимает часть auth-данных из манифеста. 
 | `8765` | API песочницы | разбор и симуляция языка |
 | `8767` | PrettyK Live | ленты сценария и проверок, noVNC iframe |
 
-На concurrent-стенде одновременно живут **два** MITM-прокси: daemon `:8099` и Webswing `:8199`. Оба — только lab/loopback; сайты и алерты между процессами не делятся. UI Webswing `:8082` даёт полный Desktop scanner в браузере — **не** публиковать за пределы изолированного интерфейса (см. [`webswing-daemon-stand.md`](webswing-daemon-stand.md)).
+На concurrent-стенде одновременно живут **два** MITM-прокси: daemon `:8099` и Webswing `:8199`. Оба — только lab/loopback; сайты и алерты между процессами не делятся. UI Webswing `:8082` даёт полный Desktop scanner в браузере — **не** публиковать за пределы изолированного интерфейса (lab baseline; см. `../sanctuary/pure/zap-dual.md`).
 
 Все порты должны слушать только loopback-интерфейс или выделенный служебный сегмент. Juice Shop запрещено публиковать в корпоративную или публичную сеть.
 
@@ -182,17 +182,17 @@ Allure, scanner XML/HTML, снимки экрана и видео могут с
 
 ## 7. Quality gate
 
-Quality gate возвращает код `2`, если scanner сообщает alert уровня `KDT_GATE_SEVERITY` и выше. По умолчанию порог — `High`; допустимы также `Medium`, `Low` и `Informational`. Это контроль пайплайна, но не полная политика допуска.
+Quality gate возвращает код `2`, если scanner сообщает alert уровня `PK_GATE_SEVERITY` и выше. По умолчанию порог — `High`; допустимы также `Medium`, `Low` и `Informational`. Это контроль пайплайна, но не полная политика допуска.
 
 Поведение при сбоях задаёт runtime:
 
-- не удалось прочитать алерты scanner: по умолчанию fail-closed (`KDT_QUALITY_GATE_ON_ALERT_ERROR=closed`) и код `2`; `open`/`fail-open` разрешает обратное только явно;
-- не сгенерировался Allure: по умолчанию только журнал; `KDT_REQUIRE_ALLURE=1` требует успешный результат и даёт код `1`;
-- не выполнился импорт DefectDojo: по умолчанию только журнал; `KDT_REQUIRE_DEFECTDOJO=1` требует успешный результат и даёт код `1`.
+- не удалось прочитать алерты scanner: по умолчанию fail-closed (`PK_QUALITY_GATE_ON_ALERT_ERROR=closed`) и код `2`; `open`/`fail-open` разрешает обратное только явно;
+- не сгенерировался Allure: по умолчанию только журнал; `PK_REQUIRE_ALLURE=1` требует успешный результат и даёт код `1`;
+- не выполнился импорт DefectDojo: по умолчанию только журнал; `PK_REQUIRE_DEFECTDOJO=1` требует успешный результат и даёт код `1`.
 
 Интеграционный пайплайн должен включать обязательность тех артефактов, без которых он не может принять результат, и сохранять `run_summary.json` вместе с ними.
 
-`KDT_QUALITY_GATE=0` допустим только для диагностики. Отключение quality gate в релизном пайплайне требует отдельного согласования и записи причины.
+`PK_QUALITY_GATE=0` допустим только для диагностики. Отключение quality gate в релизном пайплайне требует отдельного согласования и записи причины.
 
 ## 8. Цепочка поставки
 
@@ -227,4 +227,4 @@ Alpha не подтверждает готовность к airgap:
 - [ ] после прогона проверены журнал, quality gate и обязательные артефакты.
 
 Архитектура и коды процесса описаны в [`prettyk.md`](prettyk.md), запуск — в [`stand.md`](stand.md).  
-Двухосевой допуск (exit 0/1/2) и содержимое акта для ИБ: [`admission-act-ib.md`](admission-act-ib.md).
+Двухосевой допуск (exit 0/1/2) и содержимое акта для ИБ: `../sanctuary/pure/admission.md` + `honest-contract.md`.
