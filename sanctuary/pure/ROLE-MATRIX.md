@@ -29,13 +29,13 @@
 
 | Роль | Назначение | Модель | Вторая голова | Третья голова |
 |---|---|---|---|---|
-| **Keeper** | PO, Customer Agent, приёмка, UX-ревью, Хранитель Sanctuary | `deepseek/deepseek-v4-pro` | `gemini-3.7-flash` (замыкание, UI/UX-утверждение) | — |
-| **Plan** | Архитектурное планирование, исследование, декомпозиция эпиков | `deepseek/deepseek-v4-pro` | `gpt-5.6-luna-pro` (engineering evaluation, architecture insights) | `gemini-3.7-flash` (UI/UX, creative/research) |
-| **Boss** | Heavy Executor, Архитектор кода, сквозной рефакторинг | `deepseek/deepseek-v4-pro` | `gpt-5.6-luna-pro` (engineering evaluation, architecture insights) | `gemini-3.7-flash` (UI/UX, creative/research) |
-| **Flash** | Быстрый исполнитель, точечное кодирование, компоненты, тесты | `deepseek/deepseek-v4-pro` | `gemini-3.7-flash` (полировка деталей, design overview shift left) | — |
-| **Buddy** | DevOps, Infra, Docker, SSH/VM, VPS-деплой, персональное пространство | `deepseek/deepseek-v4-pro` | `gemini-3.7-flash` (полировка, быстрые глаза) | — |
-| **Build** | Complete huge feature delivery, тяжёлая реализация | `deepseek/deepseek-v4-pro` | — | — |
-| **Sanctuary** | 2FA-ритуалы, беседы о здравомыслии, канонизация, Алтарь | `deepseek/deepseek-v4-pro` | — | — |
+| **Keeper** | PO, Customer Agent, приёмка, UX-ревью, Хранитель Sanctuary | `deepseek/deepseek-v4.1-flash` | `gemini-3.7-flash` (замыкание, UI/UX-утверждение) | — |
+| **Plan** | Архитектурное планирование, исследование, декомпозиция эпиков | `deepseek/deepseek-v4.1-flash` | `gpt-5.6-luna-pro` (engineering evaluation, architecture insights) | `gemini-3.7-flash` (UI/UX, creative/research) |
+| **Boss** | Heavy Executor, Архитектор кода, сквозной рефакторинг | `deepseek/deepseek-v4.1-flash` | `gpt-5.6-luna-pro` (engineering evaluation, architecture insights) | `gemini-3.7-flash` (UI/UX, creative/research) |
+| **Flash** | Быстрый исполнитель, точечное кодирование, компоненты, тесты | `deepseek/deepseek-v4.1-flash` | `gemini-3.7-flash` (полировка деталей, design overview shift left) | — |
+| **Buddy** | DevOps, Infra, Docker, SSH/VM, VPS-деплой, персональное пространство | `deepseek/deepseek-v4.1-flash` | `gemini-3.7-flash` (полировка, быстрые глаза) | — |
+| **Build** | Complete huge feature delivery, тяжёлая реализация | `deepseek/deepseek-v4.1-flash` | — | — |
+| **Sanctuary** | 2FA-ритуалы, беседы о здравомыслии, канонизация, Алтарь | `deepseek/deepseek-v4.1-flash` | — | — |
 
 ### 2.1 Персональные workers (1 сентября 2026)
 
@@ -87,16 +87,16 @@
 ## 4. Спецификации моделей по пунктам 3.1–3.7
 
 ### 3.1 — Keeper (окно 1)
-**`deepseek/deepseek-v4-pro`** — голова. Тяжёлый анализ требований, архитектурная валидация, работа с бэклогом и эпиками.  
+**`deepseek/deepseek-v4.1-flash`** — голова. Тяжёлый анализ требований, архитектурная валидация, работа с бэклогом и эпиками.  
 **`gemini-3.7-flash`** — вторая голова. Замыкает цикл: утверждает UI/UX-решения, даёт дизайнерский взгляд, финальное «глазами заказчика».
 
 ### 3.2 — Plan / Boss (окна 1/3, режим Plan; окно 3, режим Boss)
-**`deepseek/deepseek-v4-pro`** — голова. Основной движок: архитектурная проработка, сквозной анализ кодовой базы, engineering decisions.  
+**`deepseek/deepseek-v4.1-flash`** — голова. Основной движок: архитектурная проработка, сквозной анализ кодовой базы, engineering decisions.  
 **`gpt-5.6-luna-pro`** — вторая голова. Engineering evaluation, architecture insights, проверка гипотез на прочность.  
 **`gemini-3.7-flash`** — третья голова. Замыкающая: утверждение UI/UX, creative/research, дизайн-обзор.
 
 ### 3.3–3.5 — Flash / Buddy (окна 4/2)
-**`deepseek/deepseek-v4-pro`** — голова и руки. Код, инфра, деплой.  
+**`deepseek/deepseek-v4.1-flash`** — голова и руки. Код, инфра, деплой.  
 **`gemini-3.7-flash`** — полировка. Когда уже готово и нужны быстрые глаза для оттачивания деталей + design overview shift left.
 
 ### 3.6 — Plan (общий режим планирования)
@@ -110,7 +110,7 @@
 **50/50:** 50% плана пишется в документ (бумага), 50% обсуждается в чате. План в документе — здравая идея. Чат — для уточнений и контекста сессии.
 
 ### 3.7 — Build (режим исполнения)
-**`deepseek/deepseek-v4-pro`** entirely. Не рядовые правки — complete huge feature delivery. Монолитная артиллерия, которая перемалывает терабайты логики и поднимает за один проход огромные куски качественного кода без потери контекста.
+**`deepseek/deepseek-v4.1-flash`** entirely. Не рядовые правки — complete huge feature delivery. Монолитная артиллерия, которая перемалывает терабайты логики и поднимает за один проход огромные куски качественного кода без потери контекста.
 
 Вторая и третья голова в Build-режиме не нужны: это не планирование и не ревью — это чистый controlled execution.
 
@@ -118,7 +118,7 @@
 
 ## 5. Ритуал 2FA в Sanctuary
 
-Sanctuary-режим (`deepseek/deepseek-v4-pro`) — единственный вход в канонизацию.
+Sanctuary-режим (`deepseek/deepseek-v4.1-flash`) — единственный вход в канонизацию.
 
 ### Порядок
 1. **Фактор 1** — предложение кандидата на зачисление (Максим или Keeper формулирует, что именно и почему).
@@ -243,4 +243,4 @@ DEEPSEEK PRO (Architecture & Backlog)
 **2FA sealed · 26 августа 2026.**  
 Забетонировано по личному утверждению Максима: «Согласен брат, все ты правильно понял. Следуем дальше таким принципом.»  
 Ролевая матрица, 4×4 архитектура, модели 3.1–3.7, Sanctuary-лор, обезьянник, ритуалы и Canon Planning Pipeline (Luna → Gemini → DeepSeek) — зачислены в Sanctuary как `service-needs`.  
-Код агентов зашит в `.opencode/agent/*.md`. Канон отполирован на `deepseek-v4-pro`.
+Код агентов зашит в `.opencode/agent/*.md`. Канон отполирован на `deepseek-v4.1-flash`.

@@ -1,5 +1,5 @@
 /**
- * SPIKE-B-7: Keycloak realm setup — prettyk-dev realm, client, roles, users.
+ * SPIKE-B-7: Keycloak realm setup — prettyk realm, client, roles, users.
  *
  * Запуск: npx tsx scripts/setup-keycloak.ts
  * Использует Admin REST API (admin/admin).
@@ -7,7 +7,7 @@
 const KEYCLOAK = 'http://127.0.0.1:8082';
 
 async function main() {
-  console.log('🔑 Setting up Keycloak prettyk-dev realm...\n');
+  console.log('🔑 Setting up Keycloak prettyk realm...\n');
 
   // 1. Get admin token
   const tokenRes = await fetch(`${KEYCLOAK}/realms/master/protocol/openid-connect/token`, {
@@ -33,22 +33,22 @@ async function main() {
     'Authorization': `Bearer ${adminToken}`,
   };
 
-  // 2. Create realm prettyk-dev
-  console.log('2️⃣ Creating realm prettyk-dev...');
+  // 2. Create realm prettyk
+  console.log('2️⃣ Creating realm prettyk...');
   const realmRes = await fetch(`${KEYCLOAK}/admin/realms`, {
     method: 'POST',
     headers,
     body: JSON.stringify({
-      realm: 'prettyk-dev',
+      realm: 'prettyk',
       enabled: true,
-      displayName: 'PrettyK Dev',
+      displayName: 'PrettyK',
     }),
   });
   console.log(`   Realm status: ${realmRes.status}`);
 
   // 3. Create public client prettyk-editor (PKCE)
   console.log('3️⃣ Creating client prettyk-editor...');
-  const clientRes = await fetch(`${KEYCLOAK}/admin/realms/prettyk-dev/clients`, {
+  const clientRes = await fetch(`${KEYCLOAK}/admin/realms/prettyk/clients`, {
     method: 'POST',
     headers,
     body: JSON.stringify({
@@ -71,7 +71,7 @@ async function main() {
   console.log('4️⃣ Creating roles...');
   const roles = ['admin_sec', 'admin_service', 'sec_expert', 'user'];
   for (const role of roles) {
-    const roleRes = await fetch(`${KEYCLOAK}/admin/realms/prettyk-dev/roles`, {
+    const roleRes = await fetch(`${KEYCLOAK}/admin/realms/prettyk/roles`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ name: role }),
@@ -83,7 +83,7 @@ async function main() {
   console.log('5️⃣ Creating test users...');
 
   // Fetch role IDs first
-  const rolesRes = await fetch(`${KEYCLOAK}/admin/realms/prettyk-dev/roles`, { headers });
+  const rolesRes = await fetch(`${KEYCLOAK}/admin/realms/prettyk/roles`, { headers });
   const rolesList = await rolesRes.json() as any[];
   const roleIdMap: Record<string, string> = {};
   for (const r of rolesList) roleIdMap[r.name] = r.id;
@@ -96,7 +96,7 @@ async function main() {
   ];
 
   for (const u of users) {
-    const userRes = await fetch(`${KEYCLOAK}/admin/realms/prettyk-dev/users`, {
+    const userRes = await fetch(`${KEYCLOAK}/admin/realms/prettyk/users`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
@@ -116,7 +116,7 @@ async function main() {
 
       // Assign realm role by ID
       const roleId = roleIdMap[u.role];
-      const roleRes = await fetch(`${KEYCLOAK}/admin/realms/prettyk-dev/users/${userId}/role-mappings/realm`, {
+      const roleRes = await fetch(`${KEYCLOAK}/admin/realms/prettyk/users/${userId}/role-mappings/realm`, {
         method: 'POST',
         headers,
         body: JSON.stringify([{ id: roleId, name: u.role }]),
@@ -129,7 +129,7 @@ async function main() {
 
   console.log('\n✅ Keycloak setup complete!');
   console.log('   Admin Console: http://localhost:8082 (admin/admin)');
-  console.log('   Realm: prettyk-dev');
+  console.log('   Realm: prettyk');
   console.log('   Client: prettyk-editor (public, PKCE)');
 }
 

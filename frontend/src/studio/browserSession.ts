@@ -191,6 +191,42 @@ export class BrowserSession {
     });
   }
 
+  /** BBA-2: точные метрики вьюпорта для координатного маппинга. */
+  async viewport(): Promise<{ ok: boolean; viewportWidth?: number; viewportHeight?: number; deviceScaleFactor?: number; error?: string }> {
+    try {
+      return await this.fetchJson('/api/browser/viewport', { method: 'POST', body: '{}' });
+    } catch {
+      return { ok: false, error: 'viewport failed' };
+    }
+  }
+
+  /** BBA-3: нажатие клавиши. */
+  async keyboardPress(key: string): Promise<{ ok: boolean; key?: string; error?: string }> {
+    try {
+      return await this.fetchJson('/api/browser/keyboard', { method: 'POST', body: JSON.stringify({ key }) });
+    } catch {
+      return { ok: false, error: 'keyboard failed' };
+    }
+  }
+
+  /** BBA-3: wheel-скролл. */
+  async mouseWheel(dx: number, dy: number): Promise<{ ok: boolean; error?: string }> {
+    try {
+      return await this.fetchJson('/api/browser/wheel', { method: 'POST', body: JSON.stringify({ dx, dy }) });
+    } catch {
+      return { ok: false, error: 'wheel failed' };
+    }
+  }
+
+  /** BBA-3: drag-and-drop по координатам. */
+  async mouseDrag(x1: number, y1: number, x2: number, y2: number): Promise<{ ok: boolean; error?: string }> {
+    try {
+      return await this.fetchJson('/api/browser/drag', { method: 'POST', body: JSON.stringify({ x1, y1, x2, y2 }) });
+    } catch {
+      return { ok: false, error: 'drag failed' };
+    }
+  }
+
   // ── Polling ──
 
   /** Запустить периодический опрос статуса. */

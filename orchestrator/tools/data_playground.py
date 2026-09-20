@@ -871,6 +871,40 @@ class Handler(BaseHTTPRequestHandler):
             return
         self._json(200, browser_eval(expression))
 
+    def _post_browser_viewport(self, _body: dict) -> None:
+        from browser.browser_service import browser_viewport
+        self._json(200, browser_viewport())
+
+    def _post_browser_keyboard(self, body: dict) -> None:
+        from browser.browser_service import browser_keyboard_press
+        key = str(body.get("key") or "").strip()
+        if not key:
+            self._json(400, {"ok": False, "error": "key required"})
+            return
+        self._json(200, browser_keyboard_press(key))
+
+    def _post_browser_wheel(self, body: dict) -> None:
+        from browser.browser_service import browser_mouse_wheel
+        try:
+            dx = float(body.get("dx", 0))
+            dy = float(body.get("dy", 0))
+        except (TypeError, ValueError):
+            self._json(400, {"ok": False, "error": "dx and dy must be numbers"})
+            return
+        self._json(200, browser_mouse_wheel(dx, dy))
+
+    def _post_browser_drag(self, body: dict) -> None:
+        from browser.browser_service import browser_mouse_drag
+        try:
+            x1 = float(body.get("x1"))
+            y1 = float(body.get("y1"))
+            x2 = float(body.get("x2"))
+            y2 = float(body.get("y2"))
+        except (TypeError, ValueError):
+            self._json(400, {"ok": False, "error": "x1,y1,x2,y2 required (numbers)"})
+            return
+        self._json(200, browser_mouse_drag(x1, y1, x2, y2))
+
     def _post_browser_observe_start(self, _body: dict) -> None:
         from browser.browser_service import browser_observe_start
         self._json(200, browser_observe_start())
@@ -940,6 +974,10 @@ class Handler(BaseHTTPRequestHandler):
             "/api/browser/eval": self._post_browser_eval,
             "/api/browser/click": self._post_browser_click,
             "/api/browser/type": self._post_browser_type,
+            "/api/browser/viewport": self._post_browser_viewport,
+            "/api/browser/keyboard": self._post_browser_keyboard,
+            "/api/browser/wheel": self._post_browser_wheel,
+            "/api/browser/drag": self._post_browser_drag,
             "/api/browser/observe/start": self._post_browser_observe_start,
             "/api/browser/observe/stop": self._post_browser_observe_stop,
             "/api/browser/observe/event": self._post_browser_observe_event,

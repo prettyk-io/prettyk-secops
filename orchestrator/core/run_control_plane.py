@@ -178,6 +178,24 @@ class RunControlPlane:
         with self._lock:
             return len(self._queue)
 
+    def queued_ids(self) -> list[str]:
+        """Снимок очереди в порядке FIFO (для фасада/интеграции).
+
+        Чтение — без побочных эффектов; список уже отсортирован по FIFO.
+        """
+        with self._lock:
+            return list(self._queue)
+
+    def dispatch_pending(self) -> None:
+        """Публичный вход в диспатч.
+
+        Нужен интеграционному фасаду: после регистрации worker'а или
+        возврата run'а в очередь требуется немедленно раздать задания
+        свободным worker'ам (ядро делает это только внутри create/fail).
+        """
+        with self._lock:
+            self._dispatch()
+
     # ── RUN-CTL-4: назначение по capabilities ──
 
     def _worker_fits(self, worker: Worker, caps: frozenset[str]) -> bool:

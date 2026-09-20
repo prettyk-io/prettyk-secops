@@ -12,18 +12,21 @@ COS-015: Health endpoints — /live /ready /health для Cosmo API.
 from __future__ import annotations
 
 from infra.health import ServiceHealth, check_postgres, check_valkey, check_filesystem
-from infra.profiles import is_enterprise, is_pure_box
+from infra.profiles import ENTERPRISE_PROFILE, resolve_profile
 
 
-def build_cosmo_health() -> ServiceHealth:
+def build_cosmo_health(profile: str | None = None) -> ServiceHealth:
     """Собрать health-контроллер для Cosmo API с учётом профиля.
 
     Enterprise: проверяет PG + Valkey + Gitea.
-    Pure Box: самодостаточный — только filesystem.
+    Pure Box: самодостаточный — только filesystem; внешние сервисы НЕ опрашиваются.
+
+    `profile` можно передать явно (тесты/сборка), иначе берётся из окружения.
     """
+    active = profile or resolve_profile()
     h = ServiceHealth("cosmo-api", version="2.0.0")
 
-    if is_enterprise():
+    if active == ENTERPRISE_PROFILE:
         # Enterprise-зависимости
         h.register_check("postgres", check_postgres)
         h.register_check("valkey", check_valkey)
@@ -39,7 +42,7 @@ def build_cosmo_health() -> ServiceHealth:
                 return False
         h.register_check("gitea", _check_gitea)
     else:
-        # Pure Box — самодостаточный
+        # Pure Box — самодостаточный, без внешних подключений
         h.register_check("filesystem", check_filesystem("."))
 
     return h

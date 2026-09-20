@@ -16,7 +16,7 @@ from typing import Any, Dict, List, Optional
 from corpus.corpus_parser import parse_corpus
 from corpus.discovery_capture import DiscoveryCorpus, capture_current
 from corpus.service_map import build_service_map
-from corpus.scanner_context import inject_corpus_into_scanner
+from corpus.zap_context import inject_corpus_into_scanner
 
 logger = logging.getLogger("orchestrator")
 

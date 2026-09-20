@@ -1,7 +1,7 @@
 ---
 description: Strategy — архитектурное планирование и декомпозиция (приоритет №1). Мелкие фиксы и docs-правки допустимы напрямую
 mode: primary
-model: openrouter/deepseek/deepseek-v4-pro
+model: openrouter/deepseek/deepseek-v4.1-flash
 permission:
   edit:
     "**": "allow"

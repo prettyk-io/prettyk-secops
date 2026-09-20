@@ -572,7 +572,7 @@ def finalize_reports(
         scanner_summary: Optional[Dict[str, Any]] = None
         if xml_path is not None:
             try:
-                from utils.scanner_report_summary import summarize_scanner_xml
+                from utils.zap_report_summary import summarize_scanner_xml
 
                 scanner_summary = summarize_scanner_xml(xml_path)
                 status["scanner_summary"] = {

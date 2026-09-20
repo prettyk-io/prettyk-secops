@@ -1,0 +1,629 @@
+{
+  "$defs": {
+    "BoxVerdict": {
+      "description": "Box execution & admission verdict.\n\npass: All scenarios passed, security policy satisfied, exit_code=0.\nfail: Quality gate failed or findings exceed threshold, exit_code=2.\ninconclusive: Test execution interrupted or timeout occurred.\nvoid: Debug mode or admission void; results have no clearance authority.",
+      "enum": [
+        "pass",
+        "fail",
+        "inconclusive",
+        "void"
+      ],
+      "title": "BoxVerdict",
+      "type": "string"
+    },
+    "FindingSeverity": {
+      "description": "Canonical lowercase severity levels for findings.",
+      "enum": [
+        "critical",
+        "high",
+        "medium",
+        "low",
+        "info"
+      ],
+      "title": "FindingSeverity",
+      "type": "string"
+    },
+    "FuzzCorrelation": {
+      "description": "Correlation link connecting fuzz session with runner run (closes G1).",
+      "properties": {
+        "anomalies_total": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Anomalies Total",
+          "type": "integer"
+        },
+        "fuzz_run_id": {
+          "description": "Fuzzer session ID: fuzz-<module>-<hash>",
+          "minLength": 1,
+          "title": "Fuzz Run Id",
+          "type": "string"
+        },
+        "module_id": {
+          "description": "Fuzzer target module name",
+          "minLength": 1,
+          "title": "Module Id",
+          "type": "string"
+        },
+        "parent_run_id": {
+          "description": "Parent runner run_id (12 hex)",
+          "minLength": 4,
+          "title": "Parent Run Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "parent_run_id",
+        "module_id",
+        "fuzz_run_id"
+      ],
+      "title": "FuzzCorrelation",
+      "type": "object"
+    },
+    "QwenSuggestion": {
+      "description": "QWEN alert assistant evaluation of finding validity.",
+      "properties": {
+        "confidence": {
+          "description": "Model confidence score",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "likely_false_positive": {
+          "description": "Probability (0.0 to 1.0) of false positive",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Likely False Positive",
+          "type": "number"
+        },
+        "model_suggestion_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Reference ID of AI evaluation record",
+          "title": "Model Suggestion Ref"
+        },
+        "model_version": {
+          "description": "Model identifier, e.g. qwen3-1.7b",
+          "minLength": 1,
+          "title": "Model Version",
+          "type": "string"
+        },
+        "reason": {
+          "description": "Justification explanation",
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "likely_false_positive",
+        "confidence",
+        "reason",
+        "model_version"
+      ],
+      "title": "QwenSuggestion",
+      "type": "object"
+    },
+    "StudioFinding": {
+      "description": "Individual security finding produced by SecOps scanners (DAST / Fuzz / Crawler).",
+      "properties": {
+        "component": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Target component or service name",
+          "title": "Component"
+        },
+        "cwe": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "CWE identifier if known (e.g. CWE-79)",
+          "title": "Cwe"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Detailed vulnerability description",
+          "title": "Description"
+        },
+        "dojo_id": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "DefectDojo database id (display only, never in identity)",
+          "title": "Dojo Id"
+        },
+        "evidence_ref": {
+          "description": "URI pointing to raw evidence, e.g. artifact://scanner.xml#alert/40012/instance/0 or MinIO path",
+          "minLength": 1,
+          "title": "Evidence Ref",
+          "type": "string"
+        },
+        "fingerprint": {
+          "description": "Stable finding identity: finding:finding-v1:<sha256[:24]> (Dojo ID is never included)",
+          "minLength": 8,
+          "title": "Fingerprint",
+          "type": "string"
+        },
+        "fingerprint_scheme": {
+          "default": "finding-v1",
+          "description": "Algorithm scheme used for fingerprint",
+          "title": "Fingerprint Scheme",
+          "type": "string"
+        },
+        "location": {
+          "description": "Target endpoint or path, e.g. POST /api/login:password",
+          "minLength": 1,
+          "title": "Location",
+          "type": "string"
+        },
+        "method": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "HTTP method if applicable: GET, POST, etc.",
+          "title": "Method"
+        },
+        "parameter": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Normalized parameter name",
+          "title": "Parameter"
+        },
+        "qwen_suggestion": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/QwenSuggestion"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "AI assistant evaluation if available"
+        },
+        "rule_id": {
+          "description": "Scanner rule ID (e.g. CWE-89, pluginid 40012, or pk_fuzz_*)",
+          "minLength": 1,
+          "title": "Rule Id",
+          "type": "string"
+        },
+        "severity": {
+          "$ref": "#/$defs/FindingSeverity",
+          "description": "Canonical severity level"
+        },
+        "title": {
+          "description": "Human-readable title of the vulnerability",
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "type": {
+          "default": "dast",
+          "description": "Finding category: dast | fuzz | crawler",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "fingerprint",
+        "title",
+        "severity",
+        "rule_id",
+        "location",
+        "evidence_ref"
+      ],
+      "title": "StudioFinding",
+      "type": "object"
+    },
+    "StudioProvenance": {
+      "description": "Execution comparability tuple and provenance context (closes G6).\n\nA studio verdict is comparable with baseline ONLY when wired_hash,\ntarget_scope_hash, scan_profile, and fingerprint_version match.",
+      "properties": {
+        "admission_void": {
+          "default": false,
+          "description": "Whether admission was voided due to execution errors",
+          "title": "Admission Void",
+          "type": "boolean"
+        },
+        "assessment_purpose": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Assessment purpose: scheduled | pre_release | emergency | manual",
+          "title": "Assessment Purpose"
+        },
+        "debug_mode": {
+          "default": false,
+          "description": "Whether scan ran in debug mode (forces void verdict)",
+          "title": "Debug Mode",
+          "type": "boolean"
+        },
+        "fingerprint_version": {
+          "default": "finding-v1",
+          "description": "Finding identity version",
+          "title": "Fingerprint Version",
+          "type": "string"
+        },
+        "project_id": {
+          "description": "Project identifier, e.g. exp01-baseline",
+          "minLength": 1,
+          "title": "Project Id",
+          "type": "string"
+        },
+        "release_domain": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Target release domain",
+          "title": "Release Domain"
+        },
+        "scan_profile": {
+          "default": "standard",
+          "description": "Scan execution profile",
+          "title": "Scan Profile",
+          "type": "string"
+        },
+        "target_scope_hash": {
+          "description": "Hash of targeted endpoints and host scope",
+          "minLength": 4,
+          "title": "Target Scope Hash",
+          "type": "string"
+        },
+        "wired_hash": {
+          "description": "Hash of wired.json manifest defining scan scene",
+          "minLength": 4,
+          "title": "Wired Hash",
+          "type": "string"
+        }
+      },
+      "required": [
+        "project_id",
+        "wired_hash",
+        "target_scope_hash"
+      ],
+      "title": "StudioProvenance",
+      "type": "object"
+    },
+    "StudioRunSummary": {
+      "description": "Finding counts and scenario execution summary.",
+      "properties": {
+        "critical": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Critical",
+          "type": "integer"
+        },
+        "high": {
+          "default": 0,
+          "minimum": 0,
+          "title": "High",
+          "type": "integer"
+        },
+        "info": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Info",
+          "type": "integer"
+        },
+        "low": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Low",
+          "type": "integer"
+        },
+        "medium": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Medium",
+          "type": "integer"
+        },
+        "scenarios_failed": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Scenarios Failed"
+        },
+        "scenarios_passed": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Scenarios Passed"
+        },
+        "total": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Total",
+          "type": "integer"
+        }
+      },
+      "title": "StudioRunSummary",
+      "type": "object"
+    }
+  },
+  "description": "Contract A Envelope: SecOps Studio Run Output payload delivered to PrettyK Hub Intake.\n\nSent to PrettyK Hub via HTTP POST :8200/api/v1/intake or via airgap artifact exchange.",
+  "properties": {
+    "act_ref": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Cryptographic SHA-256 digest of GOST Act: sha256:<hex64> (closes G2)",
+      "title": "Act Ref"
+    },
+    "box_verdict": {
+      "$ref": "#/$defs/BoxVerdict",
+      "description": "Observed execution verdict of the box"
+    },
+    "build_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "CI build identifier",
+      "title": "Build Id"
+    },
+    "commit_sha": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Commit SHA being tested",
+      "title": "Commit Sha"
+    },
+    "contract_version": {
+      "default": "1.0",
+      "description": "Contract specification version",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "duration_seconds": {
+      "anyOf": [
+        {
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Total execution duration in seconds",
+      "title": "Duration Seconds"
+    },
+    "evidence_refs": {
+      "description": "URIs of heavyweight evidence: HAR, Allure, SARIF, logs, video recordings",
+      "items": {
+        "type": "string"
+      },
+      "title": "Evidence Refs",
+      "type": "array"
+    },
+    "exit_code": {
+      "default": 0,
+      "description": "Process exit code: 0=ok, 1=execution error, 2=gate fail",
+      "title": "Exit Code",
+      "type": "integer"
+    },
+    "findings": {
+      "description": "List of observed security findings",
+      "items": {
+        "$ref": "#/$defs/StudioFinding"
+      },
+      "title": "Findings",
+      "type": "array"
+    },
+    "finished_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Timestamp when scan finished",
+      "title": "Finished At"
+    },
+    "fuzz_correlation": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FuzzCorrelation"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Fuzzing correlation link if fuzz modules were run (closes G1)"
+    },
+    "gost_act": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Optional structured GOST Act data if generated",
+      "title": "Gost Act"
+    },
+    "idempotency_key": {
+      "default": "",
+      "description": "G5: stable Hub dedup key derived from scan_id (repeat intake updates, never duplicates)",
+      "title": "Idempotency Key",
+      "type": "string"
+    },
+    "project_id": {
+      "description": "Project identifier, e.g. exp01-baseline",
+      "minLength": 1,
+      "title": "Project Id",
+      "type": "string"
+    },
+    "provenance": {
+      "$ref": "#/$defs/StudioProvenance",
+      "description": "Comparability tuple and execution parameters (closes G6)"
+    },
+    "release_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Release identifier if triggered for a release",
+      "title": "Release Id"
+    },
+    "ruleset_version": {
+      "default": "2026-08-31",
+      "description": "Scanner ruleset version",
+      "title": "Ruleset Version",
+      "type": "string"
+    },
+    "run_id": {
+      "description": "Studio runner run_id (12 hex, e.g. a3f19c2b7e04)",
+      "minLength": 6,
+      "title": "Run Id",
+      "type": "string"
+    },
+    "scan_id": {
+      "description": "Canonical scan execution ID (equal to run_id, 12 hex)",
+      "minLength": 6,
+      "title": "Scan Id",
+      "type": "string"
+    },
+    "scanner": {
+      "default": "prettyk",
+      "description": "Scanner suite name",
+      "title": "Scanner",
+      "type": "string"
+    },
+    "scanner_version": {
+      "default": "2.4.0",
+      "description": "SecOps runner version",
+      "title": "Scanner Version",
+      "type": "string"
+    },
+    "session_name": {
+      "description": "Descriptive session name, e.g. juice_smoke",
+      "minLength": 1,
+      "title": "Session Name",
+      "type": "string"
+    },
+    "started_at": {
+      "description": "Timestamp when scan started",
+      "format": "date-time",
+      "title": "Started At",
+      "type": "string"
+    },
+    "summary": {
+      "$ref": "#/$defs/StudioRunSummary",
+      "description": "Summary counts"
+    }
+  },
+  "required": [
+    "scan_id",
+    "run_id",
+    "session_name",
+    "project_id",
+    "box_verdict",
+    "started_at",
+    "provenance"
+  ],
+  "title": "StudioRunOutput",
+  "type": "object"
+}

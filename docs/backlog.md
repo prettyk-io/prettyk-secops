@@ -4,7 +4,7 @@
 
 | Контур | Состояние | Где ведётся работа |
 |---|---|---|
-| **PrettyK SecOps** | ⏸ OnHold | Этот репозиторий — только зафиксированный baseline |
+| **PrettyK SecOps** | ▶ В работе | Три потока: Browser Authoring, Run Control wave 2, Production readiness |
 | **PrettyK Control Plane** | ▶ В работе | Отдельная обитель Battlecruiser / Control Plane |
 | **QG Findings Control Station** | ▶ В работе | Отдельная обитель Tribunal / QG Findings Control Station |
 
@@ -15,7 +15,7 @@
 > Полный архив закрытых исторических эпиков: [`archive/backlog-archive-2026-08.md`](archive/backlog-archive-2026-08.md).  
 > Алтарь побед: [`../sanctuary/ALTAR.md`](../sanctuary/ALTAR.md).  
 > **🚀 PrettyK Airlock (Cosmo) — суверенная репа и бэклог:** `D:\prettyk-airlock\docs\BACKLOG.md`. Карточки допуска и межзонного трансфера ведутся там (PO Cosmo). Cross-product handoff: Коробка → Hub → Airlock.
-> Срез очереди: **03 сентября 2026 года**. Состояние PrettyK SecOps: **OnHold** (обновлено 2026-09-03: `PK-ALIAS-1/2` и `PK-BRIDGE-1/2` закрыты ✅; открыта `PK-ALIAS-3` под решение Максима; гэпы G1–G7 подготовлены под Contract A). Ветка: **`dev`**.
+> Срез очереди: **20 сентября 2026 года**. Состояние PrettyK SecOps: **В работе** (обновлено 2026-09-20: Contract A `PK-C-009.1..5` и `PK-ALIAS-3` закрыты ✅; Run Control wave 1 `RUN-CTL-1..6` зелёная — 84 pass; Luna `RC2-1..5` ✅, Flash `PRD-1..4` ✅; Boss `BBA-1..6` — активен). Ветка: **`dev`**.
 
 ---
 
@@ -25,13 +25,69 @@
 | Роль | Кто | Модель | Зона ответственности |
 |---|---|---|---|
 | **Владелец** | Максим | — | Продуктовая цель, стратегия, принятие результатов. |
-| **Keeper** | Keeper (ты) | `gemini-3.7-flash` / `deepseek-v4-pro` | **PO + Discovery + Валидатор здравого смысла.** Сверху переводит идеи Максима в чистые требования (GWT). Снизу — хранитель Святилища (2FA, бэклог, приёмка). |
-| **Boss** | Boss | `deepseek-v4-pro` | **Heavy Executor / Архитектор.** Тяжёлая кодовая реализация, сложные бэкенд/фронтенд фичи, интеграции и движки. |
-| **Flash** | Flash | `deepseek-v4-pro` | **Rapid UI / Services.** Быстрый исполнитель, верстка, компоненты, визуальные мосты. |
-| **Buddy** | Buddy | `deepseek-v4-pro` | **DevOps / VPS / Docker.** Обитает в `C:\cursor-buddy`, инфраструктура. |
-| **Luna** | Luna | `deepseek-v4-pro` | **Heavy Execution / Browser Contour.** Тяжёлый бэкенд, Playwright-контейнеры, браузерный рантайм, live-стримы. Подчинённая Boss. |
+| **Keeper** | Keeper (ты) | `gemini-3.7-flash` / `deepseek-v4.1-flash` | **PO + Discovery + Валидатор здравого смысла.** Сверху переводит идеи Максима в чистые требования (GWT). Снизу — хранитель Святилища (2FA, бэклог, приёмка). |
+| **Boss** | Boss | `deepseek-v4.1-flash` | **Heavy Executor / Архитектор.** Тяжёлая кодовая реализация, сложные бэкенд/фронтенд фичи, интеграции и движки. |
+| **Flash** | Flash | `deepseek-v4.1-flash` | **Rapid UI / Services.** Быстрый исполнитель, верстка, компоненты, визуальные мосты. |
+| **Buddy** | Buddy | `deepseek-v4.1-flash` | **DevOps / VPS / Docker.** Обитает в `C:\cursor-buddy`, инфраструктура. |
+| **Luna** | Luna | `deepseek-v4.1-flash` | **Heavy Execution / Browser Contour.** Тяжёлый бэкенд, Playwright-контейнеры, браузерный рантайм, live-стримы. Подчинённая Boss. |
 
 **Поток:** Максим ↔ Keeper (PO/Discovery) → бэклог → Boss + Flash + Luna (параллельное исполнение) → Keeper (приёмка по GWT) → Максим (инвентаризация в Святилище).
+
+---
+
+## 🔵 В РАБОТЕ (2026-09-19) — Три потока: Boss (BBA · активен) · Luna (RC2 · ✅) · Flash (PRD · ✅)
+
+> Срез 19 сентября 2026, приёмка 20 сентября. Contract A и PK-ALIAS-3 закрыты; Run Control wave 1 (`RUN-CTL-1..6`) зелёная (84 pass). Поток Luna (`RC2-1..5`) и поток Flash (`PRD-1..4`) приняты ✅ (evidence ниже). Поток Boss (`BBA-1..6`) — активен, не принят. Каждая карточка — задание воркеру; dispatch ссылается на этот файл.
+
+### Поток 1 — Boss: Browser Authoring backend (BBA)
+
+| ID | Что получает оператор | DoD / acceptance |
+|---|---|---|
+| **BBA-1** ✅ | Каноничный input path: один путь (relay `page.mouse` / CDP `Input.dispatchMouseEvent`), `browser_observe_click`-путь устранён — не два конкурирующих поведения. | `test_observe_click_primary_is_page_mouse` — primary `page.mouse`, `elementFromPoint` строго fallback. |
+| **BBA-2** ✅ | Реальный click → CDP event (не mock) → DOM/AX capture → proposal, с координатным маппингом (frame→viewport, device scale/letterboxing). | letterbox/DPR маппинг (clickCoordinate 11 pass); live-цепочка клик→CDP доказана BBA-6. Eyes-on UI (BrowserStage→proposal) — follow-up. |
+| **BBA-3** ✅ | Расширение input: type/keyboard/focus (после зелёного click), wheel/scroll, drag/drop. | keyboard/wheel/drag + `/api/browser/{viewport,keyboard,wheel,drag}`; type + value-classify (redact 5 pass); focus → click-in-textbox. |
+| **BBA-4** ✅ | Canonical step identity: один шаг в Studio (StepPill) и Editor (DSL-строка) с общим provenance. Accept/Reject детерминированы. | accept=1 шаг, reject=0, no dupes, no plaintext (+5 тестов). |
+| **BBA-5** ✅ | Negative/reconnect: CDP disconnect, container crash, iframe/cross-origin ограничения. | liveness отдельно от очереди; `connected:False` отдельным полем; закрыл PK-DEBT-RED (2 red → 0); +5 тестов. |
+| **BBA-6** ✅ | Live-верификация цепочки на стенде (`playwright-authoring`/Xvfb, CDP `:9223`, viewport `:9224`). | `test_browser_authoring_live.py` — 1 passed (реальный CDP Chrome/128, observe→click→event с candidates). |
+
+**Out of scope (BBA):** crawler, авто-принятие без оператора, action types за пределами click/type/scroll/drag, multi-user, mobile matrix, scanner/Allure/findings integration.
+
+**Приёмка (Keeper, 2026-09-20):** BBA-1..6 приняты ✅. Верифицировано: backend browser-контур `141 passed, 1 skipped` (test_browser_service + session_relay + cdp_viewport_relay + pw_airgap_and_cdp); live `test_browser_authoring_live.py` = 1 passed (CDP Chrome/128); frontend 39 passed (useCdpRecorder 23, clickCoordinate 11, redact 5); `tsc --noEmit` — 0 ошибок в BBA-файлах (остаток только pre-existing `EvidencePanel.tsx`).
+
+**BBA follow-up (не блокер кода):** eyes-on BBA-2 (живой клик в BrowserStage → proposal в Studio) требует Editor `:5173` + relay `:9224`; стенд после рестарта лежит → re-raise, затем UI-приёмка глазами.
+
+### Поток 2 — Luna: Run Control wave 2 (RC2)
+
+| ID | Что получает оператор | DoD / acceptance |
+|---|---|---|
+| **RC2-1** ✅ | Run Control facade: единая точка входа над RunControlPlane / queue / lease / streams (без рассинхрона слоёв). | `test_run_control_facade.py` 16 pass. |
+| **RC2-2** ✅ | TELEMETRY: сквозная корреляция run→attempt→step→worker→artifact, структурированные логи, базовые метрики (активные, очередь, workers, ошибки/час). | `test_telemetry_correlation.py` 15 pass. |
+| **RC2-3** ✅ | EDGE: один внешний порт (443), TLS, WS/SSE не обрываются, PG/Valkey/scanner/Grid не exposed; CORS + rate-limit на gateway. | `test_edge_gateway.py` 19 pass. |
+| **RC2-4** ✅ | HEALTH + PROFILES: health жив/готов/draining; Pure Box работает без PG/Valkey (0 регрессий). | `test_health_profiles.py` 10 pass. |
+| **RC2-5** ✅ | Debt: сверка и закрытие `PK-DEBT-RED` (browser-каталог, gate_policy env, fuzz/teardown/juice). | 20 fail + 8 collect-error → 2 fail + 0 collect-error; 2 red закрыты BBA-5-фиксом Boss. |
+| **RC2-6** | Debt residual: прогон `-m "heavy or lab"` (60 skipped) на поднятом стенде, триаж результатов в `PK-DEBT-RED`. | Каждый heavy/lab red объяснён (fix или WON'T FIX); стенд поднят по канону портов; `PK-DEBT-RED.md` дополнен. |
+
+**Out of scope (RC2):** K8s Ingress/probes, полноценный Grafana-дашборд и алерты, exponential backoff, приоритеты запусков, multi-tenant.
+
+**Сверка RC2-5 (Luna, 2026-09-20):** baseline полного suite — **2 failed, 2192 passed, 60 skipped** (было `20 fail + 8 collect-error`, PROGRESS.md). Закрыто: 8 collect-error (stale-импорты `scanner_*`→`zap_*`), 15 падений `test_run_lease` (утечка `ProactorEventLoop` из `test_pw_airgap_phase2.py`, фикс `ad.shutdown()`), dev-зависимости (`fakeredis`, `pytest-asyncio`). Оставшийся red (2) — `test_browser_service.py::test_observe_event_enriches_and_pops`, `::test_observe_candidates_end_to_end_via_click_handler`: расхождение контракта теста с BBA-5 (`browser_service.py:528-529`), **FOLLOW-UP Boss/BBA** (Luna не правит активную поверхность Boss). **Приёмка 20.09:** оставшиеся 2 red теперь зелёные — Boss уже применил BBA-5-фикс в `_cmd_observe_event` (события из очереди отдаются до проверки `connected`; `enrich` умеет `page=None`). `test_browser_service.py` = 55 pass, 1 skip. Детали: [`debt/PK-DEBT-RED.md`](debt/PK-DEBT-RED.md).
+
+### Поток 3 — Flash: Production readiness / Contract A follow-ups (PRD)
+
+| ID | Что получает оператор | DoD / acceptance |
+|---|---|---|
+| **PRD-1** ✅ | HMAC-подпись outbound transport (G4 follow-up): envelope `{contract_version, scan_id, event_type, signature, ts}`. | `test_intake_transport.py` + `test_contract_a.py` 32 pass (19/19 + новые подписи); без секретов в логах. |
+| **PRD-2** ✅ | G1 (fuzz `run_id` корреляция → `parent_run_id`), G2 (персистентный `act_ref` = sha256(gost_model)), G5 (идемпотентность по `scan_id` + дедуп), G6 (PASS scope tuple), G3 (`artifact://` канонизация). | `test_contract_a.py` 32/32; DTO/schema/docs обновлены. |
+| **PRD-3** ✅ | Airgap/runtime smoke: `playwright-authoring`/Xvfb, CDP `:9223`, viewport `:9224` поднимаются штатно (не dead стенд). | Smoke глазами: CDP :9223 Chrome/128, viewport :9224 JPEG 1919×887, Editor :5173 200. Стенд после рестарта упал → re-raise (follow-up). |
+| **PRD-4** ✅ | Keycloak realm / Sonar-ключи sync при следующем подъёме лабы (живая миграция, не только файлы). | Keycloak :8082 realm `prettyk`, Sonar :9000 `prettyk-backend/frontend` — верифицировано в момент подъёма; сейчас стенд упал (follow-up re-raise). |
+
+**Out of scope (PRD):** G7 (решить pull vs push — отдельная сшибка после приёмки Hub), WARZONE, космо-специфика.
+
+**Follow-ups (приёмка 20.09):**
+- **HUB-001** — Hub верифицирует HMAC-конверт (`verify_envelope` + `PRETTYK_INTAKE_HMAC_SECRET`). Контур Hub, не secops-воркер.
+- **G7** — pull vs push contract API (ждёт приёмки Hub).
+- **Лаб down** — Editor :5173, auth :3001, viewport :9224, Keycloak :8082, Sonar :9000 лежат после рестарта docker; re-raise и re-verify PRD-3/4.
+- **EvidencePanel.tsx** — pre-existing tsc-долг (MUI Typography-пропсы + опечатки) в `src/admin/sections/EvidencePanel.tsx` и `src/results/EvidencePanel.tsx`; чужой WIP, не BBA-скоп.
+- **60 skipped (heavy/lab)** — непроверенная зона полного suite; нужен прогон `-m "heavy or lab"` на поднятом стенде.
 
 ---
 
@@ -49,10 +105,10 @@
 | # | Карточка | Кому | Граница / DoD |
 |---|---|---|---|
 | **PK-C-009.1** | **Joint 2FA Contract A** | Keeper | Vector + Keeper + Arbiter + Cosmo согласовали DTO и hand-off протокол |
-| **PK-C-009.2** | **Заморозить DTO `StudioRunOutput`** | Boss | Pydantic v2 модели + JSON Schema в `orchestrator/contracts/` (`run_id`, `findings[]`, `evidence_refs[]`, `box_verdict`, `act_ref`, `gost_act`, `provenance_tuple`), закрыты гэпы G1–G3, G6 |
-| **PK-C-009.3** | **Канонический документ контракта** | Boss | `docs/contracts/studio-to-hub-intake.md`: DTO спецификация, hand-off протокол, error cases, SLA, эталонный payload |
-| **PK-C-009.4** | **Hand-off в Hub** | Keeper | Arbiter подтверждает чтение DTO, HUB-001 разблокирован |
-| **PK-C-009.5** | **Вычистка references `qgfcs` → `hub`** | Flash | grep `qgfcs` по активному контуру secops (AGENTS.md, ALTAR.md, MAP.md, INDEX.md) = 0 stale упоминаний |
+| **PK-C-009.2** | **Заморозить DTO StudioRunOutput** | ✅ Boss | orchestrator/contracts/studio_run_output.py, studio_run_output.schema.json, orchestrator/tests/test_contract_a.py (6/6 pass). Закрыты G1–G3, G6 |
+| **PK-C-009.3** | **Канонический документ контракта** | ✅ Boss | docs/contracts/studio-to-hub-intake.md (DTO спецификация, HTTP/Airgap hand-off, G1–G7 resolution, reference payload) |
+| **PK-C-009.4** | **Hand-off в Hub** | ✅ Keeper | Инбокс Arbiter обновлён: блокировка HUB-001 снята, ссылки на DTO + JSON Schema переданы. Ждём старт Arbiter'а |
+| **PK-C-009.5** | **Вычистка references qgfcs → hub** | ✅ Flash | grep qgfcs по активному контуру = 0 stale упоминаний. На Алтаре сохранено только историческое свидетельство за 31 августа |
 
 ### 🔵 ОТКРЫТО (2026-09-02) — хвосты PK-DIR-004
 
@@ -61,7 +117,7 @@
 
 | # | Карточка | Кому | Граница / DoD |
 |---|---|---|---|
-| **PK-ALIAS-3** | **Миграции, не переименования (каждое — отдельное решение Максима / 2FA).** Sonar-ключи `prettyk-dev-backend` / `prettyk-dev-frontend` (`sonar-access.md` в корне репы + сам Sonar); Keycloak realm `prettyk-dev` (`frontend/src/auth/keycloakAuth.ts`, `frontend/scripts/setup-keycloak.ts`, `assign-keycloak-roles.ts`, `docker-compose.keycloak.yml`). | Boss (после явного решения Максима) | новые ключи/realm создаются миграцией; старые не сломаны молча; статус отражён в Sonar/Keycloak |
+| **PK-ALIAS-3** | **Миграции, не переименования** — Sonar-ключи и Keycloak realm. | ✅ Keeper (го Максима 2026-09-18) | `sonar-access.md` → `prettyk-backend`/`prettyk-frontend`; Keycloak realm `prettyk-dev` → `prettyk` (4 файла). Серверы в дауне — живых миграций систем не потребовалось |
 
 ### 🟡 FOLLOW-UPS / Кандидаты Contract A (гэпы G1–G7 из PK-BRIDGE-1/2)
 
@@ -73,7 +129,7 @@
 | **G1** | Корреляция fuzz `run_id` | Fuzz `run_id` (`fuzz-<module>-<hash>`) ≠ runner `run_id` (12 hex). Связи нет. | В контракте: `scan_id = runner run_id`; в fuzz-pack добавить `parent_run_id` |
 | **G2** | Персистентный `act_ref` | Акт рендерится on-demand, нет стабильного ID в хранилище. | Ввести `act_ref = sha256(gost_model)`, сохранять `act.html` + `act.json` в Evidence |
 | **G3** | Канонизация `artifact://` URI | URI-схема `artifact://` используется только в одном месте (scanner.xml alert instance). | Зафиксировать схему как стандарт для Contract A |
-| **G4** | Исходящий подписанный webhook | Студия только принимает входящие и шлёт в Dojo. Нет исходящих подписных колбэков. | Создать outbound envelope `{contract_version, scan_id, event_type, signature, ts}` + HMAC-клиент |
+| **G4** | Исходящий подписанный webhook | Студия только принимает входящие и шлёт в Dojo. Нет исходящих подписных колбэков. | ✅ Реализовано `orchestrator/infra/intake_transport.py` (HTTP push + retry 1s/2s/4s + Airgap zip). HMAC-подпись — отдельным follow-up |
 | **G5** | Идемпотентность приёма у соседей | Студия имеет `run_idempotency` на запуск, но соседям нужна идемпотентность по `scan_id`. | Зафиксировать `scan_id = run_id` студии и правило дедупликации на приёмнике |
 | **G6** | Публикация кортежа PASS scope | Кортеж DeltaProvenance существует, но не зафиксирован как контрактный scope PASS. | Опубликовать `(project_id, release_domain, wired_hash, target_scope_hash, scan_profile, finding_schema_version)` |
 | **G7** | Профиль API отдачи (pull vs push) | Live API — loopback/UI инструмент, а не внешний контрактный интерфейс. | Решить: использовать pull-эндпоинты Live API или выделить contract-API эндпоинты |
@@ -84,6 +140,8 @@
 |---|---|---|---|---|
 | **PK-ALIAS-1** | Airgap-бандл и Helm под prettyk-secops / prettyk-allure3 | ✅ | Flash | `bundle.ps1 -DryRun` ✅, `bundle-v2.ps1 -DryRun` ✅, Helm values |
 | **PK-ALIAS-2** | Док-вычистка stale prettyk-dev и void :5051 | ✅ | Flash | `sanctuary/ALTAR.md`, `stand-port-meta.md`, 0 stale в живом каноне |
+| **PK-ALIAS-3** | Миграция Sonar-ключей + Keycloak realm | ✅ | Keeper | `sonar-access.md` → `prettyk-backend`/`prettyk-frontend`; realm `prettyk-dev` → `prettyk` (4 файла) |
+| **G4** | Outbound intake transport (Contract A) | ✅ | Keeper | `orchestrator/infra/intake_transport.py` — HubIntakeClient (HTTP push + retry 1s/2s/4s) + AirgapBundler (zip), 7/7 тестов |
 | **PK-BRIDGE-1** | Инвентаризация выходов Studio для Contract A | ✅ | Aspect | `docs/research/2026-09-03-studio-outputs-contract-a-inventory.md` (Q1–Q4) |
 | **PK-BRIDGE-2** | Airgap-транспортная способность для Contract A | ✅ | Aspect | `docs/research/2026-09-03-studio-outputs-contract-a-inventory.md` (§5, Q5) |
 | **PK-WB** | WORKBENCH — Editor ↔ Studio единый CheckWorkspace | ✅ | Boss + Flash | 352 · tsc 0 |

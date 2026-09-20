@@ -21,6 +21,15 @@
       "models": {
         "google/gemini-3.8-flash": {
           "limit": { "context": 128000, "output": 131072 }
+        },
+        "deepseek/deepseek-v4.1-flash": {
+          "limit": { "context": 1048576, "output": 384000 }
+        },
+        "~deepseek/deepseek-flash-latest": {
+          "limit": { "context": 1048576, "output": 131072 }
+        },
+        "~deepseek/deepseek-pro-latest": {
+          "limit": { "context": 1048576, "output": 393216 }
         }
       }
     }

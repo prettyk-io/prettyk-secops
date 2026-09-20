@@ -52,6 +52,10 @@ def test_playwright_adapter_cdp_clear_cache_no_browser():
     except Exception as e:
         # Ожидаем ошибку отсутствия браузера, не AttributeError
         assert "launched" in str(e).lower() or "browser" in str(e).lower() or "connect" in str(e).lower()
+    finally:
+        # sync_playwright().start() поднимает ProactorEventLoop в главном потоке;
+        # без stop() он остаётся running и ломает все последующие async-тесты.
+        ad.shutdown()
 
 
 # ── PW-E3: video ────────────────────────────────────────────────────────────

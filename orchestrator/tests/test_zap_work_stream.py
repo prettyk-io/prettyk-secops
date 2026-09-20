@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from utils.scanner_work_stream import scannerWorkStream
+from utils.zap_work_stream import scannerWorkStream
 
 
 class _Fakescanner:

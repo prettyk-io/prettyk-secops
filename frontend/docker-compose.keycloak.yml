@@ -1,7 +1,7 @@
 # SPIKE-B-7: Keycloak 26 + PostgreSQL для сравнения с Better Auth
 # Запуск: docker compose -f docker-compose.keycloak.yml up -d
 # После запуска: http://localhost:8082 — Admin Console (admin/admin)
-# Realm: prettyk-dev
+# Realm: prettyk
 # Client: prettyk-editor (public, PKCE)
 
 services:

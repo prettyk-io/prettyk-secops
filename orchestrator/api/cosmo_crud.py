@@ -45,6 +45,13 @@ _groups: dict[str, Group] = {}
 
 app = FastAPI(title="PrettyK Cosmoport API", version="0.1.0")
 
+# HEALTH-1/2: /live /ready /health (profile-aware, draining-aware)
+try:
+    from api.health_routes import register_health_routes
+    register_health_routes(app)
+except Exception:  # pragma: no cover — health-роуты не должны ломать API
+    pass
+
 
 # ── Domain CRUD ────────────────────────────────────────────────────────────
 

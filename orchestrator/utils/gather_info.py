@@ -14,7 +14,7 @@ import time
 from typing import Any, List
 from urllib.parse import urljoin
 
-from utils.scanner_work_stream import scannerWorkStream
+from utils.zap_work_stream import scannerWorkStream
 
 logger = logging.getLogger("orchestrator")
 

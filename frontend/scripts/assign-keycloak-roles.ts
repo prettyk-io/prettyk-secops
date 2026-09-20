@@ -15,12 +15,12 @@ async function main() {
   const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${access_token}` };
 
   // Fetch roles
-  const rolesList = await (await fetch(`${KEYCLOAK}/admin/realms/prettyk-dev/roles`, { headers })).json() as any[];
+  const rolesList = await (await fetch(`${KEYCLOAK}/admin/realms/prettyk/roles`, { headers })).json() as any[];
   const roleIdMap: Record<string, string> = {};
   for (const r of rolesList) roleIdMap[r.name] = r.id;
 
   // Fetch users
-  const usersList = await (await fetch(`${KEYCLOAK}/admin/realms/prettyk-dev/users`, { headers })).json() as any[];
+  const usersList = await (await fetch(`${KEYCLOAK}/admin/realms/prettyk/users`, { headers })).json() as any[];
   console.log('Existing users:', usersList.map(u => u.username).join(', '));
 
   const mapping: Record<string, string> = {
@@ -36,7 +36,7 @@ async function main() {
     const roleId = roleIdMap[roleName];
     if (!roleId) continue;
 
-    const roleRes = await fetch(`${KEYCLOAK}/admin/realms/prettyk-dev/users/${u.id}/role-mappings/realm`, {
+    const roleRes = await fetch(`${KEYCLOAK}/admin/realms/prettyk/users/${u.id}/role-mappings/realm`, {
       method: 'POST',
       headers,
       body: JSON.stringify([{ id: roleId, name: roleName }]),

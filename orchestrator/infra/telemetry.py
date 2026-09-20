@@ -36,6 +36,32 @@ class RunTrace:
             worker_id=self.worker_id,
         )
 
+    def child_step(self, step_id: str) -> "RunTrace":
+        """Новая ветка корреляции: тот же run/attempt/worker, новый шаг."""
+        return RunTrace(
+            run_id=self.run_id,
+            attempt=self.attempt,
+            worker_id=self.worker_id,
+            step_id=step_id,
+        )
+
+    def with_worker(self, worker_id: str) -> "RunTrace":
+        self.worker_id = worker_id
+        return self
+
+    def with_attempt(self, attempt: int) -> "RunTrace":
+        self.attempt = int(attempt)
+        return self
+
+    def artifact_ref_for(self, name: str) -> str:
+        """Канонический ``artifact://`` ref, несущий run/attempt/step.
+
+        Схема совместима с Contract A (``is_artifact_ref``/``canonical_artifact_ref``):
+        source = ``{run_id}/a{attempt}/{step}/{name}``.
+        """
+        step = self.step_id or "_"
+        return f"artifact://{self.run_id}/a{self.attempt}/{step}/{name}"
+
     def with_step(self, step_id: str) -> "RunTrace":
         self.step_id = step_id
         return self
@@ -186,13 +212,185 @@ class RunMetrics:
         return json.dumps(self.snapshot(), ensure_ascii=False)
 
 
+# ═══════════════════════════════════════════════════════════════════════
+# TELEMETRY-1/2: Корреляция артефактов и per-run хаб
+# ═══════════════════════════════════════════════════════════════════════
+
+@dataclass(frozen=True)
+class ArtifactCorrelation:
+    """Артефакт, привязанный к сквозной цепочке запуска."""
+
+    ref: str
+    run_id: str
+    attempt: int
+    step_id: str
+    worker_id: str
+    name: str
+
+
+class ArtifactIndex:
+    """Индекс артефактов по run_id и каноническому ref.
+
+    Гарантия TELEMETRY-1: артефакт не «висит в воздухе» — всегда известно,
+    к какому run/attempt/step/worker он относится.
+    """
+
+    def __init__(self) -> None:
+        self._by_ref: dict[str, ArtifactCorrelation] = {}
+        self._by_run: dict[str, list[ArtifactCorrelation]] = defaultdict(list)
+        self._lock = Lock()
+
+    def record(self, trace: RunTrace, name: str) -> ArtifactCorrelation:
+        ref = trace.artifact_ref_for(name)
+        correlation = ArtifactCorrelation(
+            ref=ref,
+            run_id=trace.run_id,
+            attempt=trace.attempt,
+            step_id=trace.step_id,
+            worker_id=trace.worker_id,
+            name=name,
+        )
+        with self._lock:
+            self._by_ref[ref] = correlation
+            self._by_run[trace.run_id].append(correlation)
+        return correlation
+
+    def get(self, ref: str) -> ArtifactCorrelation | None:
+        with self._lock:
+            return self._by_ref.get(ref)
+
+    def for_run(self, run_id: str) -> list[ArtifactCorrelation]:
+        with self._lock:
+            return list(self._by_run.get(run_id, []))
+
+    def clear(self) -> None:
+        with self._lock:
+            self._by_ref.clear()
+            self._by_run.clear()
+
+    def __len__(self) -> int:
+        with self._lock:
+            return len(self._by_ref)
+
+
+class RunTelemetry:
+    """Сквозной контекст одного запуска: trace + структурированный лог + артефакты.
+
+    События пишутся через RunLogger: каждая запись несёт run_id/attempt/
+    step_id/worker_id, поэтому логи фильтруются по конкретному запуску.
+    """
+
+    def __init__(
+        self,
+        run_id: str,
+        *,
+        base_logger: logging.Logger | None = None,
+        metrics: "RunMetrics | None" = None,
+        index: ArtifactIndex | None = None,
+    ) -> None:
+        self.run_id = run_id
+        self.trace = RunTrace(run_id=run_id)
+        self._logger = RunLogger(run_id, base_logger)
+        self._metrics = metrics
+        self._index = index if index is not None else ArtifactIndex()
+
+    # ── Привязка контекста (fluent) ──
+
+    def attempt(self, n: int) -> "RunTelemetry":
+        self.trace.with_attempt(n)
+        self._logger.set_attempt(int(n))
+        return self
+
+    def worker(self, worker_id: str) -> "RunTelemetry":
+        self.trace.with_worker(worker_id or "")
+        self._logger.set_worker(worker_id or "")
+        return self
+
+    def step(self, step_id: str) -> "RunTelemetry":
+        self.trace.with_step(step_id)
+        self._logger.set_step(step_id)
+        return self
+
+    # ── Артефакты ──
+
+    def artifact(self, name: str) -> str:
+        """Зарегистрировать артефакт в цепочке и вернуть канонический ref."""
+        correlation = self._index.record(self.trace, name)
+        self.trace.artifact_ref = correlation.ref
+        return correlation.ref
+
+    # ── Логи ──
+
+    def event(self, event: str, message: str = "", level: str = "INFO", **fields) -> dict:
+        """Структурированное событие с run-контекстом (extra-поля в записи)."""
+        payload = {"event": event, **fields}
+        text = message or event
+        if level == "ERROR":
+            self._logger.error(text, **payload)
+        elif level == "WARN":
+            self._logger.warning(text, **payload)
+        elif level == "DEBUG":
+            self._logger.debug(text, **payload)
+        else:
+            self._logger.info(text, **payload)
+        return {"run_id": self.run_id, **self.trace.as_dict(), **payload}
+
+    def log(self, message: str, level: str = "INFO", **fields) -> None:
+        self.event("log", message=message, level=level, **fields)
+
+    def trace_dict(self) -> dict:
+        return self.trace.as_dict()
+
+    @property
+    def index(self) -> ArtifactIndex:
+        return self._index
+
+
+class RunTelemetryHub:
+    """Реестр per-run RunTelemetry + общий ArtifactIndex/метрики."""
+
+    def __init__(
+        self,
+        metrics: "RunMetrics | None" = None,
+        base_logger: logging.Logger | None = None,
+    ) -> None:
+        self.index = ArtifactIndex()
+        self.metrics = metrics
+        self._base_logger = base_logger
+        self._lock = Lock()
+        self._runs: dict[str, RunTelemetry] = {}
+
+    def for_run(self, run_id: str) -> RunTelemetry:
+        with self._lock:
+            telemetry = self._runs.get(run_id)
+            if telemetry is None:
+                telemetry = RunTelemetry(
+                    run_id,
+                    base_logger=self._base_logger,
+                    metrics=self.metrics,
+                    index=self.index,
+                )
+                self._runs[run_id] = telemetry
+            return telemetry
+
+    def reset(self) -> None:
+        with self._lock:
+            self._runs.clear()
+        self.index.clear()
+
+
 # Глобальные синглтоны для Playground
 _global_metrics = RunMetrics()
 _global_traces: dict[str, RunTrace] = {}
+_global_telemetry_hub = RunTelemetryHub(metrics=_global_metrics)
 
 
 def get_metrics() -> RunMetrics:
     return _global_metrics
+
+
+def get_telemetry_hub() -> RunTelemetryHub:
+    return _global_telemetry_hub
 
 
 def trace_for_run(run_id: str) -> RunTrace:

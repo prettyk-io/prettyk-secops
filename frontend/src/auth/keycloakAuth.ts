@@ -10,7 +10,7 @@ import type { UserCapability } from './profileStore';
 
 export const keycloak = new Keycloak({
   url: 'http://localhost:8082',
-  realm: 'prettyk-dev',
+  realm: 'prettyk',
   clientId: 'prettyk-editor',
 });
 

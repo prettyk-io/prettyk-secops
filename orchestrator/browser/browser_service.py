@@ -22,6 +22,32 @@ from typing import Optional
 
 logger = logging.getLogger("orchestrator.browser")
 
+# BBA-1: каноничный fallback-клик по координате. Primary — page.mouse
+# (CDP Input.dispatchMouseEvent, реальный hit-test). Этот JS — только fallback,
+# когда физический клик поглощён overlay: берём элемент под точкой напрямую и
+# диспатчим mousedown/mouseup/click на него (обходит физический hit-test).
+# page.evaluate(expression, arg) принимает ОДИН arg — передаём [x, y] списком.
+_ELEMENT_FROM_POINT_JS = """
+    ([x, y]) => {
+        let el = document.elementFromPoint(x, y);
+        if (!el) return false;
+        // Подняться к ближайшему интерактивному элементу —
+        // клик по span/внутреннему тексту кнопки должен стать
+        // кликом по самой кнопке (иначе e.target = span, а Angular
+        // ripple/snackbar перехватывает и observe ловит div).
+        const interactive = el.closest('button, a, input, select, textarea, [role="button"], [role="link"]');
+        if (interactive) el = interactive;
+        const opts = { bubbles: true, cancelable: true, composed: true, view: window };
+        const mk = (type, button, buttons) => new MouseEvent(type, {
+            ...opts, clientX: x, clientY: y, button, buttons
+        });
+        el.dispatchEvent(mk('mousedown', 0, 1));
+        el.dispatchEvent(mk('mouseup', 0, 0));
+        el.dispatchEvent(mk('click', 0, 0));
+        return true;
+    }
+"""
+
 # ── BrowserWorker — single thread that owns the browser ──
 
 class _BrowserWorker:
@@ -49,6 +75,7 @@ class _BrowserWorker:
         self._observed_events: list[dict] = []
         self._observe_last_event_id = 0
         self._binding_registered = False
+        self._input_binding_registered = False
         # SOR-L2: per-session CDP endpoint override
         self._cdp_endpoint_override: str | None = None
 
@@ -138,6 +165,7 @@ class _BrowserWorker:
                 self._browser = None
                 self._page = None
                 self._binding_registered = False
+                self._input_binding_registered = False
             runtime = PlaywrightBrowserRuntime()
             self._page = runtime.connect_over_cdp(cdp_endpoint)
             self._browser = runtime.browser
@@ -145,6 +173,7 @@ class _BrowserWorker:
             self._browser_id = f"container-{uuid.uuid4().hex[:12]}"
             self._last_cdp_error = None
             self._binding_registered = False  # новая страница — binding нужно регистрировать заново
+            self._input_binding_registered = False
             logger.info("browser_service: connected to CDP container %s", cdp_endpoint)
             return self._page
         except Exception as e:
@@ -318,7 +347,85 @@ class _BrowserWorker:
         except Exception as e:
             return {"ok": False, "error": f"{type(e).__name__}: {e}"}
 
+    # ── BBA-2/3: viewport + расширенные input-действия ──
+
+    def _cmd_viewport(self) -> dict:
+        """BBA-2: точные метрики вьюпорта для координатного маппинга.
+
+        Возвращает CSS-pixel размеры вьюпорта (то же пространство, в котором
+        работает ``page.mouse``) + deviceScaleFactor. Фронт использует это
+        вместо хардкода 1280×800 и не искажает клик при нестандартном DPR.
+        """
+        page = self._ensure_browser()
+        if page is None:
+            return {"ok": False, "error": "browser not available"}
+        try:
+            vs = page.viewport_size or {}
+            try:
+                dpr = page.evaluate("window.devicePixelRatio")
+            except Exception:
+                dpr = 1.0
+            return {
+                "ok": True,
+                "viewportWidth": int(vs.get("width") or 0),
+                "viewportHeight": int(vs.get("height") or 0),
+                "deviceScaleFactor": float(dpr or 1.0),
+            }
+        except Exception as e:
+            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+
+    def _cmd_keyboard_press(self, key: str) -> dict:
+        page = self._ensure_browser()
+        if page is None:
+            return {"ok": False, "error": "browser not available"}
+        if not key:
+            return {"ok": False, "error": "key required"}
+        try:
+            page.keyboard.press(key)
+            return {"ok": True, "key": key}
+        except Exception as e:
+            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+
+    def _cmd_mouse_wheel(self, dx: float = 0.0, dy: float = 0.0) -> dict:
+        page = self._ensure_browser()
+        if page is None:
+            return {"ok": False, "error": "browser not available"}
+        try:
+            page.mouse.wheel(float(dx), float(dy))
+            return {"ok": True, "dx": dx, "dy": dy}
+        except Exception as e:
+            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+
+    def _cmd_mouse_drag(self, x1: float, y1: float, x2: float, y2: float) -> dict:
+        page = self._ensure_browser()
+        if page is None:
+            return {"ok": False, "error": "browser not available"}
+        try:
+            page.mouse.move(float(x1), float(y1))
+            page.mouse.down()
+            page.mouse.move(float(x2), float(y2), steps=5)
+            page.mouse.up()
+            return {"ok": True, "from": [x1, y1], "to": [x2, y2]}
+        except Exception as e:
+            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+
     # ── observe ──
+
+    # BBA-1: окно ожидания события после физического клика page.mouse.
+    # За это время observe-binding должен поймать DOM click. Если нет —
+    # считаем, что физический hit-test клик поглощён overlay (Angular
+    # backdrop/snackbar), и уходим в elementFromPoint-fallback.
+    _POINTER_CLICK_WAIT_TIMEOUT = 2.0
+
+    def _mouse_click_element_from_point(self, page, x: float, y: float) -> None:
+        """BBA-1 fallback: синтетический клик по элементу под (x, y).
+
+        Обходит физический hit-test через ``document.elementFromPoint`` и
+        диспатчит mousedown/mouseup/click напрямую на найденный элемент.
+        Используется ТОЛЬКО когда page.mouse (реальный CDP-клик) не дал
+        observe-события (overlay перехватил физический клик).
+        """
+        page.evaluate(_ELEMENT_FROM_POINT_JS, [float(x), float(y)])
 
     def _cmd_observe_start(self) -> dict:
         page = self._ensure_browser()
@@ -332,9 +439,21 @@ class _BrowserWorker:
         try:
             # VP-L2: expose_binding нельзя снять и нельзя зарегистрировать повторно.
             # Регистрируем один раз на страницу; повторный start только чинит listener.
+            # BBA-2/5: binding замыкается на ЭТОТ worker, а не на глобальный синглтон —
+            # иначе per-session observe кладёт события в чужую очередь и «клик потерялся».
+            worker = self
             if not self._binding_registered:
-                page.expose_binding("__pk_cdp_click__", _binding_handler)
+                def _click_binding(*args):
+                    if args and isinstance(args[-1], dict) and args[-1].get("tag"):
+                        _on_click(args[-1], worker)
+                page.expose_binding("__pk_cdp_click__", _click_binding)
                 self._binding_registered = True
+            if not self._input_binding_registered:
+                def _input_binding(*args):
+                    if args and isinstance(args[-1], dict) and args[-1].get("tag"):
+                        _on_input(args[-1], worker)
+                page.expose_binding("__pk_cdp_input__", _input_binding)
+                self._input_binding_registered = True
             page.evaluate("""
                 if(!window.__pk_cdp_click_listener__){
                     window.__pk_cdp_click_listener__=true;
@@ -352,6 +471,26 @@ class _BrowserWorker:
                         });
                     };
                     document.addEventListener('click',window.__pk_cdp_click_handler__,true);
+                }
+                // BBA-3: input/change listener для Type-шагов (значение НЕ передаётся —
+                // только таргет + классификация; plaintext никогда не идёт по мосту).
+                if(!window.__pk_cdp_input_listener__){
+                    window.__pk_cdp_input_listener__=true;
+                    window.__pk_cdp_input_handler__=function(e){
+                        const el=e.target;
+                        const r=el.getBoundingClientRect();
+                        window.__pk_cdp_input__({
+                            tag:el.tagName.toLowerCase(),id:el.id||'',
+                            classes:(el.className&&typeof el.className==='string')?el.className:'',
+                            text:'',name:el.getAttribute('name')||'',
+                            placeholder:el.getAttribute('placeholder')||'',
+                            type:el.getAttribute('type')||'',
+                            dataTestId:el.getAttribute('data-testid')||el.getAttribute('data-test-id')||'',
+                            rect:{x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height)}
+                        });
+                    };
+                    document.addEventListener('input',window.__pk_cdp_input_handler__,true);
+                    document.addEventListener('change',window.__pk_cdp_input_handler__,true);
                 }
             """)
             logger.info("browser_observe_start: injected")
@@ -371,6 +510,11 @@ class _BrowserWorker:
                     "document.removeEventListener('click',window.__pk_cdp_click_handler__,true);"
                     "window.__pk_cdp_click_handler__=null;}"
                     "window.__pk_cdp_click_listener__=false;"
+                    "if(window.__pk_cdp_input_handler__){"
+                    "document.removeEventListener('input',window.__pk_cdp_input_handler__,true);"
+                    "document.removeEventListener('change',window.__pk_cdp_input_handler__,true);"
+                    "window.__pk_cdp_input_handler__=null;}"
+                    "window.__pk_cdp_input_listener__=false;"
                 )
             except Exception:
                 pass
@@ -380,11 +524,24 @@ class _BrowserWorker:
     def _cmd_observe_event(self) -> dict:
         if not self._observe_active:
             return {"ok": True, "connected": False, "observing": False}
+        # BBA-5: liveness страницы считаем ОТДЕЛЬНО от отдачи события.
+        # События в очереди — реальные, собранные до возможного отвала CDP;
+        # их нужно отдать (enrich умеет page=None). А connected отражает
+        # фактическое состояние страницы: жива ли она прямо сейчас.
+        page = self._page
+        connected = page is not None
+        if page is not None:
+            try:
+                page.evaluate("1")
+            except Exception:
+                self._page = None
+                page = None
+                connected = False
         if self._observed_events:
             evt = self._observed_events.pop(0)
             self._enrich_event(evt)
-            return {"ok": True, "connected": True, "observing": True, "event": evt}
-        return {"ok": True, "connected": True, "observing": True, "event": None}
+            return {"ok": True, "connected": connected, "observing": True, "event": evt}
+        return {"ok": True, "connected": connected, "observing": True, "event": None}
 
     def _cmd_observe_click(self, x: float, y: float) -> dict:
         if not self._observe_active:
@@ -393,46 +550,47 @@ class _BrowserWorker:
         if page is None:
             return {"ok": False, "error": "browser not available"}
         try:
-            # VP-L2 hit-test fix: page.mouse.click(x,y) полагается на физический
-            # hit-test браузера и уязвим к Angular Material backdrop/snackbar overlay.
-            # Фиксируем DOM-элемент под координатами ДО клика через
-            # document.elementFromPoint и диспатчим mousedown/mouseup/click на
-            # него напрямую — обходит физический hit-test и гонку появления overlay.
-            #
-            # Playwright page.evaluate(expression, arg) принимает ОДИН arg —
-            # передаём [x, y] списком, а не двумя позиционными (иначе TypeError).
-            page.evaluate(
-                """
-                ([x, y]) => {
-                    let el = document.elementFromPoint(x, y);
-                    if (!el) return false;
-                    // Подняться к ближайшему интерактивному элементу —
-                    // клик по span/внутреннему тексту кнопки должен стать
-                    // кликом по самой кнопке (иначе e.target = span, а Angular
-                    // ripple/snackbar перехватывает и observe ловит div).
-                    const interactive = el.closest('button, a, input, select, textarea, [role="button"], [role="link"]');
-                    if (interactive) el = interactive;
-                    const opts = { bubbles: true, cancelable: true, composed: true, view: window };
-                    const mk = (type, button, buttons) => new MouseEvent(type, {
-                        ...opts, clientX: x, clientY: y, button, buttons
-                    });
-                    el.dispatchEvent(mk('mousedown', 0, 1));
-                    el.dispatchEvent(mk('mouseup', 0, 0));
-                    el.dispatchEvent(mk('click', 0, 0));
-                    return true;
-                }
-                """,
-                [float(x), float(y)],
+            # BBA-1: каноничный pointer — page.mouse (→ CDP Input.dispatchMouseEvent,
+            # реальный hit-test). elementFromPoint — строго fallback (см. ниже).
+            used_fallback = False
+            try:
+                page.mouse.click(x, y)
+            except Exception as exc:
+                logger.warning(
+                    "browser_observe_click: page.mouse.click failed (%s), "
+                    "falling back to elementFromPoint",
+                    type(exc).__name__,
+                )
+                used_fallback = True
+                self._mouse_click_element_from_point(page, x, y)
+
+            queued = self._await_click_event()
+            # BBA-1 fallback: физический клик мог быть поглощён overlay —
+            # observe-событие не пришло. Синтезируем клик напрямую по элементу.
+            if not queued and not used_fallback:
+                used_fallback = True
+                self._mouse_click_element_from_point(page, x, y)
+                queued = self._await_click_event()
+
+            logger.info(
+                "browser_observe_click at (%.1f,%.1f) queued=%s fallback=%s",
+                x, y, queued, used_fallback,
             )
-            logger.info("browser_observe_click at (%.1f,%.1f)", x, y)
-            deadline = time.time() + 2.0
-            while time.time() < deadline:
-                if self._observed_events:
-                    break
-                time.sleep(0.02)
-            return {"ok": True, "x": x, "y": y, "queued": bool(self._observed_events)}
+            return {
+                "ok": True, "x": x, "y": y,
+                "queued": queued, "fallback": used_fallback,
+            }
         except Exception as e:
             return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+
+    def _await_click_event(self) -> bool:
+        """Дождаться observe-события после клика (краткий bounded-wait)."""
+        deadline = time.time() + self._POINTER_CLICK_WAIT_TIMEOUT
+        while time.time() < deadline:
+            if self._observed_events:
+                return True
+            time.sleep(0.02)
+        return bool(self._observed_events)
 
     def _cmd_context_ensure(self, context: str = "operator", url: str | None = None) -> dict:
         page = self._ensure_browser()
@@ -492,13 +650,24 @@ class _BrowserWorker:
                 if ax_node:
                     element["role"] = str(ax_node.get("role") or "").strip().lower()
                     element["accessibleName"] = str(ax_node.get("name") or "").strip()
-                    try:
-                        from utils.discovery_element_extractor import _classify_value
-                        evt["valueClass"] = _classify_value(ax_node)
-                    except ImportError:
-                        pass
             except Exception:
                 pass
+        # BBA-3: value classification из DOM-признаков, не из AX-ноды.
+        # _classify_value ждёт tag/name_attr/accessible_name/type_attr —
+        # AX-нода этими ключами не владеет, поэтому классификация всегда
+        # давала 'unknown' и redaction держался только на фронте. Теперь
+        # классифицируем по реальному DOM-таргету (type=password/email/tel,
+        # name/label-паттерны секретов).
+        try:
+            from utils.discovery_element_extractor import _classify_value
+            evt["valueClass"] = _classify_value({
+                "tag": info.get("tag", ""),
+                "name_attr": info.get("name", ""),
+                "accessible_name": element.get("accessibleName", ""),
+                "type_attr": info.get("type", ""),
+            })
+        except ImportError:
+            evt["valueClass"] = "unknown"
         # candidates
         try:
             from utils.discovery_candidate_builder import build_candidates
@@ -573,7 +742,14 @@ def _find_ax_node_for_element(page, element_info: dict) -> dict | None:
 
 # ── expose_binding callback (module-level, invoked from JS in worker thread) ──
 
-def _on_click(event_info: dict) -> None:
+def _on_click(event_info: dict, worker: object | None = None) -> None:
+    """BBA-2: записать click-событие в очередь КОНКРЕТНОГО worker'а.
+
+    ``worker`` по умолчанию — глобальный синглтон (обратная совместимость).
+    Per-session observe замыкает своего worker'а.
+    """
+    if worker is None:
+        worker = _worker
     evt = {
         "timestamp": time.time(),
         "action": "click",
@@ -589,17 +765,33 @@ def _on_click(event_info: dict) -> None:
             "dataTestId": event_info.get("dataTestId", ""),
         },
     }
-    _worker._observe_last_event_id += 1
-    evt["eventId"] = f"cdp-{_worker._observe_last_event_id}"
-    _worker._observed_events.append(evt)
+    worker._observe_last_event_id += 1
+    evt["eventId"] = f"cdp-{worker._observe_last_event_id}"
+    worker._observed_events.append(evt)
 
 
-def _binding_handler(*args) -> None:
-    if not args:
-        return
-    info = args[-1]
-    if isinstance(info, dict) and info.get("tag"):
-        _on_click(info)
+def _on_input(event_info: dict, worker: object | None = None) -> None:
+    """BBA-3: записать type-событие. Значение НЕ передаётся (redaction)."""
+    if worker is None:
+        worker = _worker
+    evt = {
+        "timestamp": time.time(),
+        "action": "type",
+        "element": {
+            "tag": event_info.get("tag", ""),
+            "id": event_info.get("id", ""),
+            "classes": event_info.get("classes", ""),
+            "text": "",
+            "rect": event_info.get("rect", {"x": 0, "y": 0, "w": 0, "h": 0}),
+            "name": event_info.get("name", ""),
+            "placeholder": event_info.get("placeholder", ""),
+            "type": event_info.get("type", ""),
+            "dataTestId": event_info.get("dataTestId", ""),
+        },
+    }
+    worker._observe_last_event_id += 1
+    evt["eventId"] = f"cdp-{worker._observe_last_event_id}"
+    worker._observed_events.append(evt)
 
 
 # ── Singleton worker (LEGACY — заменён на SessionManager) ──
@@ -710,6 +902,18 @@ def browser_highlight(selector: str, strategy: str = "css", session_id: str | No
 
 def browser_eval(expression: str, session_id: str | None = None) -> dict:
     return BrowserSessionManager.worker_for(session_id).dispatch("eval", expression=expression)
+
+def browser_viewport(session_id: str | None = None) -> dict:
+    return BrowserSessionManager.worker_for(session_id).dispatch("viewport")
+
+def browser_keyboard_press(key: str, session_id: str | None = None) -> dict:
+    return BrowserSessionManager.worker_for(session_id).dispatch("keyboard_press", key=key)
+
+def browser_mouse_wheel(dx: float = 0.0, dy: float = 0.0, session_id: str | None = None) -> dict:
+    return BrowserSessionManager.worker_for(session_id).dispatch("mouse_wheel", dx=dx, dy=dy)
+
+def browser_mouse_drag(x1: float, y1: float, x2: float, y2: float, session_id: str | None = None) -> dict:
+    return BrowserSessionManager.worker_for(session_id).dispatch("mouse_drag", x1=x1, y1=y1, x2=x2, y2=y2)
 
 def browser_observe_start(session_id: str | None = None) -> dict:
     return BrowserSessionManager.worker_for(session_id).dispatch("observe_start")

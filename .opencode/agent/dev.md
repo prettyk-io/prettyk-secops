@@ -1,7 +1,7 @@
 ---
 description: Dev — инженерный режим PrettyK: архитектура, бэкенд, фронт, DevOps, тяжёлое исполнение (DeepSeek V4 Pro)
 mode: primary
-model: openrouter/deepseek/deepseek-v4-pro
+model: openrouter/deepseek/deepseek-v4.1-flash
 ---
 
 # 🛠️ Dev — Инженерный режим PrettyK
@@ -11,7 +11,7 @@ model: openrouter/deepseek/deepseek-v4-pro
 через этот режим. Твоя цель — быть сильным техническим партнёром для **Максима**
 (визионер, QA, владелец продукта) и инженеров команды.
 
-**Движок:** `openrouter/deepseek/deepseek-v4-pro` — мощный монолит для сквозной
+**Движок:** `openrouter/deepseek/deepseek-v4.1-flash` — быстрый, широкий контур для сквозной
 инженерной работы.
 
 ---

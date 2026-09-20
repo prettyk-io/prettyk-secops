@@ -33,6 +33,8 @@ def _mock_page():
     page.click = MagicMock()
     page.fill = MagicMock()
     page.locator = MagicMock()
+    page.mouse = MagicMock()
+    page.mouse.click = MagicMock()
     page.get_by_role = MagicMock()
     page.get_by_text = MagicMock()
     page.get_by_label = MagicMock()
@@ -142,11 +144,17 @@ def test_data_playground_browser_routes():
     """Проверяем что маршруты back/forward зарегистрированы."""
     from tools.data_playground import Handler as _  # noqa: F401
     from browser.browser_service import browser_back, browser_forward, browser_click, browser_type_text  # noqa: F401
+    from browser.browser_service import browser_viewport, browser_keyboard_press, browser_mouse_wheel, browser_mouse_drag  # noqa: F401
 
     assert callable(browser_back)
     assert callable(browser_forward)
     assert callable(browser_click)
     assert callable(browser_type_text)
+    # BBA-2/3: новые input-действия
+    assert callable(browser_viewport)
+    assert callable(browser_keyboard_press)
+    assert callable(browser_mouse_wheel)
+    assert callable(browser_mouse_drag)
 
 
 # ── B-6: click / type_text ──────────────────────────────────────────────────
@@ -587,8 +595,11 @@ def test_observe_click_requires_observe_active():
     assert "observe not active" in result.get("error", "")
 
 
-def test_observe_click_uses_elementFromPoint_not_mouse_click():
-    """VP-L2: observe_click диспатчит клик через elementFromPoint, НЕ mouse.click."""
+def test_observe_click_primary_is_page_mouse():
+    """BBA-1: observe_click primary — page.mouse.click (CDP), не elementFromPoint.
+
+    При уже пойманном observe-событии fallback (elementFromPoint) НЕ вызывается.
+    """
     import browser.browser_service as bs
 
     worker = _new_worker(_mock_page())
@@ -596,17 +607,48 @@ def test_observe_click_uses_elementFromPoint_not_mouse_click():
     page = worker._page
     page.evaluate = MagicMock(return_value=True)
 
+    # Событие уже в очереди → первичный page.mouse сразу фиксируется, fallback нет.
     worker._observed_events.append({"eventId": "cdp-1", "action": "click"})
 
     result = worker._cmd_observe_click(640.0, 400.0)
     assert result["ok"] is True
+    assert result["fallback"] is False
 
+    page.mouse.click.assert_called_once_with(640.0, 400.0)
+    # elementFromPoint-путь не вызывался (нет evaluate с JS-фолбэком).
+    assert not page.evaluate.called
+
+
+def test_observe_click_falls_back_to_element_from_point_when_not_observed():
+    """BBA-1: если page.mouse клик не дал observe-события — elementFromPoint fallback."""
+    import browser.browser_service as bs
+
+    worker = _new_worker(_mock_page())
+    worker._observe_active = True
+    page = worker._page
+    page.evaluate = MagicMock(return_value=True)
+    # События нет → primary page.mouse, затем elementFromPoint fallback.
+    worker._observed_events.clear()
+    # Ограничиваем bounded-wait, чтобы тест не висел 2с × 2.
+    with patch.object(_new_worker_type(), "_POINTER_CLICK_WAIT_TIMEOUT", 0.0):
+        worker._POINTER_CLICK_WAIT_TIMEOUT = 0.0
+        result = worker._cmd_observe_click(640.0, 400.0)
+
+    assert result["ok"] is True
+    assert result["fallback"] is True
+
+    page.mouse.click.assert_called_once_with(640.0, 400.0)
     assert page.evaluate.called
     js_arg = page.evaluate.call_args[0][0]
     assert "elementFromPoint" in js_arg
     assert "dispatchEvent" in js_arg
     assert "mousedown" in js_arg
     assert "mouseup" in js_arg
+
+
+def _new_worker_type():
+    import browser.browser_service as bs
+    return bs._BrowserWorker
 
 
 def test_observe_click_no_browser():
@@ -676,3 +718,208 @@ def test_enrich_unique_candidate_not_ambiguous():
 def test_headless_observe_click_end_to_end():
     """HDO-B5: см. VP-L2 контейнерный проход (host headless выпилен)."""
     pass
+
+
+# ── BBA-2/3: viewport + расширенные input-действия ──────────────────────────
+
+
+def test_cmd_viewport_returns_metrics():
+    """BBA-2: _cmd_viewport возвращает CSS-pixel размеры + deviceScaleFactor."""
+    page = _mock_page()
+    page.viewport_size = {"width": 1920, "height": 1080}
+    page.evaluate.side_effect = lambda expr: 2.0 if expr == "window.devicePixelRatio" else "1"
+    worker = _new_worker(page)
+
+    result = worker._cmd_viewport()
+    assert result["ok"] is True
+    assert result["viewportWidth"] == 1920
+    assert result["viewportHeight"] == 1080
+    assert result["deviceScaleFactor"] == 2.0
+
+
+def test_cmd_viewport_no_browser():
+    worker = _new_worker(None)
+    result = worker._cmd_viewport()
+    assert result["ok"] is False
+    assert "browser not available" in result.get("error", "")
+
+
+def test_cmd_keyboard_press():
+    """BBA-3: _cmd_keyboard_press → page.keyboard.press."""
+    page = _mock_page()
+    page.keyboard = MagicMock()
+    page.keyboard.press = MagicMock()
+    worker = _new_worker(page)
+
+    result = worker._cmd_keyboard_press("Enter")
+    assert result["ok"] is True
+    page.keyboard.press.assert_called_once_with("Enter")
+
+
+def test_cmd_keyboard_press_requires_key():
+    worker = _new_worker(_mock_page())
+    result = worker._cmd_keyboard_press("")
+    assert result["ok"] is False
+    assert "key required" in result.get("error", "")
+
+
+def test_cmd_mouse_wheel():
+    """BBA-3: _cmd_mouse_wheel → page.mouse.wheel(dx, dy)."""
+    page = _mock_page()
+    page.mouse.wheel = MagicMock()
+    worker = _new_worker(page)
+
+    result = worker._cmd_mouse_wheel(dx=0, dy=-600)
+    assert result["ok"] is True
+    page.mouse.wheel.assert_called_once_with(0.0, -600.0)
+
+
+def test_cmd_mouse_drag():
+    """BBA-3: _cmd_mouse_drag → down/move/up."""
+    page = _mock_page()
+    page.mouse.down = MagicMock()
+    page.mouse.up = MagicMock()
+    page.mouse.move = MagicMock()
+    worker = _new_worker(page)
+
+    result = worker._cmd_mouse_drag(10, 10, 200, 200)
+    assert result["ok"] is True
+    page.mouse.down.assert_called_once()
+    page.mouse.up.assert_called_once()
+    assert page.mouse.move.call_count == 2
+
+
+def test_observe_start_registers_worker_bound_bindings():
+    """BBA-2/5: observe_start регистрирует click + input binding на ЭТОМ worker'е."""
+    page = _mock_page()
+    worker = _new_worker(page)
+
+    result = worker._cmd_observe_start()
+    assert result["ok"] is True
+
+    assert page.expose_binding.called
+    names = [c.args[0] for c in page.expose_binding.call_args_list]
+    assert "__pk_cdp_click__" in names
+    assert "__pk_cdp_input__" in names
+
+
+def test_on_input_pushes_type_event_to_given_worker():
+    """BBA-3: _on_input кладёт action=type в очередь конкретного worker'а."""
+    import browser.browser_service as bs
+
+    worker = _new_worker(None)
+    worker._observe_last_event_id = 0
+    worker._observed_events.clear()
+
+    bs._on_input(
+        {"tag": "input", "type": "password", "name": "pwd", "rect": {"x": 0, "y": 0, "w": 100, "h": 30}},
+        worker,
+    )
+
+    assert len(worker._observed_events) == 1
+    evt = worker._observed_events[0]
+    assert evt["action"] == "type"
+    assert evt["element"]["text"] == ""  # значение НЕ утекает
+
+
+def test_enrich_classifies_password_as_secret():
+    """BBA-3: type=password → valueClass='secret' (не 'unknown')."""
+    worker = _new_worker(None)
+    evt = {
+        "eventId": "cdp-1", "timestamp": 0.0, "action": "type",
+        "element": {"tag": "input", "type": "password", "name": "pwd",
+                    "rect": {"x": 0, "y": 0, "w": 100, "h": 30}},
+    }
+    worker._enrich_event(evt)
+    assert evt["valueClass"] == "secret"
+
+
+def test_enrich_classifies_email():
+    """BBA-3: type=email → valueClass='email'."""
+    worker = _new_worker(None)
+    evt = {
+        "eventId": "cdp-1", "timestamp": 0.0, "action": "type",
+        "element": {"tag": "input", "type": "email", "name": "mail",
+                    "rect": {"x": 0, "y": 0, "w": 100, "h": 30}},
+    }
+    worker._enrich_event(evt)
+    assert evt["valueClass"] == "email"
+
+
+# ── BBA-5: negative / reconnect — честный disconnected, без fake steps ───────
+
+
+def test_observe_event_not_active_returns_not_observing():
+    """BBA-5: observe выключен → connected=False, observing=False, event=None."""
+    worker = _new_worker(None)
+    worker._observe_active = False
+
+    result = worker._cmd_observe_event()
+    assert result["ok"] is True
+    assert result["connected"] is False
+    assert result["observing"] is False
+    assert result.get("event") is None
+
+
+def test_observe_event_page_none_connected_false():
+    """BBA-5: страница пропала → честный connected=False, никакого события."""
+    worker = _new_worker(None)
+    worker._observe_active = True
+    worker._observed_events.clear()
+
+    result = worker._cmd_observe_event()
+    assert result["ok"] is True
+    assert result["connected"] is False
+    assert result["observing"] is True
+    assert result.get("event") is None
+
+
+def test_observe_event_cdp_dropped_reports_disconnected():
+    """BBA-5: page.evaluate кидает (CDP отвалился) → connected=False, _page сброшен.
+
+    Никаких синтезированных/фейковых шагов: event=None, а worker честно
+    переходит в disconnected и сбрасывает page для будущего reconnect.
+    """
+    page = _mock_page()
+    page.evaluate = MagicMock(side_effect=RuntimeError("CDP socket closed"))
+    worker = _new_worker(page)
+    worker._observe_active = True
+    worker._observed_events.clear()
+
+    result = worker._cmd_observe_event()
+
+    assert result["ok"] is True
+    assert result["connected"] is False
+    assert result["observing"] is True
+    assert result.get("event") is None
+    assert worker._page is None  # сброшен → следующий ensure_browser переподключится
+
+
+def test_observe_event_no_fake_step_on_disconnect():
+    """BBA-5: при отвале CDP очередь не обогащается и не «дорисовывает» шаг."""
+    page = _mock_page()
+    page.evaluate = MagicMock(side_effect=RuntimeError("CDP socket closed"))
+    worker = _new_worker(page)
+    worker._observe_active = True
+    worker._observed_events.clear()
+
+    result = worker._cmd_observe_event()
+
+    assert result.get("event") is None
+    assert worker._observed_events == []  # ничего не синтезировано
+
+
+def test_observe_event_pops_real_event_when_connected():
+    """BBA-5 (positive guard): при живой странице очередь отдаёт реальное событие."""
+    page = _mock_page()
+    page.evaluate = MagicMock(return_value=1)  # живой CDP
+    worker = _new_worker(page)
+    worker._observe_active = True
+    worker._observed_events.clear()
+    worker._observed_events.append({"eventId": "cdp-1", "timestamp": 0.0, "action": "click", "element": {"tag": "button", "rect": {"x": 0, "y": 0, "w": 1, "h": 1}}})
+
+    result = worker._cmd_observe_event()
+
+    assert result["ok"] is True
+    assert result["connected"] is True
+    assert result["event"]["eventId"] == "cdp-1"

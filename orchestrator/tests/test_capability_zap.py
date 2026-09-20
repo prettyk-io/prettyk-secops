@@ -1,6 +1,6 @@
 """COS-L9: Тесты scannerCapabilityBroker."""
 import pytest
-from orchestrator.adapters.capability_scanner import scannerSession, scannerCapabilityBroker
+from adapters.capability_zap import scannerSession, scannerCapabilityBroker
 
 
 class TestscannerSession:

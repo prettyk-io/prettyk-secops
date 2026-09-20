@@ -1,0 +1,43 @@
+# -*- coding: utf-8 -*-
+"""Contract specifications for cross-product communication."""
+from orchestrator.contracts.studio_run_output import (
+    ARTIFACT_SCHEME,
+    CONTRACT_VERSION,
+    FINGERPRINT_SCHEME,
+    FindingSeverity,
+    BoxVerdict,
+    QwenSuggestion,
+    StudioFinding,
+    StudioRunSummary,
+    StudioProvenance,
+    FuzzCorrelation,
+    StudioRunOutput,
+    HubIntakeResponse,
+    HubIntakeErrorItem,
+    canonical_artifact_ref,
+    compute_act_ref,
+    compute_scan_dedup_key,
+    is_artifact_ref,
+    make_fuzz_correlation,
+)
+
+__all__ = [
+    "ARTIFACT_SCHEME",
+    "CONTRACT_VERSION",
+    "FINGERPRINT_SCHEME",
+    "FindingSeverity",
+    "BoxVerdict",
+    "QwenSuggestion",
+    "StudioFinding",
+    "StudioRunSummary",
+    "StudioProvenance",
+    "FuzzCorrelation",
+    "StudioRunOutput",
+    "HubIntakeResponse",
+    "HubIntakeErrorItem",
+    "canonical_artifact_ref",
+    "compute_act_ref",
+    "compute_scan_dedup_key",
+    "is_artifact_ref",
+    "make_fuzz_correlation",
+]

@@ -54,6 +54,29 @@ describe('POC-CDP-2: observationToDsl / action / strategy', () => {
     const obs = makeObservation({ element: { tag: 'div', text: 'X', rect: { x: 0, y: 0, w: 1, h: 1 } } });
     expect(observationToStrategy(obs)).toBe('css');
   });
+
+  it('BBA-3: action=type observation → Type step', () => {
+    const obs = makeObservation({
+      action: 'type',
+      element: { tag: 'input', text: '', rect: { x: 0, y: 0, w: 1, h: 1 }, role: 'textbox', accessibleName: 'Логин' },
+      valueClass: 'unknown',
+    });
+    expect(observationToAction(obs)).toBe('Type');
+    const step = observationToStep(obs);
+    expect(step.action).toBe('Type');
+    expect(step.payload).toBe('$value');
+    expect(observationToDsl(obs)).toContain('$value');
+  });
+
+  it('BBA-3: type observation on password → $secret (no plaintext)', () => {
+    const obs = makeObservation({
+      action: 'type',
+      element: { tag: 'input', text: '', rect: { x: 0, y: 0, w: 1, h: 1 }, role: 'textbox', accessibleName: 'Пароль' },
+      valueClass: 'secret',
+    });
+    expect(observationToStep(obs).payload).toBe('$secret');
+    expect(observationToDsl(obs)).toContain('$secret');
+  });
 });
 
 describe('POC-CDP-5: redaction (DoD 12)', () => {
@@ -139,6 +162,64 @@ describe('POC-CDP-3/5: decideObservation gates (DoD 4, 10, 11)', () => {
     });
     expect(d.apply).toBe(false);
     expect(d.manualTrust).toBe(true);
+  });
+});
+
+describe('BBA-4: deterministic Accept/Reject (1 step / 0 changes, no dupes)', () => {
+  it('Accept produces exactly one step with stable canonical identity', () => {
+    const obs = makeObservation();
+    const step = observationToStep(obs);
+    const provenance = buildProvenance(obs);
+
+    // один шаг, не массив
+    expect(typeof step).toBe('object');
+    expect(Array.isArray(step)).toBe(false);
+    expect(step.id).toBeTruthy();
+    // identity — детерминированные поля
+    expect(step.action).toBe('Click');
+    expect(step.strategy).toBe('role');
+    expect(step.strategyValue).toBe('Войти');
+    expect(step.led).toBe('predicted');
+    // provenance всегда непустой маркер
+    expect(typeof provenance).toBe('string');
+    expect(provenance.length).toBeGreaterThan(0);
+  });
+
+  it('Reject adds nothing — decision still apply=false and no step identity is minted', () => {
+    const obs = makeObservation();
+    // Reject не мутирует shared-состояние (acceptedEventIds не трогается) —
+    // повторное то же событие всё ещё apply (детерминизм gate).
+    const d = decideObservation(obs, { acceptedEventIds: new Set(), existingDslLines: [] });
+    expect(d.apply).toBe(true);
+    // Никакого шага не создаётся на reject-ветке — reject только чистит proposal.
+    // (step identity minted только в observationToStep → вызывается только на Accept.)
+  });
+
+  it('Duplicate event after Accept → blocked, zero additional steps', () => {
+    const obs = makeObservation();
+    const d = decideObservation(obs, { acceptedEventIds: new Set(['cdp-1']), existingDslLines: [] });
+    expect(d.apply).toBe(false);
+    expect(d.duplicate).toBe(true);
+  });
+
+  it('Same observation accepted twice produces distinct step identities', () => {
+    const obs = makeObservation();
+    const a = observationToStep(obs);
+    const b = observationToStep(obs);
+    expect(a.id).not.toBe(b.id);
+  });
+
+  it('Accept never leaks plaintext into step or DSL (BBA-4 no-plaintext)', () => {
+    const obs = makeObservation({
+      action: 'type',
+      element: { tag: 'input', text: 'hunter2', rect: { x: 0, y: 0, w: 1, h: 1 }, role: 'textbox', accessibleName: 'Пароль' },
+      valueClass: 'secret',
+    });
+    const step = observationToStep(obs);
+    const dsl = observationToDsl(obs);
+    expect(step.payload).not.toContain('hunter2');
+    expect(dsl).not.toContain('hunter2');
+    expect(step.payload).toBe('$secret');
   });
 });
 

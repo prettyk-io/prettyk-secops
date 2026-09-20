@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from utils.scanner_report_summary import summarize_scanner_xml
+from utils.zap_report_summary import summarize_scanner_xml
 
 _SAMPLE_XML = """<?xml version="1.0"?>
 <OWASPscannerReport version="2.14.0" generated="Mon, 10 Aug 2026 12:00:00">

@@ -1,0 +1,226 @@
+# EDGE-1: Self-hosted профиль — единая точка входа.
+#
+# Внешний мир видит ТОЛЬКО Caddy (443 + 80 redirect). Все внутренние сервисы
+# живут в сети pk-net и не публикуют host-порты (`expose` = только документация
+# для соседей по сети, наружу Docker их не открывает).
+#
+# Этот файл НЕ заменяет lab-конфигурацию (services/docker-compose.yml,
+# docker-compose.cosmo.yml, docker-compose.infra.yml) — локальная лаба
+# по-прежнему на loopback. Здесь — граница production/self-hosted.
+#
+# Запуск:
+#   docker compose -f services/docker-compose.edge.yml up -d
+#
+# Политика CORS/rate-limit — в services/Caddyfile (синхронизирована с
+# orchestrator/infra/edge_gateway.py).
+
+services:
+  # ── EDGE: единственный публикуемый сервис ──────────────────────────
+  caddy:
+    build:
+      context: .
+      dockerfile: caddy.Dockerfile
+    image: pk-caddy-edge:local
+    container_name: pk-edge
+    restart: unless-stopped
+    ports:
+      - "80:80"     # ACME + redirect на 443
+      - "443:443"   # единственная внешняя точка входа
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      cosmo-api:
+        condition: service_healthy
+    networks:
+      - pk-net
+    healthcheck:
+      test: ["CMD", "caddy", "version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ── Внутренние сервисы: без host-портов ────────────────────────────
+  frontend:
+    image: pk-frontend:local
+    container_name: pk-frontend
+    restart: unless-stopped
+    expose:
+      - "5173"
+    networks:
+      - pk-net
+
+  cosmo-api:
+    image: pk-cosmo-api:local
+    container_name: cosmo-api
+    restart: unless-stopped
+    expose:
+      - "8100"
+    environment:
+      - PK_DEPLOY_PROFILE=enterprise
+      - PK_PG_DSN=postgresql://prettyk:prettyk@postgres:5432/cosmo
+      - PK_VALKEY_HOST=valkey
+      - PK_VALKEY_PORT=6379
+      - PK_GITEA_URL=http://gitea:3000
+      - PK_WOODPECKER_URL=http://woodpecker:8000
+      - PK_MINIO_URL=http://minio:9000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    networks:
+      - pk-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8100/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  gitea:
+    image: gitea/gitea:1.22
+    container_name: cosmo-gitea
+    restart: unless-stopped
+    expose:
+      - "3000"
+    environment:
+      - GITEA__database__DB_TYPE=postgres
+      - GITEA__database__HOST=postgres:5432
+      - GITEA__database__NAME=cosmo_gitea
+      - GITEA__database__USER=prettyk
+      - GITEA__database__PASSWD=prettyk
+    volumes:
+      - cosmo_gitea:/data
+    networks:
+      - pk-net
+
+  woodpecker:
+    image: woodpeckerci/woodpecker-server:latest
+    container_name: cosmo-woodpecker
+    restart: unless-stopped
+    expose:
+      - "8000"
+    environment:
+      - WOODPECKER_OPEN=true
+      - WOODPECKER_GITEA=true
+      - WOODPECKER_GITEA_URL=http://gitea:3000
+      - WOODPECKER_DATABASE_DRIVER=postgres
+      - WOODPECKER_DATABASE_DATASOURCE=postgres://prettyk:prettyk@postgres:5432/cosmo_woodpecker?sslmode=disable
+    volumes:
+      - cosmo_woodpecker:/var/lib/woodpecker
+    depends_on:
+      gitea:
+        condition: service_started
+    networks:
+      - pk-net
+
+  minio:
+    image: minio/minio:latest
+    container_name: cosmo-minio
+    restart: unless-stopped
+    expose:
+      - "9000"
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=prettyk
+      - MINIO_ROOT_PASSWORD=prettyk-minio-dev
+    volumes:
+      - cosmo_minio:/data
+    networks:
+      - pk-net
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: prettyk-postgres
+    restart: unless-stopped
+    expose:
+      - "5432"
+    environment:
+      POSTGRES_USER: ${PRETTYK_PG_USER:-prettyk}
+      POSTGRES_PASSWORD: ${PRETTYK_PG_PASSWORD:-prettyk}
+      POSTGRES_DB: ${PRETTYK_PG_DB:-prettyk}
+    volumes:
+      - prettyk_postgres:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - pk-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PRETTYK_PG_USER:-prettyk} -d ${PRETTYK_PG_DB:-prettyk}"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    container_name: prettyk-valkey
+    restart: unless-stopped
+    expose:
+      - "6379"
+    command: valkey-server --save 60 1 --loglevel warning
+    volumes:
+      - prettyk_valkey:/data
+    networks:
+      - pk-net
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  openbao:
+    image: openbao/openbao:latest
+    container_name: prettyk-openbao
+    restart: unless-stopped
+    expose:
+      - "8200"
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${PRETTYK_BAO_ROOT_TOKEN:-prettyk-bao-root-dev}
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+      VAULT_ADDR: http://0.0.0.0:8200
+    volumes:
+      - prettyk_openbao:/vault/data
+      - ./openbao/config.hcl:/vault/config/config.hcl:ro
+    networks:
+      - pk-net
+
+  scanner:
+    image: ghcr.io/zaproxy/zaproxy:stable
+    container_name: pk-scanner
+    restart: unless-stopped
+    expose:
+      - "8080"
+    networks:
+      - pk-net
+
+  playwright-authoring:
+    image: pk-playwright-authoring:local
+    container_name: playwright-authoring
+    restart: unless-stopped
+    shm_size: 2gb
+    expose:
+      - "9223"
+      - "7902"
+    networks:
+      - pk-net
+
+volumes:
+  caddy_data:
+  caddy_config:
+  cosmo_gitea:
+  cosmo_woodpecker:
+  cosmo_minio:
+  prettyk_postgres:
+  prettyk_valkey:
+  prettyk_openbao:
+
+networks:
+  pk-net:
+    name: pk-net
+    external: true

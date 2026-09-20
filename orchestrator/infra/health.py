@@ -67,6 +67,11 @@ class ServiceHealth:
         with self._lock:
             self._draining = True
 
+    @property
+    def draining(self) -> bool:
+        """Сервис завершает текущие задачи и не принимает новые."""
+        return self._draining
+
     def live(self) -> HealthStatus:
         """Только liveness — процесс жив? Никаких проверок зависимостей."""
         return HealthStatus(

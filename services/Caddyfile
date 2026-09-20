@@ -1,44 +1,88 @@
-# COS-014: Caddy reverse proxy — один entry, авто TLS.
+# EDGE-1/2: Caddy reverse proxy — единая точка входа self-hosted профиля.
 #
-# Один порт 443 для всего приложения:
-#   frontend :5173, API :8100, Gitea :3000, MinIO :9000
+# EDGE-1: внешний мир видит ОДИН порт 443 (80 → redirect). Внутренние сервисы
+#   (postgres:5432, valkey:6379, openbao:8200, scanner:8080, minio:9000,
+#   gitea:3000, woodpecker:8000, cosmo-api:8100, frontend:5173,
+#   playwright-authoring:9223/7902) наружу НЕ публикуются — только через Caddy.
+#   Локальная lab-конфигурация не меняется; этот профиль — для self-hosted.
 #
-# Caddy автоматически получает TLS-сертификат (ACME) для домена.
-# Внутренние сервисы (PG, Valkey, scanner, OpenBao) НЕ exposed наружу.
+# EDGE-2: CORS и rate-limiting — единая политика ЗДЕСЬ, не в каждом сервисе.
+#   Неразрешённый Origin → 403. Превышение лимита → 429.
+#   Политика синхронизирована с `orchestrator/infra/edge_gateway.py`.
+#
+# TLS: для localhost — внутренний CA (`tls internal`); для реального домена
+#   Caddy автоматически выпускает ACME-сертификат.
+#
+# Образ: требуется плагин caddy-ratelimit (директива `rate_limit`).
 
 {
-  # Замените на реальный домен. Для localhost — TLS off, http://.
-  auto_https off
+  # EDGE-1: admin API Caddy (по умолчанию :2019) наружу не выставляется.
+  admin off
+}
+
+# EDGE-1: HTTP → HTTPS
+:80 {
+  redir https://{host}{uri} permanent
 }
 
 :443 {
+  tls internal
+
+  # EDGE-2: CORS allowlist — неразрешённый Origin отклоняется на границе.
+  @bad_origin {
+    header Origin *
+    not header Origin https://localhost https://127.0.0.1
+  }
+  respond @bad_origin 403
+
+  # EDGE-2: preflight (OPTIONS) для разрешённого origin.
+  @preflight method OPTIONS
+  handle @preflight {
+    header Access-Control-Allow-Origin "{http.request.header.Origin}"
+    header Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+    header Access-Control-Allow-Headers "Content-Type, Authorization"
+    header Access-Control-Max-Age "600"
+    header Vary "Origin"
+    respond 204
+  }
+
+  # EDGE-2: rate limit — превышение лимита → 429 до бэкенда.
+  rate_limit {
+    zone edge {
+      key {http.request.remote.host}
+      events 120
+      window 60s
+    }
+  }
+
   # Космо API (FastAPI)
   handle /api/* {
-    reverse_proxy cosmo-api:8100
+    reverse_proxy cosmo-api:8100 {
+      flush_interval -1
+    }
   }
 
   # Gitea (forge UI)
   handle /forge/* {
     uri strip_prefix /forge
-    reverse_proxy cosmo-gitea:3000
+    reverse_proxy cosmo-gitea:3000 {
+      flush_interval -1
+    }
   }
 
   # MinIO (артефакты)
   handle /artifacts/* {
     uri strip_prefix /artifacts
-    reverse_proxy cosmo-minio:9000
+    reverse_proxy cosmo-minio:9000 {
+      flush_interval -1
+    }
   }
 
   # Frontend (Vite build)
   handle {
-    reverse_proxy frontend:5173
+    reverse_proxy frontend:5173 {
+      # EDGE-1: WS/SSE не обрываются — без буферизации и idle-таймаута.
+      flush_interval -1
+    }
   }
-
-  # COS-014: WebSocket/SSE не обрываются (долгие соединения)
-  # Caddy держит WS/SSE из коробки — без таймаута на idle.
-}
-
-# Health endpoint самого Caddy (опционально)
-:2019 {
-  respond "Caddy is running" 200
 }

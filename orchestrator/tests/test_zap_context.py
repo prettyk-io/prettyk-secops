@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 from corpus.corpus_parser import RequestTemplate
-from corpus.scanner_context import build_scanner_raw_request, inject_corpus_into_scanner
+from corpus.zap_context import build_scanner_raw_request, inject_corpus_into_scanner
 
 
 def test_build_scanner_raw_request_get() -> None:
