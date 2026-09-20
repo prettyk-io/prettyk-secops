@@ -17,8 +17,8 @@ const chip = (text: string, bg: string, color: string) => `<span style="display:
 
 const statCard = (title: string, value: string | number) => (
   <Paper sx={{ p: 1.5, flex: 1, minWidth: 120, background: '#0F172A', border: '1px solid #1E293B', borderRadius: 2 }}>
-    <Typography variant="caption" color="text.secondary" display="block">{title}</Typography>
-    <Typography variant="h6" color="#E2E8F0" fontWeight={600}>{value}</Typography>
+    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>{title}</Typography>
+    <Typography variant="h6" color="#E2E8F0" sx={{ fontWeight: 600 }}>{value}</Typography>
   </Paper>
 );
 
@@ -34,22 +34,22 @@ export function EvidencePanel({ onOpenDeploy }: EvidencePanelProps): React.JSX.E
   const kpi = useMemo(() => loadLiveProgramKpi(), [tick]);
   const dojoStatus = useMemo(() => readLastDojoProgramStatus(), [tick]);
   const showcase = useMemo(() => resolveDeployEvidencePack('dep_ib_web_2401', 'Интернет-банк Web', 'ib-web'), [tick]);
-  const primary = useMemo(() => pickPrimaryEvidencePack(deploy, checks, showcase), [tic, deploys, checks, showcase]);
+  const primary = useMemo(() => pickPrimaryEvidencePack(deploys, checks, showcase), [tick, deploys, checks, showcase]);
 
   const onSyncLive = useCallback(async () => {
     setSyncing(true);
-    try { const r = await syncAdminDojoFromLive(); syncDeployGatesFromChecks(); if (!r.evidenceOk && r.dojoStatus === 'down') setSnack(r.evidenceError || r.dojoError || 'Live/Dojo недоступны'); else setSnack(`Evidnce +${r.evidenceUpserted} · Dojo ${r.dojoStatus} (+${r.dojoApplied})`); setTik((n) => n + 1); } finally { setSyncing(false); }
+    try { const r = await syncAdminDojoFromLive(); syncDeployGatesFromChecks(); if (!r.evidenceOk && r.dojoStatus === 'down') setSnack(r.evidenceError || r.dojoError || 'Live/Dojo недоступны'); else setSnack(`Evidence +${r.evidenceUpserted} · Dojo ${r.dojoStatus} (+${r.dojoApplied})`); setTick((n) => n + 1); } finally { setSyncing(false); }
   }, []);
 
-  const rows = deploys.map((d) => { const p = resolveDeployEvidencePack(d.deploy_id, d.applicaton_name, d.project_id); return { key: d.deploy_id, app: d.applicaton_name, gate: d.last_gate ?? 'unknon', allure_id: p.allure?.allure_project_id ?? '—', crit: p.dojo?.stats?.critcal ?? 0, high: p.dojo?.stats?.high ?? 0, n: p.history.lnegth, allure_u: p.allure?.report_url, dojo_u: p.dojo?.engagement_url }; });
+  const rows = deploys.map((d) => { const p = resolveDeployEvidencePack(d.deploy_id, d.application_name, d.project_id); return { key: d.deploy_id, app: d.application_name, gate: d.last_gate ?? 'unknown', allure_id: p.allure?.allure_project_id ?? '—', crit: p.dojo?.stats?.critical ?? 0, high: p.dojo?.stats?.high ?? 0, n: p.history.length, allure_u: p.allure?.report_url, dojo_u: p.dojo?.engagement_url }; });
 
   const hasCharts = primary.pack.severity_trend.length > 0 || primary.pack.pass_rate_trend.length > 0;
   const [tab, setTab] = useState(0);
 
   const portfolioTab = (
     <Paper sx={{ p: 2, background: '#0F172A', border: '1px solid #1E293B', borderRadius: 2 }}>
-      <Typography variant="subtitle2" color="#E2E8F0" mb={1}>Портфель</Typography>
-      {rows.lnegth === 0 ? <Typography color="text.secondary">Нет деплоев</Typography> : (
+      <Typography variant="subtitle2" color="#E2E8F0" sx={{ mb: 1 }}>Портфель</Typography>
+      {rows.length === 0 ? <Typography color="text.secondary">Нет деплоев</Typography> : (
         <TableContainer><Table size="small"><TableHead><TableRow>
           <TableCell sx={{ color: '#94A3B8', fontSize: 12 }}>Приложение</TableCell>
           <TableCell sx={{ color: '#94A3B8', fontSize: 12 }}>Gate</TableCell>
@@ -78,17 +78,17 @@ export function EvidencePanel({ onOpenDeploy }: EvidencePanelProps): React.JSX.E
 
   const trendsTab = (
     <Paper sx={{ p: 2, background: '#0F172A', border: '1px solid #1E293B', borderRadius: 2 }}>
-      <Typography variant="subtitle2" color="#E2E8F0" mb={1}>Тренды</Typography>
+      <Typography variant="subtitle2" color="#E2E8F0" sx={{ mb: 1 }}>Тренды</Typography>
       {hasCharts ? (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }} data-testid="evidence-primary-charts" data-from-live={primary.fromLive ? '1' : '0'}>
-          <div><Typography variant="caption" color="text.secondary" display="block" mb={0.5}>{primary.caption} {primary.fromLive ? '· Live' : ''}: Severity</Typography><SeverityTrendChart points={primary.pack.severity_trend} /></div>
-          <div><Typography variant="caption" color="text.secondary" display="block" mb={0.5}>{primary.caption} {primary.fromLive ? '· Live' : ''}: Pass-rate</Typography><PassRateLine points={primary.pack.pass_rate_trend} /></div>
-          {primary.pack.dojo?.stats ? <div><Typography variant="caption" color="text.secondary" display="block" mb={0.5}>{primary.caption} {primary.fromLive ? '· Live' : ''}: Уязвимости</Typography><SeverityDonut stats={primary.pack.dojo.stats} /></div> : null}
+          <div><Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>{primary.caption} {primary.fromLive ? '· Live' : ''}: Severity</Typography><SeverityTrendChart points={primary.pack.severity_trend} /></div>
+          <div><Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>{primary.caption} {primary.fromLive ? '· Live' : ''}: Pass-rate</Typography><PassRateLine points={primary.pack.pass_rate_trend} /></div>
+          {primary.pack.dojo?.stats ? <div><Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>{primary.caption} {primary.fromLive ? '· Live' : ''}: Уязвимости</Typography><SeverityDonut stats={primary.pack.dojo.stats} /></div> : null}
         </div>
       ) : (
         <div style={{ textAlign: 'center', padding: 32 }}>
-          <Typography color="text.secondary" mb={1}>Нет точек тренда</Typography>
-          <Typography variant="caption" color="text.secondary" display="block" mb={2}>Подтяни данные с Live</Typography>
+          <Typography color="text.secondary" sx={{ mb: 1 }}>Нет точек тренда</Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>Подтяни данные с Live</Typography>
           <button onClick={() => void onSyncLive()} disabled={syncing} style={{ padding: '6px 16px', borderRadius: 6, background: '#3b82f6', color: '#fff', border: 'none', cursor: syncing ? 'wait' : 'pointer', fontSize: 13 }}>{syncing ? '…' : 'Подтянуть с Live'}</button>
         </div>
       )}

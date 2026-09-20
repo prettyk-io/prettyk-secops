@@ -31,7 +31,7 @@ export function EvidencePanel(): React.JSX.Element {
         {cards.map((c,i) =>
           <Paper key={c.check_id??i} sx={{p:1.5,background:'#0F172A',border:'1px solid #1E293B',borderRadius:2}}>
             <div style={{display:'flex',flexDirection:'column',gap:8}}>
-              <Typography variant="caption" fontFamily="monospace" color="text.secondary">pack: {c.check_id??'—'}</Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>pack: {c.check_id??'—'}</Typography>
               <div style={{display:'flex',gap:4}} dangerouslySetInnerHTML={{__html: (c.severity?sevChip(c.severity):'') + (c.finding_type?chip(c.finding_type,'rgba(56,189,248,0.1)','#38bdf8'):'') }} />
               {c.screenshot ? <img src={c.screenshot} alt="" style={{width:'100%',borderRadius:4,border:'1px solid #334155'}} onError={e => { (e.currentTarget as HTMLElement).style.display='none' }} /> : null}
               <Typography variant="caption" color="text.secondary">{c.source||'source: —'}</Typography>

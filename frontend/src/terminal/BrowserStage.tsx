@@ -63,7 +63,11 @@ export function BrowserStage({
   const playAbortRef = useRef<AbortController | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const viewportRef = useRef<HTMLDivElement | null>(null);
   const clickLockRef = useRef(false);
+  const clickMarkerSeqRef = useRef(0);
+  const clickMarkerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [clickMarker, setClickMarker] = useState<{ id: number; x: number; y: number } | null>(null);
 
   // ─ WS URL: SOR-F1 — динамический relay endpoint из pk-control, fallback на хардкод
   const wsUrl = cdpStatus?.canvasUrl || (() => {
@@ -92,15 +96,20 @@ export function BrowserStage({
   const liveCdp = cdpStatus?.connected ?? cdpConnected;
 
   // VP-F1: WS canvas stream
-  const { frameInfo, framesReceived } = useBrowserCanvasStream(canvasRef, wsUrl, liveCdp);
+  const { frameInfo, framesReceived } = useBrowserCanvasStream(canvasRef, viewportRef, wsUrl, liveCdp);
 
   useEffect(() => {
     if (cdpStatus?.url) setNavUrl(cdpStatus.url);
   }, [cdpStatus?.url]);
 
-  // ─ HDO: клик по canvas → observe/click ─
+  // BBA-FE-1: очистка ripple-таймера при размонтировании.
+  useEffect(() => () => {
+    if (clickMarkerTimerRef.current) clearTimeout(clickMarkerTimerRef.current);
+  }, []);
+
+  // ─ BBA-FE-1: клик по canvas — реальный клик (author) + observe (record) ─
   const handleCanvasClick = useCallback(async (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (clickLockRef.current || !cdpObserving) return;
+    if (clickLockRef.current || !liveCdp) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const fi = frameInfo.current;
@@ -109,11 +118,26 @@ export function BrowserStage({
     const vp = computeCanvasClickToViewport(canvas, frameW, frameH, e.clientX, e.clientY);
     if (!vp) return;
 
+    // Визуальный фидбек (ripple) в координатах viewport-контейнера.
+    if (viewportRef.current) {
+      const rect = viewportRef.current.getBoundingClientRect();
+      const id = ++clickMarkerSeqRef.current;
+      setClickMarker({ id, x: e.clientX - rect.left, y: e.clientY - rect.top });
+      if (clickMarkerTimerRef.current) clearTimeout(clickMarkerTimerRef.current);
+      clickMarkerTimerRef.current = setTimeout(() => setClickMarker(null), 450);
+    }
+
     clickLockRef.current = true;
     const session = getBrowserSession();
-    const result = await session.observeClick(vp.x, vp.y);
+    if (cdpObserving) {
+      // record: клик в браузер + observe-событие → proposal (poll в useCdpRecorder).
+      await session.observeClick(vp.x, vp.y);
+    } else {
+      // author: просто реальный клик по странице (без observe-очереди).
+      await session.clickAt(vp.x, vp.y);
+    }
     clickLockRef.current = false;
-  }, [cdpObserving, frameInfo]);
+  }, [cdpObserving, frameInfo, liveCdp]);
 
   // ─ Навигация ─
   const doNavigate = useCallback(async (url: string) => {
@@ -240,7 +264,7 @@ export function BrowserStage({
       </div>
 
       {/* Viewport: canvas (VP-F1) */}
-      <div className="flex-1 min-h-0 flex items-center justify-center bg-[#080c14] relative overflow-hidden">
+      <div ref={viewportRef} className="flex-1 min-h-0 flex items-center justify-center bg-[#080c14] relative overflow-hidden">
         {!liveCdp ? (
           <div className="flex flex-col items-center gap-4 text-center px-4">
             <Monitor className="size-16 text-slate-600" />
@@ -259,9 +283,17 @@ export function BrowserStage({
         ) : (
           <canvas
             ref={canvasRef}
-            className={cn('object-contain', cdpObserving && 'cursor-crosshair')}
+            className={cn('block', liveCdp && (cdpObserving ? 'cursor-crosshair' : 'cursor-pointer'))}
             style={{ imageRendering: 'auto', maxWidth: '100%', maxHeight: '100%' }}
-            onClick={cdpObserving ? handleCanvasClick : undefined}
+            onClick={liveCdp ? handleCanvasClick : undefined}
+          />
+        )}
+
+        {clickMarker && (
+          <span
+            key={clickMarker.id}
+            className="absolute z-10 pointer-events-none rounded-full bg-cyan-400/50 animate-ping"
+            style={{ left: clickMarker.x - 6, top: clickMarker.y - 6, width: 12, height: 12 }}
           />
         )}
 

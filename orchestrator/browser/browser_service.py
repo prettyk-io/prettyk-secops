@@ -76,6 +76,8 @@ class _BrowserWorker:
         self._observe_last_event_id = 0
         self._binding_registered = False
         self._input_binding_registered = False
+        # BBA-EXEC-2: флаг отмены активного replay (выставляется извне worker-потока).
+        self._abort_requested = False
         # SOR-L2: per-session CDP endpoint override
         self._cdp_endpoint_override: str | None = None
 
@@ -408,6 +410,167 @@ class _BrowserWorker:
             return {"ok": True, "from": [x1, y1], "to": [x2, y2]}
         except Exception as e:
             return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+
+    def _cmd_mouse_click(self, x: float, y: float) -> dict:
+        """BBA-FE-1: координатный клик для режима author.
+
+        В отличие от ``_cmd_observe_click`` не требует observe/start и не
+        кладёт событие в observe-очередь — это «просто клик» по странице
+        (реальный CDP-клик через page.mouse), чтобы оператор мог нажимать
+        кнопки/ссылки без включённой записи.
+        """
+        page = self._ensure_browser()
+        if page is None:
+            return {"ok": False, "error": "browser not available"}
+        try:
+            page.mouse.click(float(x), float(y))
+            return {"ok": True, "x": x, "y": y}
+        except Exception as e:
+            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+
+    # ── BBA-EXEC-1: step execute / scenario replay ──
+
+    _SUPPORTED_STEP_ACTIONS = {
+        "click", "fill", "type", "goto", "navigate",
+        "wait_for", "select_option", "press_key", "hover", "scroll",
+    }
+
+    @staticmethod
+    def _resolve_step_locator(page, target: str, strategy: str):
+        """Построить Playwright locator по стратегии (не вызывает методов)."""
+        strategy = (strategy or "css").lower()
+        if strategy == "role":
+            return page.get_by_role(target)
+        if strategy == "text":
+            return page.get_by_text(target, exact=True)
+        if strategy == "xpath":
+            return page.locator(f"xpath={target}")
+        if strategy == "id":
+            return page.locator(f"#{target}")
+        return page.locator(target)  # css (default)
+
+    def _cmd_step_execute(self, step: dict) -> dict:
+        """BBA-EXEC-1: выполнить единичный структурированный шаг сценария.
+
+        Вход: ``{action, target, value, strategy, timeout_ms, step_id?}``.
+        Выход: ``{step_id, action, status, duration_ms, error, screenshot_b64}``.
+
+        Fail-closed: любая ошибка (элемент не найден, таймаут, неверный action)
+        возвращает ``status: "failed"`` с текстом ошибки — воркер не крашится.
+        """
+        started = time.time()
+        action = str(step.get("action") or "").strip().lower()
+        target = str(step.get("target") or "")
+        value = step.get("value")
+        strategy = str(step.get("strategy") or "css").strip().lower()
+        try:
+            timeout_ms = int(step.get("timeout_ms") or 5000)
+        except (TypeError, ValueError):
+            timeout_ms = 5000
+        step_id = str(step.get("step_id") or "") or f"step-{uuid.uuid4().hex[:8]}"
+
+        def _ok(status: str, error: str | None = None, screenshot_b64: str | None = None) -> dict:
+            return {
+                "step_id": step_id,
+                "action": action,
+                "status": status,
+                "duration_ms": int((time.time() - started) * 1000),
+                "error": error,
+                "screenshot_b64": screenshot_b64,
+            }
+
+        if action not in self._SUPPORTED_STEP_ACTIONS:
+            return _ok("failed", f"unsupported action: {action!r}")
+
+        page = self._ensure_browser()
+        if page is None:
+            return _ok("failed", "browser not available")
+
+        try:
+            if action in ("goto", "navigate"):
+                if not target:
+                    return _ok("failed", "target (url) required for goto")
+                page.goto(target, timeout=timeout_ms, wait_until="domcontentloaded")
+                return _ok("passed")
+
+            if action == "wait_for":
+                # target может быть ms-числом (пауза) или селектором (ожидание появления).
+                if not target:
+                    return _ok("failed", "target required for wait_for")
+                if target.isdigit():
+                    page.wait_for_timeout(int(target))
+                else:
+                    page.wait_for_selector(target, timeout=timeout_ms)
+                return _ok("passed")
+
+            if action == "press_key":
+                if not target:
+                    return _ok("failed", "target (key) required for press_key")
+                page.keyboard.press(target)
+                return _ok("passed")
+
+            if action == "scroll":
+                # value "dx,dy" → wheel; иначе scrollIntoView по target.
+                if value is not None and str(value).strip():
+                    try:
+                        dx, dy = (float(x) for x in str(value).split(","))
+                    except (TypeError, ValueError):
+                        return _ok("failed", f"scroll value must be 'dx,dy', got {value!r}")
+                    page.mouse.wheel(dx, dy)
+                elif target:
+                    self._resolve_step_locator(page, target, strategy).scroll_into_view_if_needed(timeout=timeout_ms)
+                else:
+                    page.mouse.wheel(0.0, -600.0)
+                return _ok("passed")
+
+            # Остальные — требуют target (локатор).
+            if not target:
+                return _ok("failed", f"target required for {action}")
+            locator = self._resolve_step_locator(page, target, strategy)
+
+            if action == "click":
+                locator.click(timeout=timeout_ms)
+            elif action in ("fill", "type"):
+                locator.fill("" if value is None else str(value), timeout=timeout_ms)
+            elif action == "select_option":
+                if value is None:
+                    return _ok("failed", "value required for select_option")
+                locator.select_option(str(value), timeout=timeout_ms)
+            elif action == "hover":
+                locator.hover(timeout=timeout_ms)
+            else:
+                return _ok("failed", f"unsupported action: {action!r}")
+            return _ok("passed")
+        except Exception as e:
+            # Fail-closed: скриншот для диагностики (если страница жива).
+            shot = None
+            try:
+                shot = base64.b64encode(page.screenshot(type="png", full_page=False)).decode("utf-8")
+            except Exception:
+                shot = None
+            return _ok("failed", f"{type(e).__name__}: {e}", screenshot_b64=shot)
+
+    def _cmd_scenario_replay(self, steps: list, stop_on_failure: bool = True) -> dict:
+        """BBA-EXEC-1: пакетное выполнение последовательности шагов с агрегацией."""
+        started = time.time()
+        results: list[dict] = []
+        for step in steps or []:
+            r = self._cmd_step_execute(step)
+            results.append(r)
+            if stop_on_failure and r.get("status") == "failed":
+                break
+        passed = sum(1 for r in results if r.get("status") == "passed")
+        failed = sum(1 for r in results if r.get("status") == "failed")
+        return {
+            "ok": True,
+            "steps": results,
+            "total": len(steps or []),
+            "executed": len(results),
+            "passed": passed,
+            "failed": failed,
+            "verdict": "passed" if failed == 0 else "failed",
+            "duration_ms": int((time.time() - started) * 1000),
+        }
 
     # ── observe ──
 
@@ -915,6 +1078,9 @@ def browser_mouse_wheel(dx: float = 0.0, dy: float = 0.0, session_id: str | None
 def browser_mouse_drag(x1: float, y1: float, x2: float, y2: float, session_id: str | None = None) -> dict:
     return BrowserSessionManager.worker_for(session_id).dispatch("mouse_drag", x1=x1, y1=y1, x2=x2, y2=y2)
 
+def browser_mouse_click(x: float, y: float, session_id: str | None = None) -> dict:
+    return BrowserSessionManager.worker_for(session_id).dispatch("mouse_click", x=x, y=y)
+
 def browser_observe_start(session_id: str | None = None) -> dict:
     return BrowserSessionManager.worker_for(session_id).dispatch("observe_start")
 
@@ -932,3 +1098,11 @@ def browser_context_ensure(context: str = "operator", url: str | None = None, se
 
 def browser_context_destroy(session_id: str | None = None) -> dict:
     return BrowserSessionManager.worker_for(session_id).dispatch("context_destroy")
+
+
+def browser_step_execute(step: dict, session_id: str | None = None) -> dict:
+    return BrowserSessionManager.worker_for(session_id).dispatch("step_execute", step=step)
+
+
+def browser_scenario_replay(steps: list, stop_on_failure: bool = True, session_id: str | None = None) -> dict:
+    return BrowserSessionManager.worker_for(session_id).dispatch("scenario_replay", steps=steps, stop_on_failure=stop_on_failure)

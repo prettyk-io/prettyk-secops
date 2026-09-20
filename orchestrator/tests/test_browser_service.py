@@ -145,6 +145,7 @@ def test_data_playground_browser_routes():
     from tools.data_playground import Handler as _  # noqa: F401
     from browser.browser_service import browser_back, browser_forward, browser_click, browser_type_text  # noqa: F401
     from browser.browser_service import browser_viewport, browser_keyboard_press, browser_mouse_wheel, browser_mouse_drag  # noqa: F401
+    from browser.browser_service import browser_step_execute, browser_scenario_replay  # noqa: F401
 
     assert callable(browser_back)
     assert callable(browser_forward)
@@ -155,6 +156,9 @@ def test_data_playground_browser_routes():
     assert callable(browser_keyboard_press)
     assert callable(browser_mouse_wheel)
     assert callable(browser_mouse_drag)
+    # BBA-EXEC-1: step execute / scenario replay
+    assert callable(browser_step_execute)
+    assert callable(browser_scenario_replay)
 
 
 # ── B-6: click / type_text ──────────────────────────────────────────────────
@@ -787,6 +791,24 @@ def test_cmd_mouse_drag():
     page.mouse.down.assert_called_once()
     page.mouse.up.assert_called_once()
     assert page.mouse.move.call_count == 2
+
+
+def test_cmd_mouse_click():
+    """BBA-FE-1: _cmd_mouse_click → page.mouse.click (author-режим, без observe)."""
+    page = _mock_page()
+    worker = _new_worker(page)
+
+    result = worker._cmd_mouse_click(640.0, 400.0)
+    assert result["ok"] is True
+    page.mouse.click.assert_called_once_with(640.0, 400.0)
+
+
+def test_cmd_mouse_click_no_browser():
+    """BBA-FE-1: _cmd_mouse_click без браузера → честный fail."""
+    worker = _new_worker(None)
+    result = worker._cmd_mouse_click(10.0, 20.0)
+    assert result["ok"] is False
+    assert "browser not available" in result.get("error", "")
 
 
 def test_observe_start_registers_worker_bound_bindings():

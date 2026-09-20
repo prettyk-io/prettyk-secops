@@ -35,9 +35,13 @@
 
 ---
 
-## 🔵 В РАБОТЕ (2026-09-19) — Три потока: Boss (BBA · активен) · Luna (RC2 · ✅) · Flash (PRD · ✅)
+## 🔵 В РАБОТЕ (2026-09-20) — Три потока: Boss (BBA-EXEC-2 · активен) · Luna (RC2-7 · активна) · Flash (BBA-FE-2 · активен)
 
-> Срез 19 сентября 2026, приёмка 20 сентября. Contract A и PK-ALIAS-3 закрыты; Run Control wave 1 (`RUN-CTL-1..6`) зелёная (84 pass). Поток Luna (`RC2-1..5`) и поток Flash (`PRD-1..4`) приняты ✅ (evidence ниже). Поток Boss (`BBA-1..6`) — активен, не принят. Каждая карточка — задание воркеру; dispatch ссылается на этот файл.
+> Срез 19–20 сентября 2026. Contract A и PK-ALIAS-3 закрыты; Run Control wave 1 (`RUN-CTL-1..6`) и wave 2 (`RC2-1..6`) зелёные. BBA-1..6 и BBA-EXEC-1 приняты ✅. BBA-FE-1 принят ✅.
+> Три параллельных непересекающихся потока:
+> - **Flash:** `BBA-FE-2` (BrowserSession test suite parity 35/35 + Multi-Step Replay Runner в BrowserStage).
+> - **Boss:** `BBA-EXEC-2` (Replay Engine Locator Parity & Replay Control/SSE).
+> - **Luna:** `RC2-7` (Frontend Test Parity & Keywords Renaming Debt).
 
 ### Поток 1 — Boss: Browser Authoring backend (BBA)
 
@@ -49,12 +53,71 @@
 | **BBA-4** ✅ | Canonical step identity: один шаг в Studio (StepPill) и Editor (DSL-строка) с общим provenance. Accept/Reject детерминированы. | accept=1 шаг, reject=0, no dupes, no plaintext (+5 тестов). |
 | **BBA-5** ✅ | Negative/reconnect: CDP disconnect, container crash, iframe/cross-origin ограничения. | liveness отдельно от очереди; `connected:False` отдельным полем; закрыл PK-DEBT-RED (2 red → 0); +5 тестов. |
 | **BBA-6** ✅ | Live-верификация цепочки на стенде (`playwright-authoring`/Xvfb, CDP `:9223`, viewport `:9224`). | `test_browser_authoring_live.py` — 1 passed (реальный CDP Chrome/128, observe→click→event с candidates). |
+| **BBA-EXEC-1** ✅ | Движок пошагового исполнения действий и replay сценариев в активном Playwright-браузере через API. | `_cmd_step_execute` и `_cmd_scenario_replay` в `BrowserSessionWorker`, поддержка click/fill/goto/wait_for/select/press со стратегиями css/role/text/xpath, роуты POST `/api/browser/step/execute` и `/api/browser/scenario/replay` в `data_playground.py`, тесты `test_browser_step_execute.py` 100% pass. |
+| **BBA-EXEC-2** | Расширение Replay Engine: паритет стратегий локаторов (`test_id`, `label`, `placeholder`, `alt`, `title`) + прерывание replay (cancellation/abort) + пошаговый статус. | Поддержка всех стратегий локаторов из `frontend/src/studio/scenarioStepModel.ts` в `_resolve_step_locator`; механизм прерывания активного сценария (`abort_replay` / эндпоинт POST `/api/browser/scenario/abort`); пошаговые события прогресса (SSE / очередь событий replay); тесты в `test_browser_step_execute.py` расширены до 100% pass, 0 регрессий в browser-контуре. |
 
-**Out of scope (BBA):** crawler, авто-принятие без оператора, action types за пределами click/type/scroll/drag, multi-user, mobile matrix, scanner/Allure/findings integration.
+**Scope и архитектурные ориентиры (BBA-EXEC-1):**
+1. В `orchestrator/browser/browser_service.py` добавить методы воркера:
+   - `_cmd_step_execute(self, step: dict) -> dict`: выполнение единичного структурированного шага сценария.
+     - Вход: `{action: str, target: str, value: str | None, strategy: str = "css", timeout_ms: int = 5000}`.
+     - Действия: `click`, `fill`/`type`, `goto`/`navigate`, `wait_for`, `select_option`, `press_key`, `hover`, `scroll`.
+     - Стратегии локаторов: `css`, `role`, `text`, `xpath`, `id`.
+     - Выход: `{step_id: str, status: "passed" | "failed", duration_ms: int, error: str | None, screenshot_b64: str | None}`.
+   - `_cmd_scenario_replay(self, steps: list[dict], stop_on_failure: bool = True) -> dict`: пакетное выполнение последовательности шагов с агрегацией результатов.
+2. В `orchestrator/tools/data_playground.py` зарегистрировать эндпоинты:
+   - POST `/api/browser/step/execute`
+   - POST `/api/browser/scenario/replay`
+3. Написать набор unit-тестов в `orchestrator/tests/test_browser_step_execute.py` (валидация входных данных, выполнение каждого типа действия, обработка таймаутов, fail-closed сценарии).
+
+**Out of scope (BBA-EXEC-1):** UI кнопки запуска в React (это следующий шаг после завершения Flash), интеграция с Allure.
+
+**Acceptance criteria (DoD):**
+- [ ] `_cmd_step_execute` корректно диспатчит поддерживаемые действия в активную `self._page`.
+- [ ] Ошибки (элемент не найден, таймаут) не крашат воркер, а возвращают `status: "failed"` с понятным текстом ошибки.
+- [ ] `_cmd_scenario_replay` последовательно прогоняет шаги и возвращает суммарный вердикт.
+- [ ] Роуты `/api/browser/step/execute` и `/api/browser/scenario/replay` отвечают 200 с валидным JSON.
+- [ ] `test_browser_step_execute.py` полностью зелёный, существующие 141+ тестов не регрессируют.
+
+**Worker report (Boss, 2026-09-20, БЕЗ приёмки):** BBA-EXEC-1 реализован до зелени. `_cmd_step_execute` + `_cmd_scenario_replay` + `_resolve_step_locator` в `browser_service.py` (действия click/fill/type/goto/navigate/wait_for/select_option/press_key/hover/scroll; стратегии css/role/text/xpath/id; fail-closed с `screenshot_b64`); public API `browser_step_execute`/`browser_scenario_replay`; роуты POST `/api/browser/step/execute` + `/api/browser/scenario/replay`; тесты `test_browser_step_execute.py` 28/28. Срез: browser-контур 171 passed/1 skipped; routes-import 4 passed. Приёмка за Keeper.
+
+**Приёмка (Keeper, 2026-09-20):** `BBA-EXEC-1` принят ✅. Факты верификации:
+- Unit-тесты `orchestrator/tests/test_browser_step_execute.py` — 28 passed из 28 (0 fail).
+- Browser-контур бэкенда (`test_browser_service.py`, `test_browser_step_execute.py`, `test_browser_session_relay.py`, `test_cdp_viewport_relay.py`) — 117 passed, 1 skipped.
+- Публичные API `browser_step_execute`, `browser_scenario_replay` и HTTP-роуты `/api/browser/step/execute`, `/api/browser/scenario/replay` функционируют fail-closed со снятием скриншота при сбое.
+
+---
+
+#### Карточка BBA-EXEC-2 — Browser Step Execution Extended: Locator Parity & Replay Control
+
+**DoD:** Все стратегии локаторов из `frontend/src/studio/scenarioStepModel.ts` (`test_id`, `label`, `placeholder`, `alt`, `title`) разрешаются в `_resolve_step_locator`; поддержано прерывание/отмена активного replay сценария через `abort_replay` и роут POST `/api/browser/scenario/abort`; `test_browser_step_execute.py` дополнен тестами новых стратегий и отмены, 100% green; 0 регрессий в browser-контуре.
+
+**Scope и архитектурные ориентиры (BBA-EXEC-2):**
+1. В `orchestrator/browser/browser_service.py`:
+   - Расширить `_resolve_step_locator(self, target: str, strategy: str)`:
+     - `test_id`: поиск по `[data-testid="..."]`, `[data-test-id="..."]`, `[id="..."]` (через Playwright `page.get_by_test_id(target)` или css fallback).
+     - `label`: поиск по `page.get_by_label(target)`.
+     - `placeholder`: поиск по `page.get_by_placeholder(target)`.
+     - `alt`: поиск по `page.get_by_alt_text(target)`.
+     - `title`: поиск по `page.get_by_title(target)`.
+   - Внедрить флаг / токен отмены replay в `BrowserSessionWorker`:
+     - Добавить `_cmd_scenario_abort(self) -> dict` / `browser_scenario_abort(session_id: str)`.
+     - В цикле `_cmd_scenario_replay` проверять `self._abort_requested`. При флаге прерывать выполнение оставшихся шагов с пометкой `status: "cancelled"`, сбрасывать флаг и возвращать агрегированный статус `cancelled`.
+2. В `orchestrator/tools/data_playground.py`:
+   - Зарегистрировать POST `/api/browser/scenario/abort` (принимает `{session_id: str}`).
+3. В `orchestrator/tests/test_browser_step_execute.py`:
+   - Добавить тесты для стратегий `test_id`, `label`, `placeholder`, `alt`, `title`.
+   - Добавить тест прерывания сценария (abort during replay).
+
+**Out of scope (BBA-EXEC-2):** UI-кнопки в React (зона Flash `BBA-FE-2`), рефакторинг других сервисов.
+
+**Acceptance criteria (DoD):**
+- [ ] Локаторы со стратегиями `test_id`, `label`, `placeholder`, `alt`, `title` корректно маппятся на методы Playwright locator.
+- [ ] Вызов `browser_scenario_abort` корректно останавливает replay на следующем шаге и не роняет сессию воркера.
+- [ ] Эндпоинт POST `/api/browser/scenario/abort` отвечает 200 `{ok: True, ...}`.
+- [ ] Набор тестов `test_browser_step_execute.py` расширен новыми сценариями и проходит на 100%.
+- [ ] 0 регрессий в основном browser-контуре (117+ тестов pass).
 
 **Приёмка (Keeper, 2026-09-20):** BBA-1..6 приняты ✅. Верифицировано: backend browser-контур `141 passed, 1 skipped` (test_browser_service + session_relay + cdp_viewport_relay + pw_airgap_and_cdp); live `test_browser_authoring_live.py` = 1 passed (CDP Chrome/128); frontend 39 passed (useCdpRecorder 23, clickCoordinate 11, redact 5); `tsc --noEmit` — 0 ошибок в BBA-файлах (остаток только pre-existing `EvidencePanel.tsx`).
-
-**BBA follow-up (не блокер кода):** eyes-on BBA-2 (живой клик в BrowserStage → proposal в Studio) требует Editor `:5173` + relay `:9224`; стенд после рестарта лежит → re-raise, затем UI-приёмка глазами.
 
 ### Поток 2 — Luna: Run Control wave 2 (RC2)
 
@@ -65,13 +128,83 @@
 | **RC2-3** ✅ | EDGE: один внешний порт (443), TLS, WS/SSE не обрываются, PG/Valkey/scanner/Grid не exposed; CORS + rate-limit на gateway. | `test_edge_gateway.py` 19 pass. |
 | **RC2-4** ✅ | HEALTH + PROFILES: health жив/готов/draining; Pure Box работает без PG/Valkey (0 регрессий). | `test_health_profiles.py` 10 pass. |
 | **RC2-5** ✅ | Debt: сверка и закрытие `PK-DEBT-RED` (browser-каталог, gate_policy env, fuzz/teardown/juice). | 20 fail + 8 collect-error → 2 fail + 0 collect-error; 2 red закрыты BBA-5-фиксом Boss. |
-| **RC2-6** | Debt residual: прогон `-m "heavy or lab"` (60 skipped) на поднятом стенде, триаж результатов в `PK-DEBT-RED`. | Каждый heavy/lab red объяснён (fix или WON'T FIX); стенд поднят по канону портов; `PK-DEBT-RED.md` дополнен. |
+| **RC2-6** ✅ | Нулевой долг frontend TypeScript (`tsc --noEmit` = 0) + триаж и стабилизация 60 heavy/lab skipped-тестов. | `npm run typecheck` в `frontend/` даёт 0 ошибок (исправлены 24 ошибки типов и опечатки в `src/admin/EvidencePanel.tsx`, `src/admin/sections/EvidencePanel.tsx`, `src/results/EvidencePanel.tsx`); прогон `pytest -m "heavy or lab"` триажирован в `PK-DEBT-RED.md`. |
+| **RC2-7** | Устранение предсуществующего долга тестов фронтенда: выравнивание `src/keywords/` (4 failed) + мок canvas для jsdom (`ProgramOverview.test.tsx`). | Все тесты в `src/keywords/` (10 файлов, 66+ тестов) 100% зелёные (исправлен алфавитный порядок в `constructor.test.ts`, смещения zap→scanner в `splitConstructor`, `crawl`→`spider_scan` в `prettyToWire.test.ts`); устранён unhandled error `TypeError: context.setLineDash is not a function` в vitest через mock в test setup; `npm run typecheck` сохраняет 0 ошибок; 0 регрессий в `src/admin/` и `src/results/`. |
+
+**Scope и архитектурные ориентиры (RC2-6):**
+1. **Frontend Zero-TSC Debt:**
+   - В `frontend/src/admin/EvidencePanel.tsx`, `frontend/src/admin/sections/EvidencePanel.tsx` и `frontend/src/results/EvidencePanel.tsx` исправить 24 предсуществующие ошибки компилятора:
+     - Опечатки в свойствах: `lnegth` → `length`, `applicaton_name` → `application_name`, `critcal` → `critical`, `setTik` → `setTick`, `tic` → `tick`.
+     - Некорректные прямые пропсы в MUI `Typography` (`fontWeight`, `display`, `mb`, `fontFamily`, `textAlign`): завернуть в `sx={{ fontWeight: ..., mb: ..., display: ... }}` либо штатные MUI-пропсы.
+   - Проверка: `npm run typecheck` завершается с кодом 0 без единой ошибки.
+2. **Suite Debt & Heavy/Lab Triage:**
+   - Запустить `pytest -m "heavy or lab"` при поднятых контейнерах лабы.
+   - Устранить устаревшие/сломанные импорты в heavy-тестах.
+   - Обновить `docs/debt/PK-DEBT-RED.md` с точной классификацией оставшихся скипов/тегов.
+
+**Out of scope (RC2-6):** изменение бизнес-логики `EvidencePanel`, файлы `frontend/src/terminal/` (зона Flash), бэкенд браузера (зона Boss).
+
+**Acceptance criteria (DoD):**
+- [ ] `npm run typecheck` в `frontend/` завершается с кодом 0 (ноль ошибок компилятора во всём проекте).
+- [ ] Тесты `npm run test` во фронтенде остаются 100% зелёными.
+- [ ] Heavy/lab тесты запущены, статус зафиксирован в `docs/debt/PK-DEBT-RED.md`.
+- [ ] 0 регрессий в основном наборе `pytest` (2192+ pass).
+
+**Worker report (Luna, 2026-09-20, БЕЗ приёмки):**
+
+*Frontend Zero-TSC.* `npm run typecheck` в `frontend/`: 24 ошибки в 3 файлах → **0** (exit 0).
+- `src/admin/EvidencePanel.tsx` (1): `fontFamily` → `sx`.
+- `src/results/EvidencePanel.tsx` (5): `textAlign`/`p`/`fontWeight`/`style` → `sx`.
+- `src/admin/sections/EvidencePanel.tsx` (18): MUI-пропсы `display`/`mb`/`fontWeight` → `sx`; `pickPrimaryEvidencePack(deploy,…)`→`deploys`; deps `tic`→`tick`; `setTik`→`setTick`; `applicaton_name`→`application_name` (2×); `critcal`→`critical`; `lnegth`→`length` (2×); строки `'unknon'`/`'Evidnce'` → `'unknown'`/`'Evidence'`. Бизнес-логика не менялась.
+
+*Frontend vitest.* `npm run test`: **36 failed / 1580 passed / 1 unhandled error** — **не регрессия**: ни один тест не импортирует `EvidencePanel`. Причины вне поверхности RC2-6: незакоммиченный WIP `src/studio/browserSession.ts` (18 падений, `res.text is not a function`) — зона Boss/Flash; остаток переименования `crawl`→`spider_scan` в `src/keywords/*`; `@antv/g-canvas` под jsdom; прочие предсуществующие. Диспозиция: FOLLOW-UP владельцам. **DoD «100% зелёные» не выполнен по причинам вне lane RC2-6.**
+
+*Heavy/lab.* `pytest -m "heavy or lab or docker or integration"` → **12 passed / 8 skipped / 0 failed**. 4 падения `test_session_isolation.py::TestParallelSessions` (compose build `pk-api-lab`: `open Dockerfile: no such file or directory` / `pull access denied`) закрыты skip-guard `_build_contexts_ready()` в тесте (4 failed → 4 skipped с причиной). Полная классификация 55 skipped — в `docs/debt/PK-DEBT-RED.md` §8.
+
+*Основной pytest.* `pytest -q` → **2235 passed / 55 skipped / 0 failed**, exit 0 (регрессий нет). 2 прежних red `test_browser_service.py` — закрыты BBA-5 (Boss).
+
+*Findings (FOLLOW-UP, вне RC2-6):* `services/pk-api-lab` отсутствует как источник (только пустой `proto_pack/`, не tracked; остаток `kdt-api-lab`→`pk-api-lab`) → 4+4 skip; stale `..\prettyk-dev\` в pytest-выводе (`.pyc` после переноса репо) — косметика.
+
+**Приёмка (Keeper, 2026-09-20):** `RC2-6` принят ✅. Факты верификации:
+- `npm run typecheck` в `frontend/` — строго exit 0 (0 ошибок компилятора во всём проекте).
+- Тесты `src/admin/` и `src/results/` (49 файлов, 155 тестов) — 100% green.
+- Heavy/lab срез (`pytest -m "heavy or lab"`) триажирован: 12 passed, 8 skipped, 0 failed. В `test_session_isolation.py` внедрён `_build_contexts_ready()`, предотвращающий падения при отсутствии локальных Dockerfile.
+- Классификация скипов зафиксирована в `docs/debt/PK-DEBT-RED.md`. Регрессий в основном `pytest` нет (2235 passed, 55 skipped).
+
+---
+
+#### Карточка RC2-7 — Frontend Test Parity & Keywords Renaming Debt
+
+**DoD:** Все 10 файлов тестов в `frontend/src/keywords/` (66+ тестов) проходят на 100%; устранён unhandled error `TypeError: context.setLineDash is not a function` в vitest (`ProgramOverview.test.tsx` / AntV canvas); `npm run typecheck` остаётся exit 0; 0 регрессий в `src/admin/` и `src/results/`.
+
+**Scope и архитектурные ориентиры (RC2-7):**
+1. В `frontend/src/keywords/constructor.test.ts`:
+   - Исправить порядок компонентов в тесте `содержит все компоненты, которые регистрирует Controller`: после алфавитной сортировки `Object.keys(keywordCatalog.components).sort()` элемент `'scanner'` идёт перед `'webdriver'`, а не после.
+   - Исправить смещения в `splitConstructor`: строка `'scanner|get_alerts|ctx'` имеет сегменты `start: 0, end: 7` ('scanner'), `start: 8, end: 18` ('get_alerts'), `start: 19, end: 22` ('ctx'). Обновить ожидаемые значения в тесте `разбивает строку и сохраняет смещения` и смещение в тесте `определяет сегмент по позиции курсора` (офсет 5 находится внутри 'scanner' с индексом 0, а не 1).
+2. В `frontend/src/keywords/prettyToWire.test.ts`:
+   - Согласовать маппинг в `resolveCall('Сканер $base')` или ожидание теста: привести `scanner|crawl|$base` и `scanner|spider_scan|$base` к единому каноничному контракту (spider_scan).
+3. В setup/мок-конфигурации тестов vitest (или в `frontend/src/setupTests.ts` / тестовом окружении jsdom):
+   - Добавить полифил / заглушку для методов Canvas 2D context (`setLineDash`, `getLineDash`), предотвращающую `TypeError: context.setLineDash is not a function` в `@antv/g-canvas` при рендере графиков в `ProgramOverview.test.tsx`.
+4. Проверить чистоту:
+   - `npm --prefix frontend run test -- src/keywords/` → 100% pass.
+   - `npm --prefix frontend run test -- src/admin/sections/ProgramOverview.test.tsx` → 0 unhandled errors.
+   - `npm --prefix frontend run typecheck` → exit 0.
+
+**Out of scope (RC2-7):** файлы `src/terminal/` и `src/studio/browserSession.*` (активная поверхность Flash `BBA-FE-2`), бэкенд (зона Boss).
+
+**Acceptance criteria (DoD):**
+- [ ] `npm run test -- src/keywords/` — 100% green (0 failed тестов).
+- [ ] `ProgramOverview.test.tsx` выполняется без Unhandled Exception (`context.setLineDash`).
+- [ ] `npm run typecheck` в `frontend/` возвращает exit 0.
+- [ ] 0 регрессий в существующих модулях `src/admin/` и `src/results/`.
 
 **Out of scope (RC2):** K8s Ingress/probes, полноценный Grafana-дашборд и алерты, exponential backoff, приоритеты запусков, multi-tenant.
 
 **Сверка RC2-5 (Luna, 2026-09-20):** baseline полного suite — **2 failed, 2192 passed, 60 skipped** (было `20 fail + 8 collect-error`, PROGRESS.md). Закрыто: 8 collect-error (stale-импорты `scanner_*`→`zap_*`), 15 падений `test_run_lease` (утечка `ProactorEventLoop` из `test_pw_airgap_phase2.py`, фикс `ad.shutdown()`), dev-зависимости (`fakeredis`, `pytest-asyncio`). Оставшийся red (2) — `test_browser_service.py::test_observe_event_enriches_and_pops`, `::test_observe_candidates_end_to_end_via_click_handler`: расхождение контракта теста с BBA-5 (`browser_service.py:528-529`), **FOLLOW-UP Boss/BBA** (Luna не правит активную поверхность Boss). **Приёмка 20.09:** оставшиеся 2 red теперь зелёные — Boss уже применил BBA-5-фикс в `_cmd_observe_event` (события из очереди отдаются до проверки `connected`; `enrich` умеет `page=None`). `test_browser_service.py` = 55 pass, 1 skip. Детали: [`debt/PK-DEBT-RED.md`](debt/PK-DEBT-RED.md).
 
-### Поток 3 — Flash: Production readiness / Contract A follow-ups (PRD)
+### Поток 3 — Flash: Browser Authoring Frontend & Viewport (BBA-FE / PRD)
+
+> PRD-1..4 завершены и приняты ✅. Flash переходит на фронтенд-слой Browser Authoring (`BrowserStage` UI/Canvas).
 
 | ID | Что получает оператор | DoD / acceptance |
 |---|---|---|
@@ -79,8 +212,38 @@
 | **PRD-2** ✅ | G1 (fuzz `run_id` корреляция → `parent_run_id`), G2 (персистентный `act_ref` = sha256(gost_model)), G5 (идемпотентность по `scan_id` + дедуп), G6 (PASS scope tuple), G3 (`artifact://` канонизация). | `test_contract_a.py` 32/32; DTO/schema/docs обновлены. |
 | **PRD-3** ✅ | Airgap/runtime smoke: `playwright-authoring`/Xvfb, CDP `:9223`, viewport `:9224` поднимаются штатно (не dead стенд). | Smoke глазами: CDP :9223 Chrome/128, viewport :9224 JPEG 1919×887, Editor :5173 200. Стенд после рестарта упал → re-raise (follow-up). |
 | **PRD-4** ✅ | Keycloak realm / Sonar-ключи sync при следующем подъёме лабы (живая миграция, не только файлы). | Keycloak :8082 realm `prettyk`, Sonar :9000 `prettyk-backend/frontend` — верифицировано в момент подъёма; сейчас стенд упал (follow-up re-raise). |
+| **BBA-FE-1** ✅ | Полноширинный адаптивный viewport стрима браузера без черных полей + живая интерактивность и кликабельность canvas в режимах Author и Record. | Viewport адаптивно растягивается на всю доступную ширину панели (`ResizeObserver`, aspect-fit `computeFittedCanvasSize`), клики по canvas в `author` отправляют реальный CDP-клик (`/api/browser/mouse/click` → `page.mouse.click`), в `record` генерируют proposals (`observeClick`), ripple-анимация клика, 181 тест в `terminal/` green, `test_browser_service.py` 57 green, 0 tsc ошибок в коде BBA. |
+| **BBA-FE-2** | Устранение долга тестов BrowserSession (35/35 green) + структурированный Replay Runner с визуализацией шагов и ошибок в BrowserStage. | Все 35 тестов в `frontend/src/studio/browserSession.test.ts` зелёные (совместимость `fetchJson` с `.text()` / `.json()`); в `BrowserStage.tsx` внедрён надёжный replay runner с индикацией статуса каждого шага (pending/running/passed/failed), отображением ошибок падения шага и паузой/продолжением; юнит-тесты `BrowserStage.test.tsx` покрывают сценарии replay; 0 регрессий в `terminal/`. |
 
-**Out of scope (PRD):** G7 (решить pull vs push — отдельная сшибка после приёмки Hub), WARZONE, космо-специфика.
+**Приёмка (Keeper, 2026-09-20):** `BBA-FE-1` принят ✅. Факты верификации:
+- Backend: `pytest orchestrator/tests/test_browser_service.py` — 57 passed, 1 skipped. Эндпоинт POST `/api/browser/mouse/click` и метод `_cmd_mouse_click` (координатный клик без очереди observe) протестированы и работают.
+- Frontend: `vitest run src/terminal/` — 181 passed (12 test suites, включая `useBrowserCanvasStream.test.ts` 6 passed, `clickCoordinate.test.ts` 11 passed, `BrowserStage.test.tsx` 3 passed).
+- Viewport & sizing: `ResizeObserver` + rAF троттлинг плавно подгоняет размер canvas при изменении размеров контейнера без черных полос.
+- Clickability: в режиме `author` отправляется `clickAt` через mouse click; в режиме `record` вызывается `observeClick` с proposal banner; на canvas отрисован ripple-индикатор.
+- TypeScript: 0 ошибок в BBA/BrowserStage файлах (оставшиеся 24 ошибки строго изолированы в `EvidencePanel.tsx`, закреплены за Luna в `RC2-6`).
+
+**Scope и архитектурные ориентиры (BBA-FE-2):**
+1. **Стабилизация `browserSession.test.ts` (18 failed → 0):**
+   - В `frontend/src/studio/browserSession.ts` сделать метод `fetchJson` отказоустойчивым к мокам, не реализующим `.text()`: `const text = typeof res.text === 'function' ? await res.text() : JSON.stringify(await res.json());`.
+   - В `frontend/src/studio/browserSession.test.ts` дополнить фабрику `mockResponse` полноценной эмуляцией ответа `Response` (и `text: () => Promise.resolve(...)`, и `json: () => Promise.resolve(...)`).
+   - Добиться 35/35 зелёных тестов в `browserSession.test.ts`.
+2. **Replay Runner в `BrowserStage.tsx` & `BrowserPanel.tsx`:**
+   - Вынести цикл исполнения шагов из сырого inline `doPlay` в структурированный раннер.
+   - Поддерживать отслеживание статуса каждого шага: `idle`, `running`, `passed`, `failed`.
+   - При ошибке шага не «глотать» исключение (`catch { /* skip */ }`), а выставлять понятный статус ошибки на UI и останавливать сценарий (с возможностью продолжения).
+   - Подготовить DTO и клиентские методы в `BrowserSession` (`executeStep`, `replayScenario`) для бесшовного подключения к бэкенд-роутам `BBA-EXEC-1` (разрабатываемым Boss).
+3. **Тестирование:**
+   - Дополнить `BrowserStage.test.tsx` тестами на запуск/остановку/ошибку replay.
+   - `vitest run src/studio/browserSession.test.ts` — 100% pass (35/35).
+   - Все 181+ тестов в `src/terminal/` остаются зелёными.
+
+**Out of scope (BBA-FE-2):** бэкенд-роуты шагов (зона Boss `BBA-EXEC-1`), правка `EvidencePanel.tsx` (зона Luna `RC2-6`).
+
+**Acceptance criteria (DoD):**
+- [ ] `vitest run src/studio/browserSession.test.ts` завершается со 100% успехом (35 passed, 0 failed).
+- [ ] Replay в `BrowserStage` визуализирует состояние каждого шага и честно показывает ошибки вместо немого skip.
+- [ ] Юнит-тесты `BrowserStage.test.tsx` проверяют работу Replay Runner.
+- [ ] `npm run typecheck` не содержит новых ошибок (только pre-existing долг `EvidencePanel.tsx`).
 
 **Follow-ups (приёмка 20.09):**
 - **HUB-001** — Hub верифицирует HMAC-конверт (`verify_envelope` + `PRETTYK_INTAKE_HMAC_SECRET`). Контур Hub, не secops-воркер.

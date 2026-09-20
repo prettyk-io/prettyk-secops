@@ -312,6 +312,18 @@ export class BrowserSession {
       return { ok: false, error: 'observe/click failed' };
     }
   }
+
+  /** BBA-FE-1: координатный клик в режиме author (без observe/start). */
+  async clickAt(x: number, y: number): Promise<{ ok: boolean; error?: string }> {
+    try {
+      return await this.fetchJson('/api/browser/mouse/click', {
+        method: 'POST',
+        body: JSON.stringify({ x, y }),
+      });
+    } catch {
+      return { ok: false, error: 'mouse/click failed' };
+    }
+  }
 }
 
 /** Живое CDP-наблюдение: один клик → один event. */

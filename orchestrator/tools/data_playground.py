@@ -905,6 +905,16 @@ class Handler(BaseHTTPRequestHandler):
             return
         self._json(200, browser_mouse_drag(x1, y1, x2, y2))
 
+    def _post_browser_mouse_click(self, body: dict) -> None:
+        from browser.browser_service import browser_mouse_click
+        try:
+            x = float(body.get("x"))
+            y = float(body.get("y"))
+        except (TypeError, ValueError):
+            self._json(400, {"ok": False, "error": "x and y required (numbers)"})
+            return
+        self._json(200, browser_mouse_click(x, y))
+
     def _post_browser_observe_start(self, _body: dict) -> None:
         from browser.browser_service import browser_observe_start
         self._json(200, browser_observe_start())
@@ -943,6 +953,23 @@ class Handler(BaseHTTPRequestHandler):
         from browser.browser_service import browser_context_destroy
         self._json(200, browser_context_destroy())
 
+    def _post_browser_step_execute(self, body: dict) -> None:
+        from browser.browser_service import browser_step_execute
+        step = body.get("step")
+        if not isinstance(step, dict):
+            self._json(400, {"ok": False, "error": "step must be an object"})
+            return
+        self._json(200, browser_step_execute(step))
+
+    def _post_browser_scenario_replay(self, body: dict) -> None:
+        from browser.browser_service import browser_scenario_replay
+        steps = body.get("steps")
+        if not isinstance(steps, list):
+            self._json(400, {"ok": False, "error": "steps must be a list"})
+            return
+        stop_on_failure = body.get("stop_on_failure", True)
+        self._json(200, browser_scenario_replay(steps, stop_on_failure=bool(stop_on_failure)))
+
     def do_POST(self) -> None:
         path = urlparse(self.path).path
         body, err = self._read_json_body()
@@ -978,12 +1005,15 @@ class Handler(BaseHTTPRequestHandler):
             "/api/browser/keyboard": self._post_browser_keyboard,
             "/api/browser/wheel": self._post_browser_wheel,
             "/api/browser/drag": self._post_browser_drag,
+            "/api/browser/mouse/click": self._post_browser_mouse_click,
             "/api/browser/observe/start": self._post_browser_observe_start,
             "/api/browser/observe/stop": self._post_browser_observe_stop,
             "/api/browser/observe/event": self._post_browser_observe_event,
             "/api/browser/observe/click": self._post_browser_observe_click,
             "/api/browser/context/ensure": self._post_browser_context_ensure,
             "/api/browser/context/destroy": self._post_browser_context_destroy,
+            "/api/browser/step/execute": self._post_browser_step_execute,
+            "/api/browser/scenario/replay": self._post_browser_scenario_replay,
         }
         handler = routes.get(path)
         if handler is not None:

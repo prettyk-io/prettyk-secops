@@ -28,6 +28,9 @@ if (-not $ed) {
 }
 
 # Playground :8765
+# VP-L1: authoring-browser живёт в playwright-authoring :9223; playground обязан
+# знать CDP endpoint, иначе /api/browser/status отдаёт connected:false.
+$env:PK_BROWSER_CDP_ENDPOINT = "http://127.0.0.1:9223"
 $pg = netstat -ano | Select-String ":8765 .*LISTENING"
 if (-not $pg) {
     Start-Process -FilePath $Py -ArgumentList "-u","-m","tools.data_playground" -WorkingDirectory $Or -WindowStyle Hidden

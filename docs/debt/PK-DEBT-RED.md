@@ -1,6 +1,6 @@
 # PK-DEBT-RED — сверка red-счёта полного suite
 
-> **Карточка:** RC2-5 (Run Control wave 2 — Debt).  
+> **Карточки:** RC2-5 (Run Control wave 2 — Debt) + RC2-6 (Zero-TSC фронтенд + триаж heavy/lab).  
 > **Исполнитель:** Luna (worker).  
 > **Дата сверки:** 2026-09-20.  
 > **Раннер:** `D:\prettyk-secops\.venv\Scripts\python.exe -m pytest -q` (rootdir `D:\prettyk-secops`).  
@@ -10,6 +10,8 @@
 
 ## 1. Итоговый baseline
 
+### RC2-5 (до чужих WIP-правок)
+
 ```
 2 failed, 2192 passed, 60 skipped, 15 warnings in 379.01s
 ```
@@ -17,6 +19,14 @@
 Было (PROGRESS.md, 2026-09-20, non-heavy): `2099 passed, 47 skipped; 20 fail + 8 collect-error`.
 
 Снижение: **20 fail + 8 collect-error → 2 fail**, collect-errors → 0.
+
+### RC2-6 (после триажа heavy/lab и чужих WIP-правок Boss/Flash)
+
+```
+2235 passed, 55 skipped, 168s  → exit 0
+```
+
+Тот же прогон до RC2-6 был `2235 passed, 55 skipped, 0 failed`; рост числа тестов (2254 → 2290 collected) — чужие правки в дереве (Boss: `test_browser_step_execute.py` BBA-EXEC-1, BBA-5). Регрессий от RC2-6 нет.
 
 ---
 
@@ -73,7 +83,9 @@ Root cause: `orchestrator/tests/test_pw_airgap_phase2.py::test_playwright_adapte
 
 ## 4. Остаточный риск (не red, вне дефолтного цикла)
 
-60 skipped — маркеры `heavy`/`lab` (`pytest.ini`): fuzz/teardown/juice/masking/scanner_dojo и прочий лаб-контур. В дефолтном прогоне не выполняются. Для полной сверки нужен `pytest -m "heavy or lab"` на поднятом стенде. Это не red-долг, а непроверенная зона — фиксируется отдельно.
+55 skipped — маркеры `heavy`/`lab` (`pytest.ini`) + env-гейты. В дефолтном прогоне не выполняются. Разобраны по причинам в §7. Это не red-долг, а непроверенная зона.
+
+**DoD RC2-5:** red-счёт снижен с 20 fail + 8 collect-error до 2 fail; каждый оставшийся red объяснён (FOLLOW-UP BBA/Boss); collect-errors 0.
 
 ---
 
@@ -89,4 +101,85 @@ Root cause: `orchestrator/tests/test_pw_airgap_phase2.py::test_playwright_adapte
   "orchestrator/tests/test_browser_service.py::test_observe_candidates_end_to_end_via_click_handler" -q
 ```
 
-**DoD RC2-5:** red-счёт снижен с 20 fail + 8 collect-error до 2 fail; каждый оставшийся red объяснён (FOLLOW-UP BBA/Boss); collect-errors 0.
+---
+
+# RC2-6 — Zero-TSC фронтенд + триаж heavy/lab
+
+## 6. Frontend Zero-TSC (typecheck)
+
+Baseline `npm run typecheck` (в `frontend/`): **24 ошибки в 3 файлах → 0**.
+
+| Файл | Ошибок | Правка |
+|---|---|---|
+| `frontend/src/admin/EvidencePanel.tsx` | 1 | `fontFamily="monospace"` → `sx={{ fontFamily: 'monospace' }}` |
+| `frontend/src/results/EvidencePanel.tsx` | 5 | `textAlign`/`p`/`fontWeight`/`style` → `sx={{...}}` (3× `textAlign+p`, `fontWeight+flex`, `fontWeight`) |
+| `frontend/src/admin/sections/EvidencePanel.tsx` | 18 | MUI-пропсы `display`/`mb`/`fontWeight` → `sx`; опечатки `pickPrimaryEvidencePack(deploy,…)`→`deploys`; deps `tic`→`tick`; `setTik`→`setTick`; `applicaton_name`→`application_name` (2×); `critcal`→`critical`; `lnegth`→`length` (2×); строки `'unknon'`→`'unknown'`, `'Evidnce'`→`'Evidence'` |
+
+Проверка: `npm run typecheck` → exit 0. Бизнес-логика не менялась.
+
+## 7. Frontend vitest — предсуществующий красный (не регрессия)
+
+`npm run test` (vitest): **36 failed / 1580 passed / 1 unhandled error**.
+
+**Не регрессия RC2-6:** ни один тест не импортирует `EvidencePanel` (grep по `*.test.*` = 0), поэтому правки §6 не могут влиять на счёт. Причины:
+
+| Причина | Зона |
+|---|---|
+| `TypeError: res.text is not a function` (18) | `frontend/src/studio/browserSession.test.ts` ← незакоммиченный WIP `studio/browserSession.ts` (+12 строк) — **Boss/Flash** |
+| `'scanner\|crawl\|$base'` vs `'scanner\|spider_scan\|$base'` | `src/keywords/*` — остаток переименования `crawl`→`spider_scan` |
+| `TypeError: context.setLineDash is not a function` | `@antv/g-canvas` под jsdom |
+| Прочее | `src/shell/HomePage`, `LoginPage.sso`, `src/ci/importExport`, `src/design-admin/AdminShowcase`, `src/monaco/*`, `src/wired/*`, `src/workbench/*`, `src/studio/Studio` |
+
+**Диспозиция:** FOLLOW-UP владельцам поверхностей (`frontend/src/terminal/*`, `studio/browserSession.ts`). Правка не в lane RC2-6.
+
+## 8. Heavy/lab/docker/integration — триаж
+
+`pytest -m "heavy or lab or docker or integration"` → **12 passed, 8 skipped, 0 failed**.
+
+Root cause падений (4× `test_session_isolation.py::TestParallelSessions`): `docker compose -f services/session-template.yml up` → `failed to read dockerfile: open Dockerfile: no such file or directory` / `pull access denied for pk-api-lab`.
+
+Фикс (только тест): в `orchestrator/tests/test_session_isolation.py` добавлен `_build_contexts_ready()` — проверяет наличие Dockerfile в build-контекстах (`playwright-authoring`, `pk-api-lab`); `_docker_skip` = `not _docker_available() or not _build_contexts_ready()`. 4 failed → 4 skipped с внятной причиной.
+
+### Классификация всех 55 skipped полного suite
+
+| # | Причина | Диспозиция |
+|---|---|---|
+| 36 | `PostgreSQL not reachable via PK_PG_DSN` | env-гейт: задать `PK_PG_DSN` (prettyk-postgres поднят) |
+| 4 | `Docker Engine unavailable or session-template build contexts not built` | см. §9 (`pk-api-lab` источник отсутствует) |
+| 4 | `lab proto_pack missing` | см. §9 (`services/pk-api-lab/proto_pack` пуст) |
+| 2 | `juice acceptance fixture not available` | lab-стенд (juice/Grid) |
+| 2 | `Juice/Grid not up` | lab-стенд |
+| 1 | `PK_BROWSER_CDP_ENDPOINT not set` | env-гейт (live BBA) |
+| 1 | `lab stack not up` | lab-стенд |
+| 1 | `Live server already running on port` | env-гейт |
+| 1 | `VP-L1 container-only: host headless Chromium …` | by design (покрыто VP-L2 контейнерно) |
+| 1 | `Juice/Grid/scanner demon not up` | lab-стенд |
+| 1 | `PK_HAR_SEQUENCE_LIVE not set (IMP-HAR-4 opt-in)` | env-гейт |
+| 1 | `Playwright sync API incompatible with active asyncio loop` | self-declared skip, воспроизводится и без `pytest-asyncio`, и в `strict` — средовое, не регрессия |
+
+## 9. pk-api-lab — отсутствующий источник (FOLLOW-UP)
+
+`services/session-template.yml` и `services/docker-compose.api-lab.yml` ссылаются на build-контекст `./pk-api-lab`, но в репо нет ни `Dockerfile`, ни приложения: `services/pk-api-lab/` содержит **пустой** `proto_pack/` и не tracked в git (git-ignored остаток переименования `kdt-api-lab`→`pk-api-lab`, `sanctuary/ALTAR.md:534`). Образ `pk-api-lab:local` не собран.
+
+Следствие: 4 heavy-skip (`session_isolation`) + 4 `lab proto_pack missing`.
+
+**Диспозиция:** FOLLOW-UP — восстановить источник `pk-api-lab` (Dockerfile + proto_pack) или задокументировать как внешне-провижининг. Вне RC2-6.
+
+### Косметический долг: stale `..\prettyk-dev\` в выводе pytest
+
+Skip-location и traceback печатают `..\prettyk-dev\orchestrator\tests\...`, хотя репо — `D:\prettyk-secops`. Репо скопировано с `D:\prettyk-dev` (которого больше нет); stale `__pycache__`/`.pyc` встраивают старый `co_filename`. На логику/счёт не влияет. Диспозиция: разовая чистка `__pycache__`.
+
+## 10. Воспроизведение RC2-6
+
+```powershell
+# Frontend
+cd frontend; npm run typecheck; npm run test
+
+# Heavy/lab
+& "D:\prettyk-secops\.venv\Scripts\python.exe" -m pytest -m "heavy or lab or docker or integration" -q -rs
+
+# Полный suite
+& "D:\prettyk-secops\.venv\Scripts\python.exe" -m pytest -q --tb=no -rf -rs
+```
+
+**DoD RC2-6:** `npm run typecheck` = 0 ✅; `npm run test` — не 100% green (36 fail, предсуществующие, вне поверхности RC2-6) ⚠️; heavy/lab триажирован (12 passed / 8 skipped, 0 failed) ✅; регрессий основного pytest нет (2235 passed / 55 skipped / 0 failed, exit 0) ✅.

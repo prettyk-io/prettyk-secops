@@ -44,9 +44,9 @@ export function EvidencePanel({ runId }: EvidencePanelProps) {
   useEffect(() => { if (copied) { const t = setTimeout(() => setCopied(false), 2000); return () => clearTimeout(t); } }, [copied]);
 
   if (loading) return <div style={{ textAlign: 'center', padding: 24 }}><CircularProgress size={24} /></div>;
-  if (error) return <Typography color="error" textAlign="center" p={2}>{error}</Typography>;
-  if (records.length === 0 && runId) return <Typography color="text.secondary" textAlign="center" p={2}>Нет evidence</Typography>;
-  if (!runId) return <Typography color="text.secondary" textAlign="center" p={2}>Выберите прогон</Typography>;
+  if (error) return <Typography color="error" sx={{ textAlign: 'center', p: 2 }}>{error}</Typography>;
+  if (records.length === 0 && runId) return <Typography color="text.secondary" sx={{ textAlign: 'center', p: 2 }}>Нет evidence</Typography>;
+  if (!runId) return <Typography color="text.secondary" sx={{ textAlign: 'center', p: 2 }}>Выберите прогон</Typography>;
 
   const totalSize = records.reduce((sum, r) => sum + r.sizeBytes, 0);
 
@@ -54,7 +54,7 @@ export function EvidencePanel({ runId }: EvidencePanelProps) {
     <div style={{ padding: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
         <VerifiedUser sx={{ color: '#22D3EE' }} />
-        <Typography variant="body1" fontWeight={600} color="#E2E8F0" style={{ flex: 1 }}>Evidence</Typography>
+        <Typography variant="body1" color="#E2E8F0" sx={{ fontWeight: 600, flex: 1 }}>Evidence</Typography>
         <span style={{ padding: '2px 6px', borderRadius: 4, fontSize: 10, background: 'rgba(59,130,246,0.1)', color: '#3b82f6', fontWeight: 600 }}>{records.length} файлов</span>
         <span style={{ padding: '2px 6px', borderRadius: 4, fontSize: 10, background: '#1E293B', color: '#94A3B8' }}>{fmt(totalSize)}</span>
       </div>
@@ -63,7 +63,7 @@ export function EvidencePanel({ runId }: EvidencePanelProps) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 18 }}>{KIND_EMOJI[r.kind]}</span>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <Typography variant="body2" fontWeight={600} color="#E2E8F0" noWrap>{r.label}</Typography>
+              <Typography variant="body2" color="#E2E8F0" noWrap sx={{ fontWeight: 600 }}>{r.label}</Typography>
               <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }} dangerouslySetInnerHTML={{ __html: tag(r.kind, 'rgba(56,189,248,0.1)', '#38bdf8') + tag(fmt(r.sizeBytes), '#1E293B', '#64748B') + `<span title="${r.sha256}" onclick="navigator.clipboard.writeText('${r.sha256}')" style="display:inline-block;padding:1px 6px;border-radius:4px;font-size:9px;background:#1E293B;color:#475569;cursor:pointer;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.sha256.slice(0,12)}…</span>` }} />
             </div>
             {r.presignedUrl && <Button size="small" href={r.presignedUrl} target="_blank" rel="noreferrer" sx={{ color: '#38BDF8', fontSize: 11, minWidth: 'auto', textTransform: 'none' }}>Открыть</Button>}

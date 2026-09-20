@@ -34,9 +34,22 @@ def _docker_available() -> bool:
         return False
 
 
+def _build_contexts_ready() -> bool:
+    """session-template.yml собирает образы из build-контекстов — нужны их Dockerfile.
+
+    Без контекста `pk-api-lab` (git-ignored остаток, только proto_pack) compose
+    падает на `failed to read dockerfile`, а не скипает. Проверяем до запуска.
+    """
+    services_dir = Path(__file__).resolve().parents[2] / "services"
+    return all(
+        (services_dir / ctx / "Dockerfile").is_file()
+        for ctx in ("playwright-authoring", "pk-api-lab")
+    )
+
+
 _docker_skip = pytest.mark.skipif(
-    not _docker_available(),
-    reason="Docker Engine unavailable or images not built",
+    not _docker_available() or not _build_contexts_ready(),
+    reason="Docker Engine unavailable or session-template build contexts not built",
 )
 
 

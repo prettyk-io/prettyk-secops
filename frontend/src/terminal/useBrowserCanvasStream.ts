@@ -4,7 +4,12 @@
  * Протокол (binary, per message):
  *   [4 bytes: uint16BE width, uint16BE height] [JPEG data...]
  *
- * Использование: useBrowserCanvasStream(canvasRef, wsUrl)
+ * BBA-FE-1: адаптивный viewport.
+ *   Размер canvas (CSS) больше НЕ пересчитывается только в img.onload.
+ *   ResizeObserver следит за контейнером и перерисовывает fitted-размер при
+ *   каждом изменении панели, даже когда страница статична и новых кадров нет.
+ *
+ * Использование: useBrowserCanvasStream(canvasRef, containerRef, wsUrl, connected)
  */
 import { useEffect, useRef, useCallback } from 'react';
 
@@ -24,8 +29,28 @@ export interface UseBrowserCanvasStreamResult {
   close: () => void;
 }
 
+/**
+ * object-contain (aspect-fit): вписать контент frameW×frameH в контейнер
+ * containerW×containerH с сохранением пропорции, занимая максимум полезной
+ * ширины/высоты. Возвращает CSS-размеры canvas в px (null при нулевых входных).
+ */
+export function computeFittedCanvasSize(
+  containerW: number,
+  containerH: number,
+  frameW: number,
+  frameH: number,
+): { width: number; height: number } | null {
+  if (!containerW || !containerH || !frameW || !frameH) return null;
+  const scale = Math.min(containerW / frameW, containerH / frameH);
+  return {
+    width: Math.max(1, Math.round(frameW * scale)),
+    height: Math.max(1, Math.round(frameH * scale)),
+  };
+}
+
 export function useBrowserCanvasStream(
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
+  containerRef: React.RefObject<HTMLDivElement | null>,
   wsUrl: string,
   connected: boolean,
 ): UseBrowserCanvasStreamResult {
@@ -33,6 +58,51 @@ export function useBrowserCanvasStream(
   const framesReceived = useRef(0);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const rafRef = useRef<number | null>(null);
+
+  // ── BBA-FE-1: fitted-размер canvas под текущий контейнер ──
+  const applyFit = useCallback(() => {
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
+    const fi = frameInfo.current;
+    const frameW = fi.frameWidth || canvas.width || 1280;
+    const frameH = fi.frameHeight || canvas.height || 800;
+    const fitted = computeFittedCanvasSize(
+      container.clientWidth,
+      container.clientHeight,
+      frameW,
+      frameH,
+    );
+    if (!fitted) return;
+    canvas.style.width = `${fitted.width}px`;
+    canvas.style.height = `${fitted.height}px`;
+  }, [canvasRef, containerRef]);
+
+  // ── BBA-FE-1: ResizeObserver на контейнер — ресайз без нового кадра ──
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    if (typeof ResizeObserver === 'undefined') return;
+
+    const schedule = () => {
+      if (rafRef.current != null) return;
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = null;
+        applyFit();
+      });
+    };
+
+    const observer = new ResizeObserver(schedule);
+    observer.observe(container);
+    schedule(); // первичная подгонка при монтировании
+
+    return () => {
+      observer.disconnect();
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    };
+  }, [containerRef, applyFit]);
 
   const connect = useCallback(() => {
     if (!connected) return;
@@ -76,13 +146,8 @@ export function useBrowserCanvasStream(
         URL.revokeObjectURL(blobUrl);
         canvas.width = frameW > 0 ? frameW : 1280;
         canvas.height = frameH > 0 ? frameH : 800;
-        // Масштабируем canvas под flex-родителя через CSS
-        const containerW = canvas.parentElement?.clientWidth ?? canvas.clientWidth;
-        const containerH = canvas.parentElement?.clientHeight ?? canvas.clientHeight;
-        const scale = Math.min(containerW / canvas.width, containerH / canvas.height);
-        canvas.style.width = `${Math.round(canvas.width * scale)}px`;
-        canvas.style.height = `${Math.round(canvas.height * scale)}px`;
         ctx.drawImage(img, 0, 0);
+        applyFit();
       };
       img.onerror = () => URL.revokeObjectURL(blobUrl);
       img.src = blobUrl;
@@ -98,7 +163,7 @@ export function useBrowserCanvasStream(
     ws.onerror = () => {
       ws.close();
     };
-  }, [canvasRef, wsUrl, connected]);
+  }, [canvasRef, containerRef, wsUrl, connected, applyFit]);
 
   useEffect(() => {
     connect();
