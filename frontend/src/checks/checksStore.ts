@@ -41,8 +41,22 @@ export function entityContentFingerprint(
   ].join('\u0000');
 }
 
+let lastIso = '';
+
+/**
+ * Монотонная ISO-метка времени. Гарантирует, что два изменения в рамках одной
+ * миллисекунды получат строго растущие `updated_at` (иначе «newer updated_at»
+ * в mergeChecksSnapshots ломается, а тест на «содержимое двигает updated_at»
+ * флапает на ms-разрешении Date).
+ */
 function nowIso(): string {
-  return new Date().toISOString();
+  const iso = new Date().toISOString();
+  if (iso <= lastIso) {
+    lastIso = new Date(new Date(lastIso).getTime() + 1).toISOString();
+    return lastIso;
+  }
+  lastIso = iso;
+  return iso;
 }
 
 function newId(): string {

@@ -35,7 +35,7 @@ import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -288,6 +288,15 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/browser/status":
             from browser.browser_service import browser_status
             self._json(200, browser_status())
+            return
+        if path == "/api/browser/replay/timeline":
+            from browser.browser_service import browser_replay_timeline
+            query = parse_qs(urlparse(self.path).query)
+            replay_id = (query.get("replay_id") or [None])[0]
+            if not replay_id:
+                self._json(400, {"ok": False, "error": "replay_id query param required"})
+                return
+            self._json(200, browser_replay_timeline(replay_id))
             return
         if path == "/api/checks":
             self._json(200, load_checks_registry())
@@ -970,6 +979,11 @@ class Handler(BaseHTTPRequestHandler):
         stop_on_failure = body.get("stop_on_failure", True)
         self._json(200, browser_scenario_replay(steps, stop_on_failure=bool(stop_on_failure)))
 
+    def _post_browser_scenario_abort(self, body: dict) -> None:
+        from browser.browser_service import browser_scenario_abort
+        session_id = body.get("session_id")
+        self._json(200, browser_scenario_abort(session_id if isinstance(session_id, str) and session_id else None))
+
     def do_POST(self) -> None:
         path = urlparse(self.path).path
         body, err = self._read_json_body()
@@ -1014,6 +1028,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/browser/context/destroy": self._post_browser_context_destroy,
             "/api/browser/step/execute": self._post_browser_step_execute,
             "/api/browser/scenario/replay": self._post_browser_scenario_replay,
+            "/api/browser/scenario/abort": self._post_browser_scenario_abort,
         }
         handler = routes.get(path)
         if handler is not None:

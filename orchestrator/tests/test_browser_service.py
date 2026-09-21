@@ -145,7 +145,8 @@ def test_data_playground_browser_routes():
     from tools.data_playground import Handler as _  # noqa: F401
     from browser.browser_service import browser_back, browser_forward, browser_click, browser_type_text  # noqa: F401
     from browser.browser_service import browser_viewport, browser_keyboard_press, browser_mouse_wheel, browser_mouse_drag  # noqa: F401
-    from browser.browser_service import browser_step_execute, browser_scenario_replay  # noqa: F401
+    from browser.browser_service import browser_step_execute, browser_scenario_replay, browser_scenario_abort  # noqa: F401
+    from browser.browser_service import browser_replay_timeline  # noqa: F401
 
     assert callable(browser_back)
     assert callable(browser_forward)
@@ -156,9 +157,11 @@ def test_data_playground_browser_routes():
     assert callable(browser_keyboard_press)
     assert callable(browser_mouse_wheel)
     assert callable(browser_mouse_drag)
-    # BBA-EXEC-1: step execute / scenario replay
+    # BBA-EXEC-1/2/3: step execute / scenario replay / abort / timeline
     assert callable(browser_step_execute)
     assert callable(browser_scenario_replay)
+    assert callable(browser_scenario_abort)
+    assert callable(browser_replay_timeline)
 
 
 # ── B-6: click / type_text ──────────────────────────────────────────────────

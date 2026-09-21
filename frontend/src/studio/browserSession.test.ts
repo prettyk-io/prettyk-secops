@@ -6,11 +6,14 @@ import {
   BrowserSession,
   getBrowserSession,
   __resetBrowserSessionForTests,
+  scenarioStepToBackendDto,
   type BrowserSessionStatus,
   type NavigateResult,
   type ScreenshotResult,
   type BrowserContextKind,
+  type BackendStepResult,
 } from '../studio/browserSession';
+import type { ScenarioStepModel } from './scenarioStepModel';
 
 // ---------------------------------------------------------------------------
 // Mock fetch
@@ -25,6 +28,8 @@ function mockResponse<T>(status: number, body: T): Response {
     status,
     statusText: status === 200 ? 'OK' : 'Error',
     json: () => Promise.resolve(body),
+    // BBA-FE-2: полная эмуляция Response — и text(), и json().
+    text: () => Promise.resolve(typeof body === 'string' ? body : JSON.stringify(body)),
   } as Response;
 }
 
@@ -461,5 +466,144 @@ describe('BrowserSession — invariants', () => {
 
     expect(session.getActiveContexts()).toEqual([]);
     expect(session.isConnected()).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// BBA-FE-3: маппинг ScenarioStepModel ↔ бэкенд-роуты шагов/replay
+// ---------------------------------------------------------------------------
+
+function sessStep(id: string, overrides?: Partial<ScenarioStepModel>): ScenarioStepModel {
+  return {
+    id,
+    action: 'Click',
+    strategy: 'css',
+    strategyValue: '#x',
+    payload: '',
+    continueOnError: false,
+    led: 'queued',
+    ...overrides,
+  };
+}
+
+function backendStep(overrides?: Partial<BackendStepResult>): BackendStepResult {
+  return {
+    step_id: 's1',
+    action: 'click',
+    status: 'passed',
+    duration_ms: 5,
+    error: null,
+    screenshot_b64: null,
+    ...overrides,
+  };
+}
+
+describe('scenarioStepToBackendDto (BBA-FE-3)', () => {
+  it('мапит Click → click + strategy', () => {
+    expect(scenarioStepToBackendDto(sessStep('a', { action: 'Click', strategyValue: '#x', strategy: 'css' })))
+      .toEqual({ action: 'click', target: '#x', strategy: 'css', step_id: 'a' });
+  });
+
+  it('мапит Type → fill с value', () => {
+    expect(scenarioStepToBackendDto(sessStep('a', { action: 'Type', strategyValue: 'input', payload: 'hello' })))
+      .toEqual({ action: 'fill', target: 'input', value: 'hello', strategy: 'css', step_id: 'a' });
+  });
+
+  it('мапит Open → goto, Wait → wait_for, PressKey → press_key', () => {
+    expect(scenarioStepToBackendDto(sessStep('a', { action: 'Open', payload: 'https://x.dev' })))
+      .toEqual({ action: 'goto', target: 'https://x.dev', step_id: 'a' });
+    expect(scenarioStepToBackendDto(sessStep('a', { action: 'Wait', payload: '300' })))
+      .toEqual({ action: 'wait_for', target: '300', step_id: 'a' });
+    expect(scenarioStepToBackendDto(sessStep('a', { action: 'PressKey', payload: 'Enter' })))
+      .toEqual({ action: 'press_key', target: 'Enter', step_id: 'a' });
+  });
+
+  it('возвращает null для DSL-only шагов', () => {
+    expect(scenarioStepToBackendDto(sessStep('a', { action: 'Let' }))).toBeNull();
+    expect(scenarioStepToBackendDto(sessStep('a', { action: 'Secret' }))).toBeNull();
+    expect(scenarioStepToBackendDto(sessStep('a', { action: 'GenerateEmail' }))).toBeNull();
+  });
+});
+
+describe('BrowserSession — executeStep / replayScenario (BBA-FE-3)', () => {
+  let session: BrowserSession;
+
+  beforeEach(() => {
+    __resetBrowserSessionForTests();
+    mockFetch.mockReset();
+    session = getBrowserSession();
+  });
+
+  afterEach(() => {
+    session.stopPolling();
+  });
+
+  it('executeStep Click POST-ит /api/browser/step/execute с DTO', async () => {
+    mockFetch.mockResolvedValueOnce(mockResponse(200, backendStep()));
+    const r = await session.executeStep(sessStep('a'));
+
+    expect(r.ok).toBe(true);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain('/api/browser/step/execute');
+    expect(JSON.parse(init.body as string).step).toEqual({ action: 'click', target: '#x', strategy: 'css', step_id: 'a' });
+  });
+
+  it('executeStep failed мапит error + screenshotB64', async () => {
+    mockFetch.mockResolvedValueOnce(mockResponse(200, backendStep({
+      status: 'failed', error: 'RuntimeError: boom', screenshot_b64: 'YWJj',
+    })));
+    const r = await session.executeStep(sessStep('a'));
+
+    expect(r.ok).toBe(false);
+    expect(r.error).toBe('RuntimeError: boom');
+    expect(r.screenshotB64).toBe('YWJj');
+  });
+
+  it('executeStep DSL-only шаг — no-op без fetch', async () => {
+    const r = await session.executeStep(sessStep('a', { action: 'Let' }));
+    expect(r.ok).toBe(true);
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('replayScenario POST-ит /api/browser/scenario/replay и мапит states', async () => {
+    mockFetch.mockResolvedValueOnce(mockResponse(200, {
+      ok: true,
+      steps: [
+        backendStep({ step_id: 'a', action: 'click' }),
+        backendStep({ step_id: 'b', action: 'wait_for' }),
+      ],
+      total: 2, executed: 2, passed: 2, failed: 0, cancelled: 0,
+      verdict: 'passed', duration_ms: 250,
+    }));
+
+    const steps = [sessStep('a'), sessStep('b', { action: 'Wait', payload: '300' }), sessStep('c', { action: 'Let' })];
+    const result = await session.replayScenario(steps);
+
+    expect(result.states).toHaveLength(3);
+    expect(result.states.map((s) => s.status)).toEqual(['passed', 'passed', 'passed']);
+    expect(result.stoppedOnError).toBe(false);
+
+    const [, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(init.body as string);
+    expect(body.steps).toHaveLength(2); // Let отфильтрован
+    expect(body.steps[0].action).toBe('click');
+    expect(body.steps[1].action).toBe('wait_for');
+    expect(body.stop_on_failure).toBe(true);
+  });
+
+  it('replayScenario вердикт failed → stoppedOnError + скриншот шага', async () => {
+    mockFetch.mockResolvedValueOnce(mockResponse(200, {
+      ok: true,
+      steps: [backendStep({ status: 'failed', error: 'boom', screenshot_b64: 'c2NyZWVu' })],
+      total: 1, executed: 1, passed: 0, failed: 1, cancelled: 0,
+      verdict: 'failed', duration_ms: 20,
+    }));
+
+    const result = await session.replayScenario([sessStep('a')]);
+
+    expect(result.stoppedOnError).toBe(true);
+    expect(result.states[0]!.status).toBe('failed');
+    expect(result.states[0]!.screenshotB64).toBe('c2NyZWVu');
   });
 });

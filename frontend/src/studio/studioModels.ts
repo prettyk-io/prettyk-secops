@@ -36,16 +36,16 @@ export function modelPathForTab(tab: StudioTab): string | undefined {
 export function tabIdFromSuiteModelUri(uri: { toString(): string }): StudioTabId | undefined {
   const raw = uri.toString().split(/[?#]/, 1)[0] ?? '';
   const page = /^pk:\/\/suite\/pages\/(.+)\.pk$/i.exec(raw);
-  if (page?.[2] !== undefined) {
-    return pageTabId(decodeURIComponent(page[2]));
+  if (page?.[1] !== undefined) {
+    return pageTabId(decodeURIComponent(page[1]));
   }
   const mod = /^pk:\/\/suite\/modules\/(\d+)\.pk$/i.exec(raw);
-  if (mod?.[2] !== undefined) {
-    return moduleTabId(Number(mod[2]));
+  if (mod?.[1] !== undefined) {
+    return moduleTabId(Number(mod[1]));
   }
   const scenario = /^pk:\/\/suite\/scenarios\/(\d+)\.pk$/i.exec(raw);
-  if (scenario?.[2] !== undefined) {
-    return scenarioTabId(Number(scenario[2]));
+  if (scenario?.[1] !== undefined) {
+    return scenarioTabId(Number(scenario[1]));
   }
   return undefined;
 }

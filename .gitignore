@@ -57,6 +57,8 @@ scanner_report*.xml
 scanner_report*.md
 browser_state.json
 cookies.json
+# BBA-EXEC-3: runtime-артефакты replay (скриншоты шагов + timeline JSON)
+replay_artifacts/
 
 # =====================
 # Node.js / фронтенд

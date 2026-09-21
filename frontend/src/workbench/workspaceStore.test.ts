@@ -13,8 +13,8 @@ describe('useWorkspaceStore (PK-EC-2)', () => {
     expect(s.leftPanel.open).toBe(true);
     expect(s.leftPanel.width).toBe(240);
     expect(s.rightPanel.open).toBe(true);
-    expect(s.rightPanel.width).toBe(320);
-    expect(s.rightPanel.activeTab).toBe('context');
+    expect(s.rightPanel.width).toBe(480);
+    expect(s.rightPanel.activeTab).toBe('browser');
     expect(s.bottomDrawer.open).toBe(false);
     expect(s.bottomDrawer.height).toBe(240);
     expect(s.bottomDrawer.activeTab).toBe('terminal');

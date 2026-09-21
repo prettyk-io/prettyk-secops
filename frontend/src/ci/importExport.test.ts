@@ -74,7 +74,7 @@ describe('Import/Export Compatibility (PK-CI-8)', () => {
         pipelineId: 'p1',
         externalSteps: [
           { id: 's1', name: 'browser-discovery' },
-          { id: 's2', name: 'unknown-evil-scanner' },
+          { id: 's2', name: 'unknown-evil-tool' },
         ],
       });
       expect(report.overallLevel).toBe('unsupported');

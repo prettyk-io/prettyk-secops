@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { getBrowserSession } from '../studio/browserSession';
 import type { BrowserSessionStatus } from '../studio/browserSession';
+import type { ReplayStepState } from './replayRunner';
 import { useScenarioDeckStore } from '../studio/ScenarioDeckStore';
 import type { ScenarioStepModel } from '../studio/scenarioStepModel';
 import { computeCanvasClickToViewport } from './clickCoordinate';
@@ -59,7 +60,12 @@ export function BrowserStage({
   const [navUrl, setNavUrl] = useState(targetUrl);
   const navAbortRef = useRef<AbortController | null>(null);
   const [playing, setPlaying] = useState(false);
-  const [playStep, setPlayStep] = useState(0);
+  const [replayStates, setReplayStates] = useState<ReplayStepState[]>([]);
+  const [replayPaused, setReplayPaused] = useState(false);
+  const [replayError, setReplayError] = useState<string | null>(null);
+  const [replayErrorScreenshot, setReplayErrorScreenshot] = useState<string | null>(null);
+  const [errorModalOpen, setErrorModalOpen] = useState(false);
+  const replayResumeIndexRef = useRef(0);
   const playAbortRef = useRef<AbortController | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -177,23 +183,71 @@ export function BrowserStage({
     catch { setNavLoading(false); }
   }, [liveCdp]);
 
-  const doPlay = useCallback(async () => {
-    const steps = useScenarioDeckStore.getState().decks[0]?.steps ?? []; if (steps.length === 0) return;
-    const abort = new AbortController(); playAbortRef.current = abort; setPlaying(true); setPlayStep(0);
-    for (let i = 0; i < steps.length; i++) {
-      if (abort.signal.aborted) break; setPlayStep(i + 1); const s = steps[i]!;
-      try {
-        if (s.action === "Click") await fetch("/api/browser/click", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ selector: s.strategyValue, strategy: s.strategy }) });
-        else if (s.action === "Type") await fetch("/api/browser/type", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ selector: s.strategyValue, text: s.payload, strategy: s.strategy }) });
-        else if (s.action === "Open") await fetch("/api/browser/navigate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: s.payload }) });
-        else if (s.action === "Wait") await new Promise(r => setTimeout(r, Number(s.payload) || 1000));
-      } catch { /* skip */ }
-      if (i < steps.length - 1) await new Promise(r => setTimeout(r, 800));
+  const runReplayFor = useCallback(async (startIndex: number) => {
+    const deck = useScenarioDeckStore.getState().decks[0];
+    const steps = deck?.steps ?? [];
+    if (steps.length === 0) return;
+    const abort = new AbortController();
+    playAbortRef.current = abort;
+    setPlaying(true);
+    setReplayPaused(false);
+    setReplayError(null);
+    setReplayErrorScreenshot(null);
+    setErrorModalOpen(false);
+
+    const session = getBrowserSession();
+    const result = await session.replayScenario(steps, {
+      signal: abort.signal,
+      startIndex,
+      onStepState: (st) => {
+        setReplayStates((prev) => {
+          const next = prev.length === steps.length
+            ? [...prev]
+            : steps.map((s, i) => ({ stepId: s.id, index: i, status: 'idle' as const }));
+          next[st.index] = st;
+          return next;
+        });
+      },
+    });
+
+    setPlaying(false);
+    playAbortRef.current = null;
+
+    if (result.stoppedOnError) {
+      const failed = [...result.states].reverse().find((s) => s.status === 'failed');
+      if (failed) {
+        replayResumeIndexRef.current = failed.index + 1;
+        setReplayError(failed.error ?? 'Шаг завершился с ошибкой');
+        setReplayPaused(true);
+        // BBA-FE-3: скриншот ошибки → модал.
+        if (failed.screenshotB64) {
+          setReplayErrorScreenshot(failed.screenshotB64);
+          setErrorModalOpen(true);
+        }
+      }
     }
-    setPlaying(false); setPlayStep(0); playAbortRef.current = null;
   }, []);
 
-  const stopPlay = useCallback(() => { playAbortRef.current?.abort(); setPlaying(false); setPlayStep(0); playAbortRef.current = null; }, []);
+  const startReplay = useCallback(async () => {
+    const steps = useScenarioDeckStore.getState().decks[0]?.steps ?? [];
+    setReplayStates(steps.map((s, i) => ({ stepId: s.id, index: i, status: 'idle' as const })));
+    replayResumeIndexRef.current = 0;
+    await runReplayFor(0);
+  }, [runReplayFor]);
+
+  const continueReplay = useCallback(async () => {
+    await runReplayFor(replayResumeIndexRef.current);
+  }, [runReplayFor]);
+
+  const stopPlay = useCallback(() => {
+    playAbortRef.current?.abort();
+    setPlaying(false);
+    setReplayPaused(false);
+    setReplayError(null);
+    setReplayErrorScreenshot(null);
+    setErrorModalOpen(false);
+    playAbortRef.current = null;
+  }, []);
   // ВАЖНО: `?? []` в zustand-селекторе создаёт НОВЫЙ массив на каждом getSnapshot,
   // из-за чего useSyncExternalStore зацикливается (Maximum update depth exceeded).
   // Возвращаем стабильную ссылку: decks[0]?.steps (undefined → EMPTY, не новый массив).
@@ -227,9 +281,9 @@ export function BrowserStage({
         </div>
 
         {playing ? (
-          <button onClick={stopPlay} className="flex items-center gap-1 px-2 h-6 rounded text-[10px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/20">Stop {playStep}/{steps.length}</button>
+          <button onClick={stopPlay} className="flex items-center gap-1 px-2 h-6 rounded text-[10px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/20"><Square className="size-3" /> Stop</button>
         ) : (
-          <button onClick={doPlay} disabled={!liveCdp || navLoading || steps.length === 0} className="flex items-center gap-1 px-2 h-6 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 disabled:opacity-30"><Play className="size-3" /> Play</button>
+          <button onClick={startReplay} disabled={!liveCdp || navLoading || steps.length === 0} className="flex items-center gap-1 px-2 h-6 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 disabled:opacity-30"><Play className="size-3" /> Play</button>
         )}
 
         <span className={cn('flex items-center gap-1 text-[9px] font-mono shrink-0', liveCdp ? (cdpObserving ? 'text-red-400' : 'text-emerald-400') : 'text-slate-500')}>
@@ -311,6 +365,42 @@ export function BrowserStage({
             </div>
           </div>
         )}
+
+        {/* BBA-FE-2: статус каждого шага replay + ошибка + Continue/Stop */}
+        {(playing || replayPaused) && replayStates.length > 0 && (
+          <div className="absolute bottom-2 left-2 right-2 z-20 flex flex-col gap-1.5">
+            {replayPaused && (
+              <div className="pointer-events-auto flex items-center gap-2 px-2 py-1.5 rounded border border-red-500/30 bg-red-500/10">
+                <AlertTriangle className="size-3.5 text-red-400 shrink-0" />
+                <span className="text-[10px] text-red-400 flex-1 truncate">{replayError ?? 'Ошибка шага'}</span>
+                {replayErrorScreenshot && !errorModalOpen && (
+                  <button onClick={() => setErrorModalOpen(true)} className="flex items-center gap-1 px-2 h-5 rounded text-[9px] font-semibold bg-sky-500/15 text-sky-400 border border-sky-500/30 hover:bg-sky-500/20">Скриншот</button>
+                )}
+                <button onClick={continueReplay} className="flex items-center gap-1 px-2 h-5 rounded text-[9px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20"><Play className="size-2.5" /> Continue</button>
+                <button onClick={stopPlay} className="flex items-center gap-1 px-2 h-5 rounded text-[9px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/20"><Square className="size-2.5" /> Stop</button>
+              </div>
+            )}
+            <div className="flex gap-1 flex-wrap">
+              {replayStates.map((st, i) => (
+                <span
+                  key={st.stepId}
+                  data-testid={`replay-step-${i}`}
+                  data-status={st.status}
+                  title={st.error ?? st.status}
+                  className={cn(
+                    'flex items-center justify-center size-5 rounded text-[9px] font-semibold border',
+                    st.status === 'passed' && 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30',
+                    st.status === 'failed' && 'text-red-400 bg-red-500/15 border-red-500/30',
+                    st.status === 'running' && 'text-amber-400 bg-amber-500/15 border-amber-500/30 animate-pulse',
+                    st.status === 'idle' && 'text-slate-500 bg-slate-700/20 border-slate-600/30',
+                  )}
+                >
+                  {st.status === 'passed' ? '✓' : st.status === 'failed' ? '✗' : st.status === 'running' ? '▶' : ''}{i + 1}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Mode bar */}
@@ -331,6 +421,33 @@ export function BrowserStage({
           <Bug className="size-3" /> Debug {mode === 'debug' && <span className="text-[8px] text-violet-500/70">follow run</span>}
         </button>
       </div>
+
+      {/* BBA-FE-3: модал скриншота ошибки шага */}
+      {errorModalOpen && replayErrorScreenshot && (
+        <div data-testid="step-error-modal" className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="flex flex-col w-full max-w-2xl max-h-[90vh] rounded-lg border border-red-500/30 bg-[#0b101c] shadow-2xl overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-2.5 shrink-0 border-b border-red-500/20">
+              <AlertTriangle className="size-4 text-red-400 shrink-0" />
+              <span className="text-xs font-semibold text-red-400">Ошибка шага</span>
+              <span className="text-[10px] text-slate-500 truncate flex-1">{replayError ?? ''}</span>
+              <button onClick={() => setErrorModalOpen(false)} aria-label="Закрыть" className="p-1 rounded hover:bg-white/5 text-slate-400 text-[16px] leading-none">&times;</button>
+            </div>
+            <div className="px-4 py-2 text-[11px] text-slate-300 font-mono shrink-0 border-b border-slate-700/40 bg-red-500/5">{replayError ?? 'Ошибка шага'}</div>
+            <div className="flex-1 min-h-0 overflow-auto bg-[#05070c] p-3">
+              <img
+                src={`data:image/png;base64,${replayErrorScreenshot}`}
+                alt="Скриншот ошибки шага"
+                className="w-full h-auto rounded border border-slate-700/60"
+              />
+            </div>
+            <div className="flex items-center gap-2 px-4 py-2.5 shrink-0 border-t border-slate-700/40">
+              <button onClick={continueReplay} className="flex items-center gap-1 px-2.5 h-7 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20"><Play className="size-3" /> Continue</button>
+              <button onClick={stopPlay} className="flex items-center gap-1 px-2.5 h-7 rounded text-[10px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/20"><Square className="size-3" /> Stop</button>
+              <button onClick={() => setErrorModalOpen(false)} className="ml-auto px-2.5 h-7 rounded text-[10px] font-semibold text-slate-400 hover:text-slate-200">Закрыть</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -183,3 +183,27 @@ cd frontend; npm run typecheck; npm run test
 ```
 
 **DoD RC2-6:** `npm run typecheck` = 0 ✅; `npm run test` — не 100% green (36 fail, предсуществующие, вне поверхности RC2-6) ⚠️; heavy/lab триажирован (12 passed / 8 skipped, 0 failed) ✅; регрессий основного pytest нет (2235 passed / 55 skipped / 0 failed, exit 0) ✅.
+
+---
+
+# RC2-7 — Frontend Test Parity & Keywords Renaming
+
+## 11. Frontend vitest — динамика
+
+| Срез | Test Files | Tests |
+|---|---|---|
+| RC2-6 | 11 failed / ~249 passed | 36 failed / 1580 passed + 1 unhandled error |
+| RC2-7 | 9 failed / 251 passed (260) | **15 failed / 1601 passed (1616)** |
+
+Закрыто в RC2-7:
+- `src/keywords/constructor.test.ts`, `src/keywords/prettyToWire.test.ts` — 4 failed → 0 (§7 RC2-6, «остаток переименования»).
+- `context.setLineDash is not a function` (unhandled error из `@antv/g-canvas` в `ProgramOverview.test.tsx`) → 0: общий canvas 2D-полифил в `src/monaco/vitest.monaco-polyfill.ts` + снят неполный локальный мок `getContext`.
+- `src/studio/browserSession.test.ts` — починен в параллельном потоке (Boss/Flash), не RC2-7.
+
+## 12. Оставшиеся падающие файлы фронтенда (вне RC2-7, предсуществующие)
+
+`ci/importExport`, `design-admin/AdminShowcase`, `monaco/scriptLanguage.providers`, `shell/HomePage`, `shell/LoginPage.sso`, `studio/Studio`, `wired/wiredDslCodec`, `workbench/workspaceStore` — плюс `src/checks/checksStore.test.ts`.
+
+`checksStore.test.ts` — **время-флейк**: `updateCheck` бампает `updated_at` через `nowIso()` (мс-разрешение); в изолированном прогоне create+updates укладываются в 1 мс и `not.toBe(t0)` падает, в полном suite проходит. Файлы `src/checks/*` не менялись, импортов generated-каталогов нет — к RC2-7 отношения не имеет.
+
+**DoD RC2-7:** `npm run test -- src/keywords/` 100% green ✅ (66 тестов); `ProgramOverview.test.tsx` без unhandled exception ✅; `npm run typecheck` exit 0 ✅; регрессий в `src/admin/`, `src/results/` нет ✅ (падающих файлов в этих каталогах нет).

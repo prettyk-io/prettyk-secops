@@ -51,8 +51,8 @@ describe('каталог keywords', () => {
       'fuzz',
       'grpc',
       'http',
-      'webdriver',
       'scanner',
+      'webdriver',
     ]);
     expect(totalActionCount(keywordCatalog)).toBeGreaterThan(200);
   });
@@ -90,9 +90,9 @@ describe('каталог keywords', () => {
 describe('splitConstructor', () => {
   it('разбивает строку и сохраняет смещения', () => {
     expect(splitConstructor('scanner|get_alerts|ctx')).toEqual([
-      { index: 0, text: 'scanner', start: 0, end: 3 },
-      { index: 1, text: 'get_alerts', start: 4, end: 14 },
-      { index: 2, text: 'ctx', start: 15, end: 18 },
+      { index: 0, text: 'scanner', start: 0, end: 7 },
+      { index: 1, text: 'get_alerts', start: 8, end: 18 },
+      { index: 2, text: 'ctx', start: 19, end: 22 },
     ]);
   });
 
@@ -109,8 +109,9 @@ describe('splitConstructor', () => {
   it('определяет сегмент по позиции курсора', () => {
     expect(segmentAtOffset('scanner|get_alerts|ctx', 0).index).toBe(0);
     expect(segmentAtOffset('scanner|get_alerts|ctx', 3).index).toBe(0);
-    expect(segmentAtOffset('scanner|get_alerts|ctx', 5).index).toBe(1);
-    expect(segmentAtOffset('scanner|get_alerts|ctx', 18).index).toBe(2);
+    expect(segmentAtOffset('scanner|get_alerts|ctx', 5).index).toBe(0);
+    expect(segmentAtOffset('scanner|get_alerts|ctx', 18).index).toBe(1);
+    expect(segmentAtOffset('scanner|get_alerts|ctx', 22).index).toBe(2);
   });
 
   it('раскладывает компонент, action и аргументы', () => {

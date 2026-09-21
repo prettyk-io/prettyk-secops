@@ -48,12 +48,6 @@ vi.mock('../monaco/constructorDiagnosticsMerge', () => ({
     backend ?? [...(local as unknown[])],
 }));
 
-vi.mock('./StudioExplorer', () => ({
-  StudioExplorer: (props: { formData?: unknown }) => (
-    <div data-testid="studio-explorer" data-formdata={JSON.stringify(props.formData ?? null)} />
-  ),
-}));
-
 vi.mock('./Canvas', () => ({
   Canvas: (props: { counts?: Record<string, number> }) => (
     <div data-testid="canvas-v2" data-counts={JSON.stringify(props.counts ?? null)} />
@@ -109,17 +103,11 @@ describe('Studio (STU-V2 B1/B2/B4)', () => {
   it('B1: без проверки и манифеста — честное пустое состояние', () => {
     render(<Studio />);
     expect(screen.getByText('Проверка не выбрана')).toBeDefined();
-    expect(screen.queryByTestId('studio-explorer')).toBeNull();
   });
 
-  it('B1+B2: привязан к checkId — Explorer получает formData, Canvas получает реальные счётчики', () => {
+  it('B1+B2: привязан к checkId — Canvas получает реальные счётчики из formData', () => {
     const wired = makeWired(2, 1);
     render(<Studio checkId="chk-12345678" initialWired={wired} />);
-
-    // Explorer привязан именно к этому formData.
-    const explorer = screen.getByTestId('studio-explorer');
-    const explorerData = JSON.parse(explorer.getAttribute('data-formdata') ?? 'null');
-    expect(explorerData).toEqual(wired);
 
     // Canvas счётчики — реальные (2 сценария, 1 страница), не литералы.
     const canvas = screen.getByTestId('canvas-v2');
@@ -129,16 +117,12 @@ describe('Studio (STU-V2 B1/B2/B4)', () => {
     expect(counts.modules).toBe(0);
   });
 
-  it('B1: другая проверка — свои данные (перезагрузка formData)', () => {
+  it('B1: другая проверка — свои данные (перезагрузка formData → счётчики Canvas)', () => {
     const first = makeWired(2, 1);
     const second = makeWired(1, 3);
     const { rerender } = render(<Studio checkId="chk-aaa" initialWired={first} />);
 
     rerender(<Studio checkId="chk-bbb" initialWired={second} />);
-
-    const explorer = screen.getByTestId('studio-explorer');
-    const explorerData = JSON.parse(explorer.getAttribute('data-formdata') ?? 'null');
-    expect(explorerData).toEqual(second);
 
     const canvas = screen.getByTestId('canvas-v2');
     const counts = JSON.parse(canvas.getAttribute('data-counts') ?? 'null');

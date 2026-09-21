@@ -29,12 +29,12 @@ describe('LoginPage SSO', () => {
 
     fireEvent.click(btn);
     expect(btn.textContent).toContain('Редирект на Blitz');
-    expect(btn.className).toContain('pk-shell-sso-btn--ok');
+    expect(screen.getByTestId('login-sso').querySelector('svg')).toBeTruthy();
 
     act(() => {
       vi.advanceTimersByTime(3000);
     });
     expect(screen.getByTestId('login-sso').textContent).toContain('SSO / Blitz');
-    expect(screen.getByTestId('login-sso').className).not.toContain('pk-shell-sso-btn--ok');
+    expect(screen.getByTestId('login-sso').querySelector('svg')).toBeNull();
   });
 });

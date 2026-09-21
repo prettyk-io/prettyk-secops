@@ -18,6 +18,7 @@ import { useCdpRecorder } from "../terminal/useCdpRecorder";
 import { DSLProposalBanner } from "../terminal/DiscoveryOverlay";
 import { useScenarioDeckStore } from "./ScenarioDeckStore";
 import { stepToDSL } from "./scenarioStepModel";
+import { getBrowserSession } from "./browserSession";
 
 interface BS { ok: boolean; connected: boolean; url?: string | null; title?: string | null; streamUrl?: string | null; }
 
@@ -29,6 +30,7 @@ export function BrowserPanel() {
   // ── F-7: Play state ──
   const [playing, setPlaying] = useState(false);
   const [playStep, setPlayStep] = useState(0);
+  const [playError, setPlayError] = useState<string | null>(null);
   const playAbortRef = useRef<AbortController | null>(null);
 
   const poll = useCallback(async () => {
@@ -82,7 +84,7 @@ export function BrowserPanel() {
     },
   });
 
-  // ── F-7: Play recorded steps ──
+  // ── F-7: Play recorded steps (BBA-FE-2: структурированный раннер) ──
   const doPlay = useCallback(async () => {
     const steps = useScenarioDeckStore.getState().decks[0]?.steps ?? [];
     if (steps.length === 0) return;
@@ -90,32 +92,31 @@ export function BrowserPanel() {
     playAbortRef.current = abort;
     setPlaying(true);
     setPlayStep(0);
-    for (let i = 0; i < steps.length; i++) {
-      if (abort.signal.aborted) break;
-      setPlayStep(i + 1);
-      const s = steps[i]!;
-      try {
-        if (s.action === "Click") {
-          await fetch("/api/browser/click", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ selector: s.strategyValue, strategy: s.strategy }) });
-        } else if (s.action === "Type") {
-          await fetch("/api/browser/type", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ selector: s.strategyValue, text: s.payload, strategy: s.strategy }) });
-        } else if (s.action === "Open") {
-          await fetch("/api/browser/navigate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: s.payload }) });
-        } else if (s.action === "Wait") {
-          await new Promise(r => setTimeout(r, Number(s.payload) || 1000));
-        }
-      } catch { /* step failed — continue */ }
-      if (i < steps.length - 1) await new Promise(r => setTimeout(r, 800));
-    }
+    setPlayError(null);
+
+    const session = getBrowserSession();
+    const result = await session.replayScenario(steps, {
+      signal: abort.signal,
+      onStepState: (st) => {
+        setPlayStep(st.index + 1);
+        if (st.status === "failed") setPlayError(st.error ?? "Шаг завершился с ошибкой");
+      },
+    });
+
     setPlaying(false);
     setPlayStep(0);
     playAbortRef.current = null;
+    if (result.stoppedOnError) {
+      const failed = [...result.states].reverse().find((s) => s.status === "failed");
+      setPlayError(failed?.error ?? "Шаг завершился с ошибкой");
+    }
   }, []);
 
   const stopPlay = useCallback(() => {
     playAbortRef.current?.abort();
     setPlaying(false);
     setPlayStep(0);
+    setPlayError(null);
     playAbortRef.current = null;
   }, []);
 
@@ -181,6 +182,14 @@ export function BrowserPanel() {
     )}
     {recorder.state.ambiguous && (
       <div className="px-3 py-1.5 shrink-0 text-[10px]" style={{ borderBottom: "1px solid #1e293b", background: "rgba(245,158,11,0.08)", color: "#f59e0b" }}>Неоднозначный локатор — выберите элемент точнее</div>
+    )}
+
+    {/* F-7 (BBA-FE-2): ошибка шага replay — не глотаем, показываем */}
+    {playError && (
+      <div className="px-3 py-1.5 shrink-0 flex items-center gap-2" style={{ borderBottom: "1px solid #7f1d1d", background: "rgba(239,68,68,0.1)", color: "#f87171" }}>
+        <span className="text-[10px] flex-1 truncate">{playError}</span>
+        <button className="text-[10px] underline" style={{ color: "#f87171" }} onClick={() => setPlayError(null)}>закрыть</button>
+      </div>
     )}
 
     {/* Viewport: живой noVNC-стрим (PW-A3) */}

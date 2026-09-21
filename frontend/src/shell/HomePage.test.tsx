@@ -49,19 +49,21 @@ function renderHome(props: Partial<Parameters<typeof HomePage>[0]> = {}) {
     onStartImported,
     onStartFromDeploy,
     ...render(
-      <HomePage
-        onOpenHistory={onOpenHistory}
-        onOpenAdmin={onOpenAdmin}
-        onStartFresh={onStartFresh}
-        onStartSetup={onStartSetup}
-        onStartImported={onStartImported}
-        onStartFromDeploy={onStartFromDeploy}
-        playEnter={props.playEnter}
-        onEnterPlayed={props.onEnterPlayed}
-        canAccessAdmin={props.canAccessAdmin}
-        canimportWired={props.canimportWired}
-        roleLabel={props.roleLabel}
-      />,
+      <ThemeProvider>
+        <HomePage
+          onOpenHistory={onOpenHistory}
+          onOpenAdmin={onOpenAdmin}
+          onStartFresh={onStartFresh}
+          onStartSetup={onStartSetup}
+          onStartImported={onStartImported}
+          onStartFromDeploy={onStartFromDeploy}
+          playEnter={props.playEnter}
+          onEnterPlayed={props.onEnterPlayed}
+          canAccessAdmin={props.canAccessAdmin}
+          canimportWired={props.canimportWired}
+          roleLabel={props.roleLabel}
+        />
+      </ThemeProvider>,
     ),
   };
 }

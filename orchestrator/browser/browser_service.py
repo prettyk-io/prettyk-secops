@@ -22,6 +22,10 @@ from typing import Optional
 
 logger = logging.getLogger("orchestrator.browser")
 
+# BBA-EXEC-3: персист replay-артефактов (скриншоты + timeline). Лёгкий модуль
+# без зависимостей — импорт на верхнем уровне безопасен (нет циклических связей).
+from browser.replay_store import get_store
+
 # BBA-1: каноничный fallback-клик по координате. Primary — page.mouse
 # (CDP Input.dispatchMouseEvent, реальный hit-test). Этот JS — только fallback,
 # когда физический клик поглощён overlay: берём элемент под точкой напрямую и
@@ -447,6 +451,17 @@ class _BrowserWorker:
             return page.locator(f"xpath={target}")
         if strategy == "id":
             return page.locator(f"#{target}")
+        # BBA-EXEC-2: паритет стратегий из frontend scenarioStepModel.ts.
+        if strategy in ("test_id", "testid"):
+            return page.get_by_test_id(target)
+        if strategy == "label":
+            return page.get_by_label(target)
+        if strategy == "placeholder":
+            return page.get_by_placeholder(target)
+        if strategy == "alt":
+            return page.get_by_alt_text(target)
+        if strategy == "title":
+            return page.get_by_title(target)
         return page.locator(target)  # css (default)
 
     def _cmd_step_execute(self, step: dict) -> dict:
@@ -551,26 +566,119 @@ class _BrowserWorker:
             return _ok("failed", f"{type(e).__name__}: {e}", screenshot_b64=shot)
 
     def _cmd_scenario_replay(self, steps: list, stop_on_failure: bool = True) -> dict:
-        """BBA-EXEC-1: пакетное выполнение последовательности шагов с агрегацией."""
+        """BBA-EXEC-1/2/3: пакетное выполнение шагов с агрегацией, отменой и
+        персистом артефактов (скриншоты + ``replay_timeline.json``).
+
+        BBA-EXEC-2: перед каждым шагом проверяет ``self._abort_requested``
+        (выставляется извне worker-потока). При флаге текущий шаг помечается
+        ``status: "cancelled"``, флаг сбрасывается, вердикт — ``cancelled``.
+
+        BBA-EXEC-3: шаговые ``screenshot_b64`` сохраняются в PNG-файлы через
+        ReplayStore; timeline пишется в ``replay_timeline.json``. В ответе
+        ``screenshot_b64`` заменяется на относительный ``screenshot``-путь,
+        добавляются ``replay_id`` и ``timeline_path``.
+        """
         started = time.time()
         results: list[dict] = []
+        cancelled = False
         for step in steps or []:
+            if self._abort_requested:
+                self._abort_requested = False
+                cancelled = True
+                results.append({
+                    "step_id": str(step.get("step_id") or "aborted"),
+                    "action": str(step.get("action") or ""),
+                    "status": "cancelled",
+                    "duration_ms": int((time.time() - started) * 1000),
+                    "error": "aborted by operator",
+                    "screenshot_b64": None,
+                })
+                break
             r = self._cmd_step_execute(step)
             results.append(r)
             if stop_on_failure and r.get("status") == "failed":
                 break
         passed = sum(1 for r in results if r.get("status") == "passed")
         failed = sum(1 for r in results if r.get("status") == "failed")
-        return {
-            "ok": True,
-            "steps": results,
+        cancelled_n = sum(1 for r in results if r.get("status") == "cancelled")
+        if cancelled or cancelled_n:
+            verdict = "cancelled"
+        else:
+            verdict = "passed" if failed == 0 else "failed"
+
+        # ── BBA-EXEC-3: персист артефактов ──
+        store = get_store()
+        replay_id = store.new_replay_id()
+        timeline_steps: list[dict] = []
+        screenshots_saved = 0
+        for i, r in enumerate(results):
+            entry = {
+                "index": i,
+                "step_id": r.get("step_id"),
+                "action": r.get("action"),
+                "status": r.get("status"),
+                "duration_ms": r.get("duration_ms"),
+                "error": r.get("error"),
+                "screenshot": None,
+            }
+            b64 = r.get("screenshot_b64")
+            if b64:
+                try:
+                    png = base64.b64decode(b64)
+                    fname = f"step_{i}_{entry['step_id']}.png"
+                    entry["screenshot"] = store.save_screenshot(replay_id, fname, png)
+                    screenshots_saved += 1
+                except Exception as e:
+                    logger.warning("scenario_replay: screenshot persist failed: %s", e)
+            r.pop("screenshot_b64", None)
+            r["screenshot"] = entry["screenshot"]
+            timeline_steps.append(entry)
+
+        duration_ms = int((time.time() - started) * 1000)
+        timeline = {
+            "replay_id": replay_id,
+            "started_at": int(started * 1000),
+            "verdict": verdict,
             "total": len(steps or []),
             "executed": len(results),
             "passed": passed,
             "failed": failed,
-            "verdict": "passed" if failed == 0 else "failed",
-            "duration_ms": int((time.time() - started) * 1000),
+            "cancelled": cancelled_n,
+            "duration_ms": duration_ms,
+            "screenshots": screenshots_saved,
+            "steps": timeline_steps,
         }
+        timeline_path = None
+        try:
+            timeline_path = store.save_timeline(replay_id, timeline)
+        except Exception as e:
+            logger.exception("scenario_replay: timeline persist failed: %s", e)
+
+        return {
+            "ok": True,
+            "replay_id": replay_id,
+            "timeline_path": timeline_path,
+            "steps": results,
+            "timeline": timeline,
+            "total": len(steps or []),
+            "executed": len(results),
+            "passed": passed,
+            "failed": failed,
+            "cancelled": cancelled_n,
+            "verdict": verdict,
+            "duration_ms": duration_ms,
+        }
+
+    def _cmd_scenario_abort(self) -> dict:
+        """BBA-EXEC-2: запросить отмену активного replay (command handler).
+
+        Примечание: replay исполняется на worker-потоке, поэтому диспатч этого
+        handler'а реально сработает ТОЛЬКО между сценариями. Для отмены «на
+        ходу» публичный API ``browser_scenario_abort`` выставляет
+        ``self._abort_requested`` напрямую (минуя очередь).
+        """
+        self._abort_requested = True
+        return {"ok": True, "abort_requested": True}
 
     # ── observe ──
 
@@ -1106,3 +1214,27 @@ def browser_step_execute(step: dict, session_id: str | None = None) -> dict:
 
 def browser_scenario_replay(steps: list, stop_on_failure: bool = True, session_id: str | None = None) -> dict:
     return BrowserSessionManager.worker_for(session_id).dispatch("scenario_replay", steps=steps, stop_on_failure=stop_on_failure)
+
+
+def browser_scenario_abort(session_id: str | None = None) -> dict:
+    """BBA-EXEC-2: запросить отмену активного replay.
+
+    Выставляет флаг НАПРЯМУЮ на worker (минуя dispatch-очередь), потому что
+    replay исполняется синхронно на worker-потоке — диспатч встал бы в хвост
+    очереди и не сработал до завершения сценария.
+    """
+    worker = BrowserSessionManager.worker_for(session_id)
+    worker._abort_requested = True
+    return {"ok": True, "abort_requested": True}
+
+
+def browser_replay_timeline(replay_id: str, session_id: str | None = None) -> dict:
+    """BBA-EXEC-3: прочитать сохранённый replay_timeline.json.
+
+    Чистое файловое чтение (не требует worker-потока / браузера).
+    """
+    del session_id  # сигнатура единообразна с остальными browser_* API
+    timeline = get_store().load_timeline(replay_id)
+    if timeline is None:
+        return {"ok": False, "error": "timeline not found", "replay_id": replay_id}
+    return {"ok": True, "replay_id": replay_id, "timeline": timeline}

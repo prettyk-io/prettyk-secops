@@ -14,6 +14,8 @@
  */
 
 import { API_BASE } from '../api/apiBase';
+import type { ScenarioStepModel } from './scenarioStepModel';
+import type { ReplayOptions, ReplayRunResult, StepExecutionResult, ReplayStepState } from '../terminal/replayRunner';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -99,7 +101,11 @@ export class BrowserSession {
     if (!res.ok) {
       throw new Error(`Browser API ${res.status}: ${res.statusText}`);
     }
-    const text = await res.text();
+    // BBA-FE-2: отказоустойчивость к мокам/прокси, не реализующим `text()`.
+    // Приоритет — реальный `text()` (обычный fetch), иначе сериализуем `json()`.
+    const text = typeof res.text === 'function'
+      ? await res.text()
+      : JSON.stringify(await res.json());
     if (!text) {
       throw new Error(`Browser API empty response (backend down?)`);
     }
@@ -324,6 +330,202 @@ export class BrowserSession {
       return { ok: false, error: 'mouse/click failed' };
     }
   }
+
+  // ── BBA-FE-2 / BBA-FE-3: Replay Runner ──
+
+  /**
+   * Выполнить ОДИН шаг сценария через живой бэкенд-роут BBA-EXEC-1
+   * `POST /api/browser/step/execute`.
+   *
+   * DSL-шаги (Let, Secret, Generate, Crawl, FuzzWave и т.д.) не являются
+   * браузерными — no-op, не ошибка.
+   */
+  async executeStep(step: ScenarioStepModel, signal?: AbortSignal): Promise<StepExecutionResult> {
+    const dto = scenarioStepToBackendDto(step);
+    if (!dto) return { ok: true };
+    try {
+      const r = await this.fetchJson<BackendStepResult>('/api/browser/step/execute', {
+        method: 'POST',
+        body: JSON.stringify({ step: dto }),
+        signal,
+      });
+      return fromBackendStepResult(r);
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : String(e) };
+    }
+  }
+
+  /**
+   * Прогнать сценарий через живой бэкенд-роут BBA-EXEC-1
+   * `POST /api/browser/scenario/replay` (отдаёт агрегат по завершении).
+   *
+   * Шаги с `startIndex` срезаются (Continue после ошибки), DSL-only шаги
+   * помечаются passed локально (бэкенд их не получает).
+   */
+  async replayScenario(
+    steps: ScenarioStepModel[],
+    options: ReplayOptions = {},
+  ): Promise<ReplayRunResult> {
+    const { signal, startIndex = 0, onStepState, continueOnError = false } = options;
+
+    // Собираем только браузерные шаги с картой исходных индексов.
+    const browserIndexes: number[] = [];
+    const dtos: BackendStepDto[] = [];
+    for (let i = startIndex; i < steps.length; i++) {
+      const dto = scenarioStepToBackendDto(steps[i]!);
+      if (dto) {
+        browserIndexes.push(i);
+        dtos.push(dto);
+      }
+    }
+
+    const states: ReplayStepState[] = [];
+    const push = (st: ReplayStepState) => {
+      states.push(st);
+      onStepState?.(st);
+    };
+
+    if (dtos.length === 0) {
+      // Нет браузерных шагов — все no-op, passed.
+      for (let i = startIndex; i < steps.length; i++) {
+        push({ stepId: steps[i]!.id, index: i, status: 'passed' });
+      }
+      return { states, aborted: !!signal?.aborted, stoppedOnError: false };
+    }
+
+    try {
+      const res = await this.fetchJson<BackendScenarioResult>('/api/browser/scenario/replay', {
+        method: 'POST',
+        body: JSON.stringify({ steps: dtos, stop_on_failure: !continueOnError }),
+        signal,
+      });
+
+      const byIndex = new Map<number, BackendStepResult>();
+      browserIndexes.forEach((origIdx, k) => {
+        const br = res.steps[k];
+        if (br) byIndex.set(origIdx, br);
+      });
+
+      for (let i = startIndex; i < steps.length; i++) {
+        const step = steps[i]!;
+        const br = byIndex.get(i);
+        if (!br) {
+          if (browserIndexes.includes(i)) {
+            // Браузерный шаг, который бэкенд не исполнил (stop_on_failure).
+            push({ stepId: step.id, index: i, status: 'failed', error: 'step not executed' });
+          } else {
+            push({ stepId: step.id, index: i, status: 'passed' });
+          }
+          continue;
+        }
+        push(fromBackendStepState(step.id, i, br));
+      }
+
+      // verdict === 'failed' означает, что агрегат содержал ошибки.
+      // «Остановился на ошибке» (нужен Continue) — только если не continueOnError.
+      return { states, aborted: false, stoppedOnError: res.verdict === 'failed' && !continueOnError };
+    } catch (e) {
+      if (signal?.aborted) {
+        for (let i = startIndex; i < steps.length; i++) {
+          push({ stepId: steps[i]!.id, index: i, status: 'failed', error: 'aborted' });
+        }
+        return { states, aborted: true, stoppedOnError: false };
+      }
+      const error = e instanceof Error ? e.message : String(e);
+      for (let i = startIndex; i < steps.length; i++) {
+        push({ stepId: steps[i]!.id, index: i, status: 'failed', error });
+      }
+      return { states, aborted: false, stoppedOnError: true };
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// BBA-FE-3: маппинг ScenarioStepModel ↔ DTO бэкенд-роутов BBA-EXEC-1
+// ---------------------------------------------------------------------------
+
+/** DTO шага для POST /api/browser/step/execute (и steps[] в scenario/replay). */
+export interface BackendStepDto {
+  action: string;
+  target?: string;
+  value?: string | null;
+  strategy?: string;
+  timeout_ms?: number;
+  step_id?: string;
+}
+
+/** Ответ POST /api/browser/step/execute (один шаг). */
+export interface BackendStepResult {
+  step_id: string;
+  action: string;
+  status: 'passed' | 'failed' | 'cancelled';
+  duration_ms: number;
+  error: string | null;
+  screenshot_b64: string | null;
+}
+
+/** Ответ POST /api/browser/scenario/replay (агрегат). */
+export interface BackendScenarioResult {
+  ok: boolean;
+  steps: BackendStepResult[];
+  total: number;
+  executed: number;
+  passed: number;
+  failed: number;
+  cancelled: number;
+  verdict: 'passed' | 'failed' | 'cancelled';
+  duration_ms: number;
+}
+
+/**
+ * Преобразовать FE ScenarioStepModel в DTO бэкенд-шага.
+ * Возвращает null для DSL-only шагов (не браузерных) — их бэкенд не исполняет.
+ */
+export function scenarioStepToBackendDto(step: ScenarioStepModel): BackendStepDto | null {
+  switch (step.action) {
+    case 'Click':
+      return { action: 'click', target: step.strategyValue, strategy: step.strategy, step_id: step.id };
+    case 'Type':
+      return { action: 'fill', target: step.strategyValue, value: step.payload, strategy: step.strategy, step_id: step.id };
+    case 'Open':
+      return { action: 'goto', target: step.payload, step_id: step.id };
+    case 'Wait':
+      return { action: 'wait_for', target: step.payload?.trim() ? step.payload : '1000', step_id: step.id };
+    case 'Hover':
+      return { action: 'hover', target: step.strategyValue, strategy: step.strategy, step_id: step.id };
+    case 'Select':
+      return { action: 'select_option', target: step.strategyValue, value: step.payload, strategy: step.strategy, step_id: step.id };
+    case 'PressKey':
+      return { action: 'press_key', target: step.payload, step_id: step.id };
+    default:
+      // Let, Secret, Generate*, Crawl, ActiveScan, Check, FuzzWave, Mutate,
+      // Intruder, scannerReport — DSL-only, no-op в браузерном replay.
+      return null;
+  }
+}
+
+/** Преобразовать бэкенд-результат шага в FE StepExecutionResult (без step_id). */
+function fromBackendStepResult(br: BackendStepResult): StepExecutionResult {
+  const passed = br.status === 'passed';
+  return {
+    ok: passed,
+    error: passed ? undefined : (br.error ?? `step ${br.status}`),
+    screenshotB64: !passed ? (br.screenshot_b64 ?? undefined) : undefined,
+    durationMs: br.duration_ms,
+  };
+}
+
+/** Преобразовать бэкенд-результат шага в FE ReplayStepState (с stepId/index). */
+function fromBackendStepState(stepId: string, index: number, br: BackendStepResult): ReplayStepState {
+  const passed = br.status === 'passed';
+  return {
+    stepId,
+    index,
+    status: passed ? 'passed' : 'failed',
+    error: passed ? undefined : (br.error ?? `step ${br.status}`),
+    screenshotB64: !passed ? (br.screenshot_b64 ?? undefined) : undefined,
+    durationMs: br.duration_ms,
+  };
 }
 
 /** Живое CDP-наблюдение: один клик → один event. */

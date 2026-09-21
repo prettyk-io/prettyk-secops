@@ -34,46 +34,9 @@ beforeAll(() => {
       dispatchEvent: () => false,
     }),
   });
-
-  // @antv/g2 canvas mock — jsdom has no <canvas>
-  Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
-    writable: true,
-    configurable: true,
-    value: () => ({
-      clearRect: () => undefined,
-      fillRect: () => undefined,
-      fillText: () => undefined,
-      arc: () => undefined,
-      beginPath: () => undefined,
-      closePath: () => undefined,
-      moveTo: () => undefined,
-      lineTo: () => undefined,
-      stroke: () => undefined,
-      fill: () => undefined,
-      save: () => undefined,
-      restore: () => undefined,
-      scale: () => undefined,
-      translate: () => undefined,
-      rotate: () => undefined,
-      setTransform: () => undefined,
-      transform: () => undefined,
-      measureText: () => ({ width: 0 }),
-      createLinearGradient: () => ({ addColorStop: () => undefined }),
-      createRadialGradient: () => ({ addColorStop: () => undefined }),
-      getImageData: () => ({ data: new Uint8Array(4), width: 1, height: 1 }),
-      createImageData: () => ({ data: new Uint8Array(4), width: 1, height: 1 }),
-      putImageData: () => undefined,
-      rect: () => undefined,
-      ellipse: () => undefined,
-      arcTo: () => undefined,
-      bezierCurveTo: () => undefined,
-      drawImage: () => undefined,
-      isPointInPath: () => false,
-      quadraticCurveTo: () => undefined,
-      canvas: { width: 0, height: 0 },
-      clip: () => undefined,
-    }),
-  });
+  // Canvas 2D для @antv/g2 даёт общий jsdom-полифил
+  // (src/monaco/vitest.monaco-polyfill.ts, setupFiles в vite.config.ts):
+  // локальный неполный мок без setLineDash ронял рендер графика.
 });
 
 beforeEach(() => {

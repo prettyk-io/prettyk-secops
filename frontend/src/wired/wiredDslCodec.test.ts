@@ -45,12 +45,14 @@ function makeScenarioFormData(n: number, text: string): unknown {
           constructor: 'Page: Dashboard body',
         },
       },
-      imports: [
+      test_data_constructor: [
         {
-          kind: 'Модуль работы с данными',
-          as: 'auth_tokens',
-          content: 'tok1\ntok2\n',
+          id: 'auth_tokens',
+          module_type: 'Модуль работы с данными',
+          constructor: 'tok1\ntok2\n',
         },
+      ],
+      imports: [
         {
           kind: 'OpenAPI',
           as: 'petstore',
@@ -113,7 +115,7 @@ describe('wiredDslCodec', () => {
   });
 
   describe('listDslTabs', () => {
-    it('lists scenarios, pages, data modules, and fuzzers', () => {
+    it('lists scenarios, pages, data modules (fuzzers/resources — form surfaces)', () => {
       const fd = makeScenarioFormData(1, 'test');
       const tabs = listDslTabs(fd);
 
@@ -125,7 +127,7 @@ describe('wiredDslCodec', () => {
       expect(scenarios).toHaveLength(2);
       expect(pages).toHaveLength(2);
       expect(modules).toHaveLength(1); // only data module, not OpenAPI
-      expect(fuzzers).toHaveLength(1);
+      expect(fuzzers).toHaveLength(0); // form surface — no DSL tab
 
       // Scenario paths use step 0 only
       expect(scenarios[0]!.path).toBe('/test_suites/scenarios/0/steps/0/constructor');
@@ -133,7 +135,7 @@ describe('wiredDslCodec', () => {
 
       // Labels
       expect(scenarios[0]!.label).toBe('Login Flow');
-      expect(pages[0]!.label).toBe('Login Page');
+      expect(pages[0]!.label).toBe('LoginPage');
     });
 
     it('returns empty for empty formData', () => {
@@ -179,7 +181,7 @@ describe('wiredDslCodec', () => {
       const fd = makeScenarioFormData(1, 'test');
       const tab = findDslTab(fd, 'page', 'Dashboard');
       expect(tab).not.toBeNull();
-      expect(tab!.label).toBe('Dashboard Page');
+      expect(tab!.label).toBe('Dashboard');
       expect(tab!.path).toBe('/test_suites/pages/Dashboard/constructor');
     });
 
