@@ -330,6 +330,237 @@
 
 ---
 
+### Поток 4 — Новая волна (2026-09-22): стенд + Browser Authoring локаторы + Production readiness
+
+> Причина волны: стенд SecOps Lab лежит (жив только Vite `:5173`), из-за чего CDP-браузер в Editor падает с `Unexpected end of JSON input` (`/api/browser/status` → мёртвый playground `:8765`). Максим: Flash поднимает всё, Boss/Luna — production-readiness backend.
+
+#### Карточка PRD-5 (Flash) — Lab re-raise до зелёного + устранение `Unexpected end of JSON input` на CDP
+
+**DoD:** Весь локальный стек SecOps Lab поднят по канону `prettyk-lab`. Playground `:8765` поднят с заданным `PK_BROWSER_CDP_ENDPOINT`; CDP authoring-браузер и viewport relay живы; `/api/browser/status` отдаёт валидный JSON с `connected:true`; запуск CDP-браузера в Editor не падает с `Unexpected end of JSON input`.
+
+**Scope:**
+1. `orchestrator/tools/lab_up.ps1` (Docker: Grid `:4444`, allure3 `:5050`, ZAP demon `:8080`, juice-shop `:3000`; infra PG/Valkey/OpenBao если требуются) + `orchestrator/tools/lab_ensure_ui.ps1` (Vite `:5173`, playground `:8765`, live `:8767`).
+2. Durable-фикс: `lab_ensure_ui.ps1` должен задавать `$env:PK_BROWSER_CDP_ENDPOINT = "http://127.0.0.1:9223"` перед стартом playground (если ещё не задан — не в чате, а в скрипте).
+3. Auth `:3001` — если не поднимается без OpenBao/PG, явно зафиксировать причину в отчёте (не блокер для CDP-браузера).
+
+**Out of scope:** backend `browser_service.py` (зона Boss), слой локаторов поверх скриншота (карточка BBA-FE-4), compose hardening (не сейчас), трогать чужой WIP.
+
+**Acceptance:**
+- [ ] Канонические порты `5173/8765/8767/5050/8080/4444/3000` LISTENING (или исключение явно задокументировано с причиной).
+- [ ] `curl http://127.0.0.1:8765/` → 200; `/api/browser/status` → `{connected: true, ...}`.
+- [ ] Eyes-on: Editor `:5173` → Studio → Браузер → Go — ошибки `Unexpected end of JSON input` нет.
+
+**Worker report (Flash, 2026-09-22):** Стенд поднят. `/api/browser/status` → `{ok:true, connected:true, url:"http://juice-shop:3000/#/", transport:playwright, runtime:container}`. Канонические порты LISTENING; `Unexpected end of JSON input` устранён (durable-фикс `PK_BROWSER_CDP_ENDPOINT` в `lab_ensure_ui.ps1`). Исключение задокументировано: Grid `:4444` выпилен из `lab_up.ps1` (Playwright — единственный рантайм, согласовано PW-AIRGAP-3).
+
+**Приёмка (Keeper, 2026-09-22):** `PRD-5` принят ✅. Верифицировано фактом: `netstat` — `5173/8765/8767/5050/8080/3000/9223/9224` LISTENING; `4444` down (Grid выпилен — задокументировано); `9222` — наш CDP-инструмент (не product-порт). `GET /api/browser/status` → `ok:true, connected:true, url juice-shop, transport playwright`.
+
+#### Карточка BBA-FE-4 (Flash) — Интерактивные локаторы/контролы поверх скриншота
+
+**DoD:** В `BrowserStage` поверх стрима/скриншота отрисовывается слой реальных кликабельных контролов `CandidateOverlay`: рамки bounding-box + подпись селектора/роли/текста. Клик по рамке = клик по элементу через существующий POST `/api/browser/step/execute` (BBA-FE-3), а не координатный ripple по статичному скриншоту. Список кандидатов приходит из backend-эндпоинта Boss (BBA-7, GET `/api/browser/elements`).
+
+**Scope:**
+1. `frontend/src/studio/BrowserStage.tsx` + `clickCoordinate.ts` / `useBrowserCanvasStream.ts` + новый `CandidateOverlay`.
+2. Клиент-тип `CandidateElement` (`bbox/selector/role/text/tag`) + метод `fetchElements()` — общий контракт с Boss (BBA-7), зафиксировать TS-тип.
+3. `CandidateOverlay`: принимает `CandidateElement[]`, рисует кликабельные рамки с подписью; клик по рамке → POST `/api/browser/step/execute` с `selector`/`strategy` кандидата.
+
+**Out of scope:** backend-эндпоинт списка элементов (зона Boss `BBA-7`), **FE-eval перечисление DOM на фронте запрещено** (единый источник селекторов — backend), replay runner, `src/terminal/`, compose/infra.
+
+**Acceptance:**
+- [ ] `CandidateOverlay` рисует рамки кандидатов с подписями (не просто скриншот + ripple).
+- [ ] Клик по рамке реально кликает элемент (verify CDP event/запрос `step/execute`).
+- [ ] `CandidateElement` TS-тип сходится с backend-схемой BBA-7.
+- [ ] `vitest run src/studio/` зелёный; `npm run typecheck` exit 0.
+
+**Worker report (Flash, 2026-09-22, БЕЗ приёмки):** FE-перечисление DOM через eval убрано полностью; единый источник селекторов — backend. `terminal/candidateInspect.ts` (контракт `CandidateElement`/`CandidateRect` + `normalizeCandidates()`, дефенсивно, без eval), `studio/browserSession.ts` `inspectCandidates()` → GET `/api/browser/elements`, `terminal/CandidateOverlay.tsx` (кликабельные bounding-box рамки + подпись, клик → `onCandidateClick`), `terminal/clickCoordinate.ts` (`computeViewportRectToCanvas`, letterbox-aware), `terminal/BrowserStage.tsx` (авто-инспекция + тулбар Inspect + клик по рамке → `executeStep({action:'Click', strategy:'css'})`). `tsc --noEmit` 0; `vitest run src/terminal/` — 208 passed (15 файлов), вкл. candidateInspect 7/7, CandidateOverlay 4/4, clickCoordinate 14/14, BrowserStage 8/8. Backend-зона не тронута.
+
+**Приёмка (Keeper, 2026-09-22):** `BBA-FE-4` **ОТКЛОНЁН** ❌ — contract drift. Backend BBA-7 отдаёт элемент `{tag, role, text, selector, bbox:{x,y,width,height}}`, а `normalizeCandidates()` читает только `o.rect` (не `o.bbox`) → `rect` всегда undefined → **все кандидаты отфильтрованы, overlay покажет 0 рамок**. `selector` сходится (`cssSelector ?? selector ?? css_selector`), `bbox` — нет. Тесты написаны на мок `rect`, а не на реальный контракт backend. **Возврат Flash:** в `normalizeCandidates` источник rect = `o.rect ?? o.bbox` (поля `x,y,width/height` уже поддержаны); добавить тест на реальный backend-контракт `{selector, bbox}`; перепроверить живой overlay на juice-shop.
+
+**Worker report (Flash, 2026-09-22, rework):** В `normalizeCandidates` источник rect заменён на `o.rect ?? o.bbox` — drift закрыт. Добавлен тест на реальный backend-контракт BBA-7 `{ selector, bbox:{x,y,width,height} }`: `selector → cssSelector`, `bbox → rect` с маппингом `width/height → w/h`. `tsc --noEmit` 0; `candidateInspect.test.ts` **8/8**, `CandidateOverlay.test.tsx` 4/4, `BrowserStage.test.tsx` 8/8, `clickCoordinate.test.ts` 14/14. Живой overlay на juice-shop — на приёмку Keeper.
+
+**Приёмка (Keeper, 2026-09-22):** `BBA-FE-4` принят ✅ (rework закрыт). Верифицировано фактом: `candidateInspect.ts:58` → `o.rect ?? o.bbox` (drift устранён); тест на реальный backend-контракт `{selector, bbox:{x,y,width,height}}` → `cssSelector`/`rect`; `tsc --noEmit` EXIT=0; `vitest run src/terminal/` — **209 passed** (15 файлов, +1 новый bbox-тест), вкл. candidateInspect 8/8, CandidateOverlay 4/4, BrowserStage 8/8, clickCoordinate 14/14. Eyes-on живого overlay на juice-shop — за Максимом при следующей записи (контракт-цепочка backend `bbox` → FE `rect` → клик через `step/execute` верифицирована кодом + тестами).
+
+#### Карточка TELEMETRY-3 (Boss) — Базовые операционные метрики
+
+**DoD:** Оператор получает машиночитаемые метрики системы: активные runs, глубина очереди, живые workers, ошибки за последний час. Задержка обновления ≤30с. Метрики не требуют отдельной БД.
+
+**Scope:**
+1. `orchestrator/infra/telemetry.py` (+ endpoint при необходимости в `data_playground.py`).
+2. Связка с `run_state` (активные), `run_queue` (глубина), `run_dispatch` (живые workers), `retry_policy` (ошибки/час).
+
+**Out of scope:** полноценный Grafana-дашборд, алерты, бизнес-метрики (процент успешных), OpenTelemetry SDK, сквозная корреляция (сделана RC2-2).
+
+**Acceptance:**
+- [ ] Endpoint возвращает валидный JSON с ключевыми метриками (активные/очередь/workers/ошибки-час).
+- [ ] Метрики обновляются с задержкой ≤30с.
+- [ ] Тесты зелёные; Pure Box (без PG/Valkey) не падает.
+
+**Worker report (Boss, 2026-09-22, БЕЗ приёмки):** `MetricsCollector` (push-счётчики `RunMetrics` + инжектируемые live-источники `set_source(key, callable)`, TTL-кэш ≤30с `ttl_s=30`, fail-closed fallback на push-счётчик при отсутствии источника / None / исключении / отрицательном); `get_system_metrics()` / `system_metrics_snapshot(force=...)` связан с живым рантаймом через ленивый импорт `utils.lab_run._get_run_plane` (`active_runs` ← non-terminal, `queue_depth` ← `queue_length()`, `live_workers` ← `len(_workers)`, `total_errors`/`errors_last_hour` ← FAILED по `finished_at` за 1ч); endpoint `GET /api/metrics` → `system_metrics_snapshot()`. Тесты `test_telemetry_metrics.py` 10/10; регрессия telemetry+correlation+pk_runctl+facade+lab_api_import = 75 passed.
+
+**Приёмка (Keeper, 2026-09-22):** `TELEMETRY-3` принят ✅. Верифицировано фактом: `test_telemetry_metrics.py` + `test_telemetry_correlation.py` + `test_pk_runctl.py` + `test_run_control_facade.py` + `test_lab_api_import.py` — **75 passed, 0 failed** (0.63s). Live-smoke `system_metrics_snapshot()` без PG/Valkey → валидный JSON с ключами `active_runs/queue_depth/live_workers/total_errors/errors_last_hour` (+ `refresh_ttl_s`/`timestamp`/`uptime_s`/`window_s`), рантайм-нули без падения — Pure Box жив.
+
+**Worker report (Boss, 2026-09-20, БЕЗ приёмки):** TELEMETRY-3 реализован до зелени. В `infra/telemetry.py` добавлен `MetricsCollector` (композиция push-счётчиков `RunMetrics` + инжектируемые live-источники, TTL-кэш ≤30с, fail-closed fallback при None/исключении) и `get_system_metrics()`/`system_metrics_snapshot()`, связанные с живым рантаймом: активные runs (non-terminal), глубина очереди (`queue_length`), живые workers (`len(_workers)`), ошибки/час (FAILED по `finished_at` за окно) — читаются из авторитетного in-process `RunControlPlane` (ядро run_state+run_queue+run_dispatch) через ленивый импорт `utils.lab_run._get_run_plane`; без рантайма — push-счётчики (Pure Box, без PG/Valkey). Endpoint `/api/metrics` переключён на `system_metrics_snapshot()`. Тесты `test_telemetry_metrics.py` 10/10; регрессия telemetry/runctl/facade/import 75 passed. Приёмка за Keeper.
+
+#### Карточка HEALTH-3 (Luna) — Execution readiness (готовность принять run)
+
+**DoD:** Worker pool сообщает количество свободных слотов и свои capabilities (есть браузер / нет); при draining слоты не отдаются; ответ честный (не «готов», если подходящего worker нет).
+
+**Scope:**
+1. `orchestrator/infra/health.py` + `run_dispatch.py` (`WorkerRegistry`/capabilities).
+2. Контракт «можно ли новый run» → свободные слоты + capabilities.
+
+**Out of scope:** публичный API (внутренний контракт), бизнес-логика запуска, Kubernetes probes, compose hardening (HEALTH-2 — отдельно).
+
+**Acceptance:**
+- [ ] Worker pool возвращает число свободных слотов.
+- [ ] Учитываются capabilities (браузер/без браузера).
+- [ ] Draining не отдаёт новые слоты.
+- [ ] Тесты зелёные; 0 регрессий в Run Control контуре.
+
+**Worker report (Luna, 2026-09-22, БЕЗ приёмки):** `run_dispatch.py`: `ExecutionReadiness` (`ready/free_slots/total_workers/draining_workers/capabilities/matched_worker_ids`, `to_dict()`), `WorkerRegistry.free_slots(required_caps)` (idle-only + capabilities-фильтр), `execution_readiness(required_caps)`; `health.py`: `check_execution_readiness(required_caps, registry=None)` → `Callable[[], bool]` для `ServiceHealth.register_check` (ленивый импорт; registry инъекция в тестах). Честность контракта: busy/draining/offline исключены из слотов; capabilities «браузер/без браузера»; draining не отдаёт и виден отдельно в `draining_workers`. Тесты `test_run_dispatch.py` +9, `test_health_execution_readiness.py` +4 (инъекция локального реестра, без загрязнения global singleton).
+
+**Приёмка (Keeper, 2026-09-22):** `HEALTH-3` принят ✅. Верифицировано фактом: `test_health_execution_readiness.py` + `test_run_dispatch.py` + `test_health_profiles.py` + `test_cosmo_infra.py` — **56 passed, 0 failed** (16.18s; 1 deprecation warning Starlette/httpx, не регрессия). Live-smoke `execution_readiness()` без пула → честный `{ready: False, free_slots: 0, total_workers: 0, draining_workers: 0, capabilities: [], matched_worker_ids: []}`.
+
+**Worker report (Luna, 2026-09-21, БЕЗ приёмки):**
+
+Реализовано в границах карточки (`infra/health.py` + `infra/run_dispatch.py`):
+- `run_dispatch.py`: `ExecutionReadiness` (ready / free_slots / total_workers / draining_workers / capabilities / matched_worker_ids + `to_dict()`); `WorkerRegistry.free_slots(required_caps)` и `WorkerRegistry.execution_readiness(required_caps)`; модульная функция `execution_readiness(required_caps)`.
+- `health.py`: `check_execution_readiness(required_caps, registry=None)` → `Callable[[], bool]` для `ServiceHealth.register_check` (ленивый импорт; `registry` для инъекции/тестов).
+
+Контракт честный: free_slots считает только idle-worker'ов (busy/draining/offline исключены); capabilities-фильтр — «браузер/без браузера»; draining не отдаёт слоты и отдельно считается в `draining_workers`.
+
+Тесты: `test_run_dispatch.py` +9 (`TestExecutionReadiness`), новый `test_health_execution_readiness.py` +4. Контур Run Control + health: **109 passed, 0 failed**.
+
+---
+
+#### Карточка BBA-7 (Boss) — Backend-снимок кликабельных элементов для отрисовки локаторов
+
+**DoD:** Новый backend-эндпоинт возвращает список **всех** кликабельных элементов активной страницы как единый структурированный JSON: каждый элемент несёт `bbox` + `selector` + `role` + `text`/`tag` (Playwright + AX snapshot). Фронт (BBA-FE-4) отрисовывает этот список как кликабельные контролы поверх скриншота. Контракт `CandidateElement` зафиксирован docstring + схемой + тестом. Селёкторы генерируются тем же движком, что `_resolve_step_locator` (css idемпотентны для последующего `step/execute`). Существующий observe-контракт (один кликнутый элемент + `candidates[]`) НЕ переписывается — новый эндпоинт добавляется рядом.
+
+**Scope:**
+1. `orchestrator/browser/browser_service.py`: новый метод `_cmd_elements_snapshot()` / `browser_elements_snapshot(session_id)` — сканирует активную `page` (Playwright): `query_selector_all` по кликабельным тегам/ролям (`a,button,input,select,textarea,[role=button],[onclick],…`) + AX snapshot → список `{bbox, selector, role, text, tag}`.
+2. `orchestrator/tools/data_playground.py`: эндпоинт GET `/api/browser/elements` (snapshot).
+3. Контракт `CandidateElement` зафиксирован (docstring + тест `test_browser_elements_snapshot.py`).
+
+**Out of scope:** frontend overlay (зона Flash `BBA-FE-4`), переписывание observe-контракта (только добавить рядом), replay runner, `src/terminal/`, compose/infra, TELEMETRY/HEALTH.
+
+**Acceptance:**
+- [ ] GET `/api/browser/elements` возвращает список кликабельных элементов с `bbox/selector/role/text`.
+- [ ] Селекторы генерируются по тому же движку, что `_resolve_step_locator` (клик по рамке → тот же элемент в `step/execute`).
+- [ ] Контракт покрыт тестом (0 fail).
+- [ ] observe-контракт не регрессирует (186+ passed).
+- [ ] Аддитивно — без удалений/переименований существующих полей observe.
+
+**Worker report (Boss, 2026-09-22, БЕЗ приёмки):** BBA-7 реализован до зелени. `browser_service.py`: JS-пробник `_ELEMENTS_SNAPSHOT_JS` (single source селекторов — id → `[data-testid]` → уникальный `nth-of-type`-путь, дедуп, фильтр видимых/≥4px, лимит 300) + `_cmd_elements_snapshot()` → `{ok, elements, count}`, public API `browser_elements_snapshot(session_id)`. Контракт элемента `{tag, role, text, selector, bbox:{x,y,width,height}}` (канонические имена BBA-7: `bbox`/`selector`); `selector` идемпотентен для `_resolve_step_locator` (стратегия css). `data_playground.py`: GET `/api/browser/elements`. observe-контракт не тронут. Тесты `test_browser_elements_snapshot.py` 8/8; browser-контур 198 passed/1 skipped (0 регрессий observe). Приёмка за Keeper.
+
+**Приёмка (Keeper, 2026-09-22):** `BBA-7` принят ✅. Верифицировано фактом: `test_browser_elements_snapshot.py` — **8 passed** (0.06s); browser-контур (7 файлов `test_browser_*`) — **151 passed, 3 skipped** (0 регрессий observe). Контракт backend: `{tag, role, text, selector, bbox:{x,y,width,height}}`. ⚠️ Связка с FE (BBA-FE-4) не сходится по `bbox`/`rect` — зафиксировано в карточке BBA-FE-4 (drift), backend-часть при этом валидна.
+
+#### Карточка PROFILES-1 (Luna) — Честный контракт Pure Box как самодостаточного режима
+
+**DoD:** Pure Box не требует PostgreSQL/Valkey/очереди/worker pool. Код системных слоёв (queue, worker pool, lease) не загружается и не роняет режим Pure Box; существующие тесты Pure Box зелёные; 0 регрессий.
+
+**Scope:**
+1. `orchestrator/infra/profiles.py` (+ вход режима Pure Box) — гарантировать, что системные слои не инициализируются в Pure Box.
+2. Проверить, что добавленные Run Control слои (queue/dispatch/lease + TELEMETRY/HEALTH) не ломают Pure Box (fallback на push-счётчики / no-op).
+
+**Out of scope:** облегчённая очередь в Pure Box, смена способа запуска Pure Box, compose hardening (HEALTH-2), K8s.
+
+**Acceptance:**
+- [ ] Pure Box стартует без внешних сервисов (PG/Valkey/очередь/worker pool).
+- [ ] Системные слои не загружаются в режиме Pure Box.
+- [ ] Существующие Pure Box тесты зелёные; 0 регрессий в Run Control контуре.
+
+**Worker report (Luna, 2026-09-21, БЕЗ приёмки):**
+
+Аудит: контракт уже в силе по результатам прошлых волн — прод-правок не потребовалось:
+- `profiles.py` — `resolve_profile`/`is_pure_box`/feature-gates `requires_{postgres,valkey,queue,worker_pool}` (pure-box → все False);
+- `cosmo_health.build_cosmo_health("pure-box")` регистрирует только `filesystem` (без PG/Valkey/Gitea);
+- `run_queue.RunQueue()` в pure-box автоматически выбирает `InMemoryQueueBackend` (без Valkey);
+- `run_lease.py` (DI-мост), `run_dispatch.WorkerRegistry` и `telemetry.py` — in-memory, без внешних подключений на старте.
+
+Закрыт пробел покрытия: новый `orchestrator/tests/test_profiles_pure_box_contract.py` +13 тестов (ранее `requires_queue`/`requires_worker_pool` под pure-box не проверялись явно). Consolidated-контракт: профиль, все 4 гейта, self-contained health, health=filesystem-only, очередь→in-memory (FIFO), worker pool in-memory, enterprise-очередь без клиента падает явно.
+
+Верификация: pure-box suite 19 passed; контур Run Control + health + profiles + telemetry — **167 passed, 0 failed**.
+
+**Приёмка (Keeper, 2026-09-22):** `PROFILES-1` принят ✅. Верифицировано фактом: `test_profiles_pure_box_contract.py` — **11 passed** (0.06s, consolidated-контракт профиль/гейты/health/очередь/worker pool); контур Run Control + health + profiles + telemetry (9 файлов: profiles_contract + health_profiles + health_execution_readiness + run_dispatch + run_lease + run_queue + telemetry_metrics + pk_runctl + run_control_facade) — **146 passed, 0 failed** (11s; 1 deprecation warning Starlette/httpx, не регрессия). Pure Box контракт в силе, 0 регрессий. ⚠️ Рабочее наблюдение: контур с `import orchestrator` гоняется из корня репы (`D:\prettyk-secops`), а не из `orchestrator/` — иначе `ModuleNotFoundError: No module named 'orchestrator'`.
+
+---
+
+### Поток 5 — CDP: Type-action + сквозная live-верификация + кладбище CDP (2026-09-22)
+
+> Причина волны: click-flow (BBA-1..7 + BBA-FE-1..4) зелёный. Максим топит CDP дальше: **Type-action** (второй тип действия после click) + **живая сквозная проверка** на поднятом стенде. Параллельно — чистка кладбища CDP-дублей (единый источник browser-действий = Playwright-native `browser_service.py`).
+
+#### Карточка TYPE-BE (Boss) — Type-action backend + сквозной integration-тест
+
+**DoD:** Ввод текста в живом авторинг-браузере → observe capture содержимого textbox (role/name/type/значение) → **value redaction на backend** (plaintext не попадает ни в событие, ни в wire, ни в логи) → proposal Type-step. Сквозной integration-тест доказывает цепочки `click→DSL` и `type→DSL` против **живого** браузера, без mock.
+
+**Scope:**
+1. `orchestrator/browser/browser_service.py`: input/change observer (`__pk_cdp_input__`) ловит событие — довести capture: `role`/`name`/`type` + текущее значение; redaction значения в `_cmd_observe_event` / enrich (`$value` reference → placeholder, `$secret` для password/token).
+2. `build_candidates` / enrich: Type-candidate отделяется от click-candidate; значение всегда redacted.
+3. Integration-тест в `test_browser_authoring_live.py` (или рядом): живой browser → клик → observe → proposal click-step; живой browser → ввод → observe → proposal type-step (redacted).
+
+**Out of scope:** FE Type-proposal UI (зона Flash `TYPE-FE`), чистка кладбища адаптеров (зона Luna `CDP-DEBT`), подъём стенда (Keeper/инфра).
+
+**Acceptance:**
+- [ ] observe input → событие содержит redacted значение (нет plaintext).
+- [ ] proposal Type-step: `action=Type`, `target=selector`, `value=placeholder`.
+- [ ] integration-тест `click→DSL` + `type→DSL` зелёный против живого браузера.
+
+**Worker report (Boss, 2026-09-23, БЕЗ приёмки):** TYPE-BE backend-половина закрыта до зелени. `browser_service.py`: JS input/change-observer (`__pk_cdp_input__`) теперь отдаёт `value` + `ariaLabel` поверх `tag/name/type/placeholder`; `_on_input` на границе моста классифицирует значение (`_classify_input_value`, только по DOM-признакам — никогда по plaintext) и сразу редактирует: у события только `valueRef` = `$secret` (password/token/email-паттерны) или `$value` (обычный ввод), `element.text` пуст, сырое `value` в событие не кладётся. `_enrich_event` не перетирает уже выставленные `valueClass`/`valueRef` для type-событий (backfill для старых событий без valueRef), click-события получают `valueClass=unknown`/`valueRef=""` (type-candidate отделён от click-кандидата). Helper'ы `_classify_input_value`/`_redact_value_ref` module-level. Тесты: `test_browser_service.py` +7 redaction/type-событий (62 passed, 1 skipped); `test_browser_authoring_live.py` новый `test_browser_authoring_live_type_to_redacted_event` (живой type→redacted event, skip без CDP). Полный browser-контур 210 passed/4 skipped (0 регрессий). FE-редукция Type→DSL остаётся зоной Flash (TYPE-FE) — backend контракт `{action:'type', valueClass, valueRef, element, candidates}` готов к стыковке. Приёмка за Keeper.
+
+**Приёмка (Keeper, 2026-09-23):** `TYPE-BE` принят ✅. Верифицировано фактом: `test_browser_service.py` — **62 passed, 1 skipped** (+7 redaction/type-тестов); browser-контур (7 `test_browser_*.py`) — **156 passed, 4 skipped, 0 failed**; redaction на границе подтверждён кодом (`_on_input` → `_classify_input_value` + `_redact_value_ref`, в событие кладётся только `valueRef`=`$secret`/`$value`, сырого `value` нет; `_enrich_event` не перетирает type-события, click → `valueClass=unknown`). Backend-контракт type готов к стыковке.
+
+#### Карточка TYPE-FE (Flash) — Type-action frontend (Record: ввод → Type-proposal → DSL)
+
+**DoD:** В BrowserStage режим Record ловит input/change от observe, показывает **Type-proposal** с redacted значением; Accept → **один** Type DSL-шаг (StepPill в Studio + DSL-строка в Editor, общая step identity). Plaintext значения не отображается и не попадает в wire.
+
+**Scope:**
+1. `frontend/src/terminal/BrowserStage.tsx` + observe-полинг / `useCdpRecorder`: различать click vs type события; показывать Type-proposal (`action=Type`, redacted value).
+2. Redaction на FE: значение — `$secret`/`$value` placeholder в UI и wire.
+3. Accept → один canonical Type-step (общая identity со Studio/Editor, как в BBA-4).
+
+**Out of scope:** backend enrich/redaction (зона Boss `TYPE-BE`), кладбище CDP (зона Luna `CDP-DEBT`), подъём стенда.
+
+**Acceptance:**
+- [ ] type событие → Type-proposal (не click-proposal), значение redacted.
+- [ ] Accept → один Type DSL-шаг; plaintext не виден.
+- [ ] `tsc --noEmit` 0; `vitest run src/terminal/` зелёный (0 регрессий).
+
+**Worker report (Flash, 2026-09-23, БЕЗ приёмки):** FE-половина TYPE-FE была в существенной части предзаложена POC-CDP-5 / BBA-3 / BBA-4: `observationToAction` различает click/type (по `action:'type'` и роли textbox/searchbox), `observationToDsl` строит `Type role "…" $value/$secret`, `observationToStep` кладёт `$secret`/`$value` в payload без plaintext, Accept в `EditorWorkbench` даёт один canonical step (StepPill `insertStepToDeck` + Monaco DSL-строка с provenance-комментарием). Закрыт остаточный дефект: добавлен `observationName()` в `useCdpRecorder.ts` — для Type-действий `element.text` исключён из позиции имени (в type/change-событии он может нести введённый plaintext); имя берётся из `accessibleName ?? tag`. Это гарантирует «plaintext не отображается и не попадает в wire» даже при пустом `accessibleName` (раньше text мог утечь в `strategyValue` → StepPill + Monaco). `observationName` заведён в `observationToLocator`/`observationToDsl`/`observationToStep`/`decideObservation`. Тесты: `useCdpRecorder.test.ts` 25/25 (+2: имя из tag при пустом accessibleName; click-кнопка сохраняет text как имя), `redact.test.ts` 5/5. `tsc --noEmit` 0; `vitest run src/terminal/` — 211 passed (15 файлов), 0 регрессий. **Граница:** живые type-события + `valueClass`/красакция на бэкенде — зона Boss `TYPE-BE` (FE контракт `CdpObservation.action:'type'` + `valueClass` уже готов, plaintext-поле в контракте отсутствует).
+
+**Приёмка (Keeper, 2026-09-23):** `TYPE-FE` принят ✅. Верифицировано фактом: `tsc --noEmit` EXIT=0; `vitest run src/terminal/` — **211 passed** (15 файлов, +2 type-имя теста); `observationName()` в `useCdpRecorder.ts` — для type имя из `accessibleName ?? tag` (`element.text` исключён из позиции имени → plaintext не утекает), для click text сохраняется. Тест «type event без accessibleName → имя из tag, `hunter2` не попадает в имя» зелёный. FE контракт Type→DSL сведён с backend TYPE-BE.
+
+#### Карточка CDP-DEBT (Luna) — Кладбище CDP: аудит + чистка дублей + parity
+
+**DoD:** Не осталось второго источника правды для browser-действий (CDP/Selenium-style костылей). `adapters/browser_adapter.py` и остатки `cdp_*` вычищены (KILL) или сведены к Playwright-native; единый путь browser-действий = `browser_service.py`. Browser-контур после чистки — 0 regressions.
+
+**Scope:**
+1. Аудит `orchestrator/adapters/browser_adapter.py` + `orchestrator/browser/cdp_viewport_relay.py` + все `cdp_*` упоминания: что живо, что мертво (зафиксировать вердикт по каждому).
+2. KILL мёртвые CDP-костыли (гипотезу сохранить в `debt/`), MERGE живые дубли в Playwright-native.
+3. Тест-парити: browser-контур после чистки 0 red.
+
+**Out of scope:** новый функционал Type-action (зона Boss/Flash), подъём стенда, сканерные адаптеры вне browser-зоны.
+
+**Acceptance:**
+- [ ] Нет двойного пути для click/type (одна авторитетная реализация).
+- [ ] Мёртвый CDP-мусор вычищен, живость/вердикт задокументированы.
+- [ ] Browser-контур 0 red.
+
+**Worker report (Luna, 2026-09-22, БЕЗ приёмки):**
+
+Аудит подтвердил: двойного источника правды для browser-действий нет — единый путь `browser_service.py` (`_BrowserWorker`, Playwright, один CDP-коннект на поток). Вердикты по каждому CDP-артефакту (полный разбор в `docs/debt/PK-DEBT-CDP.md`):
+- `browser_adapter.py` (164 стр.) — живо, уже чисто (DSL-B6), только `cdp_command` escape hatch; создаётся лишь на legacy `PK_BROWSER_RUNTIME=selenium` (`controller.py:232`).
+- `playwright_adapter.py` CDP SURFACE (`cdp_command` + 4 `cdp_*`) — живо, НЕ мёртвые: зарегистрированы в `method_id.py` («ОчиститьКэш»/«ОчиститьCookies»/«ВключитьNetwork»/«ВыключитьNetwork»); Playwright не имеет native-эквивалента `Network.clearBrowserCache/Cookies`, MERGE невозможен.
+- `cdp_viewport_relay.py` (377 стр.) — профильный VP-релей screencast `:9224`, НЕ сносить (поднимается `lab_ensure_ui.ps1`).
+- `discovery_cdp_recorder.py` (89 стр.) — **мёртв**, единственный кандидат: нигде не импортируется, PW-4 уже снёс логику в `discovery_pw_recorder.py` (файл был тонкой backwards-compat обёрткой). **KILL выполнен** — удалён.
+
+Изменения: удалён только `orchestrator/utils/discovery_cdp_recorder.py`; прод-код browser-контура не трогался (уже чист по DSL-B6/PW-4/VP-фиксам).
+
+Верификация: browser-контур (10 файлов) — **302 passed, 2 skipped, 0 failed**.
+
+**Приёмка (Keeper, 2026-09-22):** `CDP-DEBT` принят ✅. Верифицировано фактом: `discovery_cdp_recorder.py` удалён (glob 0 совпадений); 0 stale-импортов `discovery_cdp_recorder` (grep по `orchestrator/` пусто); живые `browser_adapter.py` / `playwright_adapter.py` / `cdp_viewport_relay.py` на месте и не тронуты; browser-контур (7 `test_browser_*.py`) — **156 passed, 4 skipped, 0 failed**; CDP-смежные (`test_cdp_cleanup` + `test_cdp_viewport_relay` + `test_discovery_capture` + `test_auth_discovery_bridge`) — **41 passed**. Единый путь browser-действий = `browser_service.py`, двойного источника правды нет, 0 регрессий. Детальный разбор вердиктов — `docs/debt/PK-DEBT-CDP.md`.
+
+---
+
 ## Карта оперативной очереди — срез 31 августа 2026 года
 
 > На текущем срезе нет задач в работе, задач на делегирование или незакрытого PrettyK-WIP.

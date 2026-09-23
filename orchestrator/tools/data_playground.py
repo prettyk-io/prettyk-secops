@@ -268,8 +268,8 @@ class Handler(BaseHTTPRequestHandler):
             self._json(200, get_playground_health().ready().as_dict())
             return
         if path == "/api/metrics":
-            from infra.telemetry import get_metrics
-            self._json(200, get_metrics().snapshot())
+            from infra.telemetry import system_metrics_snapshot
+            self._json(200, system_metrics_snapshot())
             return
         if path == "/api/profile":
             from infra.profiles import resolve_profile, is_pure_box
@@ -288,6 +288,10 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/browser/status":
             from browser.browser_service import browser_status
             self._json(200, browser_status())
+            return
+        if path == "/api/browser/elements":
+            from browser.browser_service import browser_elements_snapshot
+            self._json(200, browser_elements_snapshot())
             return
         if path == "/api/browser/replay/timeline":
             from browser.browser_service import browser_replay_timeline

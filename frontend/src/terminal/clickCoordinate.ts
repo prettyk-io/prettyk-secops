@@ -13,6 +13,14 @@ export interface ViewportPoint {
   y: number;
 }
 
+/** BBA-FE-4: bounding-box элемента в CSS-пикселях вьюпорта браузера. */
+export interface ViewportRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
 /** Прямоугольник отрисованного контента внутри контейнера (после letterbox). */
 export interface ContentRect {
   left: number;
@@ -90,5 +98,40 @@ export function computeCanvasClickToViewport(
   return {
     x: Math.round(localX * scaleX),
     y: Math.round(localY * scaleY),
+  };
+}
+
+/**
+ * BBA-FE-4: инверсный маппинг — bounding-box элемента (CSS-px вьюпорта)
+ * → display-координаты канваса (px относительно канваса, с учётом letterbox).
+ *
+ * Обратен к ``computeCanvasClickToViewport``: viewport → display.
+ *
+ * ``canvasDisplayWidth``/``canvasDisplayHeight`` — CSS-размер канваса на
+ * экране (fitted по object-contain); ``frameWidth``/``frameHeight`` — логический
+ * размер вьюпорта (совпадает с deviceWidth/deviceHeight CDP screencast).
+ */
+export function computeViewportRectToCanvas(
+  canvasDisplayWidth: number,
+  canvasDisplayHeight: number,
+  frameWidth: number,
+  frameHeight: number,
+  rect: ViewportRect,
+): { left: number; top: number; width: number; height: number } | null {
+  const fitted = computeFittedContentRect(
+    canvasDisplayWidth,
+    canvasDisplayHeight,
+    frameWidth,
+    frameHeight,
+  );
+  if (!fitted) return null;
+  // scaleX/scaleY = frame px на 1 display px (как в computeCanvasClickToViewport).
+  const scaleX = frameWidth / fitted.width;
+  const scaleY = frameHeight / fitted.height;
+  return {
+    left: fitted.left + rect.x / scaleX,
+    top: fitted.top + rect.y / scaleY,
+    width: rect.w / scaleX,
+    height: rect.h / scaleY,
   };
 }

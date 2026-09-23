@@ -96,3 +96,61 @@ def test_browser_authoring_live_observe_click_to_event():
     finally:
         # Не оставляем живой worker/браузер — cleanup для изоляции от юнит-тестов.
         browser_context_destroy()
+
+
+@pytest.mark.integration
+def test_browser_authoring_live_type_to_redacted_event():
+    """TYPE-BE: живой observe → ввод → observe_event (type, значение redacted).
+
+    Доказывает backend-половину цепочки type→DSL: нативное заполнение живого
+    input-а порождает ``action=type``-событие с ``valueRef`` ($secret/$value)
+    и БЕЗ plaintext значения в событии/wire. Frontend-редукция в DSL (Type-step)
+    остаётся зоной Flash (TYPE-FE) — здесь проверяется только честный контракт.
+    """
+    endpoint = _cdp_endpoint()
+    if not endpoint:
+        pytest.skip(
+            "PK_BROWSER_CDP_ENDPOINT not set — playwright-authoring container "
+            "not configured in this environment"
+        )
+    if not _cdp_reachable(endpoint):
+        pytest.skip(f"CDP endpoint {endpoint} unreachable — docker daemon/container down")
+
+    from browser.browser_service import (
+        browser_context_ensure, browser_observe_start, browser_observe_event,
+        browser_observe_stop, browser_context_destroy, browser_type_text,
+    )
+
+    html = (
+        "<html><body>"
+        "<input id='live-field' name='username' type='text' "
+        "data-testid='live-field' placeholder='Введите имя' "
+        "style='width:200px;height:30px' />"
+        "</body></html>"
+    )
+    ensured = browser_context_ensure(url=f"data:text/html,{html}")
+    if not ensured.get("ok") or not ensured.get("browserId"):
+        pytest.skip(f"browser_context_ensure failed: {ensured}")
+
+    try:
+        started = browser_observe_start()
+        assert started.get("ok"), f"observe_start failed: {started}"
+
+        # Нативное заполнение поля → должно породить input/change observe-событие.
+        typed = browser_type_text("#live-field", "secret-plaintext-value", strategy="css")
+        assert typed.get("ok"), f"type_text failed: {typed}"
+
+        event_result = browser_observe_event()
+        assert event_result.get("ok")
+        evt = event_result.get("event")
+        assert evt is not None, "expected a real CDP type event, got None"
+        assert evt.get("action") == "type"
+        # Redaction: plaintext не утекает ни в text, ни в valueRef-значение.
+        assert "secret-plaintext-value" not in str(evt)
+        assert evt.get("element", {}).get("text", "") == ""
+        assert evt.get("valueRef") in ("$value", "$secret")
+        assert isinstance(evt.get("candidates"), list)
+
+        browser_observe_stop()
+    finally:
+        browser_context_destroy()

@@ -11,7 +11,7 @@ import { cn } from '../lib/utils';
 import {
   Monitor, Circle, Bug, PanelRightClose, PanelRightOpen,
   ArrowLeft, ArrowRight, RefreshCw, Loader2, ExternalLink, Play, Square, AlertTriangle,
-  Maximize2, Minimize2,
+  Maximize2, Minimize2, ScanLine,
 } from 'lucide-react';
 import { getBrowserSession } from '../studio/browserSession';
 import type { BrowserSessionStatus } from '../studio/browserSession';
@@ -20,6 +20,8 @@ import { useScenarioDeckStore } from '../studio/ScenarioDeckStore';
 import type { ScenarioStepModel } from '../studio/scenarioStepModel';
 import { computeCanvasClickToViewport } from './clickCoordinate';
 import { useBrowserCanvasStream } from './useBrowserCanvasStream';
+import { CandidateOverlay } from './CandidateOverlay';
+import type { CandidateElement } from './candidateInspect';
 
 export type BrowserStageMode = 'author' | 'record' | 'debug';
 
@@ -74,6 +76,10 @@ export function BrowserStage({
   const clickMarkerSeqRef = useRef(0);
   const clickMarkerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [clickMarker, setClickMarker] = useState<{ id: number; x: number; y: number } | null>(null);
+
+  // ── BBA-FE-4: живой overlay кандидатов observe ──
+  const [candidates, setCandidates] = useState<CandidateElement[]>([]);
+  const [inspectOn, setInspectOn] = useState(false);
 
   // ─ WS URL: SOR-F1 — динамический relay endpoint из pk-control, fallback на хардкод
   const wsUrl = cdpStatus?.canvasUrl || (() => {
@@ -144,6 +150,49 @@ export function BrowserStage({
     }
     clickLockRef.current = false;
   }, [cdpObserving, frameInfo, liveCdp]);
+
+  // ── BBA-FE-4: кандидаты observe → живой overlay ──
+  const loadCandidates = useCallback(async () => {
+    const list = await getBrowserSession().inspectCandidates('operator');
+    setCandidates(list);
+  }, []);
+
+  const handleCandidateClick = useCallback(async (c: CandidateElement) => {
+    // Живой клик по элементу (BBA-EXEC-1 locator click), не координатный.
+    await getBrowserSession().executeStep({
+      id: `inspect-${Date.now()}`,
+      action: 'Click',
+      strategy: 'css',
+      strategyValue: c.cssSelector,
+      payload: '',
+      continueOnError: false,
+      led: 'queued',
+    });
+    // Страница могла измениться — пересканировать кандидатов.
+    if (inspectOn || cdpObserving) await loadCandidates();
+  }, [inspectOn, cdpObserving, loadCandidates]);
+
+  const toggleInspect = useCallback(async () => {
+    if (inspectOn) {
+      setInspectOn(false);
+      setCandidates([]);
+    } else {
+      setInspectOn(true);
+      await loadCandidates();
+    }
+  }, [inspectOn, loadCandidates]);
+
+  // Запись (observe) → авто-инспекция кандидатов.
+  useEffect(() => {
+    if (cdpObserving) {
+      setInspectOn(true);
+      loadCandidates();
+    } else {
+      setInspectOn(false);
+      setCandidates([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cdpObserving]);
 
   // ─ Навигация ─
   const doNavigate = useCallback(async (url: string) => {
@@ -286,6 +335,15 @@ export function BrowserStage({
           <button onClick={startReplay} disabled={!liveCdp || navLoading || steps.length === 0} className="flex items-center gap-1 px-2 h-6 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 disabled:opacity-30"><Play className="size-3" /> Play</button>
         )}
 
+        <button
+          onClick={toggleInspect}
+          disabled={!liveCdp}
+          className={cn('flex items-center gap-1 px-2 h-6 rounded text-[10px] font-semibold border', inspectOn ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50' : 'bg-slate-700/20 text-slate-300 border-slate-600/40 hover:bg-slate-700/40')}
+          title="Инспекция кликабельных элементов (overlay кандидатов)"
+        >
+          <ScanLine className="size-3" /> Inspect
+        </button>
+
         <span className={cn('flex items-center gap-1 text-[9px] font-mono shrink-0', liveCdp ? (cdpObserving ? 'text-red-400' : 'text-emerald-400') : 'text-slate-500')}>
           <Circle className={cn('size-1.5', liveCdp ? (cdpObserving ? 'fill-red-500 text-red-500' : 'fill-emerald-500 text-emerald-500') : 'fill-slate-600 text-slate-600')} />
           {liveCdp ? (cdpObserving ? '● REC' : 'live') : 'stopped'}
@@ -335,12 +393,23 @@ export function BrowserStage({
         ) : connecting ? (
           <div className="flex flex-col items-center gap-2"><Loader2 className="size-10 animate-spin text-cyan-700" /><p className="text-xs text-slate-500">Запуск браузера…</p></div>
         ) : (
-          <canvas
-            ref={canvasRef}
-            className={cn('block', liveCdp && (cdpObserving ? 'cursor-crosshair' : 'cursor-pointer'))}
-            style={{ imageRendering: 'auto', maxWidth: '100%', maxHeight: '100%' }}
-            onClick={liveCdp ? handleCanvasClick : undefined}
-          />
+          <div className="relative" style={{ lineHeight: 0 }}>
+            <canvas
+              ref={canvasRef}
+              className={cn('block', liveCdp && (cdpObserving ? 'cursor-crosshair' : 'cursor-pointer'))}
+              style={{ imageRendering: 'auto', maxWidth: '100%', maxHeight: '100%' }}
+              onClick={liveCdp ? handleCanvasClick : undefined}
+            />
+            {inspectOn && (
+              <CandidateOverlay
+                candidates={candidates}
+                canvasRef={canvasRef}
+                frameWidth={frameInfo.current?.frameWidth ?? 1280}
+                frameHeight={frameInfo.current?.frameHeight ?? 800}
+                onCandidateClick={handleCandidateClick}
+              />
+            )}
+          </div>
         )}
 
         {clickMarker && (

@@ -6,6 +6,7 @@ import {
   observationToAction,
   observationToStrategy,
   observationToStep,
+  observationName,
   buildProvenance,
   observationToLocator,
 } from './useCdpRecorder';
@@ -89,6 +90,30 @@ describe('POC-CDP-5: redaction (DoD 12)', () => {
     const dsl = observationToDsl(obs);
     expect(dsl).not.toContain('hunter2');
     expect(dsl).toContain('$secret');
+  });
+
+  it('TYPE-FE: type event без accessibleName → имя из tag, plaintext в text НЕ попадает в имя', () => {
+    const obs = makeObservation({
+      action: 'type',
+      element: { tag: 'input', text: 'hunter2', rect: { x: 0, y: 0, w: 1, h: 1 }, role: 'textbox' },
+      valueClass: 'secret',
+    });
+    // accessibleName отсутствует → текст элемента ('hunter2') НЕ должен стать именем
+    expect(observationName(obs)).toBe('input');
+    const step = observationToStep(obs);
+    expect(step.strategyValue).toBe('input');
+    expect(step.strategyValue).not.toContain('hunter2');
+    const dsl = observationToDsl(obs);
+    expect(dsl).not.toContain('hunter2');
+  });
+
+  it('TYPE-FE: click на кнопке → element.text остаётся именем (не Type)', () => {
+    const obs = makeObservation({
+      action: 'click',
+      element: { tag: 'button', text: 'Войти', rect: { x: 0, y: 0, w: 1, h: 1 }, role: 'button' },
+    });
+    expect(observationName(obs)).toBe('Войти');
+    expect(observationToStep(obs).strategyValue).toBe('Войти');
   });
 
   it('email valueClass → $value reference (never plaintext)', () => {

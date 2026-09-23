@@ -185,3 +185,54 @@ describe('BrowserStage — replay runner (BBA-FE-2 / BBA-FE-3)', () => {
     });
   });
 });
+
+describe('BrowserStage — CandidateOverlay (BBA-FE-4)', () => {
+  beforeEach(() => {
+    __resetBrowserSessionForTests();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('обсерв-режим: рисует рамки кандидатов из backend и кликает элемент по рамке', async () => {
+    useScenarioDeckStore.getState().setDecks([deckWith([])]);
+    mockFetch((url) => {
+      if (url.includes('/api/browser/elements')) {
+        return resp(200, {
+          ok: true,
+          count: 1,
+          elements: [
+            { tag: 'button', role: 'button', text: 'Войти', cssSelector: '#login', rect: { x: 10, y: 10, w: 120, h: 32 } },
+          ],
+        });
+      }
+      if (url.includes('/api/browser/step/execute')) {
+        return resp(200, { step_id: 's1', action: 'click', status: 'passed', duration_ms: 5, error: null, screenshot_b64: null });
+      }
+      if (url.includes('/api/browser/status')) {
+        return resp(200, { ok: true, connected: true, url: 'http://juice-shop:3000', title: 'Juice', contexts: ['operator'], purpose: 'authoring', transport: 'playwright', runtime: 'container' });
+      }
+      return resp(200, { ok: true });
+    });
+
+    const { container } = render(<BrowserStage mode="record" onModeChange={() => {}} cdpConnected cdpObserving />);
+
+    await waitFor(() => {
+      expect(container.querySelector('[data-testid="candidate-frame"]')).not.toBeNull();
+    });
+
+    // Клик по рамке → живой клик элемента, не координатный.
+    fireEvent.click(container.querySelector('[data-testid="candidate-frame"]') as HTMLElement);
+
+    await waitFor(() => {
+      const calls = (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls;
+      const hit = calls.find((c) => String(c[0]).includes('/api/browser/step/execute'));
+      expect(hit).toBeTruthy();
+      const body = JSON.parse(String(hit?.[1]?.body ?? '{}'));
+      expect(body.step.action).toBe('click');
+      expect(body.step.strategy).toBe('css');
+      expect(body.step.target).toBe('#login');
+    });
+  });
+});

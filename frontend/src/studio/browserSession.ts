@@ -16,6 +16,8 @@
 import { API_BASE } from '../api/apiBase';
 import type { ScenarioStepModel } from './scenarioStepModel';
 import type { ReplayOptions, ReplayRunResult, StepExecutionResult, ReplayStepState } from '../terminal/replayRunner';
+import { normalizeCandidates } from '../terminal/candidateInspect';
+import type { CandidateElement } from '../terminal/candidateInspect';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -276,6 +278,26 @@ export class BrowserSession {
     await Promise.all(contexts.map((c) => this.destroyContext(c)));
     this.connected = false;
     this.notify();
+  }
+
+  // ── BBA-FE-4: кандидаты для живого overlay инспекции ──
+
+  /**
+   * Получить список кликабельных кандидатов (tag/role/text + bounding-box +
+   * cssSelector) из backend «кандидат-контракта» (BBA-7, зона Boss).
+   * Единый источник селекторов — backend; FE-перечисление DOM через eval ЗАПРЕЩЕНО.
+   *
+   * Endpoint: GET /api/browser/elements → `{ ok, elements: CandidateElement[], count }`.
+   */
+  async inspectCandidates(_context: BrowserContextKind = 'operator'): Promise<CandidateElement[]> {
+    try {
+      const raw = await this.fetchJson<{ ok?: boolean; elements?: unknown }>(
+        '/api/browser/elements',
+      );
+      return normalizeCandidates(raw?.elements ?? raw);
+    } catch {
+      return [];
+    }
   }
 
   // ── CDP Observe (POC-CDP-1) ──

@@ -79,7 +79,7 @@ export function observationToLocator(obs: CdpObservation): DiscoveryLocator {
   const pwLocator = bestCandidate?.value || `css ${obs.element.tag}`;
   return {
     role: obs.element.role || obs.element.tag,
-    name: obs.element.accessibleName || obs.element.text || obs.element.tag,
+    name: observationName(obs),
     tier,
     pwLocator,
     cssSelector: obs.element.id ? `#${obs.element.id}` : obs.element.tag,
@@ -100,6 +100,22 @@ export function observationToAction(obs: CdpObservation): ActionKind {
   return 'Click';
 }
 
+/**
+ * Безопасное имя элемента для DSL/locator-позиции.
+ *
+ * TYPE-FE: для Type-действий `element.text` ЗАПРЕЩЁН в позиции имени —
+ * в type/change-событии он может нести введённый plaintext. Имя берём только
+ * из `accessibleName` / `tag`, чтобы plaintext не попадал ни в strategyValue
+ * (StepPill + Monaco DSL), ни в wire.
+ */
+export function observationName(obs: CdpObservation): string {
+  const action = observationToAction(obs);
+  if (action === 'Type') {
+    return obs.element.accessibleName || obs.element.tag;
+  }
+  return obs.element.accessibleName || obs.element.text || obs.element.tag;
+}
+
 /** Determine StrategyKind from observation. */
 export function observationToStrategy(obs: CdpObservation): StrategyKind {
   const role = (obs.element.role || '').toLowerCase();
@@ -110,7 +126,7 @@ export function observationToStrategy(obs: CdpObservation): StrategyKind {
 export function observationToDsl(obs: CdpObservation): string {
   const action = observationToAction(obs);
   const strategy = observationToStrategy(obs);
-  const name = obs.element.accessibleName || obs.element.text || obs.element.tag;
+  const name = observationName(obs);
 
   if (action === 'Type') {
     // POC-CDP-5: plaintext never enters wire. Secret → $secret, else → $value reference.
@@ -131,7 +147,7 @@ export function buildProvenance(obs: CdpObservation): string {
 export function observationToStep(obs: CdpObservation): ScenarioStepModel {
   const action = observationToAction(obs);
   const strategy = observationToStrategy(obs);
-  const strategyValue = obs.element.accessibleName || obs.element.text || obs.element.tag;
+  const strategyValue = observationName(obs);
   // POC-CDP-5: payload never carries plaintext — Type carries a $reference.
   const payload = action === 'Type'
     ? (obs.valueClass === 'secret' ? SECRET_PLACEHOLDER : VALUE_PLACEHOLDER)
@@ -171,7 +187,7 @@ export function decideObservation(
   },
 ): ObservationGateDecision {
   const dsl = observationToDsl(obs);
-  const strategyValue = obs.element.accessibleName || obs.element.text || obs.element.tag;
+  const strategyValue = observationName(obs);
 
   const duplicate = args.acceptedEventIds.has(obs.eventId);
   const duplicateDsl = args.existingDslLines.includes(dsl);

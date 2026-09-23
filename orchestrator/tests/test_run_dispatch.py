@@ -1,9 +1,11 @@
 # RUN-CTL-4: Тесты capability dispatch.
 from orchestrator.infra.run_dispatch import (
+    ExecutionReadiness,
     RunDispatcher,
     WorkerCapability,
     WorkerRegistry,
     dispatch_run,
+    execution_readiness,
     register,
 )
 
@@ -137,6 +139,75 @@ class TestDispatchRun:
         reg.register("w-drain", {"chrome"})
         reg.set_status("w-drain", "draining")
         assert dispatcher.dispatch_run("run-6", {"chrome"}) is None
+
+
+class TestExecutionReadiness:
+    def test_free_slots_counts_idle_workers(self):
+        reg = WorkerRegistry()
+        reg.register("w1", {"chrome"})
+        reg.register("w2", {"scanner"})
+        assert reg.free_slots() == 2
+
+    def test_free_slots_filters_capabilities(self):
+        reg = WorkerRegistry()
+        reg.register("w1", {"chrome"})
+        reg.register("w2", {"scanner"})
+        assert reg.free_slots({"chrome"}) == 1
+
+    def test_draining_and_busy_do_not_offer_slots(self):
+        reg = WorkerRegistry()
+        reg.register("w1", {"chrome"})
+        reg.register("w2", {"chrome"})
+        reg.register("w3", {"chrome"})
+        reg.set_status("w2", "busy")
+        reg.set_status("w3", "draining")
+        assert reg.free_slots({"chrome"}) == 1
+
+    def test_readiness_ready_with_matching_free_worker(self):
+        reg = WorkerRegistry()
+        reg.register("w1", {"chrome", "scanner"})
+        r = reg.execution_readiness({"chrome", "scanner"})
+        assert r.ready is True
+        assert r.free_slots == 1
+        assert r.total_workers == 1
+        assert r.draining_workers == 0
+        assert r.matched_worker_ids == ["w1"]
+        assert "chrome" in r.capabilities
+
+    def test_readiness_requires_capabilities(self):
+        reg = WorkerRegistry()
+        reg.register("w1", {"scanner"})  # без браузера
+        r = reg.execution_readiness({"chrome"})
+        assert r.ready is False
+        assert r.free_slots == 0
+
+    def test_readiness_not_ready_when_all_busy(self):
+        reg = WorkerRegistry()
+        reg.register("w1", {"chrome"})
+        reg.set_status("w1", "busy")
+        r = reg.execution_readiness({"chrome"})
+        assert r.ready is False
+        assert r.free_slots == 0
+
+    def test_draining_worker_excluded_and_counted(self):
+        reg = WorkerRegistry()
+        reg.register("w1", {"chrome"})
+        reg.set_status("w1", "draining")
+        r = reg.execution_readiness({"chrome"})
+        assert r.ready is False
+        assert r.free_slots == 0
+        assert r.draining_workers == 1
+
+    def test_readiness_to_dict(self):
+        reg = WorkerRegistry()
+        reg.register("w1", {"chrome"})
+        d = reg.execution_readiness({"chrome"}).to_dict()
+        assert d["ready"] is True
+        assert d["free_slots"] == 1
+
+    def test_module_level_execution_readiness_returns_readiness(self):
+        # Не регистрируем worker'ов — проверяем только тип/контракт.
+        assert isinstance(execution_readiness(), ExecutionReadiness)
 
 
 class TestModuleLevelAPI:

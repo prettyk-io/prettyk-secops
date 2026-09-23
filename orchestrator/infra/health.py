@@ -15,7 +15,7 @@ import os
 import threading
 import time
 from dataclasses import dataclass, field
-from typing import Callable
+from typing import Any, Callable
 
 
 @dataclass
@@ -146,6 +146,28 @@ def check_filesystem(path: str = ".") -> Callable[[], bool]:
             return True
         except Exception:
             return False
+    return _check
+
+
+def check_execution_readiness(
+    required_caps: set[str] | None = None,
+    registry: Any = None,
+) -> Callable[[], bool]:
+    """HEALTH-3: health-проверка «готов ли worker pool принять run».
+
+    True только когда есть свободный слот с нужными capabilities;
+    draining worker'ы слотов не дают. Регистрируется через
+    ``ServiceHealth.register_check("execution_readiness", check_execution_readiness({"chrome"}))``.
+
+    `registry` — для тестов/инъекции; по умолчанию используется singleton
+    worker pool из `run_dispatch`.
+    """
+    def _check() -> bool:
+        if registry is not None:
+            return registry.execution_readiness(required_caps).ready
+        # Ленивый импорт — worker pool опционален, health не обязан тянуть dispatch на импорте.
+        from orchestrator.infra.run_dispatch import execution_readiness
+        return execution_readiness(required_caps).ready
     return _check
 
 

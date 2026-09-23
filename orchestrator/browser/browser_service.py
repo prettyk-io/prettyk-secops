@@ -52,6 +52,96 @@ _ELEMENT_FROM_POINT_JS = """
     }
 """
 
+# BBA-7: снимок кликабельных элементов активной страницы (single source of
+# selectors). Возвращает список {tag, role, text, selector, bbox} — контракт
+# CandidateElement для frontend overlay (BBA-FE-4). selector идемпотентен:
+# тот же локальный CSS, что принимает _resolve_step_locator (стратегия css по
+# умолчанию) → клик по рамке = тот же элемент в step/execute.
+# bbox = {x, y, width, height} в CSS-пикселях вьюпорта.
+_ELEMENTS_SNAPSHOT_JS = """
+(function(){
+  function attrValue(v){ return String(v).replace(/\\\\/g, '\\\\\\\\').replace(/"/g, '\\\\"'); }
+  function unique(sel){ try { return document.querySelectorAll(sel).length === 1; } catch(e){ return false; } }
+  function cssPath(el){
+    var esc = (window.CSS && CSS.escape) ? CSS.escape : function(v){ return v; };
+    if(el.id){
+      var s = '#' + esc(el.id);
+      if(unique(s)) return s;
+    }
+    var tid = el.getAttribute('data-testid') || el.getAttribute('data-test-id');
+    if(tid){
+      var s2 = '[data-testid="' + attrValue(tid) + '"]';
+      if(unique(s2)) return s2;
+    }
+    var parts = [];
+    var node = el;
+    while(node && node.nodeType === 1 && node.tagName && node.tagName.toLowerCase() !== 'body'){
+      var tag = node.tagName.toLowerCase();
+      var sel = tag;
+      var par = node.parentElement;
+      if(par){
+        var sibs = Array.prototype.slice.call(par.children).filter(function(c){ return c.tagName.toLowerCase() === tag; });
+        if(sibs.length > 1){
+          sel += ':nth-of-type(' + (sibs.indexOf(node) + 1) + ')';
+        }
+      }
+      parts.unshift(sel);
+      var full = parts.join(' > ');
+      if(unique(full)) return full;
+      node = par;
+    }
+    return parts.length ? parts.join(' > ') : el.tagName.toLowerCase();
+  }
+  function roleOf(tag, el){
+    var r = el.getAttribute('role');
+    if(r) return r.trim().toLowerCase();
+    if(tag === 'button') return 'button';
+    if(tag === 'a') return 'link';
+    if(tag === 'input'){
+      var t = (el.getAttribute('type') || 'text').toLowerCase();
+      return (t === 'checkbox' || t === 'radio') ? t : 'textbox';
+    }
+    if(tag === 'textarea') return 'textbox';
+    if(tag === 'select') return 'combobox';
+    if(tag === 'summary') return 'button';
+    if(el.hasAttribute('contenteditable')) return 'textbox';
+    return '';
+  }
+  function textOf(el){
+    var raw = el.getAttribute('aria-label') || el.getAttribute('placeholder') ||
+              el.getAttribute('title') || el.getAttribute('name') ||
+              (el.value !== undefined ? el.value : '') ||
+              (el.innerText || el.textContent || '');
+    var t = String(raw == null ? '' : raw).trim();
+    return t.length > 60 ? t.slice(0, 60) : t;
+  }
+  var sels = 'a[href],button,input,select,textarea,[role="button"],[role="link"],[role="textbox"],[role="checkbox"],[role="radio"],[contenteditable="true"],summary';
+  var nodes = document.querySelectorAll(sels);
+  var out = [];
+  var seen = {};
+  for(var i = 0; i < nodes.length; i++){
+    var el = nodes[i];
+    var r = el.getBoundingClientRect();
+    if(r.width < 4 || r.height < 4) continue;
+    var cs = window.getComputedStyle(el);
+    if(!cs || cs.display === 'none' || cs.visibility === 'hidden') continue;
+    var tag = el.tagName.toLowerCase();
+    var css = cssPath(el);
+    if(!css || seen[css]) continue;
+    seen[css] = true;
+    out.push({
+      tag: tag,
+      role: roleOf(tag, el),
+      text: textOf(el),
+      selector: css,
+      bbox: { x: Math.round(r.x), y: Math.round(r.y), width: Math.round(r.width), height: Math.round(r.height) }
+    });
+    if(out.length >= 300) break;
+  }
+  return out;
+})()
+"""
+
 # ── BrowserWorker — single thread that owns the browser ──
 
 class _BrowserWorker:
@@ -352,6 +442,26 @@ class _BrowserWorker:
             return {"ok": True, "result": page.evaluate(expression)}
         except Exception as e:
             return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+
+    def _cmd_elements_snapshot(self) -> dict:
+        """BBA-7: снять список кликабельных элементов активной страницы.
+
+        Возвращает ``{ok, elements, count}``; каждый элемент — контракт
+        ``CandidateElement``: ``{tag, role, text, selector, bbox}``, где
+        ``bbox = {x, y, width, height}`` в CSS-пикселях вьюпорта, а ``selector`` —
+        идемпотентный CSS, совместимый с ``_resolve_step_locator`` (стратегия
+        ``css`` по умолчанию). Наследует существующий observe-контракт рядом,
+        ничего не переписывая.
+        """
+        page = self._ensure_browser()
+        if page is None:
+            return {"ok": False, "error": "browser not available"}
+        try:
+            raw = page.evaluate(_ELEMENTS_SNAPSHOT_JS)
+        except Exception as e:
+            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+        elements = raw if isinstance(raw, list) else []
+        return {"ok": True, "elements": elements, "count": len(elements)}
 
     # ── BBA-2/3: viewport + расширенные input-действия ──
 
@@ -743,19 +853,25 @@ class _BrowserWorker:
                     };
                     document.addEventListener('click',window.__pk_cdp_click_handler__,true);
                 }
-                // BBA-3: input/change listener для Type-шагов (значение НЕ передаётся —
-                // только таргет + классификация; plaintext никогда не идёт по мосту).
+                // BBA-3/TYPE-BE: input/change listener для Type-шагов. Сырое значение
+                // (el.value) пересекает мост ТОЛЬКО затем, чтобы backend мог его
+                // классифицировать и немедленно отредактировать ($value / $secret).
+                // plaintext НЕ хранится ни в событии, ни в wire, ни в логах — redaction
+                // выполняется в _on_input/_enrich_event на стороне backend'а.
                 if(!window.__pk_cdp_input_listener__){
                     window.__pk_cdp_input_listener__=true;
                     window.__pk_cdp_input_handler__=function(e){
                         const el=e.target;
                         const r=el.getBoundingClientRect();
+                        let v='';
+                        try{ v=(el.value===undefined||el.value===null)?'':String(el.value); }catch(err){ v=''; }
                         window.__pk_cdp_input__({
                             tag:el.tagName.toLowerCase(),id:el.id||'',
                             classes:(el.className&&typeof el.className==='string')?el.className:'',
-                            text:'',name:el.getAttribute('name')||'',
+                            text:'',value:v,name:el.getAttribute('name')||'',
                             placeholder:el.getAttribute('placeholder')||'',
                             type:el.getAttribute('type')||'',
+                            ariaLabel:el.getAttribute('aria-label')||'',
                             dataTestId:el.getAttribute('data-testid')||el.getAttribute('data-test-id')||'',
                             rect:{x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height)}
                         });
@@ -923,22 +1039,27 @@ class _BrowserWorker:
                     element["accessibleName"] = str(ax_node.get("name") or "").strip()
             except Exception:
                 pass
-        # BBA-3: value classification из DOM-признаков, не из AX-ноды.
-        # _classify_value ждёт tag/name_attr/accessible_name/type_attr —
-        # AX-нода этими ключами не владеет, поэтому классификация всегда
-        # давала 'unknown' и redaction держался только на фронте. Теперь
-        # классифицируем по реальному DOM-таргету (type=password/email/tel,
-        # name/label-паттерны секретов).
-        try:
-            from utils.discovery_element_extractor import _classify_value
-            evt["valueClass"] = _classify_value({
-                "tag": info.get("tag", ""),
-                "name_attr": info.get("name", ""),
-                "accessible_name": element.get("accessibleName", ""),
-                "type_attr": info.get("type", ""),
-            })
-        except ImportError:
+        # BBA-3/TYPE-BE: value classification из DOM-признаков, не из AX-ноды.
+        # Для type-событий valueClass/valueRef уже выставлены в _on_input (redaction
+        # на границе); НЕ перетираем их — только дочищаем на случай старых тестовых
+        # событий без valueRef. Для click-событий valueClass='unknown', valueRef=''.
+        is_type = evt.get("action") == "type"
+        if is_type:
+            if "valueClass" not in evt:
+                try:
+                    from utils.discovery_element_extractor import _classify_value
+                    evt["valueClass"] = _classify_value({
+                        "tag": info.get("tag", ""),
+                        "name_attr": info.get("name", ""),
+                        "accessible_name": element.get("accessibleName", ""),
+                        "type_attr": info.get("type", ""),
+                    })
+                except ImportError:
+                    evt["valueClass"] = "unknown"
+            evt["valueRef"] = _redact_value_ref("", evt.get("valueClass", "unknown"))
+        else:
             evt["valueClass"] = "unknown"
+            evt["valueRef"] = ""
         # candidates
         try:
             from utils.discovery_candidate_builder import build_candidates
@@ -1042,12 +1163,23 @@ def _on_click(event_info: dict, worker: object | None = None) -> None:
 
 
 def _on_input(event_info: dict, worker: object | None = None) -> None:
-    """BBA-3: записать type-событие. Значение НЕ передаётся (redaction)."""
+    """TYPE-BE / BBA-3: записать type-событие с backend-redaction значения.
+
+    Сырое ``value`` из JS-моста классифицируется и НЕМЕДЛЕННО редактируется:
+    вместо plaintext в событие кладётся ``valueRef`` — placeholder ``$secret``
+    (password/token и иные секреты) или ``$value`` (обычный ввод). Итоговый
+    ``element.value`` никогда не несёт plaintext, а ``text`` остаётся пустым.
+    """
     if worker is None:
         worker = _worker
+    raw_value = str(event_info.get("value", "") or "")
+    value_class = _classify_input_value(event_info)
+    value_ref = _redact_value_ref(raw_value, value_class)
     evt = {
         "timestamp": time.time(),
         "action": "type",
+        "valueClass": value_class,
+        "valueRef": value_ref,
         "element": {
             "tag": event_info.get("tag", ""),
             "id": event_info.get("id", ""),
@@ -1063,6 +1195,48 @@ def _on_input(event_info: dict, worker: object | None = None) -> None:
     worker._observe_last_event_id += 1
     evt["eventId"] = f"cdp-{worker._observe_last_event_id}"
     worker._observed_events.append(evt)
+
+
+def _classify_input_value(event_info: dict) -> str:
+    """Классифицировать введённое значение: secret | email | phone | unknown.
+
+    Использует только DOM-признаки (type/name/aria-label), никогда — сам
+    plaintext. Согласовано с ``utils.discovery_element_extractor._classify_value``.
+    """
+    try:
+        from utils.discovery_element_extractor import _classify_value
+        return _classify_value({
+            "tag": event_info.get("tag", ""),
+            "name_attr": event_info.get("name", ""),
+            "accessible_name": event_info.get("ariaLabel", ""),
+            "type_attr": event_info.get("type", ""),
+        })
+    except ImportError:
+        pass
+    # fallback без модуля — минимальный локальный классификатор.
+    type_attr = str(event_info.get("type", "") or "").lower()
+    name_attr = str(event_info.get("name", "") or "").lower()
+    if type_attr == "password":
+        return "secret"
+    if type_attr == "email":
+        return "email"
+    if type_attr == "tel":
+        return "phone"
+    if name_attr in ("password", "passwd", "pwd", "passcode", "pin", "secret", "token", "api_key", "apikey"):
+        return "secret"
+    return "unknown"
+
+
+def _redact_value_ref(raw_value: str, value_class: str) -> str:
+    """Вернуть placeholder для введённого значения (plaintext не уходит никогда).
+
+    Секрет → ``$secret``; иначе (непустое значение) → ``$value``; пустое → ``""``.
+    """
+    if value_class == "secret":
+        return "$secret"
+    if raw_value.strip():
+        return "$value"
+    return ""
 
 
 # ── Singleton worker (LEGACY — заменён на SessionManager) ──
@@ -1173,6 +1347,11 @@ def browser_highlight(selector: str, strategy: str = "css", session_id: str | No
 
 def browser_eval(expression: str, session_id: str | None = None) -> dict:
     return BrowserSessionManager.worker_for(session_id).dispatch("eval", expression=expression)
+
+
+def browser_elements_snapshot(session_id: str | None = None) -> dict:
+    """BBA-7: список кликабельных элементов активной страницы (CandidateElement[])."""
+    return BrowserSessionManager.worker_for(session_id).dispatch("elements_snapshot")
 
 def browser_viewport(session_id: str | None = None) -> dict:
     return BrowserSessionManager.worker_for(session_id).dispatch("viewport")

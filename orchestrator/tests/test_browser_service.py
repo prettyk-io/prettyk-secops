@@ -146,7 +146,7 @@ def test_data_playground_browser_routes():
     from browser.browser_service import browser_back, browser_forward, browser_click, browser_type_text  # noqa: F401
     from browser.browser_service import browser_viewport, browser_keyboard_press, browser_mouse_wheel, browser_mouse_drag  # noqa: F401
     from browser.browser_service import browser_step_execute, browser_scenario_replay, browser_scenario_abort  # noqa: F401
-    from browser.browser_service import browser_replay_timeline  # noqa: F401
+    from browser.browser_service import browser_replay_timeline, browser_elements_snapshot  # noqa: F401
 
     assert callable(browser_back)
     assert callable(browser_forward)
@@ -162,6 +162,8 @@ def test_data_playground_browser_routes():
     assert callable(browser_scenario_replay)
     assert callable(browser_scenario_abort)
     assert callable(browser_replay_timeline)
+    # BBA-7: элементы страницы (CandidateElement snapshot)
+    assert callable(browser_elements_snapshot)
 
 
 # ── B-6: click / type_text ──────────────────────────────────────────────────
@@ -845,6 +847,68 @@ def test_on_input_pushes_type_event_to_given_worker():
     evt = worker._observed_events[0]
     assert evt["action"] == "type"
     assert evt["element"]["text"] == ""  # значение НЕ утекает
+    assert evt["valueClass"] == "secret"
+    assert evt["valueRef"] == "$secret"
+
+
+def test_on_input_redacts_plaintext_value_as_value_ref():
+    """TYPE-BE: сырое значение не попадает в событие — только $value placeholder."""
+    import browser.browser_service as bs
+
+    worker = _new_worker(None)
+    worker._observe_last_event_id = 0
+    worker._observed_events.clear()
+
+    bs._on_input(
+        {"tag": "input", "type": "text", "name": "q", "value": "plaintext-lease",
+         "rect": {"x": 0, "y": 0, "w": 100, "h": 30}},
+        worker,
+    )
+
+    evt = worker._observed_events[0]
+    assert evt["action"] == "type"
+    assert "value" not in evt["element"]
+    assert "plaintext" not in evt["element"].get("text", "")
+    assert evt["valueClass"] == "unknown"
+    assert evt["valueRef"] == "$value"
+
+
+def test_on_input_secret_value_ref_for_password():
+    """TYPE-BE: password-ввод → valueRef=$secret, сырое значение выброшено."""
+    import browser.browser_service as bs
+
+    worker = _new_worker(None)
+    worker._observe_last_event_id = 0
+    worker._observed_events.clear()
+
+    bs._on_input(
+        {"tag": "input", "type": "password", "name": "passwd", "value": "hunter2",
+         "ariaLabel": "Пароль", "rect": {"x": 0, "y": 0, "w": 100, "h": 30}},
+        worker,
+    )
+
+    evt = worker._observed_events[0]
+    assert evt["valueClass"] == "secret"
+    assert evt["valueRef"] == "$secret"
+    assert "hunter2" not in str(evt)
+
+
+def test_on_input_empty_value_gives_empty_ref():
+    """TYPE-BE: пустое значение → valueRef пустой (не $value)."""
+    import browser.browser_service as bs
+
+    worker = _new_worker(None)
+    worker._observe_last_event_id = 0
+    worker._observed_events.clear()
+
+    bs._on_input(
+        {"tag": "input", "type": "text", "name": "q", "value": "",
+         "rect": {"x": 0, "y": 0, "w": 100, "h": 30}},
+        worker,
+    )
+
+    evt = worker._observed_events[0]
+    assert evt["valueRef"] == ""
 
 
 def test_enrich_classifies_password_as_secret():
@@ -869,6 +933,33 @@ def test_enrich_classifies_email():
     }
     worker._enrich_event(evt)
     assert evt["valueClass"] == "email"
+
+
+def test_enrich_type_event_preserves_value_ref():
+    """TYPE-BE: _enrich_event не перетирает уже выставленный valueRef/valueClass."""
+    worker = _new_worker(None)
+    evt = {
+        "eventId": "cdp-1", "timestamp": 0.0, "action": "type",
+        "valueClass": "secret", "valueRef": "$secret",
+        "element": {"tag": "input", "type": "password", "name": "pwd",
+                    "rect": {"x": 0, "y": 0, "w": 100, "h": 30}},
+    }
+    worker._enrich_event(evt)
+    assert evt["valueClass"] == "secret"
+    assert evt["valueRef"] == "$secret"
+
+
+def test_enrich_click_event_has_empty_value_ref():
+    """TYPE-BE: click-событие → valueClass=unknown, valueRef пустой (не секрет)."""
+    worker = _new_worker(None)
+    evt = {
+        "eventId": "cdp-1", "timestamp": 0.0, "action": "click",
+        "element": {"tag": "button", "text": "Submit", "id": "submit",
+                    "rect": {"x": 0, "y": 0, "w": 80, "h": 32}},
+    }
+    worker._enrich_event(evt)
+    assert evt["valueClass"] == "unknown"
+    assert evt["valueRef"] == ""
 
 
 # ── BBA-5: negative / reconnect — честный disconnected, без fake steps ───────

@@ -41,6 +41,31 @@ class WorkerCapability:
         return self.status == WORKER_IDLE and self.has_all(required)
 
 
+@dataclass
+class ExecutionReadiness:
+    """HEALTH-3: честный ответ «есть ли свободная мощность под новый run».
+
+    Учитывает capabilities: free_slots/matched считаются только по worker'ам,
+    у которых есть ВСЕ требуемые capabilities. Draining/offline слотов не дают.
+    """
+    ready: bool
+    free_slots: int
+    total_workers: int
+    draining_workers: int
+    capabilities: list[str]      # объединение capabilities свободных подходящих worker'ов
+    matched_worker_ids: list[str]
+
+    def to_dict(self) -> dict:
+        return {
+            "ready": self.ready,
+            "free_slots": self.free_slots,
+            "total_workers": self.total_workers,
+            "draining_workers": self.draining_workers,
+            "capabilities": self.capabilities,
+            "matched_worker_ids": self.matched_worker_ids,
+        }
+
+
 class WorkerRegistry:
     """Реестр worker'ов. Thread-safe.
 
@@ -101,6 +126,33 @@ class WorkerRegistry:
                 w for w in self._workers.values()
                 if w.is_available(required)
             ]
+
+    def free_slots(self, required_caps: set[str] | None = None) -> int:
+        """Число свободных слотов (idle, НЕ draining/offline).
+
+        При required_caps считаются только worker'ы со ВСЕМИ требуемыми
+        capabilities (браузер/без браузера) — честный ответ по мощности.
+        """
+        return len(self.list_available(required_caps or set()))
+
+    def execution_readiness(self, required_caps: set[str] | None = None) -> ExecutionReadiness:
+        """HEALTH-3: «можно ли принять новый run» — свободные слоты + capabilities."""
+        required = {c.strip().lower() for c in (required_caps or set()) if c and c.strip()}
+        with self._lock:
+            total = len(self._workers)
+            draining = sum(1 for w in self._workers.values() if w.status == WORKER_DRAINING)
+            matched = [w for w in self._workers.values() if w.is_available(required)]
+        caps: set[str] = set()
+        for w in matched:
+            caps.update(w.capabilities)
+        return ExecutionReadiness(
+            ready=bool(matched),
+            free_slots=len(matched),
+            total_workers=total,
+            draining_workers=draining,
+            capabilities=sorted(caps),
+            matched_worker_ids=[w.worker_id for w in matched],
+        )
 
     def list_all(self) -> list[WorkerCapability]:
         with self._lock:
@@ -172,3 +224,8 @@ def register(worker_id: str, capabilities: set[str]) -> WorkerCapability:
 def dispatch_run(run_id: str, required_caps: set[str]) -> Optional[str]:
     """Run-CTL-4: назначить run worker'у с нужными capabilities."""
     return _default_dispatcher.dispatch_run(run_id, required_caps)
+
+
+def execution_readiness(required_caps: set[str] | None = None) -> ExecutionReadiness:
+    """HEALTH-3: спросить worker pool «есть ли свободная мощность под новый run?»"""
+    return _default_registry.execution_readiness(required_caps)

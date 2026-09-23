@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { computeCanvasClickToViewport, computeFittedContentRect } from './clickCoordinate';
+import { computeCanvasClickToViewport, computeFittedContentRect, computeViewportRectToCanvas } from './clickCoordinate';
 
 describe('VP-F1: computeCanvasClickToViewport (canvas coordinate mapping)', () => {
   function fakeCanvas(clientWidth: number, clientHeight: number, rect: DOMRect): HTMLCanvasElement {
@@ -98,5 +98,30 @@ describe('BBA-2: computeCanvasClickToViewport letterbox mapping', () => {
     const canvas = fakeCanvas({ left: 0, top: 0, width: 1600, height: 800, right: 1600, bottom: 800, x: 0, y: 0, toJSON: () => ({}) });
     const p = computeCanvasClickToViewport(canvas, 800, 800, 100, 400);
     expect(p).toBeNull();
+  });
+});
+
+describe('BBA-FE-4: computeViewportRectToCanvas (viewport rect → canvas display)', () => {
+  it('линейный масштаб при отсутствии letterbox', () => {
+    // canvas 640×400, frame 1280×800 → scale 0.5
+    const d = computeViewportRectToCanvas(640, 400, 1280, 800, { x: 320, y: 200, w: 100, h: 50 })!;
+    expect(d.left).toBeCloseTo(160);
+    expect(d.top).toBeCloseTo(100);
+    expect(d.width).toBeCloseTo(50);
+    expect(d.height).toBeCloseTo(25);
+  });
+
+  it('учитывает letterbox (горизонтальные поля)', () => {
+    // canvas 1600×800, frame 800×800 → fitted 800×800 at left=400, top=0
+    const d = computeViewportRectToCanvas(1600, 800, 800, 800, { x: 0, y: 0, w: 100, h: 100 })!;
+    expect(d.left).toBeCloseTo(400);
+    expect(d.top).toBeCloseTo(0);
+    expect(d.width).toBeCloseTo(100);
+    expect(d.height).toBeCloseTo(100);
+  });
+
+  it('нулевые размеры → null', () => {
+    expect(computeViewportRectToCanvas(0, 400, 1280, 800, { x: 0, y: 0, w: 10, h: 10 })).toBeNull();
+    expect(computeViewportRectToCanvas(640, 400, 0, 800, { x: 0, y: 0, w: 10, h: 10 })).toBeNull();
   });
 });

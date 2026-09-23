@@ -14,6 +14,7 @@ import uuid
 from dataclasses import dataclass, field
 from collections import defaultdict
 from threading import Lock
+from typing import Any, Callable
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -213,6 +214,71 @@ class RunMetrics:
 
 
 # ═══════════════════════════════════════════════════════════════════════
+# TELEMETRY-3 (расширение): композитный сборщик с live-источниками + TTL-кэш
+# ═══════════════════════════════════════════════════════════════════════
+
+class MetricsCollector:
+    """Композиция push-метрик (RunMetrics) и live-источников с кэшем.
+
+    TELEMETRY-3. Инжектируемые источники (callables) возвращают живое
+    значение метрики из run_state / run_queue / run_dispatch / retry_policy.
+    Если источник не зарегистрирован, вернул None или бросил исключение —
+    используется fallback из push-счётчиков RunMetrics (Pure Box, без PG/Valkey).
+
+    Снимок кэшируется на ``ttl_s`` (по умолчанию 30с) — /api/metrics не
+    дёргает живые источники на каждый запрос.
+    """
+
+    def __init__(self, metrics: "RunMetrics | None" = None, ttl_s: float = 30.0) -> None:
+        self._metrics = metrics or RunMetrics()
+        self._ttl_s = ttl_s
+        self._lock = Lock()
+        self._sources: dict[str, Callable[[], int | None]] = {}
+        self._cached: dict | None = None
+        self._cached_at: float = 0.0
+
+    def set_source(self, key: str, source: Callable[[], int | None]) -> None:
+        """Зарегистрировать live-источник для метрики key."""
+        self._sources[key] = source
+
+    def _live(self, key: str, fallback: int) -> int:
+        source = self._sources.get(key)
+        if source is None:
+            return fallback
+        try:
+            value = source()
+        except Exception:
+            return fallback
+        if isinstance(value, int) and value >= 0:
+            return value
+        return fallback
+
+    def snapshot(self, force: bool = False) -> dict:
+        """Снять метрики. Внутри TTL возвращает кэшированный снимок."""
+        now = time.time()
+        if not force and self._cached is not None and (now - self._cached_at) < self._ttl_s:
+            snap = dict(self._cached) if isinstance(self._cached, dict) else {}
+            snap["timestamp"] = now
+            return snap
+        base = self._metrics.snapshot()
+        merged = {
+            "timestamp": now,
+            "uptime_s": base.get("uptime_s", 0.0),
+            "active_runs": self._live("active_runs", base["active_runs"]),
+            "queue_depth": self._live("queue_depth", base["queue_depth"]),
+            "live_workers": self._live("live_workers", base["live_workers"]),
+            "total_errors": self._live("total_errors", base["total_errors"]),
+            "errors_last_hour": self._live("errors_last_hour", base["errors_last_hour"]),
+            "window_s": base.get("window_s", 3600.0),
+            "refresh_ttl_s": self._ttl_s,
+        }
+        with self._lock:
+            self._cached = merged
+            self._cached_at = now
+        return merged
+
+
+# ═══════════════════════════════════════════════════════════════════════
 # TELEMETRY-1/2: Корреляция артефактов и per-run хаб
 # ═══════════════════════════════════════════════════════════════════════
 
@@ -397,3 +463,95 @@ def trace_for_run(run_id: str) -> RunTrace:
     if run_id not in _global_traces:
         _global_traces[run_id] = RunTrace(run_id=run_id)
     return _global_traces[run_id]
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# TELEMETRY-3: live-источники из Run Control рантайма
+# ═══════════════════════════════════════════════════════════════════════
+
+def _runtime_plane() -> Any | None:
+    """Живой RunControlPlane (ядро) из lab_run, либо None (если профиль не поднял).
+
+    Ленивый импорт — инфra-слой не тянет utils на этапе импорта модуля.
+    При отсутствии плоскости (Pure Box без рантайма, тесты без lab_run)
+    все проберы возвращают None → fallback на push-счётчики RunMetrics.
+    """
+    try:
+        from utils.lab_run import _get_run_plane
+        return _get_run_plane()
+    except Exception:
+        return None
+
+
+def _probe_active_runs() -> int | None:
+    plane = _runtime_plane()
+    if plane is None:
+        return None
+    return sum(1 for r in plane.list_runs() if not r.is_terminal)
+
+
+def _probe_queue_depth() -> int | None:
+    plane = _runtime_plane()
+    if plane is None:
+        return None
+    return plane.queue_length()
+
+
+def _probe_live_workers() -> int | None:
+    plane = _runtime_plane()
+    if plane is None:
+        return None
+    return len(plane._workers)
+
+
+def _count_failed_since(plane: Any, cutoff: float) -> int:
+    n = 0
+    for r in plane.list_runs():
+        if r.state.value == "failed":
+            if cutoff is None or (r.finished_at is not None and r.finished_at >= cutoff):
+                n += 1
+    return n
+
+
+def _probe_total_errors() -> int | None:
+    plane = _runtime_plane()
+    if plane is None:
+        return None
+    return _count_failed_since(plane, None)
+
+
+def _probe_errors_last_hour() -> int | None:
+    plane = _runtime_plane()
+    if plane is None:
+        return None
+    return _count_failed_since(plane, time.time() - 3600.0)
+
+
+_system_metrics_collector: MetricsCollector | None = None
+_system_metrics_lock = Lock()
+
+
+def get_system_metrics() -> MetricsCollector:
+    """Синглтон композитного сборщика, связанный с живым рантаймом.
+
+    Источники: активные/очередь/worker'ы/ошибки читаются из RunControlPlane
+    (авторитетный in-process рантайм run_state+run_queue+run_dispatch),
+    ошибки/час — по finished_at FAILED-запусков. Без рантайма — push-счётчики
+    RunMetrics (Pure Box, без PG/Valkey).
+    """
+    global _system_metrics_collector
+    with _system_metrics_lock:
+        if _system_metrics_collector is None:
+            collector = MetricsCollector(metrics=_global_metrics)
+            collector.set_source("active_runs", _probe_active_runs)
+            collector.set_source("queue_depth", _probe_queue_depth)
+            collector.set_source("live_workers", _probe_live_workers)
+            collector.set_source("total_errors", _probe_total_errors)
+            collector.set_source("errors_last_hour", _probe_errors_last_hour)
+            _system_metrics_collector = collector
+    return _system_metrics_collector
+
+
+def system_metrics_snapshot(force: bool = False) -> dict:
+    """Удобный шорткат: снять композитные метрики одним вызовом."""
+    return get_system_metrics().snapshot(force=force)
