@@ -7,10 +7,12 @@
 #      цикл Run: PENDING → QUEUED → RUNNING → SUCCEEDED/FAILED/EXPIRED/CANCELLED.
 #
 # Зачем мост: worker взял run и обязан подтверждать жизнь heartbeat'ом.
-# Если worker замолчал (90+ секунд) — run не должен навсегда остаться
-# в статусе «выполняется». sweep_stale() находит такие run'ы через
-# RunStore.list_stale() и переводит их в EXPIRED, после чего они могут
-# быть перехвачены другим worker'ом (см. infra/run_streams.py, XAUTOCLAIM).
+# Если worker замолчал (60+ секунд) — run не должен навсегда остаться
+# в статусе «выполняется». sweep_stale() находит такие «зависшие» (stuck)
+# run'ы через RunStore.list_stale() и переводит их в EXPIRED, после чего
+# они могут быть перехвачены другим worker'ом (см. infra/run_streams.py,
+# XAUTOCLAIM). Терминальное состояние stuck-run'а зафиксировано контрактом
+# RunStore (RUN-CTL-1, Boss) как `expired` — мост НЕ вводит новое состояние.
 #
 # Контракт RunStore (внедряется снаружи, dependency injection):
 #   transition(run_id: str, status: str) -> результат перехода
@@ -103,7 +105,7 @@ class RunLeaseBridge:
     Роли:
       - register_run: run получает lease + переходит в QUEUED (готов к выдаче worker'у).
       - heartbeat: worker подтверждает жизнь; lease продлевается, generation растёт.
-      - sweep_stale: worker замолчал → run переводится в EXPIRED, ресурсы освобождаются.
+      - sweep_stale: worker замолчал → run помечается STUCK (→ EXPIRED), ресурсы освобождаются.
       - snapshot: наблюдаемость — какие run'ы живы и сколько им осталось.
 
     lease_controller и run_store внедряются снаружи (DI) — мост не создаёт
@@ -115,8 +117,8 @@ class RunLeaseBridge:
         lease_controller: LeaseController,
         run_store: Any,
         provider: Any = None,
-        lease_seconds: float = 90.0,
-        stale_after_seconds: float = 90.0,
+        lease_seconds: float = 60.0,
+        stale_after_seconds: float = 60.0,
         queued_status: str = RUN_QUEUED,
         expired_status: str = RUN_EXPIRED,
     ) -> None:
@@ -215,8 +217,8 @@ class RunLeaseBridge:
                                  run_id, self._expired_status)
                 continue
             expired.append(run_id)
-            logger.warning("Run %s EXPIRED (worker silent > %.0fs)",
-                           run_id, self._stale_after)
+            logger.warning("Run %s STUCK (worker silent > %.0fs) → %s",
+                           run_id, self._stale_after, self._expired_status)
             if self._provider is not None:
                 try:
                     await self._provider.release_session_bundle(run_id, force=True)

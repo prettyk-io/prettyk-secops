@@ -58,4 +58,22 @@ describe('CandidateOverlay', () => {
     );
     expect(container.querySelector('[data-testid="candidate-overlay"]')).toBeNull();
   });
+
+  it('ACT-FE: палитра действий рендерится и эмитит onCandidateAction', () => {
+    const onAction = vi.fn();
+    const c = candidate();
+    const { getByTestId } = render(
+      <CandidateOverlay candidates={[c]} canvasRef={canvasRef} frameWidth={1280} frameHeight={800} onCandidateClick={() => {}} onCandidateAction={onAction} />,
+    );
+    expect(getByTestId('candidate-action-palette')).not.toBeNull();
+    fireEvent.click(getByTestId('candidate-action-Type'));
+    expect(onAction).toHaveBeenCalledWith(c, 'Type');
+  });
+
+  it('ACT-FE: без onCandidateAction палитра отсутствует', () => {
+    const { container } = render(
+      <CandidateOverlay candidates={[candidate()]} canvasRef={canvasRef} frameWidth={1280} frameHeight={800} onCandidateClick={() => {}} />,
+    );
+    expect(container.querySelector('[data-testid="candidate-action-palette"]')).toBeNull();
+  });
 });

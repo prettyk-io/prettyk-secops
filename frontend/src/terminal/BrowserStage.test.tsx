@@ -36,7 +36,7 @@ function resp(status: number, body: unknown): Response {
   } as Response;
 }
 
-function mockFetch(respond: (url: string) => Response): void {
+function mockFetch(respond: (url: string) => Response | Promise<Response>): void {
   globalThis.fetch = vi.fn(async (input: unknown) => {
     const url = typeof input === 'string' ? input : String((input as Request).url ?? input);
     return respond(url);
@@ -82,36 +82,39 @@ describe('BrowserStage — replay runner (BBA-FE-2 / BBA-FE-3)', () => {
     vi.restoreAllMocks();
   });
 
-  function scenarioResp(step: {
+  function stepExecResp(step: {
     step_id: string;
     action: string;
     status: 'passed' | 'failed';
     duration_ms: number;
     error: string | null;
     screenshot_b64: string | null;
-  }, verdict: 'passed' | 'failed') {
-    return resp(200, {
-      ok: true,
-      steps: [step],
-      total: 1,
-      executed: 1,
-      passed: verdict === 'passed' ? 1 : 0,
-      failed: verdict === 'passed' ? 0 : 1,
-      cancelled: 0,
-      verdict,
-      duration_ms: 30,
-    });
+  }) {
+    return resp(200, step);
   }
 
-  function mockScenarioReplay(step: Parameters<typeof scenarioResp>[0], verdict: 'passed' | 'failed' = 'passed') {
-    mockFetch((url) => (url.includes('/api/browser/scenario/replay')
-      ? scenarioResp(step, verdict)
-      : resp(200, { ok: true })));
+  // RP-VIZ: replay теперь пошаговый — POST /api/browser/step/execute (не batch scenario/replay).
+  function mockStepExecute(
+    step: Parameters<typeof stepExecResp>[0],
+    elements: unknown[] = [],
+  ) {
+    mockFetch((url) => {
+      if (url.includes('/api/browser/status')) {
+        return resp(200, { ok: true, connected: true, url: 'http://juice-shop:3000', title: 'Juice', contexts: ['operator'], purpose: 'authoring', transport: 'playwright', runtime: 'container' });
+      }
+      if (url.includes('/api/browser/elements')) {
+        return resp(200, { ok: true, count: elements.length, elements });
+      }
+      if (url.includes('/api/browser/step/execute')) {
+        return stepExecResp(step);
+      }
+      return resp(200, { ok: true });
+    });
   }
 
   it('запускает replay и помечает шаг passed', async () => {
     useScenarioDeckStore.getState().setDecks([deckWith([clickStep('s1')])]);
-    mockScenarioReplay({ step_id: 's1', action: 'click', status: 'passed', duration_ms: 12, error: null, screenshot_b64: null });
+    mockStepExecute({ step_id: 's1', action: 'click', status: 'passed', duration_ms: 12, error: null, screenshot_b64: null });
 
     const { container } = render(<BrowserStage mode="author" onModeChange={() => {}} cdpConnected />);
 
@@ -124,7 +127,7 @@ describe('BrowserStage — replay runner (BBA-FE-2 / BBA-FE-3)', () => {
 
   it('показывает ошибку шага вместо немого skip + Continue и останавливается по Stop', async () => {
     useScenarioDeckStore.getState().setDecks([deckWith([clickStep('s1')])]);
-    mockScenarioReplay({ step_id: 's1', action: 'click', status: 'failed', duration_ms: 9, error: 'selector not found', screenshot_b64: null }, 'failed');
+    mockStepExecute({ step_id: 's1', action: 'click', status: 'failed', duration_ms: 9, error: 'selector not found', screenshot_b64: null });
 
     const { container } = render(<BrowserStage mode="author" onModeChange={() => {}} cdpConnected />);
 
@@ -146,7 +149,7 @@ describe('BrowserStage — replay runner (BBA-FE-2 / BBA-FE-3)', () => {
 
   it('снимает и показывает скриншот ошибки шага в модале (BBA-FE-3)', async () => {
     useScenarioDeckStore.getState().setDecks([deckWith([clickStep('s1')])]);
-    mockScenarioReplay({ step_id: 's1', action: 'click', status: 'failed', duration_ms: 9, error: 'element not found', screenshot_b64: 'ZmFrZXBuZw==' }, 'failed');
+    mockStepExecute({ step_id: 's1', action: 'click', status: 'failed', duration_ms: 9, error: 'element not found', screenshot_b64: 'ZmFrZXBuZw==' });
 
     const { container } = render(<BrowserStage mode="author" onModeChange={() => {}} cdpConnected />);
 
@@ -183,6 +186,59 @@ describe('BrowserStage — replay runner (BBA-FE-2 / BBA-FE-3)', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /play/i })).toBeTruthy();
     });
+  });
+
+  it('RP-VIZ: подсвечивает активный шаг рамкой на живом кадре', async () => {
+    useScenarioDeckStore.getState().setDecks([deckWith([
+      { id: 's1', action: 'Click', strategy: 'css', strategyValue: '#login', payload: '', continueOnError: false, led: 'queued' },
+    ])]);
+    // step/execute висит, пока шаг «running» — даём увидеть подсветку до resolve.
+    let resolveStep!: (r: Response) => void;
+    mockFetch((url) => {
+      if (url.includes('/api/browser/status')) {
+        return resp(200, { ok: true, connected: true, url: 'http://juice-shop:3000', title: 'Juice', contexts: ['operator'], purpose: 'authoring', transport: 'playwright', runtime: 'container' });
+      }
+      if (url.includes('/api/browser/elements')) {
+        return resp(200, { ok: true, count: 1, elements: [{ tag: 'button', role: 'button', text: 'Войти', cssSelector: '#login', rect: { x: 10, y: 10, w: 120, h: 32 } }] });
+      }
+      if (url.includes('/api/browser/step/execute')) {
+        return new Promise<Response>((resolve) => { resolveStep = resolve; });
+      }
+      return resp(200, { ok: true });
+    });
+
+    const { container } = render(<BrowserStage mode="author" onModeChange={() => {}} cdpConnected />);
+
+    fireEvent.click(screen.getByRole('button', { name: /play/i }));
+
+    await waitFor(() => {
+      expect(container.querySelector('[data-testid="replay-active-frame"]')).not.toBeNull();
+      expect(container.textContent).toContain('Click Войти');
+    });
+
+    resolveStep(resp(200, { step_id: 's1', action: 'click', status: 'passed', duration_ms: 12, error: null, screenshot_b64: null }));
+    await waitFor(() => {
+      expect(container.querySelector('[data-status="passed"]')).not.toBeNull();
+    });
+  });
+
+  it('RP-VIZ: ошибка шага → красный маркер на элементе', async () => {
+    useScenarioDeckStore.getState().setDecks([deckWith([
+      { id: 's1', action: 'Click', strategy: 'css', strategyValue: '#login', payload: '', continueOnError: false, led: 'queued' },
+    ])]);
+    mockStepExecute(
+      { step_id: 's1', action: 'click', status: 'failed', duration_ms: 9, error: 'selector not found', screenshot_b64: null },
+      [{ tag: 'button', role: 'button', text: 'Войти', cssSelector: '#login', rect: { x: 10, y: 10, w: 120, h: 32 } }],
+    );
+
+    const { container } = render(<BrowserStage mode="author" onModeChange={() => {}} cdpConnected />);
+
+    fireEvent.click(screen.getByRole('button', { name: /play/i }));
+
+    await waitFor(() => {
+      expect(container.querySelector('[data-testid="replay-error-frame"]')).not.toBeNull();
+    });
+    expect(container.querySelector('[data-testid="replay-error-context"]')?.textContent).toContain('selector not found');
   });
 });
 

@@ -136,6 +136,32 @@ class PlaywrightAdapter(BaseAdapter, metaclass=_WireActionMeta):
         self._bind_console()
         return self._page
 
+    def session_diary(self, kind, *parts, live=True, pretty=""):
+        """
+        Кураторская строка дневника: STEP / ERROR / HIGH / NOTE.
+
+        Пишем в лог оркестратора (`[PK-DIARY]`). Дневник живёт рядом с
+        прогоном и в Allure. Никогда не роняет шаг: это диагностика.
+
+        live=False — только лог оркестратора, без diary_bus (Allure не затрагивается).
+        pretty — опциональная PrettyK-строка для каретки шагов Live,
+        когда `text` содержит сырой wire/execution-title.
+        """
+        kind = str(kind or "NOTE").strip().upper()
+        text = " | ".join(str(p).replace("\n", " ").strip() for p in parts if p not in (None, ""))
+        if not text:
+            return
+        line = text[:400]
+        logger.info("[PK-DIARY] %s: %s", kind, line)
+        if not live:
+            return
+        try:
+            from utils.diary_bus import publish
+
+            publish(kind, line, channel="diary", pretty=(pretty or ""))
+        except Exception:
+            pass
+
     # ========== LIFECYCLE ==========
 
     def shutdown(self):
@@ -532,7 +558,8 @@ class PlaywrightAdapter(BaseAdapter, metaclass=_WireActionMeta):
     @wire_action("ПроверитьЗаголовок")
     def assert_title(self, expected_title, timeout=10):
         self._ensure_page().wait_for_function(
-            "expected => document.title === expected", str(expected_title),
+            "expected => document.title === expected",
+            arg=str(expected_title),
             timeout=float(timeout) * 1000,
         )
         return True
@@ -546,13 +573,39 @@ class PlaywrightAdapter(BaseAdapter, metaclass=_WireActionMeta):
 
     @wire_action("НажатьКлавишу")
     def press_key(self, key: str):
-        """Press a keyboard key."""
-        self._ensure_page().keyboard.press(key)
+        """Press a keyboard key.
+
+        Playwright 1.x использует Pascal-case для спецклавиш (Enter/Backspace/
+        ArrowDown/Tab/Escape), а DSL/старые сценарии приходят с UPPER (ENTER) или
+        из JS-именем (Enter тоже ок). Нормализуем наиболее частые спецклавиши.
+        """
+        page = self._ensure_page()
+        norm = str(key or "").strip()
+        keymap = {
+            "ENTER": "Enter",
+            "RETURN": "Enter",
+            "TAB": "Tab",
+            "ESCAPE": "Escape",
+            "ESC": "Escape",
+            "BACKSPACE": "Backspace",
+            "DELETE": "Delete",
+            "ARROWUP": "ArrowUp",
+            "ARROWDOWN": "ArrowDown",
+            "ARROWLEFT": "ArrowLeft",
+            "ARROWRIGHT": "ArrowRight",
+            "SPACE": " ",
+            "PAGEUP": "PageUp",
+            "PAGEDOWN": "PageDown",
+            "HOME": "Home",
+            "END": "End",
+        }
+        page.keyboard.press(keymap.get(norm.upper(), norm))
 
     @wire_action("ЖдатьЗаголовок")
     def wait_for_title(self, expected_title, timeout=10):
         self._ensure_page().wait_for_function(
-            "expected => document.title === expected", str(expected_title),
+            "expected => document.title === expected",
+            arg=str(expected_title),
             timeout=float(timeout) * 1000,
         )
         return True
@@ -580,7 +633,7 @@ class PlaywrightAdapter(BaseAdapter, metaclass=_WireActionMeta):
         if contains and expected_url:
             page.wait_for_function(
                 "([expected, contains]) => contains ? location.href.includes(expected) : location.href === expected",
-                [str(expected_url), contains],
+                arg=[str(expected_url), contains],
                 timeout=float(timeout) * 1000,
             )
         else:

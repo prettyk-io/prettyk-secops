@@ -90,8 +90,8 @@ def make_bridge(store: MemoryRunStore | None = None,
         lease_controller=lease,
         run_store=store,
         provider=provider,
-        lease_seconds=90.0,
-        stale_after_seconds=90.0,
+        lease_seconds=60.0,
+        stale_after_seconds=60.0,
     )
     return bridge, store, provider
 
@@ -137,7 +137,7 @@ async def test_register_run_failure_keeps_store_consistent():
 
     exploding = ExplodingStore()
     lease_ctrl = LeaseController(default_lease_seconds=90.0)
-    bridge2 = RunLeaseBridge(lease_ctrl, exploding, lease_seconds=90.0)
+    bridge2 = RunLeaseBridge(lease_ctrl, exploding, lease_seconds=60.0)
 
     with pytest.raises(RuntimeError):
         await bridge2.register_run("boom")
@@ -182,18 +182,18 @@ async def test_heartbeat_touches_run_store_activity():
 
     bridge.heartbeat("run-t")
 
-    # Активность обновлена → не stale даже с порогом 90с при запасе 80+10с.
-    assert "run-t" not in store.list_stale(90.0)
+    # Активность обновлена → не stale даже при запасе 80с против окна 60с.
+    assert "run-t" not in store.list_stale(60.0)
 
 
 # ── sweep_stale ─────────────────────────────────────────────────────────────
 
 @pytest.mark.asyncio
 async def test_sweep_stale_marks_silent_run_expired():
-    """Acceptance: worker замолчал 90+с → sweep_stale → transition(EXPIRED)."""
+    """Acceptance: worker замолчал 60+с → sweep_stale → transition(EXPIRED)."""
     bridge, store, _ = make_bridge()
     await registered(bridge, store, "run-dead")
-    store.age_last_activity("run-dead", 200.0)  # молчал 200с > 90с
+    store.age_last_activity("run-dead", 200.0)  # молчал 200с > 60с
 
     expired = await bridge.sweep_stale()
 
@@ -202,11 +202,37 @@ async def test_sweep_stale_marks_silent_run_expired():
 
 
 @pytest.mark.asyncio
+async def test_sweep_stale_marks_stuck_within_threshold():
+    """Acceptance: зависший (stuck) run помечается за ≤ порог (61с > 60с)."""
+    bridge, store, _ = make_bridge()
+    await registered(bridge, store, "run-stuck")
+    store.age_last_activity("run-stuck", 61.0)  # едва за порогом 60с
+
+    expired = await bridge.sweep_stale()
+
+    assert expired == ["run-stuck"]
+    assert store.get("run-stuck")["state"] == "expired"
+
+
+@pytest.mark.asyncio
+async def test_sweep_stale_does_not_mark_below_threshold():
+    """Acceptance: run, молчавший меньше порога (≤ 60с), НЕ помечается stuck."""
+    bridge, store, _ = make_bridge()
+    await registered(bridge, store, "run-fresh")
+    store.age_last_activity("run-fresh", 59.0)  # внутри окна 60с
+
+    expired = await bridge.sweep_stale()
+
+    assert expired == []
+    assert store.get("run-fresh")["state"] == "queued"
+
+
+@pytest.mark.asyncio
 async def test_sweep_stale_leaves_active_run_alone():
-    """Acceptance: активный run не трогается."""
+    """Acceptance: активный run (молчал 5с) не трогается."""
     bridge, store, _ = make_bridge()
     await registered(bridge, store, "run-live")
-    store.age_last_activity("run-live", 5.0)  # молчал всего 5с
+    store.age_last_activity("run-live", 5.0)
 
     expired = await bridge.sweep_stale()
 
@@ -259,7 +285,7 @@ async def test_sweep_stale_survives_transition_error():
 
     store = OneBadRunStore()
     bridge = RunLeaseBridge(lease_ctrl, store, provider=provider,
-                            lease_seconds=90.0, stale_after_seconds=90.0)
+                            lease_seconds=60.0, stale_after_seconds=60.0)
 
     await registered(bridge, store, "run-bad")
     await registered(bridge, store, "run-good")
@@ -285,7 +311,7 @@ async def test_snapshot_contains_runs_and_leases():
     assert snap["total_leases"] == 1
     assert "run-s" in snap["runs"]
     assert snap["runs"]["run-s"]["run_state"] == "queued"
-    assert snap["stale_after_seconds"] == 90.0
+    assert snap["stale_after_seconds"] == 60.0
 
 
 # ── Docker label recovery ───────────────────────────────────────────────────
@@ -372,7 +398,7 @@ def test_run_id_of_accepts_boss_runstatus():
 
 @pytest.mark.asyncio
 async def test_full_lifecycle_register_heartbeat_silence_expire():
-    """E2E моста: register → heartbeat → тишина 90+с → sweep → EXPIRED."""
+    """E2E моста: register → heartbeat → тишина 60+с → sweep → EXPIRED."""
     bridge, store, provider = make_bridge()
     await registered(bridge, store, "run-e2e")
 

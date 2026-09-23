@@ -271,8 +271,10 @@ export interface StudioWorkspaceProps {
   validationFeedback?: ValidationFeedback;
   validationSuccessVersion: number;
   onCloseValidationFeedback: () => void;
-  /** Header Validate — второй слой cmdk. */
-  onCmdValidate?: () => void;
+  /** Header Validate — второй слой cmdk. Передаёт свежесобранный formData (после flush). */
+  onCmdValidate?: (flushedData?: unknown) => void;
+  /** BOX-VAL-1: регистрирует flusher активного editor для header Validate. */
+  onRegisterValidateFlusher?: (flusher: (() => unknown) | null) => void;
   /** Pipeline / Baseline — второй слой cmdk (если в контексте). */
   onCmdBaseline?: () => void;
   /** Управление режимом «Студия / Редактор» снаружи (из глобального хедера). */
@@ -319,6 +321,7 @@ function StudioWorkspaceInner({
   onCloseValidationFeedback,
   onCmdValidate,
   onCmdBaseline,
+  onRegisterValidateFlusher,
   studioMode: controlledStudioMode,
   onStudioModeChange: controlledOnStudioModeChange,
 }: StudioWorkspaceProps): React.JSX.Element {
@@ -656,24 +659,38 @@ function StudioWorkspaceInner({
   );
 
   const flushTab = useCallback(
-    (tab: StudioTab | undefined) => {
+    (tab: StudioTab | undefined): unknown => {
       window.clearTimeout(syncTimerRef.current);
       if (!tab?.path || tab.kind === 'resource' || tab.kind === 'fuzzer') {
-        return;
+        return formDataRef.current;
       }
       const path = modelPathForTab(tab);
       const text = readModelText(monaco, path) ?? lastEmittedRef.current;
       if (text === lastEmittedRef.current) {
         const slice = readConstructorSlice(formDataRef.current, tab.path);
         if (text === slice) {
-          return;
+          return formDataRef.current;
         }
       }
       lastEmittedRef.current = text;
       commitConstructorText(tab, text);
+      return formDataRef.current;
     },
     [commitConstructorText, monaco],
   );
+
+  /** BOX-VAL-1: flush активной вкладки → свежий formData для Validate. */
+  const flushActiveForValidate = useCallback((): unknown => {
+    const current = openTabsRef.current.find(
+      (item) => item.id === activeTabIdRef.current,
+    );
+    return flushTab(current);
+  }, [flushTab]);
+
+  useEffect(() => {
+    onRegisterValidateFlusher?.(flushActiveForValidate);
+    return () => onRegisterValidateFlusher?.(null);
+  }, [onRegisterValidateFlusher, flushActiveForValidate]);
 
   const scheduleFlush = useCallback(
     (tab: StudioTab | undefined, text: string) => {
@@ -2310,7 +2327,8 @@ function StudioWorkspaceInner({
         }
       },
       validate: () => {
-        onCmdValidate?.();
+        // BOX-VAL-1: flush ожидающего ввода → Validate видит именно текущий документ.
+        onCmdValidate?.(flushActiveForValidate());
       },
       baseline: onCmdBaseline,
       goToDefinition: () => {
@@ -2355,6 +2373,7 @@ function StudioWorkspaceInner({
     openTabs,
     syncLiveFromTab,
     tree,
+    flushActiveForValidate,
   ]);
 
   const handleHubSubmit = useCallback(

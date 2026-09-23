@@ -90,6 +90,7 @@ import {
   type EditorView,
 } from './app/appEditorViews';
 import { runConstructorPenguinGate } from './app/appConstructorPenguinGate';
+import { isWireDocumentEmpty } from './app/appValidateEmpty';
 import { runPipelineStart } from './app/appPipelineStart';
 import { ensureValidOrFocusErrors } from './app/appEnsureValid';
 import { bindPkGotoPage } from './app/appGotoPage';
@@ -203,6 +204,8 @@ export default function App({
   const validationStatusTimerRef = useRef<number | undefined>();
   const saveOkFlashTimerRef = useRef<number | undefined>();
   const viewCommitCancelRef = useRef<(() => void) | undefined>();
+  /** BOX-VAL-1: активный editor регистрирует flusher → header Validate видит текущий текст. */
+  const validateFlusherRef = useRef<(() => unknown) | null>(null);
   editorViewRef.current = editorView;
   resourceContentsRef.current = resourceContents;
 
@@ -487,7 +490,10 @@ export default function App({
 
   // Constructor penguin gate
   const gateConstructorsOrPenguin = useCallback(
-    async (data: unknown = rawFormData): Promise<boolean> => {
+    async (
+      data: unknown = rawFormData,
+      onBackendUnavailable?: () => void,
+    ): Promise<boolean> => {
       const diags = collectAllMonacoDiagnostics(monaco);
       if (diags.length > 0) {
         markValidationFailed({
@@ -500,14 +506,21 @@ export default function App({
         void message.error('В редакторе есть ошибки синтаксиса или безопасности.');
         return false;
       }
-      return runConstructorPenguinGate(data, keywordCatalog, markValidationFailed);
+      return runConstructorPenguinGate(
+        data,
+        keywordCatalog,
+        markValidationFailed,
+        onBackendUnavailable,
+      );
     },
     [rawFormData, markValidationFailed, message],
   );
 
-  // Schema validation — no RJSF, always empty
-  const runValidation = useCallback((): wiredIssue[] => {
-    const errors = validateWiredFields(rawFormData as Record<string, unknown>);
+  // Schema validation — no RJSF, always empty.
+  // BOX-RUN-1: принимает опциональный `data`, чтобы Run мог валидировать
+  // именно текущий (flushed) документ, а не устаревший rawFormData.
+  const runValidation = useCallback((data: unknown = rawFormData): wiredIssue[] => {
+    const errors = validateWiredFields(data as Record<string, unknown>);
     setFieldErrors(errors);
     if (errors.length === 0) return [];
     return errors.map((e) => ({
@@ -518,16 +531,49 @@ export default function App({
     }));
   }, [rawFormData]);
 
+  const registerValidateFlusher = useCallback((flusher: (() => unknown) | null) => {
+    validateFlusherRef.current = flusher;
+  }, []);
+
   // Validate + constructor gate
-  const handleValidatePreview = useCallback(() => {
-    void (async () => {
-      resetValidationStatus();
-      setValidationDrawer(undefined);
-      if (!(await gateConstructorsOrPenguin())) return;
-      markValidationPassed();
-      void message.success('Проверка валидна.');
-    })();
-  }, [gateConstructorsOrPenguin, markValidationPassed, message, resetValidationStatus]);
+  // BOX-VAL-1: проверяет именно текущий документ (flushedData), не выдаёт ложный успех
+  // на пустом документе или при недоступном backend-валидаторе.
+  const handleValidatePreview = useCallback(
+    (flushedData?: unknown) => {
+      void (async () => {
+        const data = flushedData ?? formDataRef.current;
+        resetValidationStatus();
+        setValidationDrawer(undefined);
+        if (isWireDocumentEmpty(data)) {
+          void message.info('Проверять нечего — документ пуст.');
+          return;
+        }
+        let backendDown = false;
+        const ok = await gateConstructorsOrPenguin(data, () => {
+          backendDown = true;
+        });
+        if (!ok) {
+          return;
+        }
+        if (backendDown) {
+          // Молчаливый успех запрещён: backend не отвечает — честная локальная проверка.
+          void message.warning(
+            'Backend-валидатор недоступен — проверка выполнена локально.',
+          );
+          return;
+        }
+        markValidationPassed();
+        void message.success('Проверка валидна.');
+      })();
+    },
+    [gateConstructorsOrPenguin, markValidationPassed, message, resetValidationStatus],
+  );
+
+  // Header Validate: flush активного editor (320ms debounce) → валидировать текущий текст.
+  const handleHeaderValidate = useCallback(() => {
+    const flushed = validateFlusherRef.current?.() ?? undefined;
+    handleValidatePreview(flushed);
+  }, [handleValidatePreview]);
 
   const ensureValidOrFocusErrorsFn = useCallback(
     (): Promise<boolean> =>
@@ -605,33 +651,16 @@ export default function App({
   const [pipelineStarting, setPipelineStarting] = useState(false);
 
   const handlePipelineStart = useCallback(() => {
+    // BOX-RUN-1: flush активного editor (320ms debounce) перед Run, чтобы
+    // гейты и export работали с текущим видимым документом, а не с
+    // устаревшим formDataRef.current (parity с BOX-VAL-1 Validate).
+    const flushed = validateFlusherRef.current?.() ?? formDataRef.current;
     void runPipelineStart({
       pipelineStarting,
       setPipelineStarting,
-      gateConstructorsOrPenguin,
-      runValidation,
-      isCheckEmpty: () => {
-        const root = formDataRef.current as Record<string, unknown> | null;
-        const suites = root?.test_suites as Record<string, unknown> | undefined;
-        const scenarios = Array.isArray(suites?.scenarios) ? suites!.scenarios : [];
-        const hasNonEmptyScenario = scenarios.some((sc) => {
-          const scObj = sc as Record<string, unknown>;
-          const steps = Array.isArray(scObj.steps) ? scObj.steps : [];
-          return steps.some((st) => {
-            const ctor = (st as Record<string, unknown>)['constructor'];
-            return typeof ctor === 'string' && ctor.trim().length > 0;
-          });
-        });
-        const pages = suites?.pages as Record<string, unknown> | undefined;
-        const hasNonEmptyPage = pages
-          ? Object.values(pages).some((p) => {
-              const ctor = (p as Record<string, unknown>)['constructor'];
-              return typeof ctor === 'string' && ctor.trim().length > 0;
-            })
-          : false;
-        const fuzzers = Array.isArray(suites?.fuzzers) ? suites!.fuzzers : [];
-        return !hasNonEmptyScenario && !hasNonEmptyPage && fuzzers.length === 0;
-      },
+      gateConstructorsOrPenguin: () => gateConstructorsOrPenguin(flushed),
+      runValidation: () => runValidation(flushed),
+      isCheckEmpty: () => isWireDocumentEmpty(flushed),
       onCheckEmpty: () => {
         void message.info('Заполните сценарий');
       },
@@ -639,7 +668,7 @@ export default function App({
       switchToForm: () => {},  // PURE: form view dead, stay in studio
       markValidationFailed,
       markValidationPassed,
-      getFormData: () => formDataRef.current,
+      getFormData: () => flushed,
       startRun: (formData) =>
         postRunStart(
           formData,
@@ -841,7 +870,7 @@ export default function App({
                     className={`pk-header-validate pk-header-validate--${validationStatus}`}
                     aria-label={validationButtonHintText}
                     data-testid="entity-validate"
-                    onClick={handleValidatePreview}
+                    onClick={handleHeaderValidate}
                     icon={validationButtonIcon}
                   />
                   <PipelineLaunchButton
@@ -980,6 +1009,9 @@ export default function App({
                 onCmdSave={handleSaveEntity}
                 onCmdRun={handlePipelineStart}
                 onCmdValidate={handleValidatePreview}
+                onRegisterValidateFlusher={
+                  editorView === 'editor' ? registerValidateFlusher : undefined
+                }
                 checkId={checkId}
               />
             </div>
@@ -1010,6 +1042,9 @@ export default function App({
                 onCloseValidationFeedback={closeValidationDrawer}
                 onCmdValidate={handleValidatePreview}
                 onCmdBaseline={handlePipelineStart}
+                onRegisterValidateFlusher={
+                  editorView === 'studio-old' ? registerValidateFlusher : undefined
+                }
                 studioMode="front"
               />
             </div>
@@ -1040,6 +1075,9 @@ export default function App({
                 onCloseValidationFeedback={closeValidationDrawer}
                 onCmdValidate={handleValidatePreview}
                 onCmdBaseline={handlePipelineStart}
+                onRegisterValidateFlusher={
+                  editorView === 'editor-old' ? registerValidateFlusher : undefined
+                }
                 studioMode="editor"
               />
             </div>

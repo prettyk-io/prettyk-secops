@@ -1,0 +1,181 @@
+{
+  "meta": {
+    "project_id": "autotest-js-20260822",
+    "initiator_name": "",
+    "app_leader": "",
+    "assessment_purpose": "emergency",
+    "generate_act": false
+  },
+  "infrastructure": {
+    "base_url_override": "http://juice-shop:3000",
+    "allowed_extra_domains": "",
+    "blocked_urls_list": [],
+    "scanner_mode": "demon",
+    "scanner_work_timeout_min": 60,
+    "browser_type": "chrome-headless",
+    "debug_mode": false,
+    "idle_timeout_min": 30
+  },
+  "test_suites": {
+    "test_data_constructor": [],
+    "imports": [
+      {
+        "path": "resources/data_module.txt",
+        "kind": "data_file",
+        "as": "data_module"
+      }
+    ],
+    "pages": {
+      "login": {
+        "title": "Страница авторизации",
+        "path": "",
+        "constructor": "@ Title Страница Авторизации Juice Shop\n@ Description Шаги и элементы страницы авторизации Juice Shop\n@ Tag auth\n\nЭлемент email = css #email\nЭлемент password = css #password\nЭлемент submit = css #loginButton\n\nОперация Войти {\n  ВставитьЗначение email $username\n  ВставитьЗначение password $password_value\n  Нажать submit\n}\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+      },
+      "register": {
+        "title": "Форма регистрации",
+        "path": "",
+        "constructor": "@ Title Страница регистрации Juice Shop\n@ Description Шаги и элементы страницы регистрации Juice Shop\n@ Tag reg\n\nЭлемент email = id emailControl\nЭлемент password = id passwordControl\nЭлемент password2 = id repeatPasswordControl\nЭлемент answer = id securityAnswerControl\nЭлемент submit = id registerButton\n\nОперация Заполнить {\n  ВставитьЗначение email $username\n  ВставитьЗначение password $password_value\n  ВставитьЗначение password2 $password_value\n  ВставитьЗначение answer $security_answer\n}\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+      }
+    },
+    "scenarios": [
+      {
+        "scenario_name": "juice_shop_test_1",
+        "description": "Сценарии JuiceShop",
+        "continue_on_failure": true,
+        "steps": [
+          {
+            "id": "",
+            "description": "",
+            "constructor": "<!>\n@ Title juice_shop_test_1\n@ Description Сценарии JuiceShop\n\nПусть $username = СлучайныйEmail\n# Секрет $password_value = \"pk_password\"\nСекрет $security_answer = \"redacted\"\nПусть $run_id = UUID\nПусть $stamp = Сейчас \"%d.%m %H:%M\"\nПусть $search_q = \"Permafrost\"\n\nЛог \"прогон $run_id / $stamp, user $username\"\n\nНовыйКонтекст juice_ctx \"Juice Shop smoke\"\nВключитьВКонтекст juice_ctx\n\nОткрыть\nПауза 2\n\n? {\n  Нажать css \"button[aria-label='Close Welcome Banner']\"\n  Нажать css .cc-dismiss\n} > {\n  Лог \"баннеров не было\"\n} >! {\n  Пауза 1\n}\n\n? { ПроверитьНевидимостьЭлемента id registerButton } > { Лог \"А вот и синтаксический сахар\" } >! { Лог \"Подъехал\" }\n\nОткрыть /#/register\nЖдатьЭлемент id emailControl 10\n\nregister.Заполнить\nНажать css \"mat-select[aria-label='Selection list for the security question']\"\nНажать css \".cdk-overlay-pane mat-option\"\nНажать id registerButton\nПауза 2\nОткрыть /#/login\nЖдатьЭлемент id email 10\n\nlogin.Войти\nЖдатьПростойСети 1 20\nПусть $c = Сессия КоличествоCookies\nЛогАтаки \"вошли как $username, cookies $c\"\nПусть $n = Размер $data_module\n\nОткрыть\nЖдатьПростойСети 1 20\n\nЛог \"обход $n URL\"\nСканер juice_ctx 1\n\nОткрыть\nЖдатьПростойСети 1 20\n\nНажать css \"mat-card section[aria-label='Click for more information about the product']\"\nНажать css \"button[aria-label='Close Dialog']\"\nНажать css \"button[aria-label='Add to Basket']\"\nНажать css \"button[aria-label='Show the shopping cart']\"\nЖдатьURL /#/basket 15 true\n\nНажать id checkoutButton\nНажать css \"button[aria-label='Add a new address']\"\nВставитьЗначение css \"input[placeholder='Please provide a country.']\" \"Russia\"\nВставитьЗначение css \"input[placeholder='Please provide a name.']\" \"PK Smoke\"\nВставитьЗначение css \"input[placeholder='Please provide a mobile number.']\" \"9990001122\"\nВставитьЗначение css \"input[placeholder='Please provide a ZIP code.']\" \"123456\"\nВставитьЗначение id address \"Lenina 1\"\nВставитьЗначение css \"input[placeholder='Please provide a city.']\" \"Moscow\"\nВставитьЗначение css \"input[placeholder='Please provide a state.']\" \"Moscow\"\nНажать id submitButton\n\nНажать css mat-radio-button\nНажать css \"button[aria-label='Proceed to payment selection']\"\nНажать css mat-radio-button\nНажать css \"button[aria-label='Proceed to delivery method selection']\"\nНажать css mat-expansion-panel-header\nВставитьЗначение css \"mat-expansion-panel input[type='text']\" \"PK Smoke\"\nВставитьЗначение css \"mat-expansion-panel input[type='number']\" \"4111111111111111\"\nВыбратьПоТексту xpath \"(//mat-expansion-panel//select)[1]\" \"2\"\nВыбратьПоТексту xpath \"(//mat-expansion-panel//select)[2]\" \"2081\"\nНажать id submitButton\n\nНажать css mat-radio-button\nНажать css \"button[aria-label='Proceed to review']\"\nНажать id checkoutButton\n\nЖдатьURL /#/order-completion 20 true\nПроверитьТекстНаСтранице \"Thank you for your purchase!\" 10\nЛогАтаки \"заказ оформлен, run ${run_id}\"\n\nОткрыть /#/search\nНажать css \"button[aria-label='Open search']\"\nВставитьЗначение css \"#searchQuery input\" $search_q\nНажатьКлавишу ENTER\nЖдатьПростойСети 1 20\nНажать css \"mat-card section[aria-label='Click for more information about the product']\"\nЖдатьЭлемент css \"button[aria-label='Close Dialog']\" 10\nСкриншот juice_expensive.png\nПриложитьСкриншот \"Карточка ${search_q} / ${stamp}\"\nНажать css \"button[aria-label='Close Dialog']\"\n\nСканер juice_ctx 1\nАктивноеСканирование juice_ctx 2\nПассивноеСканирование 1\n\nФаззингВолна juice_search_q\n\nПриложитьСкриншот \"Juice Shop $stamp\"\nПриложитьТекст \"прогон $run_id / user $username / $stamp\" \"Метка прогона\"\nОтчёт xml juice_dojo.xml\nОтчёт html juice_dojo.html\nПриложитьФайл juice_dojo.xml\n",
+            "failsafe": false,
+            "retry": 0,
+            "retry_delay": 2,
+            "continue_on_failure": false,
+            "save_as": ""
+          },
+          {
+            "id": "",
+            "description": "deliberately unknown step (negative acceptance)",
+            "constructor": "ВыполнитьНеизвестноеДействие css \".kt\"",
+            "failsafe": false,
+            "retry": 0,
+            "retry_delay": 2,
+            "continue_on_failure": false,
+            "save_as": ""
+          }
+        ]
+      }
+    ],
+    "fuzzers": [
+      {
+        "id": "juice_search_q",
+        "label": "juice_search_q",
+        "algorithm": "sniper",
+        "targets": [
+          {
+            "url": "http://juice-shop:3000/rest/products/search?q=",
+            "method": "GET",
+            "corpus": "intent_boundary",
+            "body": ""
+          }
+        ],
+        "policy": {
+          "max_requests": 25,
+          "requests_per_second": 1,
+          "alert_on_server_error": true,
+          "latency_multiplier": 3,
+          "size_ratio": 3,
+          "size_abs_delta": 2048
+        },
+        "session_replay": false,
+        "headers": {},
+        "follow_redirects": true,
+        "message": {
+          "source": "template",
+          "method": "GET",
+          "url": "http://juice-shop:3000/rest/products/search?q=",
+          "history_url_contains": "",
+          "history_method": "GET",
+          "session_replay": true,
+          "headers": {},
+          "follow_redirects": true
+        },
+        "location": {
+          "kind": "query_param",
+          "name": "q"
+        },
+        "corpus": "intent_boundary"
+      },
+      {
+        "id": "juice0",
+        "label": "juice0",
+        "algorithm": "sniper",
+        "targets": [
+          {
+            "url": "http://juice-shop:3000/rest/products/search?q=",
+            "method": "GET",
+            "corpus": "intent_boundary",
+            "body": ""
+          },
+          {
+            "url": "http://juice-shop:3000/rest/products/search?q=",
+            "method": "POST",
+            "corpus": "intent_boundary",
+            "body": "{\"email\": \"{MASK_1}\", \"password\": \"{MASK_2}\"}"
+          }
+        ],
+        "policy": {
+          "max_requests": 25,
+          "requests_per_second": 1,
+          "alert_on_server_error": true,
+          "latency_multiplier": 3,
+          "size_ratio": 3,
+          "size_abs_delta": 2048
+        },
+        "session_replay": false,
+        "headers": {},
+        "follow_redirects": true,
+        "message": {
+          "source": "template",
+          "method": "GET",
+          "url": "http://juice-shop:3000/rest/products/search?q=",
+          "history_url_contains": "",
+          "history_method": "GET",
+          "session_replay": true,
+          "headers": {},
+          "follow_redirects": true
+        },
+        "location": {
+          "kind": "query_param",
+          "name": "q"
+        },
+        "corpus": "intent_boundary"
+      }
+    ],
+    "folders": {},
+    "editor_folders": {
+      "pages": [
+        {
+          "id": "folder_1",
+          "title": "Модели страниц Juice Shop",
+          "members": [
+            "login",
+            "register"
+          ]
+        }
+      ],
+      "scenarios": [
+        {
+          "id": "folder_1",
+          "title": "Сценарии Juice Shop",
+          "members": [
+            "juice_shop_test_1"
+          ]
+        }
+      ],
+      "modules": [],
+      "fuzzers": [],
+      "resources": []
+    }
+  }
+}

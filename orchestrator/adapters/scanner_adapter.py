@@ -113,18 +113,33 @@ class ScannerAdapter(BaseAdapter):
         return bool(default)
 
     @staticmethod
+    def _zap_private(instance, base_name, default=None):
+        """Читает приватный атрибут zapv2-клиента по обоим вариантам name-mangling.
+
+        Актуальный пакет: class ZAPv2 -> self.__proxies mangled в _ZAPv2__proxies.
+        Старые форки были class zapv2 -> _zapv2__proxies. Живой объект (не мок) отдаёт
+        только первый вариант; читаем оба, чтобы не ловить AttributeError на реальном клиенте.
+        """
+        for candidate in (f"_ZAPv2__{base_name}", f"_zapv2__{base_name}"):
+            if hasattr(instance, candidate):
+                return getattr(instance, candidate)
+        return default
+
+    @staticmethod
     def _install_api_timeouts(scanner, timeout: float) -> None:
         """Подставить timeout в zapv2._request_api / urlopen (без форка пакета)."""
-        proxies = scanner._zapv2__proxies
-        apikey = scanner._zapv2__apikey
-        validate = getattr(scanner, "_zapv2__validate_status_code", False)
+        proxies = ScannerAdapter._zap_private(scanner, "proxies") or {}
+        apikey = ScannerAdapter._zap_private(scanner, "apikey")
+        validate = ScannerAdapter._zap_private(scanner, "validate_status_code", False)
 
         def _request_api(url, query=None, method="GET", body=None):
-            if not url.startswith("http://scanner/"):
+            # zapv2 шлёт API-URL с хостом `zap` (http://zap/JSON/...); legacy-форки — `scanner`.
+            # Принимаем оба, чтобы timeout-патч был совместим с реальным пакетом.
+            if not (url.startswith("http://zap/") or url.startswith("http://scanner/")):
                 raise ValueError("A non scanner API url was specified " + url)
             with requests.Session() as session:
                 if apikey is not None:
-                    session.headers["X-scanner-API-Key"] = apikey
+                    session.headers["X-ZAP-API-Key"] = apikey
                 response = session.request(
                     method,
                     url,
@@ -166,7 +181,18 @@ class ScannerAdapter(BaseAdapter):
                 proxies={"http": api, "https": api},
             )
             self._api_timeout = scanner_api_timeout_seconds()
-            self._install_api_timeouts(self._scanner, self._api_timeout)
+        # Идемпотентная подмена urlopen/_request_api с timeout. Падение установки
+        # НЕ должно оставлять _scanner полу-битым (_connected=False при живом клиенте,
+        # у которого urlopen остался без timeout). При ошибке сбрасываем клиент целиком.
+        if self._scanner is not None and not getattr(self._scanner, "_pk_timeout_installed", False):
+            try:
+                self._install_api_timeouts(self._scanner, self._api_timeout)
+            except Exception as e:
+                self._scanner = None
+                self._connected = False
+                logger.error("scanner API timeout install failed: %s", e)
+                raise
+            self._scanner._pk_timeout_installed = True
             logger.debug("scanner API client timeout=%ss", self._api_timeout)
         try:
             self._scanner.core.version
@@ -175,6 +201,13 @@ class ScannerAdapter(BaseAdapter):
         except Exception as e:
             logger.error(f"Failed to connect to scanner: {e}")
             raise
+        # BOX-LIVE-4: свежая сессия на каждый прогон. Без сброса ZAP копит alerts между
+        # run'ами (21 600+), и _fetch_alerts_paginated упирается в глубокий slice
+        # `start=21600` → ProxyError → рестарт контейнера. Сброс строго один раз на процесс
+        # (при reconnect-е посреди прогона НЕ сбрасываем: накопление внутри run валидно).
+        if not getattr(self, "_alerts_reset_once", False):
+            self.reset_alerts()
+            self._alerts_reset_once = True
 
     # ========== LOCAL SERVERS (Network add-on) ==========
 
@@ -2448,9 +2481,26 @@ class ScannerAdapter(BaseAdapter):
             
             time.sleep(5)
 
-        alerts = self._fetch_alerts_paginated()
-        logger.info(f"Active scan completed, found {len(alerts)} alerts")
-        return len(alerts)
+        count = self._count_alerts(baseurl=url)
+        logger.info(f"Active scan completed, found {count} alerts")
+        return count
+
+    def _count_alerts(self, *, baseurl=None):
+        """Число alerts БЕЗ вычитки всех объектов пагинацией.
+
+        active_scan возвращает только счётчик; вычитывать 25k+ объектов (129 запросов подряд)
+        — источник глубокого slice `start=21600` и зависания демона. `number_of_alerts` считает
+        на стороне ZAP одним запросом; фолбэк — пагинация (старые биндинги).
+        """
+        self._ensure_connected()
+        kwargs = {}
+        if baseurl:
+            kwargs["baseurl"] = str(baseurl)
+        try:
+            return int(self._scanner.core.number_of_alerts(**kwargs))
+        except Exception as e:
+            logger.warning("number_of_alerts unavailable (%s); fallback to paginated count", e)
+            return len(self._fetch_alerts_paginated(baseurl=baseurl))
 
     def active_scan_status(self, scan_id):
         self._ensure_connected()
@@ -2784,10 +2834,35 @@ class ScannerAdapter(BaseAdapter):
 
     # ========== АЛЕРТЫ ==========
 
-    def _fetch_alerts_paginated(self, *, riskid=None, page_size=200):
+    def reset_alerts(self):
+        """Каноничная свежая сессия ZAP на каждый прогон (follow-up BOX-LIVE-4).
+
+        Вызывается один раз на старт каждого run (из `_ensure_connected`). Без сброса ZAP
+        копит alerts И site-tree между run'ами: `_fetch_alerts_paginated` упирается в глубокий
+        slice (`start=21600`) → ProxyError → рестарт контейнера. `new_session` чистит и alerts,
+        и сайты (детерминированный per-run объём); фолбэк — `delete_all_alerts` (только alerts).
+        Возвращает True при успехе, False при недоступности — прогон не отбрасывается.
+        """
+        self._ensure_connected()
+        try:
+            self._scanner.core.new_session()
+            logger.info("scanner new session (fresh per run)")
+            return True
+        except Exception as e:
+            logger.warning("scanner new_session unavailable (%s); fallback delete_all_alerts", e)
+        try:
+            self._scanner.core.delete_all_alerts()
+            logger.info("scanner alerts reset (fresh session for run)")
+            return True
+        except Exception as e:
+            logger.warning("scanner delete_all_alerts skipped: %s", e)
+            return False
+
+    def _fetch_alerts_paginated(self, *, riskid=None, baseurl=None, page_size=200):
         """
         scanner core.alerts() без start/count отдаёт мегабайты JSON → IncompleteRead.
-        Тянем страницами; riskid (0..3) сужает выборку на стороне scanner.
+        Тянем страницами; riskid (0..3) и baseurl (scope URL) сужают выборку НА СТОРОНЕ
+        scanner ДО пагинации — глубокий slice по всей истории сессии не возникает.
         """
         self._ensure_connected()
         out = []
@@ -2797,11 +2872,15 @@ class ScannerAdapter(BaseAdapter):
             kwargs = {"start": start, "count": size}
             if riskid is not None:
                 kwargs["riskid"] = str(riskid)
+            if baseurl:
+                kwargs["baseurl"] = str(baseurl)
             try:
                 batch = self._scanner.core.alerts(**kwargs)
             except TypeError:
-                # Старые биндинги без riskid
-                batch = self._scanner.core.alerts(start=start, count=size)
+                # Старые биндинги без riskid/baseurl
+                kwargs.pop("riskid", None)
+                kwargs.pop("baseurl", None)
+                batch = self._scanner.core.alerts(**kwargs)
             if not batch:
                 break
             if not isinstance(batch, list):
@@ -2842,11 +2921,13 @@ class ScannerAdapter(BaseAdapter):
             "informational": "0",
             "info": "0",
         }.get(risk_l)
-        alerts = self._fetch_alerts_paginated(riskid=riskid)
+        alerts = self._fetch_alerts_paginated(riskid=riskid, baseurl=url)
         if context_name:
             alerts = [a for a in alerts if a.get("contextId") == context_name]
         if risk:
             alerts = [a for a in alerts if self._alert_matches_risk(a, risk_l)]
+        # url → baseurl ушёл на сторону scanner ДО пагинации (scope/prefix); точное
+        # совпадение по-прежнему добивается клиентски (baseurl не exact-match).
         if url:
             alerts = [a for a in alerts if a.get("url") == url]
         return alerts

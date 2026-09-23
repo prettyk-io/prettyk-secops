@@ -45,10 +45,17 @@ def _mock_page():
 
 
 def _new_worker(page=None) -> "object":
-    """Создать свежий _BrowserWorker с готовой страницей (без глобального синглтона)."""
+    """Создать свежий _BrowserWorker с готовой страницей (без глобального синглтона).
+
+    При ``page=None`` подменяем CDP endpoint на гарантированно мёртвый
+    (``127.0.0.1:1``), чтобы ``_ensure_browser`` в «no-browser» сценариях не
+    подцепил живой контейнер, даже если ``PK_BROWSER_CDP_ENDPOINT`` задан.
+    """
     import browser.browser_service as bs
     worker = bs._BrowserWorker()
     worker._page = page
+    if page is None:
+        worker._cdp_endpoint_override = "http://127.0.0.1:1"
     return worker
 
 
@@ -582,6 +589,7 @@ def test_ensure_browser_requires_cdp_endpoint():
     import browser.browser_service as bs
 
     worker = _new_worker(None)
+    worker._cdp_endpoint_override = None  # этот тест проверяет env-unset ветку
     with patch.dict("os.environ", {}, clear=True):
         result = worker._ensure_browser()
 
@@ -960,6 +968,151 @@ def test_enrich_click_event_has_empty_value_ref():
     worker._enrich_event(evt)
     assert evt["valueClass"] == "unknown"
     assert evt["valueRef"] == ""
+
+
+# ── ACT-BE: observe-события длинных действий ─────────────────────────────────
+
+
+def _new_act_worker():
+    """Свежий worker с обнулённой observe-очередью для action-event тестов."""
+    worker = _new_worker(None)
+    worker._observe_last_event_id = 0
+    worker._observed_events.clear()
+    return worker
+
+
+def test_on_wheel_pushes_wheel_event_with_delta():
+    import browser.browser_service as bs
+    worker = _new_act_worker()
+    bs._on_wheel({"tag": "div", "delta": {"dx": 0, "dy": -120}}, worker)
+
+    assert len(worker._observed_events) == 1
+    evt = worker._observed_events[0]
+    assert evt["action"] == "wheel"
+    assert evt["delta"] == {"dx": 0, "dy": -120}
+    assert evt["element"]["tag"] == "div"
+
+
+def test_on_scroll_pushes_scroll_event_with_delta():
+    import browser.browser_service as bs
+    worker = _new_act_worker()
+    bs._on_scroll({"tag": "body", "delta": {"dx": 0, "dy": 40}}, worker)
+
+    evt = worker._observed_events[0]
+    assert evt["action"] == "scroll"
+    assert evt["delta"] == {"dx": 0, "dy": 40}
+
+
+def test_on_drag_pushes_drag_event_with_coords():
+    import browser.browser_service as bs
+    worker = _new_act_worker()
+    bs._on_drag(
+        {"tag": "div", "coords": {"startX": 1, "startY": 2, "endX": 30, "endY": 40}},
+        worker,
+    )
+
+    evt = worker._observed_events[0]
+    assert evt["action"] == "drag"
+    assert evt["coords"] == {"startX": 1, "startY": 2, "endX": 30, "endY": 40}
+
+
+def test_on_hover_pushes_hover_event():
+    import browser.browser_service as bs
+    worker = _new_act_worker()
+    bs._on_hover({"tag": "button", "id": "h-btn"}, worker)
+
+    evt = worker._observed_events[0]
+    assert evt["action"] == "hover"
+    assert evt["element"]["id"] == "h-btn"
+
+
+def test_on_key_printable_redacts_value():
+    """ACT-BE: печатная клавиша = $value, сам символ не утекает в key."""
+    import browser.browser_service as bs
+    worker = _new_act_worker()
+    bs._on_key(
+        {"tag": "input", "type": "text", "key": "x", "printable": True},
+        worker,
+    )
+
+    evt = worker._observed_events[0]
+    assert evt["action"] == "key"
+    assert evt["key"] == ""          # символ не сохраняется
+    assert evt["valueRef"] == "$value"
+
+
+def test_on_key_nonprintable_keeps_key_name():
+    """ACT-BE: непечатная клавиша (Enter) → key сохраняется, valueRef пуст."""
+    import browser.browser_service as bs
+    worker = _new_act_worker()
+    bs._on_key(
+        {"tag": "input", "type": "text", "key": "Enter", "printable": False},
+        worker,
+    )
+
+    evt = worker._observed_events[0]
+    assert evt["action"] == "key"
+    assert evt["key"] == "Enter"
+    assert evt["valueRef"] == ""
+
+
+def test_on_key_printable_secret_ref():
+    """ACT-BE: печатная клавиша в password-поле → valueRef=$secret."""
+    import browser.browser_service as bs
+    worker = _new_act_worker()
+    bs._on_key(
+        {"tag": "input", "type": "password", "key": "p", "printable": True},
+        worker,
+    )
+
+    evt = worker._observed_events[0]
+    assert evt["valueRef"] == "$secret"
+    assert evt["key"] == ""
+    assert evt["valueClass"] == "secret"
+
+
+def test_on_focus_pushes_focus_event():
+    import browser.browser_service as bs
+    worker = _new_act_worker()
+    bs._on_focus({"tag": "input", "id": "f-in"}, worker)
+
+    evt = worker._observed_events[0]
+    assert evt["action"] == "focus"
+    assert evt["element"]["id"] == "f-in"
+
+
+def test_on_input_select_tag_becomes_select_action():
+    """ACT-BE: <select> change → action='select' (не 'type'), valueRef=$value."""
+    import browser.browser_service as bs
+    worker = _new_act_worker()
+    bs._on_input(
+        {"tag": "select", "name": "country", "value": "RU",
+         "rect": {"x": 0, "y": 0, "w": 100, "h": 30}},
+        worker,
+    )
+
+    evt = worker._observed_events[0]
+    assert evt["action"] == "select"
+    assert evt["valueRef"] == "$value"
+    assert "RU" not in str(evt)
+
+
+def test_enrich_preserves_key_and_select_action_fields():
+    """ACT-BE: _enrich_event не перетирает valueRef у key/select/wheel/hover."""
+    import browser.browser_service as bs
+    worker = _new_worker(None)
+
+    key_evt = {"action": "key", "key": "", "valueClass": "unknown", "valueRef": "$value",
+               "element": {"tag": "input"}}
+    worker._enrich_event(key_evt)
+    assert key_evt["valueRef"] == "$value"
+
+    wheel_evt = {"action": "wheel", "delta": {"dx": 0, "dy": 1},
+                 "element": {"tag": "div"}}
+    worker._enrich_event(wheel_evt)
+    assert wheel_evt["valueClass"] == "unknown"
+    assert wheel_evt["valueRef"] == ""
+    assert wheel_evt["delta"] == {"dx": 0, "dy": 1}
 
 
 # ── BBA-5: negative / reconnect — честный disconnected, без fake steps ───────

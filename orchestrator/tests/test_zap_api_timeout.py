@@ -58,7 +58,7 @@ def test_install_api_timeouts_request_api_passes_timeout():
     kwargs = session.request.call_args.kwargs
     assert kwargs["timeout"] == 42.0
     assert kwargs["proxies"] == {"http": "http://127.0.0.1:8080"}
-    assert session.headers.get("X-scanner-API-Key") == "k"
+    assert session.headers.get("X-ZAP-API-Key") == "k"
 
 
 def test_install_api_timeouts_rejects_non_scanner_url():
@@ -84,3 +84,57 @@ def test_install_api_timeouts_urlopen_passes_timeout():
 
     assert text == "body"
     assert get.call_args.kwargs["timeout"] == 33.0
+
+
+def test_install_api_timeouts_real_zapv2_urlopen_passes_timeout():
+    """BOX-LIVE-3: живой объект ZAPv2 отдаёт _ZAPv2__proxies (не _zapv2__*)."""
+    from zapv2 import ZAPv2
+
+    scanner = ZAPv2(apikey="k", proxies={"http": "http://127.0.0.1:8080"})
+
+    with patch("adapters.scanner_adapter.requests.get") as get:
+        get.return_value = MagicMock(text="body")
+        ScannerAdapter._install_api_timeouts(scanner, timeout=42.0)
+        text = scanner.urlopen("https://scanner/json/foo")
+
+    assert text == "body"
+    assert get.call_args.kwargs["timeout"] == 42.0
+    assert get.call_args.kwargs["proxies"] == {"http": "http://127.0.0.1:8080"}
+
+
+def test_install_api_timeouts_real_zapv2_request_api_passes_timeout():
+    """BOX-LIVE-3: _request_api на реальном ZAPv2 читает _ZAPv2__apikey + proxies + host `zap`."""
+    from zapv2 import ZAPv2
+
+    scanner = ZAPv2(apikey="k", proxies={"http": "http://127.0.0.1:8080"})
+
+    fake_resp = MagicMock()
+    fake_resp.status_code = 200
+    fake_resp.text = "ok"
+    session = MagicMock()
+    session.request.return_value = fake_resp
+    session.headers = {}
+    session.__enter__ = MagicMock(return_value=session)
+    session.__exit__ = MagicMock(return_value=False)
+
+    with patch("adapters.scanner_adapter.requests.Session", return_value=session):
+        ScannerAdapter._install_api_timeouts(scanner, timeout=42.0)
+        out = scanner._request_api("http://zap/JSON/core/view/version/")
+
+    assert out is fake_resp
+    kwargs = session.request.call_args.kwargs
+    assert kwargs["timeout"] == 42.0
+    assert kwargs["proxies"] == {"http": "http://127.0.0.1:8080"}
+    assert session.headers.get("X-ZAP-API-Key") == "k"
+
+
+def test_zap_private_reads_both_mangled_names():
+    """BOX-LIVE-3: helper читает и _ZAPv2__*, и legacy _zapv2__*, и отдаёт default."""
+    real = SimpleNamespace()
+    real._ZAPv2__proxies = {"http": "http://127.0.0.1:8080"}
+    legacy = SimpleNamespace()
+    legacy._zapv2__proxies = {"https": "http://127.0.0.1:8080"}
+
+    assert ScannerAdapter._zap_private(real, "proxies") == {"http": "http://127.0.0.1:8080"}
+    assert ScannerAdapter._zap_private(legacy, "proxies") == {"https": "http://127.0.0.1:8080"}
+    assert ScannerAdapter._zap_private(SimpleNamespace(), "proxies", default="d") == "d"

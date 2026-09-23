@@ -35,9 +35,9 @@ services:
       defectdojo-initializer:
         condition: service_completed_successfully
       defectdojo-postgres:
-        condition: service_started
+        condition: service_healthy
       defectdojo-valkey:
-        condition: service_started
+        condition: service_healthy
     entrypoint:
       [
         "/wait-for-it.sh",
@@ -68,9 +68,9 @@ services:
       defectdojo-initializer:
         condition: service_completed_successfully
       defectdojo-postgres:
-        condition: service_started
+        condition: service_healthy
       defectdojo-valkey:
-        condition: service_started
+        condition: service_healthy
     entrypoint:
       [
         "/wait-for-it.sh",
@@ -95,9 +95,9 @@ services:
       defectdojo-initializer:
         condition: service_completed_successfully
       defectdojo-postgres:
-        condition: service_started
+        condition: service_healthy
       defectdojo-valkey:
-        condition: service_started
+        condition: service_healthy
     entrypoint:
       [
         "/wait-for-it.sh",
@@ -119,7 +119,7 @@ services:
     container_name: defectdojo-initializer
     depends_on:
       defectdojo-postgres:
-        condition: service_started
+        condition: service_healthy
     entrypoint:
       [
         "/wait-for-it.sh",
@@ -154,6 +154,12 @@ services:
       POSTGRES_PASSWORD: defectdojo
     volumes:
       - defectdojo_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U defectdojo -d defectdojo"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
     networks:
       - pk-net
 
@@ -162,6 +168,12 @@ services:
     container_name: defectdojo-valkey
     volumes:
       - defectdojo_redis:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
     networks:
       - pk-net
 

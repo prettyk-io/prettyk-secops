@@ -16,12 +16,15 @@ import {
 import { getBrowserSession } from '../studio/browserSession';
 import type { BrowserSessionStatus } from '../studio/browserSession';
 import type { ReplayStepState } from './replayRunner';
+import { runReplay } from './replayRunner';
 import { useScenarioDeckStore } from '../studio/ScenarioDeckStore';
-import type { ScenarioStepModel } from '../studio/scenarioStepModel';
+import type { ScenarioStepModel, ActionKind } from '../studio/scenarioStepModel';
 import { computeCanvasClickToViewport } from './clickCoordinate';
 import { useBrowserCanvasStream } from './useBrowserCanvasStream';
 import { CandidateOverlay } from './CandidateOverlay';
 import type { CandidateElement } from './candidateInspect';
+import { matchStepToCandidate, replayHighlightLabel } from './replayHighlight';
+import { ReplayHighlightOverlay } from './ReplayHighlightOverlay';
 
 export type BrowserStageMode = 'author' | 'record' | 'debug';
 
@@ -80,6 +83,13 @@ export function BrowserStage({
   // ── BBA-FE-4: живой overlay кандидатов observe ──
   const [candidates, setCandidates] = useState<CandidateElement[]>([]);
   const [inspectOn, setInspectOn] = useState(false);
+
+  // ── RP-VIZ: подсветка активного/ошибочного шага replay ──
+  const [replayHighlight, setReplayHighlight] = useState<{
+    target: CandidateElement | null;
+    label: string;
+    error: string | null;
+  } | null>(null);
 
   // ─ WS URL: SOR-F1 — динамический relay endpoint из pk-control, fallback на хардкод
   const wsUrl = cdpStatus?.canvasUrl || (() => {
@@ -172,6 +182,62 @@ export function BrowserStage({
     if (inspectOn || cdpObserving) await loadCandidates();
   }, [inspectOn, cdpObserving, loadCandidates]);
 
+  // ── ACT-FE: палитра действий поверх кандидата ──
+  const handleCandidateAction = useCallback(async (c: CandidateElement, action: ActionKind) => {
+    // Click/Type/Hover/Focus/Select/PressKey → target = cssSelector + strategy css.
+    // Wheel/Scroll/Drag → координатные (наводятся на rect-центр кандидата).
+    const session = getBrowserSession();
+    let step: ScenarioStepModel;
+    if (action === 'Wheel' || action === 'Scroll' || action === 'Drag') {
+      const cx = c.rect.x + c.rect.w / 2;
+      const cy = c.rect.y + c.rect.h / 2;
+      const cx2 = cx + (c.rect.w > 0 ? 40 : 0);
+      const cy2 = cy + (c.rect.h > 0 ? 40 : 0);
+      const payload = action === 'Drag' ? `${cx} ${cy} ${cx2} ${cy2}` : '0 120';
+      step = {
+        id: `inspect-${action.toLowerCase()}-${Date.now()}`,
+        action,
+        strategy: 'css',
+        strategyValue: c.cssSelector,
+        payload,
+        continueOnError: false,
+        led: 'queued',
+      };
+    } else if (action === 'Type' || action === 'Select') {
+      step = {
+        id: `inspect-${action.toLowerCase()}-${Date.now()}`,
+        action,
+        strategy: 'css',
+        strategyValue: c.cssSelector,
+        payload: '$value',
+        continueOnError: false,
+        led: 'queued',
+      };
+    } else if (action === 'PressKey') {
+      step = {
+        id: `inspect-${action.toLowerCase()}-${Date.now()}`,
+        action,
+        strategy: 'css',
+        strategyValue: c.cssSelector,
+        payload: '$value',
+        continueOnError: false,
+        led: 'queued',
+      };
+    } else {
+      step = {
+        id: `inspect-${action.toLowerCase()}-${Date.now()}`,
+        action,
+        strategy: 'css',
+        strategyValue: c.cssSelector,
+        payload: '',
+        continueOnError: false,
+        led: 'queued',
+      };
+    }
+    await session.executeStep(step);
+    if (inspectOn || cdpObserving) await loadCandidates();
+  }, [inspectOn, cdpObserving, loadCandidates]);
+
   const toggleInspect = useCallback(async () => {
     if (inspectOn) {
       setInspectOn(false);
@@ -243,21 +309,47 @@ export function BrowserStage({
     setReplayError(null);
     setReplayErrorScreenshot(null);
     setErrorModalOpen(false);
+    setReplayHighlight(null);
 
     const session = getBrowserSession();
-    const result = await session.replayScenario(steps, {
-      signal: abort.signal,
-      startIndex,
-      onStepState: (st) => {
-        setReplayStates((prev) => {
-          const next = prev.length === steps.length
-            ? [...prev]
-            : steps.map((s, i) => ({ stepId: s.id, index: i, status: 'idle' as const }));
-          next[st.index] = st;
-          return next;
-        });
+
+    // RP-VIZ: снимок кандидатов для подсветки шагов по selector/имени.
+    let candidates: CandidateElement[] = [];
+    try { candidates = await session.inspectCandidates('operator'); } catch { candidates = []; }
+
+    // Пошаговый прогон (не batch): каждый шаг эмитит running → passed/failed,
+    // давая живую «прогулку» по странице с подсветкой активного шага.
+    const result = await runReplay(
+      steps,
+      (step, signal) => session.executeStep(step, signal),
+      {
+        signal: abort.signal,
+        startIndex,
+        stepDelayMs: 600,
+        onStepState: (st) => {
+          setReplayStates((prev) => {
+            const next = prev.length === steps.length
+              ? [...prev]
+              : steps.map((s, i) => ({ stepId: s.id, index: i, status: 'idle' as const }));
+            next[st.index] = st;
+            return next;
+          });
+          // RP-VIZ: подсветка активного/ошибочного шага.
+          const step = steps[st.index];
+          if (!step) return;
+          const target = matchStepToCandidate(step, candidates);
+          if (st.status === 'running') {
+            setReplayHighlight({ target, label: replayHighlightLabel(step, target), error: null });
+          } else if (st.status === 'failed') {
+            setReplayHighlight((prev) => ({
+              target: target ?? prev?.target ?? null,
+              label: replayHighlightLabel(step, target ?? prev?.target ?? null),
+              error: st.error ?? 'Шаг завершился с ошибкой',
+            }));
+          }
+        },
       },
-    });
+    );
 
     setPlaying(false);
     playAbortRef.current = null;
@@ -274,6 +366,9 @@ export function BrowserStage({
           setErrorModalOpen(true);
         }
       }
+    } else {
+      // Успешное завершение — убираем подсветку последнего шага.
+      setReplayHighlight(null);
     }
   }, []);
 
@@ -295,6 +390,7 @@ export function BrowserStage({
     setReplayError(null);
     setReplayErrorScreenshot(null);
     setErrorModalOpen(false);
+    setReplayHighlight(null);
     playAbortRef.current = null;
   }, []);
   // ВАЖНО: `?? []` в zustand-селекторе создаёт НОВЫЙ массив на каждом getSnapshot,
@@ -407,6 +503,17 @@ export function BrowserStage({
                 frameWidth={frameInfo.current?.frameWidth ?? 1280}
                 frameHeight={frameInfo.current?.frameHeight ?? 800}
                 onCandidateClick={handleCandidateClick}
+                onCandidateAction={handleCandidateAction}
+              />
+            )}
+            {replayHighlight && (
+              <ReplayHighlightOverlay
+                target={replayHighlight.target}
+                label={replayHighlight.label}
+                error={replayHighlight.error}
+                canvasRef={canvasRef}
+                frameWidth={frameInfo.current?.frameWidth ?? 1280}
+                frameHeight={frameInfo.current?.frameHeight ?? 800}
               />
             )}
           </div>

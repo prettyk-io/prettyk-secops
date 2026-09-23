@@ -27,6 +27,7 @@ services:
     # https://www.zaproxy.org/docs/desktop/addons/network/options/localservers/
     command:
       - zap.sh
+      - -Xmx8g
       - -daemon
       - -port
       - "8080"

@@ -38,12 +38,16 @@ def _mock_page():
     page.keyboard.press = MagicMock()
     page.mouse = MagicMock()
     page.mouse.wheel = MagicMock()
+    page.mouse.move = MagicMock()
+    page.mouse.down = MagicMock()
+    page.mouse.up = MagicMock()
 
     locator = MagicMock()
     locator.click = MagicMock()
     locator.fill = MagicMock()
     locator.select_option = MagicMock()
     locator.hover = MagicMock()
+    locator.focus = MagicMock()
     locator.scroll_into_view_if_needed = MagicMock()
 
     page.locator = MagicMock(return_value=locator)
@@ -62,6 +66,9 @@ def _new_worker(page=None) -> "object":
     import browser.browser_service as bs
     worker = bs._BrowserWorker()
     worker._page = page
+    if page is None:
+        # Hermetic: не даём _ensure_browser подцепить живой CDP-контейнер.
+        worker._cdp_endpoint_override = "http://127.0.0.1:1"
     return worker
 
 
@@ -214,6 +221,64 @@ def test_step_execute_hover():
     r = worker._cmd_step_execute({"action": "hover", "target": ".menu"})
     assert r["status"] == "passed"
     locator.hover.assert_called_once_with(timeout=5000)
+
+
+# ── ACT-BE: wheel / drag / focus ─────────────────────────────────────────────
+
+
+def test_step_execute_wheel():
+    page, _ = _mock_page()
+    worker = _new_worker(page)
+    r = worker._cmd_step_execute({"action": "wheel", "value": "120,-40"})
+    assert r["status"] == "passed"
+    page.mouse.wheel.assert_called_once_with(120.0, -40.0)
+
+
+def test_step_execute_wheel_requires_value():
+    worker = _new_worker(_mock_page()[0])
+    r = worker._cmd_step_execute({"action": "wheel"})
+    assert r["status"] == "failed"
+    assert "dx,dy" in r["error"]
+
+
+def test_step_execute_wheel_bad_value_fails():
+    worker = _new_worker(_mock_page()[0])
+    r = worker._cmd_step_execute({"action": "wheel", "value": "not-numbers"})
+    assert r["status"] == "failed"
+    assert "dx,dy" in r["error"]
+
+
+def test_step_execute_drag():
+    page, _ = _mock_page()
+    worker = _new_worker(page)
+    r = worker._cmd_step_execute({"action": "drag", "value": "10,20,110,220"})
+    assert r["status"] == "passed"
+    page.mouse.move.assert_any_call(10.0, 20.0)
+    page.mouse.down.assert_called_once()
+    page.mouse.move.assert_any_call(110.0, 220.0, steps=5)
+    page.mouse.up.assert_called_once()
+
+
+def test_step_execute_drag_requires_value():
+    worker = _new_worker(_mock_page()[0])
+    r = worker._cmd_step_execute({"action": "drag"})
+    assert r["status"] == "failed"
+    assert "x1,y1,x2,y2" in r["error"]
+
+
+def test_step_execute_drag_bad_value_fails():
+    worker = _new_worker(_mock_page()[0])
+    r = worker._cmd_step_execute({"action": "drag", "value": "1,2,3"})
+    assert r["status"] == "failed"
+    assert "x1,y1,x2,y2" in r["error"]
+
+
+def test_step_execute_focus():
+    page, locator = _mock_page()
+    worker = _new_worker(page)
+    r = worker._cmd_step_execute({"action": "focus", "target": "input", "strategy": "css"})
+    assert r["status"] == "passed"
+    locator.focus.assert_called_once_with(timeout=5000)
 
 
 # ── стратегии локаторов ─────────────────────────────────────────────────────

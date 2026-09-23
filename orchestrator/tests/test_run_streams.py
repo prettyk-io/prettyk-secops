@@ -3,7 +3,7 @@
 # Стратегия: fakeredis — полноценная in-memory реализация Streams-команд
 # (XREADGROUP / XACK / XPENDING / XAUTOCLAIM). Это не мок: та же семантика
 # сообщений, что у живого Valkey 8. Смысловой сдвиг времени idle в тестах
-# не эмулируем — механику перехвата проверяем min_idle_ms=1, а окно 90с
+# не эмулируем — механику перехвата проверяем min_idle_ms=1, а окно 60с
 # зафиксировано константой DEFAULT_MIN_IDLE_MS (unit-проверка контракта).
 from __future__ import annotations
 
@@ -65,8 +65,8 @@ def test_all_stream_keys_have_prettyk_prefix(coord, client):
 
 
 def test_default_min_idle_matches_lease_window():
-    """Контракт: окно перехвата = 90с, согласовано с RunLeaseBridge."""
-    assert DEFAULT_MIN_IDLE_MS == 90_000
+    """Контракт: окно перехвата = 60с, согласовано с RunLeaseBridge."""
+    assert DEFAULT_MIN_IDLE_MS == 60_000
 
 
 # ── XADD / XREADGROUP ───────────────────────────────────────────────────────

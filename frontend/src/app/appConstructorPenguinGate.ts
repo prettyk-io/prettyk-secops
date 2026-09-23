@@ -18,6 +18,7 @@ export async function runConstructorPenguinGate(
   data: unknown,
   catalog: KeywordCatalog,
   onFail: (drawer: ValidationFeedback) => void,
+  onBackendUnavailable?: () => void,
 ): Promise<boolean> {
   const fields = collectConstructorFields(data);
   const clientFails = [
@@ -25,6 +26,10 @@ export async function runConstructorPenguinGate(
     ...collectFuzzerRefFails(fields, data),
   ];
   const beFails = await validateConstructorsBatch(fields, data);
+  // BOX-VAL-1: backend-валидатор недоступен (null) — не молчаливый успех.
+  if (beFails === null) {
+    onBackendUnavailable?.();
+  }
   const fails = mergeConstructorFails(beFails, clientFails);
   if (fails.length === 0) {
     return true;

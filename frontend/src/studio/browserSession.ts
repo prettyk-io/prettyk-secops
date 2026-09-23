@@ -519,6 +519,14 @@ export function scenarioStepToBackendDto(step: ScenarioStepModel): BackendStepDt
       return { action: 'select_option', target: step.strategyValue, value: step.payload, strategy: step.strategy, step_id: step.id };
     case 'PressKey':
       return { action: 'press_key', target: step.payload, step_id: step.id };
+    case 'Wheel':
+      return { action: 'wheel', value: step.payload, step_id: step.id };
+    case 'Scroll':
+      return { action: 'scroll', value: step.payload, step_id: step.id };
+    case 'Drag':
+      return { action: 'drag', value: step.payload, step_id: step.id };
+    case 'Focus':
+      return { action: 'focus', target: step.strategyValue, strategy: step.strategy, step_id: step.id };
     default:
       // Let, Secret, Generate*, Crawl, ActiveScan, Check, FuzzWave, Mutate,
       // Intruder, scannerReport — DSL-only, no-op в браузерном replay.
@@ -562,7 +570,7 @@ export interface CdpCandidate {
 export interface CdpObservation {
   eventId: string;
   timestamp: number;
-  action: 'click' | 'type';
+  action: 'click' | 'type' | 'wheel' | 'scroll' | 'drag' | 'hover' | 'key' | 'focus' | 'select';
   element: {
     tag: string;
     id?: string;
@@ -575,6 +583,12 @@ export interface CdpObservation {
   candidates?: CdpCandidate[];
   isAmbiguous?: boolean;
   valueClass?: 'secret' | 'email' | 'phone' | 'unknown';
+  /** wheel/scroll: прокрутка (deltaX/deltaY). */
+  delta?: { dx?: number; dy?: number };
+  /** drag: координаты start→end. */
+  coords?: { x1: number; y1: number; x2: number; y2: number };
+  /** key: имя клавиши (печатные — уже `$value` от Boss). */
+  keys?: string;
 }
 
 // ---------------------------------------------------------------------------

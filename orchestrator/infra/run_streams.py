@@ -7,7 +7,7 @@
 #   - worker выполняет run, периодически шлёт heartbeat в RunLeaseBridge,
 #     при завершении подтверждает задание (XACK)
 #   - если worker замолчал — другой worker перехватывает его pending-задания
-#     (XAUTOCLAIM с min_idle_time = 90с, согласовано с RunLeaseBridge)
+#     (XAUTOCLAIM с min_idle_time = 60с, согласовано с RunLeaseBridge)
 #
 # Все ключи с префиксом prettyk:run: — единое пространство имён Run Control Plane.
 #
@@ -25,7 +25,7 @@ from typing import Any, Dict, List, Optional, Tuple
 logger = logging.getLogger(__name__)
 
 DEFAULT_STREAM_PREFIX = "prettyk:run:"
-DEFAULT_MIN_IDLE_MS = 90_000  # согласовано с RunLeaseBridge.stale_after_seconds
+DEFAULT_MIN_IDLE_MS = 60_000  # согласовано с RunLeaseBridge.stale_after_seconds
 
 
 class RunStreamCoordinator:

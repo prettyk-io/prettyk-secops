@@ -56,6 +56,12 @@ export interface UseCdpRecorderOptions {
   existingDslLines?: string[];
   /** Existing manual locators (for manual trust: don't overwrite). */
   existingManualLocators?: Set<string>;
+  /**
+   * BROWSER-STUDIO-1: auto-accept каждое не-ambiguous наблюдение вместо
+   * proposal → ручное Accept. Каждый шаг немедленно попадает в Ленту Действий.
+   * Duplicate/ambiguous/manual-trust гейты по-прежнему блокируют запись.
+   */
+  autoCommit?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -92,25 +98,40 @@ export function observationToLocator(obs: CdpObservation): DiscoveryLocator {
   };
 }
 
+/** Observe wire action → ActionKind (трёхслойный канон; `key` → существующий `PressKey`). */
+const ACTION_BY_WIRE: Record<CdpObservation['action'], ActionKind> = {
+  click: 'Click',
+  type: 'Type',
+  wheel: 'Wheel',
+  scroll: 'Scroll',
+  drag: 'Drag',
+  hover: 'Hover',
+  key: 'PressKey',
+  focus: 'Focus',
+  select: 'Select',
+};
+
 /** Determine ActionKind from observation. */
 export function observationToAction(obs: CdpObservation): ActionKind {
   if (obs.action === 'type') return 'Type';
-  const role = (obs.element.role || '').toLowerCase();
-  if (role === 'textbox' || role === 'searchbox') return 'Type';
-  return 'Click';
+  // click на текстовое поле = подготовка ввода (BBA-3 heuristic).
+  if (obs.action === 'click') {
+    const role = (obs.element.role || '').toLowerCase();
+    if (role === 'textbox' || role === 'searchbox') return 'Type';
+  }
+  return ACTION_BY_WIRE[obs.action] ?? 'Click';
 }
 
 /**
  * Безопасное имя элемента для DSL/locator-позиции.
  *
- * TYPE-FE: для Type-действий `element.text` ЗАПРЕЩЁН в позиции имени —
- * в type/change-событии он может нести введённый plaintext. Имя берём только
- * из `accessibleName` / `tag`, чтобы plaintext не попадал ни в strategyValue
- * (StepPill + Monaco DSL), ни в wire.
+ * Для Type/PressKey `element.text` может нести введённый plaintext — исключён
+ * из позиции имени (имя = `accessibleName` / `tag`), чтобы plaintext не попадал
+ * ни в strategyValue (StepPill + Monaco DSL), ни в wire.
  */
 export function observationName(obs: CdpObservation): string {
   const action = observationToAction(obs);
-  if (action === 'Type') {
+  if (action === 'Type' || action === 'PressKey') {
     return obs.element.accessibleName || obs.element.tag;
   }
   return obs.element.accessibleName || obs.element.text || obs.element.tag;
@@ -122,18 +143,63 @@ export function observationToStrategy(obs: CdpObservation): StrategyKind {
   return ROLE_TO_STRATEGY[role] || 'css';
 }
 
+/** Redacted reference для type/select: secret → $secret, иначе $value. */
+export function observationValueRef(obs: CdpObservation): string {
+  return obs.valueClass === 'secret' ? SECRET_PLACEHOLDER : VALUE_PLACEHOLDER;
+}
+
+/**
+ * Redacted значение для key-действия (PressKey). Печатный одиночный символ →
+ * `$value`; именованные клавиши/модификаторы (Enter, Tab, Shift+Enter, ArrowDown)
+ * и уже-$-references — как есть. Plaintext-символ никогда не попадает в DSL/wire.
+ */
+export function observationKeyValue(obs: CdpObservation): string {
+  const k = (obs.keys ?? '').trim();
+  if (!k) return VALUE_PLACEHOLDER;
+  if (k.startsWith('$')) return k;
+  // Именованная клавиша/модификатор — не секрет.
+  if (k.length > 1 || /[^0-9a-zA-Z]/.test(k)) return k;
+  return VALUE_PLACEHOLDER;
+}
+
+/** delta-строка для wheel/scroll (`dx dy`). Координаты/delta — значения шага, не секрет. */
+export function observationDelta(obs: CdpObservation): string {
+  const d = obs.delta;
+  return `${d?.dx ?? 0} ${d?.dy ?? 0}`;
+}
+
+/** coords-строка для drag (`x1 y1 x2 y2`). */
+export function observationDragCoords(obs: CdpObservation): string {
+  const c = obs.coords;
+  return c ? `${c.x1} ${c.y1} ${c.x2} ${c.y2}` : '0 0 0 0';
+}
+
 /** Build DSL proposal string. */
 export function observationToDsl(obs: CdpObservation): string {
   const action = observationToAction(obs);
   const strategy = observationToStrategy(obs);
   const name = observationName(obs);
 
-  if (action === 'Type') {
-    // POC-CDP-5: plaintext never enters wire. Secret → $secret, else → $value reference.
-    const val = obs.valueClass === 'secret' ? SECRET_PLACEHOLDER : VALUE_PLACEHOLDER;
-    return `Type ${strategy} "${name}" ${val}`.trim();
+  switch (action) {
+    case 'Type':
+      return `Type ${strategy} "${name}" ${observationValueRef(obs)}`;
+    case 'Select':
+      return `Select ${strategy} "${name}" ${observationValueRef(obs)}`;
+    case 'PressKey':
+      return `PressKey ${strategy} "${name}" ${observationKeyValue(obs)}`;
+    case 'Wheel':
+      return `Wheel ${observationDelta(obs)}`;
+    case 'Scroll':
+      return `Scroll ${observationDelta(obs)}`;
+    case 'Drag':
+      return `Drag ${observationDragCoords(obs)}`;
+    case 'Hover':
+      return `Hover ${strategy} "${name}"`;
+    case 'Focus':
+      return `Focus ${strategy} "${name}"`;
+    default:
+      return `Click ${strategy} "${name}"`;
   }
-  return `Click ${strategy} "${name}"`.trim();
 }
 
 /** Build provenance marker for Editor DSL. */
@@ -148,10 +214,21 @@ export function observationToStep(obs: CdpObservation): ScenarioStepModel {
   const action = observationToAction(obs);
   const strategy = observationToStrategy(obs);
   const strategyValue = observationName(obs);
-  // POC-CDP-5: payload never carries plaintext — Type carries a $reference.
-  const payload = action === 'Type'
-    ? (obs.valueClass === 'secret' ? SECRET_PLACEHOLDER : VALUE_PLACEHOLDER)
-    : '';
+  // POC-CDP-5: payload никогда не несёт plaintext.
+  // Type/Select → $reference (secret → $secret, иначе $value).
+  // PressKey → redacted key (одиночный символ → $value); `scenarioStepToBackendDto`
+  //   кладёт payload в `press_key target`.
+  // Wheel/Scroll/Drag → delta/coords-строка (значения шага, не секрет).
+  let payload = '';
+  if (action === 'Type' || action === 'Select') {
+    payload = observationValueRef(obs);
+  } else if (action === 'PressKey') {
+    payload = observationKeyValue(obs);
+  } else if (action === 'Wheel' || action === 'Scroll') {
+    payload = observationDelta(obs);
+  } else if (action === 'Drag') {
+    payload = observationDragCoords(obs);
+  }
   return {
     id: cdpStepId(),
     action,
@@ -215,7 +292,7 @@ export function decideObservation(
 const POLL_INTERVAL_MS = 250; // fast poll for PoC — lower latency
 
 export function useCdpRecorder(options: UseCdpRecorderOptions) {
-  const { deckId, onStepAccepted, onStepRejected, existingDslLines = [], existingManualLocators } = options;
+  const { deckId, onStepAccepted, onStepRejected, existingDslLines = [], existingManualLocators, autoCommit = false } = options;
 
   const [state, setState] = useState<CdpRecorderState>({
     recording: false,
@@ -237,6 +314,8 @@ export function useCdpRecorder(options: UseCdpRecorderOptions) {
   existingDslLinesRef.current = existingDslLines;
   const existingManualLocatorsRef = useRef(existingManualLocators);
   existingManualLocatorsRef.current = existingManualLocators;
+  const autoCommitRef = useRef(autoCommit);
+  autoCommitRef.current = autoCommit;
 
   // ── Start recording ──
   const startRecording = useCallback(async () => {
@@ -279,6 +358,20 @@ export function useCdpRecorder(options: UseCdpRecorderOptions) {
     }));
   }, []);
 
+  // ── Commit a single observation as a canonical step ──
+  const commitObservation = useCallback((obs: CdpObservation) => {
+    acceptedEventIds.current.add(obs.eventId);
+
+    const step = observationToStep(obs);
+    const provenance = buildProvenance(obs);
+
+    onStepAcceptedRef.current?.({
+      step,
+      provenance,
+      eventId: obs.eventId,
+    });
+  }, []);
+
   // ── Process one observation ──
   const processObservation = useCallback((obs: CdpObservation) => {
     const decision = decideObservation(obs, {
@@ -303,6 +396,15 @@ export function useCdpRecorder(options: UseCdpRecorderOptions) {
     // Gate: duplicate event / duplicate DSL / manual trust (POC-CDP-5)
     if (!decision.apply) return;
 
+    // BROWSER-STUDIO-1: auto-commit each step into the Action Tape without
+    // an explicit Accept. Ambiguous/duplicate/manual-trust gates above still
+    // block; the recorder only auto-commits clean, non-ambiguous steps.
+    if (autoCommitRef.current) {
+      commitObservation(obs);
+      setState(s => ({ ...s, lastObservation: obs, proposal: null, locator: null, ambiguous: false }));
+      return;
+    }
+
     const dsl = observationToDsl(obs);
     const locator = observationToLocator(obs);
     const proposal: DSLProposal = {
@@ -318,26 +420,17 @@ export function useCdpRecorder(options: UseCdpRecorderOptions) {
       proposal,
       ambiguous: false,
     }));
-  }, []);
+  }, [commitObservation]);
 
   // ── Accept proposal (POC-CDP-3) ──
   const acceptProposal = useCallback(() => {
     const obs = state.lastObservation;
     if (!obs) return;
 
-    acceptedEventIds.current.add(obs.eventId);
-
-    const step = observationToStep(obs);
-    const provenance = buildProvenance(obs);
-
-    onStepAcceptedRef.current?.({
-      step,
-      provenance,
-      eventId: obs.eventId,
-    });
+    commitObservation(obs);
 
     setState(s => ({ ...s, proposal: null, locator: null, ambiguous: false }));
-  }, [state.lastObservation]);
+  }, [state.lastObservation, commitObservation]);
 
   // ── Reject proposal (POC-CDP-3) ──
   const rejectProposal = useCallback(() => {

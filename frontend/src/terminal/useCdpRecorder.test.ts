@@ -80,6 +80,80 @@ describe('POC-CDP-2: observationToDsl / action / strategy', () => {
   });
 });
 
+describe('ACT-FE: extended action mapping (9 observe names → ActionKind + DSL)', () => {
+  it('wheel → Wheel, DSL `Wheel dx dy`', () => {
+    const obs = makeObservation({ action: 'wheel', delta: { dx: 0, dy: 120 } });
+    expect(observationToAction(obs)).toBe('Wheel');
+    expect(observationToDsl(obs)).toBe('Wheel 0 120');
+    expect(observationToStep(obs).payload).toBe('0 120');
+  });
+
+  it('scroll → Scroll, DSL `Scroll dx dy`', () => {
+    const obs = makeObservation({ action: 'scroll', delta: { dx: 40, dy: 0 } });
+    expect(observationToAction(obs)).toBe('Scroll');
+    expect(observationToDsl(obs)).toBe('Scroll 40 0');
+  });
+
+  it('drag → Drag, DSL `Drag x1 y1 x2 y2`', () => {
+    const obs = makeObservation({ action: 'drag', coords: { x1: 10, y1: 20, x2: 30, y2: 40 } });
+    expect(observationToAction(obs)).toBe('Drag');
+    expect(observationToDsl(obs)).toBe('Drag 10 20 30 40');
+    expect(observationToStep(obs).payload).toBe('10 20 30 40');
+  });
+
+  it('hover → Hover, DSL `Hover role "..."`', () => {
+    const obs = makeObservation({ action: 'hover' });
+    expect(observationToAction(obs)).toBe('Hover');
+    expect(observationToDsl(obs)).toBe('Hover role "Войти"');
+  });
+
+  it('focus → Focus, DSL `Focus role "..."`', () => {
+    const obs = makeObservation({ action: 'focus' });
+    expect(observationToAction(obs)).toBe('Focus');
+    expect(observationToDsl(obs)).toBe('Focus role "Войти"');
+  });
+
+  it('key → PressKey (не новый Key); печатный одиночный символ → $value', () => {
+    const obs = makeObservation({ action: 'key', keys: 'x', element: { tag: 'input', text: 'x', rect: { x: 0, y: 0, w: 1, h: 1 }, role: 'textbox' } });
+    expect(observationToAction(obs)).toBe('PressKey');
+    expect(observationToStep(obs).payload).toBe('$value');
+    expect(observationToDsl(obs)).not.toContain('"x"');
+  });
+
+  it('key → PressKey; именованная клавиша (Enter) — как есть', () => {
+    const obs = makeObservation({ action: 'key', keys: 'Enter', element: { tag: 'input', text: '', rect: { x: 0, y: 0, w: 1, h: 1 }, role: 'textbox' } });
+    expect(observationToAction(obs)).toBe('PressKey');
+    expect(observationToStep(obs).payload).toBe('Enter');
+    expect(observationToDsl(obs)).toContain('Enter');
+  });
+
+  it('select → Select + $reference', () => {
+    const obs = makeObservation({
+      action: 'select',
+      element: { tag: 'select', text: 'opt', rect: { x: 0, y: 0, w: 1, h: 1 }, role: 'combobox', accessibleName: 'Role' },
+      valueClass: 'unknown',
+    });
+    expect(observationToAction(obs)).toBe('Select');
+    expect(observationToStep(obs).payload).toBe('$value');
+    expect(observationToDsl(obs)).toBe('Select role "Role" $value');
+  });
+
+  it('round-trip: stepToDSL(observationToStep(obs)) === observationToDsl(obs)', async () => {
+    const { stepToDSL } = await import('../studio/scenarioStepModel');
+    for (const obs of [
+      makeObservation(),
+      makeObservation({ action: 'wheel', delta: { dx: 0, dy: 120 } }),
+      makeObservation({ action: 'scroll', delta: { dx: 40, dy: 0 } }),
+      makeObservation({ action: 'drag', coords: { x1: 1, y1: 2, x2: 3, y2: 4 } }),
+      makeObservation({ action: 'hover' }),
+      makeObservation({ action: 'focus' }),
+      makeObservation({ action: 'key', keys: 'Enter', element: { tag: 'input', text: '', rect: { x: 0, y: 0, w: 1, h: 1 }, role: 'textbox' } }),
+    ]) {
+      expect(stepToDSL(observationToStep(obs))).toBe(observationToDsl(obs));
+    }
+  });
+});
+
 describe('POC-CDP-5: redaction (DoD 12)', () => {
   it('secret valueClass → $secret reference, never plaintext', () => {
     const obs = makeObservation({

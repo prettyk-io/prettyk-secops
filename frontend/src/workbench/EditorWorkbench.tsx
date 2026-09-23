@@ -42,6 +42,7 @@ import {
   Clock,
   Terminal as TerminalIcon,
   FileText,
+  Circle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -87,6 +88,8 @@ import { useScenarioDeckStore } from '../studio/ScenarioDeckStore';
 import type { ScenarioStepModel, StrategyKind } from '../studio/scenarioStepModel';
 import { parseWireDocument, documentToScenarioDecks, fastContentHash } from '../editor/wireDocumentParser';
 import { applyCanvasStepPatch } from '../editor/wireDocumentSerializer';
+import { BrowserStudioDesk } from '../studio/BrowserStudioDesk';
+import { addScenario, scenarioNameError, listScenarioNames } from '../studio/studioScenarios';
 import { StudioEditorSwitch } from '../terminal/StudioEditorSwitch';
 import {
   buildEvidenceChain,
@@ -114,7 +117,10 @@ export interface EditorWorkbenchProps {
   onResourceContentsChange?: (next: Record<string, string>) => void;
   onCmdSave?: () => void;
   onCmdRun?: () => void;
-  onCmdValidate?: () => void;
+  /** Передаёт свежесобранный formData (после flush) в Validate. */
+  onCmdValidate?: (flushedData?: unknown) => void;
+  /** BOX-VAL-1: регистрирует flusher активного editor для header Validate. */
+  onRegisterValidateFlusher?: (flusher: (() => unknown) | null) => void;
 
   /* ── Legacy standalone mode ── */
   checkId?: string;
@@ -163,6 +169,7 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
     onCmdSave,
     onCmdRun,
     onCmdValidate,
+    onRegisterValidateFlusher,
     checkId,
     initialCode,
     onCodeChange,
@@ -200,6 +207,9 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
   /* ── CDP Recorder state (POC-CDP-1/2/3/4/5) ── */
   const [browserMode, setBrowserMode] = useState<BrowserStageMode>('author');
   const [browserFullscreen, setBrowserFullscreen] = useState(false);
+  /* ── BROWSER-STUDIO-1: полноразмерная студия записи поверх Monaco ── */
+  const [browserStudioOpen, setBrowserStudioOpen] = useState(false);
+  const [browserStudioRecord, setBrowserStudioRecord] = useState(false);
   const scenarioDeckId = activeTab?.entityId || '';  // WIRE-SYNC-L2: no cdp-poc zombie, only real entities
 
   // Ensure deck exists in ScenarioDeckStore — only for real entityId
@@ -588,16 +598,7 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
     }
   }, [liveDiagnostics, controlled]);
 
-  /* ── CodeLens 2.0: «Проверить конструктор» из Monaco → validate ── */
-  useEffect(() => {
-    const handler = () => {
-      onCmdValidate?.();
-    };
-    window.addEventListener(VALIDATE_CONSTRUCTOR_COMMAND_ID, handler);
-    return () => window.removeEventListener(VALIDATE_CONSTRUCTOR_COMMAND_ID, handler);
-  }, [onCmdValidate]);
-
-  /* ── WIRE-SYNC-F1: deep-link из ScenarioStepCard → Monaco линия ── */
+/* ── WIRE-SYNC-F1: deep-link из ScenarioStepCard → Monaco линия ── */
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent<{ line: number }>).detail;
@@ -699,6 +700,31 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
     lastEmittedRef.current = current;
     return writeConstructorText(data, tab.path, current);
   }, [controlled]);
+
+  /* ── BOX-VAL-1: shared flush → свежий formData для Validate (CodeLens + header) ── */
+  const flushForValidate = useCallback((): unknown => {
+    const flushed = flushPendingEdits();
+    if (flushed !== undefined && flushed !== formDataRef.current) {
+      onFormDataChangeRef.current?.(flushed);
+    }
+    return flushed ?? formDataRef.current;
+  }, [flushPendingEdits]);
+
+  /* ── CodeLens 2.0: «Проверить конструктор» из Monaco → validate ── */
+  useEffect(() => {
+    const handler = () => {
+      // BOX-VAL-1: flush ожидающего ввода → Validate видит именно текущий документ.
+      onCmdValidate?.(flushForValidate());
+    };
+    window.addEventListener(VALIDATE_CONSTRUCTOR_COMMAND_ID, handler);
+    return () => window.removeEventListener(VALIDATE_CONSTRUCTOR_COMMAND_ID, handler);
+  }, [onCmdValidate, flushForValidate]);
+
+  /* ── BOX-VAL-1: зарегистрировать flusher для header Validate ── */
+  useEffect(() => {
+    onRegisterValidateFlusher?.(flushForValidate);
+    return () => onRegisterValidateFlusher?.(null);
+  }, [onRegisterValidateFlusher, flushForValidate]);
 
   /* ── Select a Studio tab from the shared tree (controlled) ── */
   const handleSelectTab = useCallback(
@@ -860,6 +886,83 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
       onSave?.();
     }
   };
+
+  /* ── BROWSER-STUDIO-1: открытие/закрытие студии ── */
+  const openBrowserStudio = useCallback((record: boolean) => {
+    // Остановить side-panel рекордер (иначе двойное потребление observe-очереди).
+    setBrowserMode('author');
+    setBrowserStudioRecord(record);
+    setBrowserStudioOpen(true);
+  }, []);
+
+  const closeBrowserStudio = useCallback(() => {
+    setBrowserStudioOpen(false);
+    setBrowserStudioRecord(false);
+  }, []);
+
+  /* ── BROWSER-STUDIO-1: сохранение ленты в активный сценарий ── */
+  const saveTapeToCurrent = useCallback(
+    (lines: string[], position: 'end' | 'cursor') => {
+      if (!controlled || !formData) return;
+      const tab = activeTabRef.current;
+      if (!tab) return;
+
+      if (position === 'cursor') {
+        // Вставить после текущей строки курсора в видимом документе Monaco.
+        const ed = editorRef.current;
+        const base = (ed?.getValue() ?? readConstructorText(formData, tab.path));
+        const baseLines = base.split('\n');
+        const insertAt = Math.min(cursorPos.line, baseLines.length);
+        const newText = [...baseLines.slice(0, insertAt), ...lines, ...baseLines.slice(insertAt)].join('\n');
+        const updated = writeConstructorText(formData, tab.path, newText);
+        formDataRef.current = updated;
+        lastEmittedRef.current = newText;
+        editorRef.current?.setValue(newText);
+        onFormDataChangeRef.current?.(updated);
+        setDirty(false);
+        return;
+      }
+
+      // В конец: срезать пустой хвост панели, дописать DSL-шаги.
+      const padded = readConstructorText(formData, tab.path);
+      const content = padded.replace(/\s+$/, '');
+      const newText = content ? `${content}\n${lines.join('\n')}` : lines.join('\n');
+      const updated = writeConstructorText(formData, tab.path, newText);
+      formDataRef.current = updated;
+      lastEmittedRef.current = newText;
+      editorRef.current?.setValue(newText);
+      onFormDataChangeRef.current?.(updated);
+      setDirty(false);
+    },
+    [controlled, formData, cursorPos.line],
+  );
+
+  /* ── BROWSER-STUDIO-1: сохранение ленты в новый сценарий ── */
+  const saveTapeToNewScenario = useCallback(
+    (name: string, lines: string[]): string | undefined => {
+      if (!controlled || !formData) return 'Нет активного документа';
+      const err = scenarioNameError(name);
+      if (err) return err;
+      if (listScenarioNames(formData).includes(name)) return 'Сценарий с таким именем уже существует';
+      const withScenario = addScenario(formData, name);
+      if (!withScenario) return 'Не удалось создать сценарий';
+      const newTab = listEditableDslTabs(withScenario).find((t) => t.kind === 'scenario' && t.entityId === name);
+      if (!newTab) return 'Не удалось найти созданный сценарий';
+
+      const ctor = lines.join('\n');
+      const updated = writeConstructorText(withScenario, newTab.path, ctor);
+      formDataRef.current = updated;
+      lastEmittedRef.current = ctor;
+      onFormDataChangeRef.current?.(updated);
+      setActiveTab(newTab);
+      setStudioSelection(newTab.studioTabId);
+      if (newTab.studioTabId) setLastStudioTabId(newTab.studioTabId);
+      editorRef.current?.setValue(ctor);
+      setDirty(false);
+      return undefined;
+    },
+    [controlled, formData, setLastStudioTabId],
+  );
 
   /* ── Keyboard shortcuts ── */
   useEffect(() => {
@@ -1145,6 +1248,15 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
               </span>
             </div>
             <div className="flex items-center gap-2">
+              {controlled && (
+                <button
+                  onClick={() => openBrowserStudio(false)}
+                  className="flex items-center gap-1 px-2 h-6 rounded text-[10px] font-semibold text-cyan-400 border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20"
+                  title="Открыть Browser Studio поверх редактора"
+                >
+                  <Globe className="size-3" /> Открыть браузер
+                </button>
+              )}
               <Badge variant="outline" className="text-[10px] font-mono text-cyan-400 border-cyan-500/30">
                 DSL v1.0
               </Badge>
@@ -1198,7 +1310,16 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
                 <span>32 lines canon</span>
               )}
             </div>
-            <div>
+            <div className="flex items-center gap-3">
+              {controlled && (
+                <button
+                  onClick={() => openBrowserStudio(true)}
+                  className="flex items-center gap-1 text-[10px] font-mono text-red-400 hover:text-red-300"
+                  title="Открыть Browser Studio в режиме записи"
+                >
+                  <Circle className="size-2.5 fill-red-500 text-red-500" /> Record
+                </button>
+              )}
               <span>UTF-8</span>
             </div>
           </div>
@@ -1311,6 +1432,16 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
             )}
           </div>
         </div>
+      )}
+
+      {/* 4. BROWSER-STUDIO-1: полноразмерная студия записи поверх Monaco */}
+      {browserStudioOpen && (
+        <BrowserStudioDesk
+          initialRecording={browserStudioRecord}
+          onClose={closeBrowserStudio}
+          onSaveToCurrent={saveTapeToCurrent}
+          onSaveToNewScenario={saveTapeToNewScenario}
+        />
       )}
     </div>
   );

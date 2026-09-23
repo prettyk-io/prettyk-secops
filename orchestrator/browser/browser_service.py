@@ -170,6 +170,8 @@ class _BrowserWorker:
         self._observe_last_event_id = 0
         self._binding_registered = False
         self._input_binding_registered = False
+        # ACT-BE: bиндинги длинных действий (wheel/scroll/drag/hover/key/focus).
+        self._extended_bindings_registered = False
         # BBA-EXEC-2: флаг отмены активного replay (выставляется извне worker-потока).
         self._abort_requested = False
         # SOR-L2: per-session CDP endpoint override
@@ -262,6 +264,7 @@ class _BrowserWorker:
                 self._page = None
                 self._binding_registered = False
                 self._input_binding_registered = False
+                self._extended_bindings_registered = False
             runtime = PlaywrightBrowserRuntime()
             self._page = runtime.connect_over_cdp(cdp_endpoint)
             self._browser = runtime.browser
@@ -270,6 +273,7 @@ class _BrowserWorker:
             self._last_cdp_error = None
             self._binding_registered = False  # новая страница — binding нужно регистрировать заново
             self._input_binding_registered = False
+            self._extended_bindings_registered = False
             logger.info("browser_service: connected to CDP container %s", cdp_endpoint)
             return self._page
         except Exception as e:
@@ -547,6 +551,8 @@ class _BrowserWorker:
     _SUPPORTED_STEP_ACTIONS = {
         "click", "fill", "type", "goto", "navigate",
         "wait_for", "select_option", "press_key", "hover", "scroll",
+        # ACT-BE: недостающие snake-действия (observe-слой маппится на них FE-слоем).
+        "wheel", "drag", "focus",
     }
 
     @staticmethod
@@ -648,6 +654,31 @@ class _BrowserWorker:
                     page.mouse.wheel(0.0, -600.0)
                 return _ok("passed")
 
+            # ACT-BE: wheel — value "dx,dy" → mouse.wheel (deltaX/deltaY).
+            if action == "wheel":
+                if value is None or not str(value).strip():
+                    return _ok("failed", "value 'dx,dy' required for wheel")
+                try:
+                    dx, dy = (float(x) for x in str(value).split(","))
+                except (TypeError, ValueError):
+                    return _ok("failed", f"wheel value must be 'dx,dy', got {value!r}")
+                page.mouse.wheel(dx, dy)
+                return _ok("passed")
+
+            # ACT-BE: drag — value "x1,y1,x2,y2" → mouse.move/down/move/up.
+            if action == "drag":
+                if value is None or not str(value).strip():
+                    return _ok("failed", "value 'x1,y1,x2,y2' required for drag")
+                try:
+                    x1, y1, x2, y2 = (float(x) for x in str(value).split(","))
+                except (TypeError, ValueError):
+                    return _ok("failed", f"drag value must be 'x1,y1,x2,y2', got {value!r}")
+                page.mouse.move(x1, y1)
+                page.mouse.down()
+                page.mouse.move(x2, y2, steps=5)
+                page.mouse.up()
+                return _ok("passed")
+
             # Остальные — требуют target (локатор).
             if not target:
                 return _ok("failed", f"target required for {action}")
@@ -663,6 +694,8 @@ class _BrowserWorker:
                 locator.select_option(str(value), timeout=timeout_ms)
             elif action == "hover":
                 locator.hover(timeout=timeout_ms)
+            elif action == "focus":
+                locator.focus(timeout=timeout_ms)
             else:
                 return _ok("failed", f"unsupported action: {action!r}")
             return _ok("passed")
@@ -835,6 +868,39 @@ class _BrowserWorker:
                         _on_input(args[-1], worker)
                 page.expose_binding("__pk_cdp_input__", _input_binding)
                 self._input_binding_registered = True
+            # ACT-BE: биндинги длинных действий. Регистрируем одним флагом — каждое
+            # имя expose_binding можно повесить на страницу только один раз.
+            if not self._extended_bindings_registered:
+                def _wheel_binding(*args):
+                    if args and isinstance(args[-1], dict):
+                        _on_wheel(args[-1], worker)
+                page.expose_binding("__pk_cdp_wheel__", _wheel_binding)
+
+                def _scroll_binding(*args):
+                    if args and isinstance(args[-1], dict):
+                        _on_scroll(args[-1], worker)
+                page.expose_binding("__pk_cdp_scroll__", _scroll_binding)
+
+                def _drag_binding(*args):
+                    if args and isinstance(args[-1], dict):
+                        _on_drag(args[-1], worker)
+                page.expose_binding("__pk_cdp_drag__", _drag_binding)
+
+                def _hover_binding(*args):
+                    if args and isinstance(args[-1], dict):
+                        _on_hover(args[-1], worker)
+                page.expose_binding("__pk_cdp_hover__", _hover_binding)
+
+                def _key_binding(*args):
+                    if args and isinstance(args[-1], dict):
+                        _on_key(args[-1], worker)
+                page.expose_binding("__pk_cdp_key__", _key_binding)
+
+                def _focus_binding(*args):
+                    if args and isinstance(args[-1], dict):
+                        _on_focus(args[-1], worker)
+                page.expose_binding("__pk_cdp_focus__", _focus_binding)
+                self._extended_bindings_registered = True
             page.evaluate("""
                 if(!window.__pk_cdp_click_listener__){
                     window.__pk_cdp_click_listener__=true;
@@ -853,7 +919,7 @@ class _BrowserWorker:
                     };
                     document.addEventListener('click',window.__pk_cdp_click_handler__,true);
                 }
-                // BBA-3/TYPE-BE: input/change listener для Type-шагов. Сырое значение
+                // BBA-3/TYPE-BE: input/change listener для Type/Select-шагов. Сырое значение
                 // (el.value) пересекает мост ТОЛЬКО затем, чтобы backend мог его
                 // классифицировать и немедленно отредактировать ($value / $secret).
                 // plaintext НЕ хранится ни в событии, ни в wire, ни в логах — redaction
@@ -879,6 +945,148 @@ class _BrowserWorker:
                     document.addEventListener('input',window.__pk_cdp_input_handler__,true);
                     document.addEventListener('change',window.__pk_cdp_input_handler__,true);
                 }
+                // ACT-BE: wheel (колесо мыши) → deltaX/deltaY.
+                if(!window.__pk_cdp_wheel_listener__){
+                    window.__pk_cdp_wheel_listener__=true;
+                    document.addEventListener('wheel',function(e){
+                        const el=e.target;
+                        const r=el.getBoundingClientRect();
+                        window.__pk_cdp_wheel__({
+                            tag:el.tagName.toLowerCase(),id:el.id||'',
+                            classes:(el.className&&typeof el.className==='string')?el.className:'',
+                            text:'',name:el.getAttribute('name')||'',
+                            placeholder:el.getAttribute('placeholder')||'',
+                            type:el.getAttribute('type')||'',
+                            dataTestId:el.getAttribute('data-testid')||el.getAttribute('data-test-id')||'',
+                            rect:{x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height)},
+                            delta:{dx:Math.round(e.deltaX),dy:Math.round(e.deltaY)}
+                        });
+                    },{capture:true,passive:true});
+                }
+                // ACT-BE: scroll (прокрутка) → deltaX/deltaY от предыдущей позиции.
+                if(!window.__pk_cdp_scroll_listener__){
+                    window.__pk_cdp_scroll_listener__=true;
+                    const __scrollPrev={left:0,top:0,has:false};
+                    let __scrollTimer=null;
+                    document.addEventListener('scroll',function(e){
+                        if(__scrollTimer) return;
+                        __scrollTimer=setTimeout(function(){
+                            __scrollTimer=null;
+                            const se=document.scrollingElement||document.documentElement;
+                            let el=e.target;
+                            if(el===document||el===document.documentElement||el===document.body) el=se;
+                            const r=el&&el.getBoundingClientRect?el.getBoundingClientRect():{x:0,y:0,width:0,height:0};
+                            const cx=(el&&el.scrollLeft!==undefined)?el.scrollLeft:(se?se.scrollLeft:0);
+                            const cy=(el&&el.scrollTop!==undefined)?el.scrollTop:(se?se.scrollTop:0);
+                            const dx=__scrollPrev.has?(cx-__scrollPrev.left):0;
+                            const dy=__scrollPrev.has?(cy-__scrollPrev.top):0;
+                            __scrollPrev.left=cx;__scrollPrev.top=cy;__scrollPrev.has=true;
+                            window.__pk_cdp_scroll__({
+                                tag:(el===se)?'body':(el&&el.tagName?el.tagName.toLowerCase():''),
+                                id:el&&el.id?el.id:'',
+                                classes:(el&&el.className&&typeof el.className==='string')?el.className:'',
+                                text:'',name:el&&el.getAttribute?el.getAttribute('name')||'':'',
+                                placeholder:el&&el.getAttribute?el.getAttribute('placeholder')||'':'',
+                                type:el&&el.getAttribute?el.getAttribute('type')||'':'',
+                                dataTestId:(el&&el.getAttribute)?(el.getAttribute('data-testid')||el.getAttribute('data-test-id')||''):'',
+                                rect:{x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height)},
+                                delta:{dx:Math.round(dx),dy:Math.round(dy)}
+                            });
+                        },150);
+                    },{capture:true,passive:true});
+                }
+                // ACT-BE: drag&drop → start/end coords (по mouseup при значимом сдвиге).
+                if(!window.__pk_cdp_drag_listener__){
+                    window.__pk_cdp_drag_listener__=true;
+                    const __drag={active:false,startX:0,startY:0,el:null};
+                    document.addEventListener('mousedown',function(e){
+                        __drag.active=true;__drag.startX=e.clientX;__drag.startY=e.clientY;__drag.el=e.target;
+                    },true);
+                    document.addEventListener('mouseup',function(e){
+                        if(!__drag.active){return;}
+                        __drag.active=false;
+                        const el=__drag.el;
+                        if(!el||el.nodeType!==1){return;}
+                        const dx=e.clientX-__drag.startX,dy=e.clientY-__drag.startY;
+                        if(Math.abs(dx)<4&&Math.abs(dy)<4){return;}// не drag, обычный клик
+                        const r=el.getBoundingClientRect();
+                        window.__pk_cdp_drag__({
+                            tag:el.tagName.toLowerCase(),id:el.id||'',
+                            classes:(el.className&&typeof el.className==='string')?el.className:'',
+                            text:'',name:el.getAttribute('name')||'',
+                            placeholder:el.getAttribute('placeholder')||'',
+                            type:el.getAttribute('type')||'',
+                            dataTestId:el.getAttribute('data-testid')||el.getAttribute('data-test-id')||'',
+                            rect:{x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height)},
+                            coords:{startX:Math.round(__drag.startX),startY:Math.round(__drag.startY),endX:Math.round(e.clientX),endY:Math.round(e.clientY)}
+                        });
+                    },true);
+                }
+                // ACT-BE: hover (mouseenter по кликабельным, с дебаунсом).
+                if(!window.__pk_cdp_hover_listener__){
+                    window.__pk_cdp_hover_listener__=true;
+                    let __hoverTimer=null,__hoverLast=null;
+                    document.addEventListener('mouseover',function(e){
+                        const el=e.target;
+                        if(!el||el.nodeType!==1){return;}
+                        const t=el.tagName.toLowerCase();
+                        const interactive=(t==='a'||t==='button'||t==='input'||t==='select'||t==='textarea'||el.getAttribute('role')||el.hasAttribute('contenteditable'));
+                        if(!interactive||el===__hoverLast){return;}
+                        __hoverLast=el;
+                        if(__hoverTimer)clearTimeout(__hoverTimer);
+                        __hoverTimer=setTimeout(function(){
+                            __hoverTimer=null;
+                            const r=el.getBoundingClientRect();
+                            window.__pk_cdp_hover__({
+                                tag:el.tagName.toLowerCase(),id:el.id||'',
+                                classes:(el.className&&typeof el.className==='string')?el.className:'',
+                                text:'',name:el.getAttribute('name')||'',
+                                placeholder:el.getAttribute('placeholder')||'',
+                                type:el.getAttribute('type')||'',
+                                dataTestId:el.getAttribute('data-testid')||el.getAttribute('data-test-id')||'',
+                                rect:{x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height)}
+                            });
+                        },300);
+                    },true);
+                }
+                // ACT-BE: keyboard (keydown) → key + printable-флаг; $value для печатных.
+                if(!window.__pk_cdp_key_listener__){
+                    window.__pk_cdp_key_listener__=true;
+                    document.addEventListener('keydown',function(e){
+                        const el=e.target;
+                        const r=el.getBoundingClientRect();
+                        const printable=(e.key&&e.key.length===1)&&!e.ctrlKey&&!e.metaKey&&!e.altKey;
+                        window.__pk_cdp_key__({
+                            tag:el.tagName.toLowerCase(),id:el.id||'',
+                            classes:(el.className&&typeof el.className==='string')?el.className:'',
+                            text:'',key:e.key||'',printable:printable,
+                            name:el.getAttribute('name')||'',
+                            placeholder:el.getAttribute('placeholder')||'',
+                            type:el.getAttribute('type')||'',
+                            ariaLabel:el.getAttribute('aria-label')||'',
+                            dataTestId:el.getAttribute('data-testid')||el.getAttribute('data-test-id')||'',
+                            rect:{x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height)}
+                        });
+                    },true);
+                }
+                // ACT-BE: focus (focusin, без ввода).
+                if(!window.__pk_cdp_focus_listener__){
+                    window.__pk_cdp_focus_listener__=true;
+                    document.addEventListener('focusin',function(e){
+                        const el=e.target;
+                        if(!el||el.nodeType!==1){return;}
+                        const r=el.getBoundingClientRect();
+                        window.__pk_cdp_focus__({
+                            tag:el.tagName.toLowerCase(),id:el.id||'',
+                            classes:(el.className&&typeof el.className==='string')?el.className:'',
+                            text:'',name:el.getAttribute('name')||'',
+                            placeholder:el.getAttribute('placeholder')||'',
+                            type:el.getAttribute('type')||'',
+                            dataTestId:el.getAttribute('data-testid')||el.getAttribute('data-test-id')||'',
+                            rect:{x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height)}
+                        });
+                    },true);
+                }
             """)
             logger.info("browser_observe_start: injected")
             return {"ok": True, "status": "observing"}
@@ -902,6 +1110,12 @@ class _BrowserWorker:
                     "document.removeEventListener('change',window.__pk_cdp_input_handler__,true);"
                     "window.__pk_cdp_input_handler__=null;}"
                     "window.__pk_cdp_input_listener__=false;"
+                    "window.__pk_cdp_wheel_listener__=true;"
+                    "window.__pk_cdp_scroll_listener__=true;"
+                    "window.__pk_cdp_drag_listener__=true;"
+                    "window.__pk_cdp_hover_listener__=true;"
+                    "window.__pk_cdp_key_listener__=true;"
+                    "window.__pk_cdp_focus_listener__=true;"
                 )
             except Exception:
                 pass
@@ -1039,12 +1253,15 @@ class _BrowserWorker:
                     element["accessibleName"] = str(ax_node.get("name") or "").strip()
             except Exception:
                 pass
-        # BBA-3/TYPE-BE: value classification из DOM-признаков, не из AX-ноды.
-        # Для type-событий valueClass/valueRef уже выставлены в _on_input (redaction
-        # на границе); НЕ перетираем их — только дочищаем на случай старых тестовых
-        # событий без valueRef. Для click-событий valueClass='unknown', valueRef=''.
-        is_type = evt.get("action") == "type"
-        if is_type:
+        # BBA-3/TYPE-BE/ACT-BE: value classification из DOM-признаков, не из AX-ноды.
+        # valueClass/valueRef уже выставлены в _on_input/_on_key (redaction на
+        # границе). НЕ перетираем их для action-types, несущих значение
+        # (type/select/key) — только дочищаем на случай тестовых событий без
+        # valueRef. click получает valueClass='unknown'/valueRef=''. Длинные
+        # действия (wheel/scroll/drag/hover/focus) значения не несут — дефолт
+        # valueClass='unknown'/valueRef='' без перетирания.
+        action = evt.get("action", "")
+        if action in ("type", "select", "key"):
             if "valueClass" not in evt:
                 try:
                     from utils.discovery_element_extractor import _classify_value
@@ -1056,10 +1273,11 @@ class _BrowserWorker:
                     })
                 except ImportError:
                     evt["valueClass"] = "unknown"
-            evt["valueRef"] = _redact_value_ref("", evt.get("valueClass", "unknown"))
+            if "valueRef" not in evt:
+                evt["valueRef"] = _redact_value_ref("", evt.get("valueClass", "unknown"))
         else:
-            evt["valueClass"] = "unknown"
-            evt["valueRef"] = ""
+            evt.setdefault("valueClass", "unknown")
+            evt.setdefault("valueRef", "")
         # candidates
         try:
             from utils.discovery_candidate_builder import build_candidates
@@ -1163,21 +1381,27 @@ def _on_click(event_info: dict, worker: object | None = None) -> None:
 
 
 def _on_input(event_info: dict, worker: object | None = None) -> None:
-    """TYPE-BE / BBA-3: записать type-событие с backend-redaction значения.
+    """TYPE-BE / BBA-3: записать type/select-событие с backend-redaction значения.
 
     Сырое ``value`` из JS-моста классифицируется и НЕМЕДЛЕННО редактируется:
     вместо plaintext в событие кладётся ``valueRef`` — placeholder ``$secret``
     (password/token и иные секреты) или ``$value`` (обычный ввод). Итоговый
     ``element.value`` никогда не несёт plaintext, а ``text`` остаётся пустым.
+
+    ACT-BE: ``<select>``-изменение (change) различается от ``type`` — событие
+    ``action="select"`` с тем же valueRef-redaction, чтобы FE маппил в
+    canonical ``select``, а не в ``type``.
     """
     if worker is None:
         worker = _worker
+    tag = str(event_info.get("tag", "") or "").lower()
     raw_value = str(event_info.get("value", "") or "")
     value_class = _classify_input_value(event_info)
     value_ref = _redact_value_ref(raw_value, value_class)
+    action = "select" if tag == "select" else "type"
     evt = {
         "timestamp": time.time(),
-        "action": "type",
+        "action": action,
         "valueClass": value_class,
         "valueRef": value_ref,
         "element": {
@@ -1192,6 +1416,137 @@ def _on_input(event_info: dict, worker: object | None = None) -> None:
             "dataTestId": event_info.get("dataTestId", ""),
         },
     }
+    worker._observe_last_event_id += 1
+    evt["eventId"] = f"cdp-{worker._observe_last_event_id}"
+    worker._observed_events.append(evt)
+
+
+def _on_wheel(event_info: dict, worker: object | None = None) -> None:
+    """ACT-BE: wheel-событие (колесо мыши) — action='wheel', delta {dx,dy}."""
+    if worker is None:
+        worker = _worker
+    evt = {
+        "timestamp": time.time(),
+        "action": "wheel",
+        "delta": {
+            "dx": int(event_info.get("delta", {}).get("dx", 0) or 0),
+            "dy": int(event_info.get("delta", {}).get("dy", 0) or 0),
+        },
+        "element": _element_snapshot(event_info),
+    }
+    _append_event(worker, evt)
+
+
+def _on_scroll(event_info: dict, worker: object | None = None) -> None:
+    """ACT-BE: scroll-событие (прокрутка) — action='scroll', delta {dx,dy}."""
+    if worker is None:
+        worker = _worker
+    evt = {
+        "timestamp": time.time(),
+        "action": "scroll",
+        "delta": {
+            "dx": int(event_info.get("delta", {}).get("dx", 0) or 0),
+            "dy": int(event_info.get("delta", {}).get("dy", 0) or 0),
+        },
+        "element": _element_snapshot(event_info),
+    }
+    _append_event(worker, evt)
+
+
+def _on_drag(event_info: dict, worker: object | None = None) -> None:
+    """ACT-BE: drag&drop-событие — action='drag', coords {startX..endY}."""
+    if worker is None:
+        worker = _worker
+    coords = event_info.get("coords", {}) or {}
+    evt = {
+        "timestamp": time.time(),
+        "action": "drag",
+        "coords": {
+            "startX": int(coords.get("startX", 0) or 0),
+            "startY": int(coords.get("startY", 0) or 0),
+            "endX": int(coords.get("endX", 0) or 0),
+            "endY": int(coords.get("endY", 0) or 0),
+        },
+        "element": _element_snapshot(event_info),
+    }
+    _append_event(worker, evt)
+
+
+def _on_hover(event_info: dict, worker: object | None = None) -> None:
+    """ACT-BE: hover-событие (mouseenter, дебаунс) — action='hover', только element."""
+    if worker is None:
+        worker = _worker
+    evt = {
+        "timestamp": time.time(),
+        "action": "hover",
+        "element": _element_snapshot(event_info),
+    }
+    _append_event(worker, evt)
+
+
+def _on_key(event_info: dict, worker: object | None = None) -> None:
+    """ACT-BE: keyboard-событие (keydown) — action='key'.
+
+    Печатный одиночный символ = вводимое значение → redacted в ``valueRef``
+    (``$value``/``$secret``), а ``key`` остаётся пустым (символ не утекает).
+    Непечатные клавиши (Enter/Backspace/стрелки/модификаторы) не являются
+    plaintext-вводом — их имя кладётся в ``key`` без redaction.
+    """
+    if worker is None:
+        worker = _worker
+    key = str(event_info.get("key", "") or "")
+    printable = bool(event_info.get("printable", False))
+    value_class = _classify_input_value(event_info)
+    if printable:
+        value_ref = _redact_value_ref(key, value_class)
+        key_out = ""
+    else:
+        value_ref = ""
+        key_out = key
+    evt = {
+        "timestamp": time.time(),
+        "action": "key",
+        "key": key_out,
+        "valueClass": value_class,
+        "valueRef": value_ref,
+        "element": _element_snapshot(event_info),
+    }
+    _append_event(worker, evt)
+
+
+def _on_focus(event_info: dict, worker: object | None = None) -> None:
+    """ACT-BE: focus-событие (focusin, без ввода) — action='focus', только element."""
+    if worker is None:
+        worker = _worker
+    evt = {
+        "timestamp": time.time(),
+        "action": "focus",
+        "element": _element_snapshot(event_info),
+    }
+    _append_event(worker, evt)
+
+
+def _element_snapshot(event_info: dict) -> dict:
+    """ACT-BE: единый shape element-среза для всех observe-событий.
+
+    Никогда не несёт plaintext: ``text`` обрезан (как у click), сырой ``value``
+    не кладётся (он живёт только в valueRef у type/key/select).
+    """
+    return {
+        "tag": event_info.get("tag", ""),
+        "id": event_info.get("id", ""),
+        "classes": event_info.get("classes", ""),
+        "text": (event_info.get("text") or "")[:80],
+        "rect": event_info.get("rect", {"x": 0, "y": 0, "w": 0, "h": 0}),
+        "name": event_info.get("name", ""),
+        "placeholder": event_info.get("placeholder", ""),
+        "type": event_info.get("type", ""),
+        "dataTestId": event_info.get("dataTestId", ""),
+    }
+
+
+def _append_event(worker: object, evt: dict) -> None:
+    """ACT-BE: присвоить eventId и положить событие в очередь worker'а."""
     worker._observe_last_event_id += 1
     evt["eventId"] = f"cdp-{worker._observe_last_event_id}"
     worker._observed_events.append(evt)

@@ -29,6 +29,7 @@ _LAB_KEYS = (
     "PK_DEFECTDOJO_URL",
     "PK_DEFECTDOJO_TOKEN",
     "PK_DEFECTDOJO_ENGAGEMENT",
+    "PK_DEFECTDOJO_SCAN_TYPE",
 )
 _lab_loaded = False
 
@@ -497,7 +498,7 @@ def trigger_defectdojo_import_detailed(
     dojo_url: Optional[str] = None,
     token: Optional[str] = None,
     engagement_id: Optional[str] = None,
-    scan_type: str = "scanner Scan",
+    scan_type: Optional[str] = None,
     minimum_severity: str = "Info",
     active: bool = True,
     verified: bool = False,
@@ -515,6 +516,7 @@ def trigger_defectdojo_import_detailed(
       error: optional str
     """
     _load_lab_env()
+    scan_type = scan_type or _env("PK_DEFECTDOJO_SCAN_TYPE", "ZAP Scan")
     enabled = _env("PK_DEFECTDOJO_ENABLED", "1").lower() not in {"0", "false", "no"}
     if not enabled:
         logger.info("DefectDojo import skipped (PK_DEFECTDOJO_ENABLED=0)")
@@ -636,7 +638,7 @@ def trigger_defectdojo_import(
     dojo_url: Optional[str] = None,
     token: Optional[str] = None,
     engagement_id: Optional[str] = None,
-    scan_type: str = "scanner Scan",
+    scan_type: Optional[str] = None,
     minimum_severity: str = "Info",
     active: bool = True,
     verified: bool = False,

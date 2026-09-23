@@ -31,6 +31,9 @@ def _mock_page(raw_result):
 def _new_worker(page):
     worker = _BrowserWorker()
     worker._page = page
+    if page is None:
+        # Hermetic: не даём _ensure_browser подцепить живой CDP-контейнер.
+        worker._cdp_endpoint_override = "http://127.0.0.1:1"
     return worker
 
 

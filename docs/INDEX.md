@@ -58,6 +58,7 @@
 | Файл / Путь | На какой вопрос отвечает? |
 |---|---|
 | [`orchestrator/models/wired.py`](../orchestrator/models/wired.py) | Какова актуальная Pydantic-схема machine-контракта Wired-сценариев? |
+| [`docs/contracts/action-naming.md`](contracts/action-naming.md) | Каков каноничный словарь browser-действий (click/type/wheel/…) и как FE↔BE не разъезжаются? |
 | [`docs/wired.json`](wired.json) | Какова устаревшая (legacy) JSON Schema эпохи RJSF (хранится для справки)? |
 | [`docs/manifest.md`](manifest.md) | Какова спецификация полей и типов данных манифеста проверок? |
 
