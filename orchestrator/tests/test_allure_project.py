@@ -99,3 +99,59 @@ def test_summarize_allure_results_dir_counts(tmp_path):
     assert summary["skipped"] == 1
     assert summary["total"] == 4
     assert summary["status"] == "has_failures"
+
+
+def test_purge_allure_results_for_current_check_clears_check_subdir(monkeypatch, tmp_path):
+    monkeypatch.setenv("PK_REPORTS_DIR", str(tmp_path))
+    monkeypatch.setenv("PK_ALLURE_PROJECT_MODE", "check")
+    monkeypatch.setenv("PK_CHECK_ID", "chk_demo")
+    import importlib
+
+    from utils import paths as paths_mod
+
+    importlib.reload(paths_mod)
+    importlib.reload(ap)
+
+    check_dir = paths_mod.ALLURE_RESULTS_DIR / "chk_demo"
+    check_dir.mkdir(parents=True, exist_ok=True)
+    stale_result = check_dir / "0001-result.json"
+    stale_result.write_text('{"status":"failed","name":"stale"}', encoding="utf-8")
+    sub = check_dir / "history"
+    sub.mkdir()
+    (sub / "history.json").write_text("{}", encoding="utf-8")
+
+    result = ap.purge_allure_results_for_current_check()
+    assert stale_result.exists() is False
+    assert sub.exists() is False
+    assert check_dir.exists() is True
+    assert result["skipped"] == []
+
+
+def test_purge_allure_results_default_scope_clears_root_files_only(monkeypatch, tmp_path):
+    """AL3-FRESH-REPAIR: default чистит файлы корня, подпапки чеков неприкосновенны."""
+    monkeypatch.setenv("PK_REPORTS_DIR", str(tmp_path))
+    monkeypatch.delenv("PK_ALLURE_PROJECT_MODE", raising=False)
+    monkeypatch.delenv("PK_CHECK_ID", raising=False)
+    monkeypatch.delenv("PK_RUN_ID", raising=False)
+    import importlib
+
+    from utils import paths as paths_mod
+
+    importlib.reload(paths_mod)
+    importlib.reload(ap)
+
+    root = paths_mod.ALLURE_RESULTS_DIR
+    root.mkdir(parents=True, exist_ok=True)
+    stale = root / "stale-result.json"
+    stale.write_text('{"status":"passed"}', encoding="utf-8")
+    check_dir = root / "chk_neighbor"
+    check_dir.mkdir()
+    check_result = check_dir / "0001-result.json"
+    check_result.write_text('{"status":"failed","name":"neighbor"}', encoding="utf-8")
+
+    result = ap.purge_allure_results_for_current_check()
+    assert stale.exists() is False
+    assert check_dir.exists() is True
+    assert check_result.exists() is True
+    assert result["skipped"] == []
+    assert str(stale) in result["removed"]

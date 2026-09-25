@@ -1,8 +1,9 @@
 /**
  * BrowserStudioDesk — полноразмерная Студия Записи Браузера (BROWSER-STUDIO-1).
  *
- * Overlay поверх Monaco: верх — аспект-fit вьюпорт (BrowserStage embedded),
- * низ — Лента Действий (ActionTape). Каждый CDP-клик/ввод auto-коммитится в
+ * Overlay внутри центральной панели поверх Monaco: слева — аспект-fit вьюпорт
+ * (BrowserStage embedded), справа — Лента Действий (ActionTape, dock-right
+ * как панель DevTools). Каждый CDP-клик/ввод auto-коммитится в
  * ленту как каноничный PrettyK DSL (`stepToDSL`). Сохранение — в текущий
  * сценарий (в конец / в позицию курсора) или в новый сценарий.
  *
@@ -17,6 +18,9 @@ import { stepToDSL } from './scenarioStepModel';
 import { useCdpRecorder, type CdpStepResult } from '../terminal/useCdpRecorder';
 import { BrowserStage } from '../terminal/BrowserStage';
 import { ActionTape } from './ActionTape';
+import { getBrowserSession } from './browserSession';
+import { runReplay } from '../terminal/replayRunner';
+import type { ReplayStepState } from '../terminal/replayRunner';
 
 export interface BrowserStudioDeskProps {
   /** Начать запись сразу после открытия (entry «● Record»). */
@@ -43,6 +47,13 @@ export function BrowserStudioDesk({
   const [newNameError, setNewNameError] = useState<string | null>(null);
   const [exitPromptOpen, setExitPromptOpen] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
+
+  // STUDIO-TAPE-OPS: воспроизведение ленты (Replay Tape).
+  const [replaying, setReplaying] = useState(false);
+  const [replayStates, setReplayStates] = useState<Record<string, ReplayStepState>>({});
+  const replayAbortRef = useRef<AbortController | null>(null);
+  // Живой статус CDP из синглтона (независимо от observe-режима рекордера).
+  const [cdpLive, setCdpLive] = useState(false);
 
   const exitAfterSaveRef = useRef(false);
 
@@ -73,6 +84,15 @@ export function BrowserStudioDesk({
     };
   }, []);
 
+  // STUDIO-TAPE-OPS: следим за живым статусом CDP (для кнопки «Воспроизвести»).
+  // Полинг статуса ведёт BrowserStage (тот же синглтон) — здесь только подписка.
+  useEffect(() => {
+    const session = getBrowserSession();
+    const update = () => setCdpLive(session.getLastStatus()?.connected ?? false);
+    update();
+    return session.onChange(update);
+  }, []);
+
   const removeStep = useCallback((index: number) => {
     setTapeSteps((prev) => prev.filter((_, i) => i !== index));
     setDirty(true);
@@ -83,7 +103,70 @@ export function BrowserStudioDesk({
     setDirty(false);
   }, []);
 
+  // STUDIO-TAPE-OPS: перемещение шага вверх/вниз (без удаления и перезаписи).
+  const moveStep = useCallback((index: number, dir: -1 | 1) => {
+    setTapeSteps((prev) => {
+      const target = index + dir;
+      if (target < 0 || target >= prev.length) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(index, 1);
+      next.splice(target, 0, moved!);
+      return next;
+    });
+    setDirty(true);
+  }, []);
+
   const linesForTape = useCallback(() => tapeSteps.map((s) => stepToDSL(s)), [tapeSteps]);
+
+  // STUDIO-TAPE-OPS: воспроизведение ленты через runReplay + session.executeStep.
+  const startTapeReplay = useCallback(async () => {
+    if (tapeSteps.length === 0 || replayAbortRef.current) return;
+    // Запись временно блокируется на время воспроизведения.
+    if (recorder.state.recording) {
+      await recorder.stopRecording();
+    }
+
+    const abort = new AbortController();
+    replayAbortRef.current = abort;
+    const idle: Record<string, ReplayStepState> = {};
+    for (let i = 0; i < tapeSteps.length; i++) {
+      const s = tapeSteps[i]!;
+      idle[s.id] = { stepId: s.id, index: i, status: 'idle' };
+    }
+    setReplayStates(idle);
+    setReplaying(true);
+
+    const session = getBrowserSession();
+    const result = await runReplay(
+      tapeSteps,
+      (step, signal) => session.executeStep(step, signal),
+      {
+        signal: abort.signal,
+        stepDelayMs: 600,
+        onStepState: (st) => {
+          setReplayStates((prev) => ({ ...prev, [st.stepId]: st }));
+        },
+      },
+    );
+
+    if (result.aborted) {
+      // «Остановить» оставил текущий шаг в running — сбрасываем статусы в idle.
+      setReplayStates((prev) => {
+        const reset: Record<string, ReplayStepState> = {};
+        for (const s of tapeSteps) {
+          reset[s.id] = { stepId: s.id, index: prev[s.id]?.index ?? 0, status: 'idle' };
+        }
+        return reset;
+      });
+    }
+
+    setReplaying(false);
+    replayAbortRef.current = null;
+  }, [tapeSteps, recorder]);
+
+  const stopReplay = useCallback(() => {
+    replayAbortRef.current?.abort();
+  }, []);
 
   const requestClose = useCallback(() => {
     if (dirty && tapeSteps.length > 0) {
@@ -135,19 +218,26 @@ export function BrowserStudioDesk({
   const stageMode = recorder.state.recording ? 'record' : 'author';
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col" style={{ background: '#080c14', color: '#e2e8f0', fontFamily: 'Golos UI, sans-serif' }}>
+    <div
+      className="absolute inset-0 z-30 flex flex-col"
+      style={{ background: '#080c14', color: '#e2e8f0', fontFamily: 'Golos UI, sans-serif' }}
+    >
       {/* Header */}
       <div className="h-11 px-3 shrink-0 flex items-center gap-2" style={{ borderBottom: '1px solid #1e293b', background: '#0b101c' }}>
         <Film className="size-4" style={{ color: '#22d3ee' }} />
         <span className="text-sm font-bold" style={{ color: '#e2e8f0' }}>Browser Studio</span>
+        {/* DESK-LIVE-BADGE: источник — живая сессия (`cdpLive`), а не `recorder.state.cdpConnected`:
+            рекордер обновляет connected только в режиме записи, в author-режиме бейдж/баннер врали. */}
         <span
+          data-testid="desk-connection-badge"
+          data-connected={cdpLive ? 'true' : 'false'}
           className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-semibold"
-          style={recorder.state.cdpConnected
+          style={cdpLive
             ? { background: 'rgba(34,197,94,0.1)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.25)' }
             : { background: 'rgba(239,68,68,0.1)', color: '#f87171', border: '1px solid rgba(239,68,68,0.25)' }}
         >
-          <span className="size-1.5 rounded-full" style={{ background: recorder.state.cdpConnected ? '#22c55e' : '#ef4444' }} />
-          {recorder.state.cdpConnected ? 'браузер подключён' : 'браузер не подключён'}
+          <span className="size-1.5 rounded-full" style={{ background: cdpLive ? '#22c55e' : '#ef4444' }} />
+          {cdpLive ? 'браузер подключён' : 'браузер не подключён'}
         </span>
         {savedFlash && (
           <span className="flex items-center gap-1 text-[10px] font-semibold" style={{ color: '#4ade80' }}>
@@ -163,12 +253,18 @@ export function BrowserStudioDesk({
         </Button>
       </div>
 
-      {/* Body: viewport (top) + tape (bottom) */}
-      <div className="flex-1 min-h-0 flex flex-col">
-        <div className="flex-1 min-h-0 flex">
+      {/* Body: viewport (left, flex-1) + tape (right, dock-right как DevTools) */}
+      <div className="flex-1 min-h-0 flex flex-row">
+        {/* VFILL: flex-колонка, иначе flex-1/min-h-0 стейджа не действуют (block-контейнер)
+            → вьюпорт схлопывался до контента, полоса режимов висела в середине. */}
+        <div
+          data-testid="browser-studio-stage-column"
+          className="flex-1 min-w-0 flex flex-col min-h-0"
+        >
           <BrowserStage
             mode={stageMode}
             onModeChange={(m) => {
+              if (replaying) return; // запись заблокирована на время воспроизведения
               if (m === 'record') recorder.startRecording();
               else recorder.stopRecording();
             }}
@@ -176,19 +272,25 @@ export function BrowserStudioDesk({
             embedded
             fullscreen={false}
             onToggleFullscreen={() => {}}
-            cdpConnected={recorder.state.cdpConnected}
+            cdpConnected={cdpLive}
             cdpObserving={recorder.state.recording}
             recorderError={recorder.state.error}
           />
         </div>
-        <div className="h-[40%] min-h-[180px] shrink-0" style={{ borderTop: '1px solid #1e293b' }}>
+        <div className="w-[380px] shrink-0 h-full border-l border-white/10">
           <ActionTape
             steps={tapeSteps}
             recording={recorder.state.recording}
-            cdpConnected={recorder.state.cdpConnected}
+            cdpConnected={cdpLive}
+            replayEnabled={tapeSteps.length > 0 && cdpLive}
+            replaying={replaying}
+            replayStates={replayStates}
             onRemoveStep={removeStep}
+            onMoveStep={moveStep}
             onClear={clearSteps}
             onSave={requestSave}
+            onReplay={startTapeReplay}
+            onStopReplay={stopReplay}
           />
         </div>
       </div>

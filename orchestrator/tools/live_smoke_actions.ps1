@@ -1,15 +1,16 @@
-# LVL-1: live smoke - full action set Record -> observe -> redaction -> DSL -> replay.
+# LVL-1-RW: live smoke - honest chain Record -> reduce -> step -> replay.
 # Usage (repo root, stack up):
 #   .\orchestrator\tools\live_smoke_actions.ps1
-# Params: -Cdp http://localhost:9223 -SkipReplay
+# Params: -Cdp http://localhost:9223
 #
-# Runs the live end-to-end chain of 9 observe-action (click/type/select/wheel/
-# scroll/drag/hover/key/focus) over a real CDP browser and prints the verdict
-# + path to replay_timeline.json (artifacts for Maxim's eyes-on). Requires the
-# playwright-authoring container up and PK_BROWSER_CDP_ENDPOINT.
+# Honest smoke (LVL-1-RW): chain executed by python driver
+# orchestrator/tools/live_smoke_actions.py:
+#   Record (observe + real CDP actions) -> reduce to snake DSL steps ->
+#   step execute -> scenario_replay -> checkpoint fresh replay_timeline.json.
+# VERDICT computed strictly from timeline freshness (mtime of this run +
+# embedded replay_id): absent / stale / mismatch = FAIL.
 param(
-    [string]$Cdp = "http://localhost:9223",
-    [switch]$SkipReplay
+    [string]$Cdp = "http://localhost:9223"
 )
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
@@ -20,45 +21,55 @@ if (-not $env:PK_REPLAY_ARTIFACTS_DIR) {
     $env:PK_REPLAY_ARTIFACTS_DIR = Join-Path $root "replay_artifacts"
 }
 
-Write-Host "== LVL-1 live smoke ==" -ForegroundColor Cyan
+Write-Host "== LVL-1-RW live smoke ==" -ForegroundColor Cyan
 Write-Host "  CDP: $Cdp"
-Write-Host {}
+Write-Host "  artifacts: $env:PK_REPLAY_ARTIFACTS_DIR"
 
 # 1. CDP reachability.
 try {
     $null = Invoke-WebRequest -Uri "$Cdp/json/version" -TimeoutSec 3 -UseBasicParsing
-    Write-Host "[1/3] CDP reachable: OK" -ForegroundColor Green
+    Write-Host "[1/2] CDP reachable: OK" -ForegroundColor Green
 } catch {
-    Write-Host "[1/3] CDP unreachable - bring up stack: docker compose -f services/docker-compose.yml up -d playwright-authoring" -ForegroundColor Red
+    Write-Host "[1/2] CDP unreachable - bring up stack: docker compose -f services/docker-compose.yml up -d playwright-authoring" -ForegroundColor Red
     exit 2
 }
 
-# 2. Full live round-trip (marker live): observe -> redaction -> step -> replay.
-$pytestArgs = @("orchestrator/tests/test_browser_authoring_live.py", "-m", "live", "--tb=short")
-if ($SkipReplay) {
-    $pytestArgs += @("-k", "not replay")
-}
-Write-Host "[2/3] live full action round-trip..." -ForegroundColor Cyan
-py -3 -m pytest @pytestArgs -q
+# 2. Honest live chain via python driver.
+Write-Host "[2/2] live chain: Record -reduce-> step -replay-> fresh timeline..." -ForegroundColor Cyan
+$json = py -3 orchestrator/tools/live_smoke_actions.py $Cdp 2>&1
 $code = $LASTEXITCODE
+if ($code -eq 2) {
+    Write-Host "[2/2] CDP unreachable in driver: FAIL" -ForegroundColor Red
+    exit 2
+}
 if ($code -ne 0) {
-    Write-Host "[2/3] live round-trip: FAIL (exit $code)" -ForegroundColor Red
+    Write-Host "[2/2] live chain: FAIL (exit $code)" -ForegroundColor Red
+    Write-Host $json
     exit $code
 }
-Write-Host "[2/3] live round-trip: PASS (all 9 actions -> DSL step -> replay)" -ForegroundColor Green
 
-# 3. Replay artifacts for Maxim's eyes-on.
-Write-Host "[3/3] replay artifacts:" -ForegroundColor Cyan
-$timelines = Get-ChildItem -Path $env:PK_REPLAY_ARTIFACTS_DIR -Filter "replay_timeline.json" -Recurse -ErrorAction SilentlyContinue
-if ($timelines) {
-    $latest = $timelines | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-    Write-Host "  timeline: $($latest.FullName)" -ForegroundColor Yellow
-    Write-Host "  screenshots dir: $($latest.DirectoryName)" -ForegroundColor Yellow
-    Write-Host "  Eyes-on: noVNC :7902 (playwright-authoring) - replay walks the page."
-} else {
-    Write-Host "  (no timeline persisted - replay steps passed without persist, or -SkipReplay)" -ForegroundColor DarkYellow
+# 3. Freshness verdict: parse driver JSON (fields, not stdout tail).
+$result = $json | ConvertFrom-Json
+if (-not $result) {
+    Write-Host "[2/2] cannot parse driver result - VERDICT FAIL" -ForegroundColor Red
+    exit 4
+}
+if ($result.fresh -ne $true) {
+    Write-Host "[2/2] timeline stale/absent: $($result.reason) - VERDICT FAIL" -ForegroundColor Red
+    exit 4
+}
+if ($result.verdict -ne "passed") {
+    Write-Host "[2/2] replay verdict '$($result.verdict)' - VERDICT FAIL" -ForegroundColor Red
+    exit 3
 }
 
+$timelineFull = Join-Path $env:PK_REPLAY_ARTIFACTS_DIR "$($result.replay_id)\replay_timeline.json"
+Write-Host "  steps:      $($result.steps)" -ForegroundColor Yellow
+Write-Host "  replay_id:  $($result.replay_id)" -ForegroundColor Yellow
+Write-Host "  timeline:   $timelineFull" -ForegroundColor Yellow
+Write-Host "  fresh:      $($result.fresh) (mtime >= run start, replay_id match)" -ForegroundColor Yellow
+Write-Host "  Eyes-on:    noVNC :7902 (playwright-authoring) - replay walks the page."
+
 Write-Host ""
-Write-Host "== VERDICT: LVL-1 full action set green (observe -> redaction -> step -> replay) ==" -ForegroundColor Green
+Write-Host "== VERDICT: LVL-1-RW green (Record -reduce-> step -replay-> fresh timeline) ==" -ForegroundColor Green
 exit 0

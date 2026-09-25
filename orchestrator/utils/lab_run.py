@@ -587,6 +587,23 @@ def _watch_lab_process(proc, log_fh, run_id: str) -> None:
                 _persist_run_finish(run_id=run_id, exit_code=int(code))
             except Exception:
                 pass
+            # MON-REWORK: парная терминальная запись в runs_index независимо от
+            # того, дошёл ли runner до Controller.shutdown(). Ранний выход
+            # (validate-only, краш) раньше оставлял zombie "running" без closed.
+            try:
+                from utils.runs_index import upsert_run_index
+
+                _exit_ok = int(code) == 0
+                upsert_run_index(
+                    {
+                        "run_id": run_id,
+                        "status": "success" if _exit_ok else "failed",
+                        "ci_verdict": "pass" if _exit_ok else "fail_run",
+                        "source": "run_ended",
+                    }
+                )
+            except Exception:
+                pass
 
     threading.Thread(target=_watch, name=f"lab-run-{run_id}", daemon=True).start()
 

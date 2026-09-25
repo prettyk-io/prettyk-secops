@@ -11,6 +11,7 @@ from utils.env_dual import pk_env
 import json
 import os
 import re
+import shutil
 from pathlib import Path
 from typing import Any, Dict
 
@@ -76,6 +77,44 @@ def resolve_allure_results_dir() -> Path:
     path = ALLURE_RESULTS_DIR / project_id
     path.mkdir(parents=True, exist_ok=True)
     return path
+
+
+def purge_allure_results_for_current_check() -> Dict[str, Any]:
+    """ALR-PHANTOM + AL3-FRESH: очистить results текущего scope перед стартом run.
+
+    check-режим (project_id != default): чистим свой подкаталог — project_id
+    стабилен (= check_id), каталог копит *-result.json прогонов, и stale
+    fail/broken прошлых контуров иначе засчитались бы итогом свежего run.
+
+    default-режим: чистим ФАЙЛЫ корня RESULTS_ROOT, подпапки проектов НЕ трогаем.
+    Иначе default-отчёт собирает вечную свалку (жалоба «лог с 22 августа»);
+    теперь он отражает ровно текущий прогон.
+
+    Возвращает {"removed": [...], "skipped": [...]}; не бросает исключений.
+    """
+    project_id = resolve_allure_project_id()
+    root = ALLURE_RESULTS_DIR if project_id == "default" else ALLURE_RESULTS_DIR / project_id
+    if not root.is_dir():
+        return {"removed": [], "skipped": []}
+    removed: list[str] = []
+    skipped: list[str] = []
+    for child in sorted(root.iterdir(), key=lambda p: p.name):
+        if child.is_dir():
+            if project_id == "default":
+                continue  # AL3-FRESH: подпапки проектов/чеков неприкосновенны
+            try:
+                shutil.rmtree(child)
+            except OSError:
+                skipped.append(str(child))
+                continue
+        else:
+            try:
+                child.unlink()
+            except OSError:
+                skipped.append(str(child))
+                continue
+        removed.append(str(child))
+    return {"removed": removed, "skipped": skipped}
 
 
 def build_allure_report_url(

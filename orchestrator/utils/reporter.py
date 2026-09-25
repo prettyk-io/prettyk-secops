@@ -31,6 +31,7 @@ from utils.paths import (
     REPORTS_DIR,
     ensure_live_dir,
     find_artifact,
+    scanner_RESULTS_DIR,
     scanner_report_path,
 )
 
@@ -85,11 +86,18 @@ class Reporter:
     # --- Allure attachments (wire: allure|attach_*) ---
 
     def attach_screenshot(self, name="Screenshot"):
-        if not self.driver:
-            logger.warning("No driver for screenshot")
-            return False
         try:
-            screenshot_bytes = self.driver.get_screenshot_as_png()
+            adapter = self._webdriver_adapter
+            if adapter is not None and hasattr(adapter, "get_screenshot_as_png"):
+                # PlaywrightAdapter: bytes уже в адаптере (Page.screenshot). Selenium:
+                # забираем у драйвера ниже.
+                screenshot_bytes = adapter.get_screenshot_as_png()
+            else:
+                driver = self.driver
+                if not driver:
+                    logger.warning("No driver for screenshot")
+                    return False
+                screenshot_bytes = driver.get_screenshot_as_png()
             allure.attach(
                 screenshot_bytes,
                 name=name,
@@ -225,6 +233,54 @@ def trigger_allure_report(
 def _run_dir() -> Path:
     raw = (pk_env("RUN_DIR") or "").strip()
     return Path(raw).resolve() if raw else Path.cwd()
+
+
+def purge_stale_run_artifacts() -> dict:
+    """BOX-SAN-1: очистить stale-артефакты прошлого прогона ПЕРЕД стартом нового run.
+
+    run_summary.json пишется в `_run_dir()`, его live-зеркало — в `reports/live/`,
+    а scanner XML/HTML — в `reports/scanner-results/`. Все три — общие пути, не
+    изолированные per-run: если прошлый прогон упал до generate_report/write_run_summary,
+    на диске остаются старые файлы, и монитор/Results/DefectDojo читает их как свежий
+    итог. Удаляем их на старте — свежий run не может подменить свой результат старьём,
+    а ранний краш оставляет честное «нет свежего результата».
+
+    Возвращает {"removed": [...], "skipped": [...]}; не бросает исключений.
+    """
+    candidates: list[Path] = [(_run_dir() / "run_summary.json"), LIVE_RUN_SUMMARY_PATH]
+    try:
+        if scanner_RESULTS_DIR.is_dir():
+            candidates.extend(sorted(scanner_RESULTS_DIR.glob("*.xml")))
+            candidates.extend(sorted(scanner_RESULTS_DIR.glob("*.html")))
+    except OSError:
+        pass
+
+    removed: list[str] = []
+    skipped: list[str] = []
+    for path in candidates:
+        try:
+            if path.is_file():
+                path.unlink()
+                removed.append(str(path))
+                logger.info("stale artifact purged: %s", path)
+        except OSError as exc:
+            skipped.append(str(path))
+            logger.warning("stale artifact purge skip %s: %s", path, exc)
+
+    # ALR-PHANTOM + AL3-FRESH: Allure results scope накапливает *-result.json
+    # прошлых прогонов (project_id = check_id стабилен; default копит файлы корня).
+    # Allure3 generate импортирует ВСЕ файлы каталога, поэтому stale fail/broken
+    # старых контуров засчитались бы итогом свежего run. Чистим scope: per-check
+    # подкаталог целиком, в default — только файлы корня (подпапки чеков целы).
+    try:
+        from utils.allure_project import purge_allure_results_for_current_check
+
+        allure_purge = purge_allure_results_for_current_check()
+        removed.extend(allure_purge.get("removed", []))
+        skipped.extend(allure_purge.get("skipped", []))
+    except Exception as exc:  # noqa: BLE001 — best-effort честный gate
+        logger.warning("allure results purge skip: %s", exc)
+    return {"removed": removed, "skipped": skipped}
 
 
 def gate_label(

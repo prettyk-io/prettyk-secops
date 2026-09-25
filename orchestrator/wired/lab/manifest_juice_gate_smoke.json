@@ -1,0 +1,80 @@
+{
+  "meta": {
+    "project_id": "juice-gate-smoke",
+    "initiator_name": "BOT-EXT GATE-SMOKE",
+    "assessment_purpose": "scheduled",
+    "app_type": "web",
+    "scheduled_info": "GATE-SMOKE: open Juice -> spider -> active -> passive -> fuzz(5) -> generate_report (без checkout)"
+  },
+  "infrastructure": {
+    "scanner_mode": "demon",
+    "browser_type": "chrome-headless",
+    "scanner_work_timeout_min": 20,
+    "idle_timeout_min": 10,
+    "start_with_webswing": false
+  },
+  "security_configuration": {
+    "scan_policy": "custom_policy",
+    "auth_type": "Без авторизации",
+    "base_url_override": "http://juice-shop:3000",
+    "allowed_extra_domains": ""
+  },
+  "test_suites": {
+    "imports": [],
+    "pages": {},
+    "test_data_constructor": [],
+    "scenarios": [
+      {
+        "scenario_name": "juice_gate_smoke",
+        "continue_on_failure": false,
+        "steps": [
+          {
+            "description": "Минимальный gate-контур: spider -> active -> passive -> fuzz -> отчёт",
+            "constructor": "<!>\n@ Title juice_gate_smoke\n@ Description Минимальный gate-контур без checkout\n\nНовыйКонтекст juice_ctx \"gate smoke\"\nВключитьВКонтекст juice_ctx\n\nОткрыть\nПауза 2\n\n? {\n  Нажать css \"button[aria-label='Close Welcome Banner']\"\n  Нажать css .cc-dismiss\n} > {\n  Лог \"баннеров не было\"\n} >! {\n  Пауза 1\n}\n\nСканер juice_ctx 1\nАктивноеСканирование juice_ctx 2\nПассивноеСканирование 1\n\nФаззингВолна juice_search_q\n\nЛог \"gate-smoke: scan done\"\nОтчёт xml juice_dojo.xml\nОтчёт html juice_dojo.html\nПриложитьФайл juice_dojo.xml\n"
+          }
+        ]
+      }
+    ],
+    "fuzzers": [
+      {
+        "id": "juice_search_q",
+        "label": "juice_search_q",
+        "algorithm": "sniper",
+        "targets": [
+          {
+            "url": "http://juice-shop:3000/rest/products/search?q=",
+            "method": "GET",
+            "corpus": "intent_boundary",
+            "body": ""
+          }
+        ],
+        "message": {
+          "source": "template",
+          "method": "GET",
+          "url": "http://juice-shop:3000/rest/products/search?q=",
+          "history_url_contains": "",
+          "history_method": "GET",
+          "session_replay": false,
+          "headers": {},
+          "follow_redirects": true
+        },
+        "location": {
+          "kind": "query_param",
+          "name": "q"
+        },
+        "corpus": "intent_boundary",
+        "policy": {
+          "max_requests": 5,
+          "requests_per_second": 1,
+          "alert_on_server_error": true,
+          "latency_multiplier": 3,
+          "size_ratio": 3,
+          "size_abs_delta": 2048
+        },
+        "session_replay": false,
+        "headers": {},
+        "follow_redirects": true
+      }
+    ]
+  }
+}

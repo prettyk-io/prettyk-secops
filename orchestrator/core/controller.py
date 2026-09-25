@@ -1029,8 +1029,10 @@ class Controller:
                 clear_ci_meta()
             except Exception:
                 pass
+            run_id = (pk_env("RUN_ID") or "").strip() or self._session_name()
             set_meta(
                 session_name=self._session_name(),
+                run_id=run_id,
                 status="running",
                 novnc_url=default_novnc_url(browser),
                 browser_type=browser,
@@ -1062,16 +1064,6 @@ class Controller:
             except Exception:
                 pass
             start_live_server(session_name=self._session_name())
-            try:
-                from utils.live_server import notify_ci_status
-
-                notify_ci_status(
-                    phase="in_progress",
-                    job_name=self._session_name(),
-                    job_description="Локальный прогон оркестратора",
-                )
-            except Exception as ci_e:
-                logger.debug("PrettyK Live ci/status (running) skipped: %s", ci_e)
         except Exception as e:
             logger.debug("PrettyK Live start skipped: %s", e)
         self._seed_wired_stream()
@@ -1080,6 +1072,7 @@ class Controller:
             logger.warning("No test_suites found. Nothing to execute.")
             self.suites_complete = True
             self._await_session_end()
+            self._reset_live_run_state()
             return
         # Не fail-fast: копим весь фарш, ведём до живого косяка, весь список — в teardown/лог.
         self._wired_problems = self.collect_wired_problems()
@@ -1108,6 +1101,23 @@ class Controller:
             self._attach_final_scanner_report()
             # Ручной Webswing: держим процесс до idle/work (сценарии могли быть пусты).
             self._await_session_end()
+            # Честный монитор: даже при крахе сценария — никакого залипшего running.
+            self._reset_live_run_state()
+
+    def _reset_live_run_state(self) -> None:
+        """Close the runtime side of a run on ANY exit (success, failure, crash).
+
+        Сбрасывает ``run_start_ts``/``status`` в диари-мете, чтобы ранний крах
+        (сразу после RUN_STARTED) или прямой ``Controller.run()`` без жизненного
+        цикла main.py не оставляли монитор в состоянии «running». CI-статус
+        (in_progress/completed) здесь НЕ трогаем — им владеет точка входа.
+        """
+        try:
+            from utils.diary_bus import reset_run_state
+
+            reset_run_state()
+        except Exception as exc:  # noqa: BLE001 — never mask the real outcome
+            logger.debug("PrettyK Live run-state reset skipped: %s", exc)
 
     def _mark_remaining_scenarios_skipped(self, scenarios, start_index: int) -> None:
         from core.scenario_failsafe import scenario_failsafe_allowed

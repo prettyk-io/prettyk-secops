@@ -60,56 +60,65 @@ class PlaywrightBrowserRuntime:
         if self._launched:
             return self._page
 
-        self._playwright = sync_playwright().start()
+        try:
+            self._playwright = sync_playwright().start()
 
-        # PW-C1: wired browser_type приходит в Selenium-именах ("chrome"/"firefox"),
-        # Playwright ждёт "chromium"/"firefox"/"webkit". Одна точка маппинга —
-        # чтобы боевой wired не требовал переписывания при cutover.
-        _SELENIUM_TO_PW = {"chrome": "chromium", "firefox": "firefox", "webkit": "webkit"}
-        browser_type = _SELENIUM_TO_PW.get(browser_type, browser_type)
+            # PW-C1: wired browser_type приходит в Selenium-именах ("chrome"/"firefox"),
+            # Playwright ждёт "chromium"/"firefox"/"webkit". Одна точка маппинга —
+            # чтобы боевой wired не требовал переписывания при cutover.
+            _SELENIUM_TO_PW = {"chrome": "chromium", "firefox": "firefox", "webkit": "webkit"}
+            browser_type = _SELENIUM_TO_PW.get(browser_type, browser_type)
 
-        browser_launcher = getattr(self._playwright, browser_type, None)
-        if browser_launcher is None:
-            supported = ["chromium", "firefox", "webkit"]
-            raise ValueError(
-                f"Unsupported browser_type={browser_type!r}. "
-                f"Supported: {supported}"
+            browser_launcher = getattr(self._playwright, browser_type, None)
+            if browser_launcher is None:
+                supported = ["chromium", "firefox", "webkit"]
+                raise ValueError(
+                    f"Unsupported browser_type={browser_type!r}. "
+                    f"Supported: {supported}"
+                )
+
+            self._browser = browser_launcher.launch(
+                headless=headless,
+            )
+            logger.info(
+                "Playwright browser launched: %s (headless=%s)",
+                browser_type,
+                headless,
             )
 
-        self._browser = browser_launcher.launch(
-            headless=headless,
-        )
-        logger.info(
-            "Playwright browser launched: %s (headless=%s)",
-            browser_type,
-            headless,
-        )
+            ctx_kwargs: dict = {
+                "viewport": {"width": viewport_width, "height": viewport_height},
+                "locale": locale,
+            }
 
-        ctx_kwargs: dict = {
-            "viewport": {"width": viewport_width, "height": viewport_height},
-            "locale": locale,
-        }
+            if ignore_https_errors:
+                ctx_kwargs["ignore_https_errors"] = True
 
-        if ignore_https_errors:
-            ctx_kwargs["ignore_https_errors"] = True
+            if proxy:
+                ctx_kwargs["proxy"] = proxy
+                if proxy_bypass:
+                    ctx_kwargs["proxy"]["bypass"] = proxy_bypass
+                logger.info("Playwright context proxy: %s", proxy.get("server", "?"))
 
-        if proxy:
-            ctx_kwargs["proxy"] = proxy
-            if proxy_bypass:
-                ctx_kwargs["proxy"]["bypass"] = proxy_bypass
-            logger.info("Playwright context proxy: %s", proxy.get("server", "?"))
+            # PW-E3: видео прогона через record_video_dir
+            if record_video_dir:
+                import os as _os
+                _os.makedirs(record_video_dir, exist_ok=True)
+                ctx_kwargs["record_video_dir"] = record_video_dir
+                ctx_kwargs["record_video_size"] = {"width": viewport_width, "height": viewport_height}
+                logger.info("Playwright video recording → %s", record_video_dir)
 
-        # PW-E3: видео прогона через record_video_dir
-        if record_video_dir:
-            import os as _os
-            _os.makedirs(record_video_dir, exist_ok=True)
-            ctx_kwargs["record_video_dir"] = record_video_dir
-            ctx_kwargs["record_video_size"] = {"width": viewport_width, "height": viewport_height}
-            logger.info("Playwright video recording → %s", record_video_dir)
-
-        self._context = self._browser.new_context(**ctx_kwargs)
-        self._page = self._context.new_page()
-        self._launched = True
+            self._context = self._browser.new_context(**ctx_kwargs)
+            self._page = self._context.new_page()
+            self._launched = True
+        except Exception:
+            # PW-RUNTIME-LAUNCH-LEAK: sync_playwright().start() поднимает
+            # greenlet-loop в ТЕКУЩЕМ потоке; падение launch/new_context без
+            # закрытия runtime оставляет loop «выполняющимся» (в процессе не
+            # стартует ни один asyncio.Runner) и течёт Playwright-драйвером.
+            # Гасим и пробрасываем — симметрично connect_over_cdp.
+            self.close()
+            raise
 
         logger.info(
             "Playwright context + page ready (viewport %sx%s)",
@@ -131,8 +140,18 @@ class PlaywrightBrowserRuntime:
         if self._launched:
             return self._page
 
-        self._playwright = sync_playwright().start()
-        self._browser = self._playwright.chromium.connect_over_cdp(endpoint)
+        try:
+            self._playwright = sync_playwright().start()
+            self._browser = self._playwright.chromium.connect_over_cdp(endpoint)
+        except Exception:
+            # BE-TEST-LOOP-ISOLATION: sync_playwright().start() поднимает
+            # greenlet-loop в ТЕКУЩЕМ потоке; если connect падает и runtime не
+            # закрыть, loop остаётся «выполняющимся» в thread-local — после
+            # этого в процессе не стартует ни один asyncio.Runner (все async-
+            # тесты падают с «cannot be called from a running event loop»),
+            # а Playwright-драйвер течёт. Гасим и пробрасываем.
+            self.close()
+            raise
         logger.info("Playwright connected over CDP: %s", endpoint)
 
         contexts = self._browser.contexts

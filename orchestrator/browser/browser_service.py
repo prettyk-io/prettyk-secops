@@ -335,6 +335,10 @@ class _BrowserWorker:
             return {"ok": False, "error": f"invalid url: {url}"}
         try:
             page.goto(url, timeout=8000, wait_until="domcontentloaded")
+            if self._observe_active:
+                # BROWSER-STUDIO-SCROLL: документ заменён — observer-листенеры
+                # переживают навигацию только через повторную инъекцию.
+                self._cmd_observe_start()
             return {
                 "ok": True,
                 "url": page.evaluate("window.location.href"),
@@ -494,6 +498,53 @@ class _BrowserWorker:
         except Exception as e:
             return {"ok": False, "error": f"{type(e).__name__}: {e}"}
 
+    # VIEWFIT-BE: границы смены вьюпорта. Ниже 320px UI не юзабелен, выше
+    # 3840px — за пределами смысла холста оператора; всё, что вне, клампится.
+    _VIEWPORT_MIN_PX = 320
+    _VIEWPORT_MAX_PX = 3840
+
+    def _cmd_viewport_set(self, width: int = 0, height: int = 0) -> dict:
+        """VIEWFIT-BE: сменить размер вьюпорта авторинг-браузера.
+
+        Та же Playwright-page, что и click-маппинг (``page.mouse``), поэтому
+        после смены размеров координатные клики фронта продолжают попадать
+        без смещения. Возвращает ``{ok, viewportWidth, viewportHeight, clamped}``
+        с фактическими (после клампа к [320, 3840]) размерами.
+
+        Дополнительно шлём best-effort ``page.screenshot()``: resize сам по
+        себе не будит композитор на статичной странице (спайк VIEWFIT-BE), а
+        screenshot без сайд-эффектов гарантирует relay свежий screencast-кадр
+        нового размера.
+        """
+        page = self._ensure_browser()
+        if page is None:
+            return {"ok": False, "error": "browser not available"}
+        if isinstance(width, bool) or isinstance(height, bool):
+            return {"ok": False, "error": "width and height must be integers"}
+        try:
+            w = int(width)
+            h = int(height)
+        except (TypeError, ValueError):
+            return {"ok": False, "error": "width and height must be integers"}
+        if w <= 0 or h <= 0:
+            return {"ok": False, "error": "width and height must be positive"}
+        clamped_w = min(max(w, self._VIEWPORT_MIN_PX), self._VIEWPORT_MAX_PX)
+        clamped_h = min(max(h, self._VIEWPORT_MIN_PX), self._VIEWPORT_MAX_PX)
+        try:
+            page.set_viewport_size({"width": clamped_w, "height": clamped_h})
+        except Exception as e:
+            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+        try:
+            page.screenshot()
+        except Exception:
+            logger.debug("browser_service: viewport change nudge screenshot failed", exc_info=True)
+        return {
+            "ok": True,
+            "viewportWidth": clamped_w,
+            "viewportHeight": clamped_h,
+            "clamped": clamped_w != w or clamped_h != h,
+        }
+
     def _cmd_keyboard_press(self, key: str) -> dict:
         page = self._ensure_browser()
         if page is None:
@@ -506,12 +557,32 @@ class _BrowserWorker:
         except Exception as e:
             return {"ok": False, "error": f"{type(e).__name__}: {e}"}
 
-    def _cmd_mouse_wheel(self, dx: float = 0.0, dy: float = 0.0) -> dict:
+    @staticmethod
+    def _wheel_page(page, dx: float, dy: float,
+                    x: float | None = None, y: float | None = None) -> None:
+        """BROWSER-STUDIO-SCROLL: wheel с активацией вкладки (Xvfb quirk).
+
+        На НЕактивной вкладке wheel-событие доставляется в DOM, но compositor
+        не применяет scroll-offset (``scrollTop``/``scrollY`` стоят). После
+        ``page.bring_to_front()`` тот же ``page.mouse.wheel`` даёт реальный
+        скролл. Координаты ``x``/``y`` (опционально) — куда сначала навести мышь.
+        """
+        if x is not None and y is not None:
+            page.mouse.move(float(x), float(y))
+        try:
+            page.bring_to_front()
+        except Exception:
+            pass  # не критично: без активации quirk может не примениться
+        page.mouse.wheel(float(dx), float(dy))
+
+    def _cmd_mouse_wheel(self, dx: float = 0.0, dy: float = 0.0,
+                         x: float | None = None, y: float | None = None) -> dict:
+        """BBA-3 + BROWSER-STUDIO-SCROLL: колесо мыши с реальным scroll-offset."""
         page = self._ensure_browser()
         if page is None:
             return {"ok": False, "error": "browser not available"}
         try:
-            page.mouse.wheel(float(dx), float(dy))
+            self._wheel_page(page, dx, dy, x, y)
             return {"ok": True, "dx": dx, "dy": dy}
         except Exception as e:
             return {"ok": False, "error": f"{type(e).__name__}: {e}"}
@@ -647,11 +718,11 @@ class _BrowserWorker:
                         dx, dy = (float(x) for x in str(value).split(","))
                     except (TypeError, ValueError):
                         return _ok("failed", f"scroll value must be 'dx,dy', got {value!r}")
-                    page.mouse.wheel(dx, dy)
+                    self._wheel_page(page, dx, dy)
                 elif target:
                     self._resolve_step_locator(page, target, strategy).scroll_into_view_if_needed(timeout=timeout_ms)
                 else:
-                    page.mouse.wheel(0.0, -600.0)
+                    self._wheel_page(page, 0.0, -600.0)
                 return _ok("passed")
 
             # ACT-BE: wheel — value "dx,dy" → mouse.wheel (deltaX/deltaY).
@@ -662,7 +733,7 @@ class _BrowserWorker:
                     dx, dy = (float(x) for x in str(value).split(","))
                 except (TypeError, ValueError):
                     return _ok("failed", f"wheel value must be 'dx,dy', got {value!r}")
-                page.mouse.wheel(dx, dy)
+                self._wheel_page(page, dx, dy)
                 return _ok("passed")
 
             # ACT-BE: drag — value "x1,y1,x2,y2" → mouse.move/down/move/up.
@@ -845,11 +916,15 @@ class _BrowserWorker:
         page = self._ensure_browser()
         if page is None:
             return {"ok": False, "error": "browser not available"}
-        if self._observe_active:
-            return {"ok": True, "status": "already_active"}
-        self._observed_events.clear()
-        self._observe_active = True
-        self._observe_last_event_id = 0
+        # BROWSER-STUDIO-SCROLL: повторный start не только «уже активен» — он
+        # безусловно до-инжектит observer-листенеры. Это самолечение после
+        # навигации: новый документ теряет листенеры, а флаг активной observe
+        # остаётся; инъекция по guard'ам хендлеров навешивает их заново.
+        already_active = self._observe_active
+        if not already_active:
+            self._observed_events.clear()
+            self._observe_active = True
+            self._observe_last_event_id = 0
         try:
             # VP-L2: expose_binding нельзя снять и нельзя зарегистрировать повторно.
             # Регистрируем один раз на страницу; повторный start только чинит listener.
@@ -946,9 +1021,8 @@ class _BrowserWorker:
                     document.addEventListener('change',window.__pk_cdp_input_handler__,true);
                 }
                 // ACT-BE: wheel (колесо мыши) → deltaX/deltaY.
-                if(!window.__pk_cdp_wheel_listener__){
-                    window.__pk_cdp_wheel_listener__=true;
-                    document.addEventListener('wheel',function(e){
+                if(!window.__pk_cdp_wheel_handler__){
+                    window.__pk_cdp_wheel_handler__=function(e){
                         const el=e.target;
                         const r=el.getBoundingClientRect();
                         window.__pk_cdp_wheel__({
@@ -961,14 +1035,15 @@ class _BrowserWorker:
                             rect:{x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height)},
                             delta:{dx:Math.round(e.deltaX),dy:Math.round(e.deltaY)}
                         });
-                    },{capture:true,passive:true});
+                    };
+                    document.addEventListener('wheel',window.__pk_cdp_wheel_handler__,{capture:true,passive:true});
+                    window.__pk_cdp_wheel_listener__=true;
                 }
                 // ACT-BE: scroll (прокрутка) → deltaX/deltaY от предыдущей позиции.
-                if(!window.__pk_cdp_scroll_listener__){
-                    window.__pk_cdp_scroll_listener__=true;
+                if(!window.__pk_cdp_scroll_handler__){
                     const __scrollPrev={left:0,top:0,has:false};
                     let __scrollTimer=null;
-                    document.addEventListener('scroll',function(e){
+                    window.__pk_cdp_scroll_handler__=function(e){
                         if(__scrollTimer) return;
                         __scrollTimer=setTimeout(function(){
                             __scrollTimer=null;
@@ -993,16 +1068,17 @@ class _BrowserWorker:
                                 delta:{dx:Math.round(dx),dy:Math.round(dy)}
                             });
                         },150);
-                    },{capture:true,passive:true});
+                    };
+                    document.addEventListener('scroll',window.__pk_cdp_scroll_handler__,{capture:true,passive:true});
+                    window.__pk_cdp_scroll_listener__=true;
                 }
                 // ACT-BE: drag&drop → start/end coords (по mouseup при значимом сдвиге).
-                if(!window.__pk_cdp_drag_listener__){
-                    window.__pk_cdp_drag_listener__=true;
+                if(!window.__pk_cdp_drag_handler__){
                     const __drag={active:false,startX:0,startY:0,el:null};
-                    document.addEventListener('mousedown',function(e){
+                    window.__pk_cdp_drag_handler__=function(e){
                         __drag.active=true;__drag.startX=e.clientX;__drag.startY=e.clientY;__drag.el=e.target;
-                    },true);
-                    document.addEventListener('mouseup',function(e){
+                    };
+                    window.__pk_cdp_drag_end_handler__=function(e){
                         if(!__drag.active){return;}
                         __drag.active=false;
                         const el=__drag.el;
@@ -1020,13 +1096,15 @@ class _BrowserWorker:
                             rect:{x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height)},
                             coords:{startX:Math.round(__drag.startX),startY:Math.round(__drag.startY),endX:Math.round(e.clientX),endY:Math.round(e.clientY)}
                         });
-                    },true);
+                    };
+                    document.addEventListener('mousedown',window.__pk_cdp_drag_handler__,true);
+                    document.addEventListener('mouseup',window.__pk_cdp_drag_end_handler__,true);
+                    window.__pk_cdp_drag_listener__=true;
                 }
                 // ACT-BE: hover (mouseenter по кликабельным, с дебаунсом).
-                if(!window.__pk_cdp_hover_listener__){
-                    window.__pk_cdp_hover_listener__=true;
+                if(!window.__pk_cdp_hover_handler__){
                     let __hoverTimer=null,__hoverLast=null;
-                    document.addEventListener('mouseover',function(e){
+                    window.__pk_cdp_hover_handler__=function(e){
                         const el=e.target;
                         if(!el||el.nodeType!==1){return;}
                         const t=el.tagName.toLowerCase();
@@ -1047,12 +1125,13 @@ class _BrowserWorker:
                                 rect:{x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height)}
                             });
                         },300);
-                    },true);
+                    };
+                    document.addEventListener('mouseover',window.__pk_cdp_hover_handler__,true);
+                    window.__pk_cdp_hover_listener__=true;
                 }
                 // ACT-BE: keyboard (keydown) → key + printable-флаг; $value для печатных.
-                if(!window.__pk_cdp_key_listener__){
-                    window.__pk_cdp_key_listener__=true;
-                    document.addEventListener('keydown',function(e){
+                if(!window.__pk_cdp_key_handler__){
+                    window.__pk_cdp_key_handler__=function(e){
                         const el=e.target;
                         const r=el.getBoundingClientRect();
                         const printable=(e.key&&e.key.length===1)&&!e.ctrlKey&&!e.metaKey&&!e.altKey;
@@ -1067,12 +1146,13 @@ class _BrowserWorker:
                             dataTestId:el.getAttribute('data-testid')||el.getAttribute('data-test-id')||'',
                             rect:{x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height)}
                         });
-                    },true);
+                    };
+                    document.addEventListener('keydown',window.__pk_cdp_key_handler__,true);
+                    window.__pk_cdp_key_listener__=true;
                 }
                 // ACT-BE: focus (focusin, без ввода).
-                if(!window.__pk_cdp_focus_listener__){
-                    window.__pk_cdp_focus_listener__=true;
-                    document.addEventListener('focusin',function(e){
+                if(!window.__pk_cdp_focus_handler__){
+                    window.__pk_cdp_focus_handler__=function(e){
                         const el=e.target;
                         if(!el||el.nodeType!==1){return;}
                         const r=el.getBoundingClientRect();
@@ -1085,11 +1165,13 @@ class _BrowserWorker:
                             dataTestId:el.getAttribute('data-testid')||el.getAttribute('data-test-id')||'',
                             rect:{x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height)}
                         });
-                    },true);
+                    };
+                    document.addEventListener('focusin',window.__pk_cdp_focus_handler__,true);
+                    window.__pk_cdp_focus_listener__=true;
                 }
             """)
             logger.info("browser_observe_start: injected")
-            return {"ok": True, "status": "observing"}
+            return {"ok": True, "status": "already_active" if already_active else "observing"}
         except Exception as e:
             self._observe_active = False
             return {"ok": False, "error": f"{type(e).__name__}: {e}"}
@@ -1103,19 +1185,36 @@ class _BrowserWorker:
                 self._page.evaluate(
                     "if(window.__pk_cdp_click_handler__){"
                     "document.removeEventListener('click',window.__pk_cdp_click_handler__,true);"
-                    "window.__pk_cdp_click_handler__=null;}"
-                    "window.__pk_cdp_click_listener__=false;"
+                    "window.__pk_cdp_click_handler__=null;}window.__pk_cdp_click_listener__=false;"
                     "if(window.__pk_cdp_input_handler__){"
                     "document.removeEventListener('input',window.__pk_cdp_input_handler__,true);"
                     "document.removeEventListener('change',window.__pk_cdp_input_handler__,true);"
-                    "window.__pk_cdp_input_handler__=null;}"
-                    "window.__pk_cdp_input_listener__=false;"
-                    "window.__pk_cdp_wheel_listener__=true;"
-                    "window.__pk_cdp_scroll_listener__=true;"
-                    "window.__pk_cdp_drag_listener__=true;"
-                    "window.__pk_cdp_hover_listener__=true;"
-                    "window.__pk_cdp_key_listener__=true;"
-                    "window.__pk_cdp_focus_listener__=true;"
+                    "window.__pk_cdp_input_handler__=null;}window.__pk_cdp_input_listener__=false;"
+                    # BROWSER-STUDIO-SCROLL: long-action листенеры теперь именованные —
+                    # stop снимает их и гасит флаги. Раньше stop ставил флаги в true,
+                    # не снимая хендлеры: после навигации флаг жил на новом документе
+                    # без листенера, и следующий start молча пропускал навешивание.
+                    "if(window.__pk_cdp_wheel_handler__){"
+                    "document.removeEventListener('wheel',window.__pk_cdp_wheel_handler__,true);"
+                    "window.__pk_cdp_wheel_handler__=null;}window.__pk_cdp_wheel_listener__=false;"
+                    "if(window.__pk_cdp_scroll_handler__){"
+                    "document.removeEventListener('scroll',window.__pk_cdp_scroll_handler__,true);"
+                    "window.__pk_cdp_scroll_handler__=null;}window.__pk_cdp_scroll_listener__=false;"
+                    "if(window.__pk_cdp_drag_handler__){"
+                    "document.removeEventListener('mousedown',window.__pk_cdp_drag_handler__,true);"
+                    "window.__pk_cdp_drag_handler__=null;}"
+                    "if(window.__pk_cdp_drag_end_handler__){"
+                    "document.removeEventListener('mouseup',window.__pk_cdp_drag_end_handler__,true);"
+                    "window.__pk_cdp_drag_end_handler__=null;}window.__pk_cdp_drag_listener__=false;"
+                    "if(window.__pk_cdp_hover_handler__){"
+                    "document.removeEventListener('mouseover',window.__pk_cdp_hover_handler__,true);"
+                    "window.__pk_cdp_hover_handler__=null;}window.__pk_cdp_hover_listener__=false;"
+                    "if(window.__pk_cdp_key_handler__){"
+                    "document.removeEventListener('keydown',window.__pk_cdp_key_handler__,true);"
+                    "window.__pk_cdp_key_handler__=null;}window.__pk_cdp_key_listener__=false;"
+                    "if(window.__pk_cdp_focus_handler__){"
+                    "document.removeEventListener('focusin',window.__pk_cdp_focus_handler__,true);"
+                    "window.__pk_cdp_focus_handler__=null;}window.__pk_cdp_focus_listener__=false;"
                 )
             except Exception:
                 pass
@@ -1711,11 +1810,16 @@ def browser_elements_snapshot(session_id: str | None = None) -> dict:
 def browser_viewport(session_id: str | None = None) -> dict:
     return BrowserSessionManager.worker_for(session_id).dispatch("viewport")
 
+def browser_viewport_set(width: int, height: int, session_id: str | None = None) -> dict:
+    """VIEWFIT-BE: сменить размер вьюпорта (POST /api/browser/viewport {width,height})."""
+    return BrowserSessionManager.worker_for(session_id).dispatch("viewport_set", width=width, height=height)
+
 def browser_keyboard_press(key: str, session_id: str | None = None) -> dict:
     return BrowserSessionManager.worker_for(session_id).dispatch("keyboard_press", key=key)
 
-def browser_mouse_wheel(dx: float = 0.0, dy: float = 0.0, session_id: str | None = None) -> dict:
-    return BrowserSessionManager.worker_for(session_id).dispatch("mouse_wheel", dx=dx, dy=dy)
+def browser_mouse_wheel(dx: float = 0.0, dy: float = 0.0, session_id: str | None = None,
+                        x: float | None = None, y: float | None = None) -> dict:
+    return BrowserSessionManager.worker_for(session_id).dispatch("mouse_wheel", dx=dx, dy=dy, x=x, y=y)
 
 def browser_mouse_drag(x1: float, y1: float, x2: float, y2: float, session_id: str | None = None) -> dict:
     return BrowserSessionManager.worker_for(session_id).dispatch("mouse_drag", x1=x1, y1=y1, x2=x2, y2=y2)

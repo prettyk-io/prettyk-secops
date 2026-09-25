@@ -2,6 +2,7 @@
 description: Sanctuary — Обитель, 2FA-ритуалы, канонизация, Алтарь, беседы о здравомыслии (DeepSeek V4 Pro)
 mode: primary
 model: openrouter/deepseek/deepseek-v4.1-flash
+variant: max
 permission:
   task: deny
 ---

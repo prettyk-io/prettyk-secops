@@ -61,11 +61,35 @@ export interface WorkspaceState {
   resetLayout: () => void;
 }
 
-const STORAGE_KEY = 'pk.editor.workspace.v1';
+// BROWSER-STUDIO-3: бамп с v1 на v2. v1 хранил `rightPanel.open:true` (браузер в
+// боковой шторке) и переопределял новый дефолт `open:false` через loadStoredLayout()
+// → шторка «воскресала» у пользователей с застарелым localStorage. Бамп сбрасывает
+// застарелый layout у всех за один раз; см. migrateLegacyLayout() ниже.
+const STORAGE_KEY = 'pk.editor.workspace.v2';
+const LEGACY_STORAGE_KEY = 'pk.editor.workspace.v1';
+
+/**
+ * BROWSER-STUDIO-3: вычищает застарелый v1-ключ, чтобы браузер-в-шторке
+ * (`rightPanel.open:true`, `activeTab:'browser'`) не воскресал ни при каком
+ * последующем откате/дебаге. Новый layout живёт под v2.
+ */
+function migrateLegacyLayout() {
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  try {
+    if (window.localStorage.getItem(LEGACY_STORAGE_KEY) !== null) {
+      window.localStorage.removeItem(LEGACY_STORAGE_KEY);
+    }
+  } catch {
+    // ignore quota / security errors
+  }
+}
 
 const DEFAULT_LAYOUT = {
   leftPanel: { open: true, width: 240 },
-  rightPanel: { open: true, width: 480, activeTab: 'browser' },
+  // BROWSER-STUDIO-2: браузер живёт в полноразмерном Desk (BrowserStudioDesk),
+  // а не в боковой шторке — шторка закрыта по умолчанию, её раскрытие это
+  // явный reveal (toggleRight), а не браузерный путь на входе.
+  rightPanel: { open: false, width: 480, activeTab: 'browser' },
   bottomDrawer: { open: false, height: 240, activeTab: 'terminal' },
   density: 'comfortable' as WorkspaceDensity,
 };
@@ -117,6 +141,7 @@ function persistLayout(state: Pick<WorkspaceState, 'leftPanel' | 'rightPanel' | 
   }
 }
 
+migrateLegacyLayout();
 const initialPersisted = loadStoredLayout();
 
 export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({

@@ -9,7 +9,7 @@ import traceback
 from models.wired import Wired
 from core.errors import WiredError
 from core.controller import Controller
-from utils.reporter import finalize_reports, write_run_summary_from_controller
+from utils.reporter import finalize_reports, purge_stale_run_artifacts, write_run_summary_from_controller
 from utils.paths import ensure_reports_dirs
 
 logging.basicConfig(
@@ -22,7 +22,7 @@ logger = logging.getLogger("main")
 
 def load_wired(file_path):
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, "r", encoding="utf-8-sig") as f:
             data = json.load(f)
         from core.wired_secretref import prepare_wired_data
         from models.wired import strip_legacy_wired_dict
@@ -107,6 +107,10 @@ def main():
 
     ensure_reports_dirs()
 
+    # BOX-SAN-1: чистый старт прогона — stale run_summary.json / juice_dojo.xml от
+    # прошлого run не должны выдаваться за результат текущего (честный stale-gate).
+    purge_stale_run_artifacts()
+
     wired = load_wired(args.wired)
 
     try:
@@ -125,6 +129,19 @@ def main():
     fault_kind = ""
     fault_reason = ""
     try:
+        try:
+            from utils.live_server import notify_ci_status
+
+            # CI-статус принадлежит точке входа (main.py), а не Controller.run():
+            # иначе прямой/тестовый вызов run() писал бы in_progress без парного
+            # completed и залипал в боевой мете (BOX-RUN-NORM-1).
+            notify_ci_status(
+                phase="in_progress",
+                job_name=controller._session_name(),
+                job_description="Локальный прогон оркестратора",
+            )
+        except Exception as ci_e:
+            logger.debug("PrettyK Live ci/status (running) skipped: %s", ci_e)
         controller.run()
     except WiredError as e:
         logger.error(f"WIRED ERROR: {e}")

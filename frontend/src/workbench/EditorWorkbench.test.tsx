@@ -86,13 +86,15 @@ describe('EditorWorkbench (PK-EC-1 & PK-EC-5)', () => {
     cleanup();
   });
 
-  it('renders the 3-panel shell layout correctly on mount', () => {
+  it('renders the shell layout correctly on mount (right panel closed by default)', () => {
     render(<EditorWorkbench checkId="chk-jwt-test" />);
 
     expect(screen.getByTestId('editor-workbench-shell')).toBeDefined();
     expect(screen.getByTestId('workbench-left-panel')).toBeDefined();
     expect(screen.getByTestId('workbench-center-panel')).toBeDefined();
-    expect(screen.getByTestId('workbench-right-panel')).toBeDefined();
+    // BROWSER-STUDIO-2: браузер в полноразмерном Desk — боковая шторка НЕ открыта
+    // по умолчанию (один источник правды «где живёт браузер»).
+    expect(screen.queryByTestId('workbench-right-panel')).toBeNull();
     expect(screen.getByTestId('mock-monaco-editor')).toBeDefined();
   });
 
@@ -112,7 +114,8 @@ describe('EditorWorkbench (PK-EC-1 & PK-EC-5)', () => {
 
   it('toggles right panel and bottom drawer via header buttons', () => {
     render(<EditorWorkbench />);
-    expect(screen.queryByTestId('workbench-right-panel')).not.toBeNull();
+    // BROWSER-STUDIO-2: шторка закрыта по умолчанию.
+    expect(screen.queryByTestId('workbench-right-panel')).toBeNull();
     expect(screen.queryByTestId('workbench-bottom-drawer')).toBeNull();
 
     // Toggle bottom drawer
@@ -120,19 +123,18 @@ describe('EditorWorkbench (PK-EC-1 & PK-EC-5)', () => {
     fireEvent.click(toggleBottomBtn);
     expect(screen.getByTestId('workbench-bottom-drawer')).toBeDefined();
 
-    // Toggle right panel
-    const toggleRightBtn = screen.getByTitle(/Collapse Right Panel/i);
-    fireEvent.click(toggleRightBtn);
-    expect(screen.queryByTestId('workbench-right-panel')).toBeNull();
+    // Toggle right panel: расширить (закрыто → открыто)
+    const expandRightBtn = screen.getByTitle(/Expand Right Panel/i);
+    fireEvent.click(expandRightBtn);
+    expect(screen.queryByTestId('workbench-right-panel')).not.toBeNull();
   });
 
-  it('renders the live Browser stage in the right panel (author mode)', () => {
+  it('does NOT render the Browser stage in the right panel by default (desk is the browser home)', () => {
     render(<EditorWorkbench />);
 
-    // Правая панель теперь — живой браузер (BrowserStage), без старого
-    // переключателя Context/Inspector/Telemetry (переработано под authoring).
-    expect(screen.getByTestId('mock-browser-stage')).toBeDefined();
-    expect(screen.getByText(/Browser Stage/)).toBeDefined();
+    // Правая шторка закрыта по умолчанию → браузер не торчит сбоку на входе.
+    expect(screen.queryByTestId('workbench-right-panel')).toBeNull();
+    expect(screen.queryByTestId('mock-browser-stage')).toBeNull();
   });
 
   it('supports editing DSL in Monaco and preserves 32 visible lines default canon', () => {

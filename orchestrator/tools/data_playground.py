@@ -884,9 +884,24 @@ class Handler(BaseHTTPRequestHandler):
             return
         self._json(200, browser_eval(expression))
 
-    def _post_browser_viewport(self, _body: dict) -> None:
-        from browser.browser_service import browser_viewport
-        self._json(200, browser_viewport())
+    def _post_browser_viewport(self, body: dict) -> None:
+        # VIEWFIT-BE: body с width/height — команда смены вьюпорта авторинг-браузера;
+        # пустой body — прежнее чтение метрик (обратная совместимость).
+        if body.get("width") is None and body.get("height") is None:
+            from browser.browser_service import browser_viewport
+            self._json(200, browser_viewport())
+            return
+        from browser.browser_service import browser_viewport_set
+        try:
+            width = int(body.get("width"))
+            height = int(body.get("height"))
+        except (TypeError, ValueError):
+            self._json(400, {"ok": False, "error": "width and height must be integers"})
+            return
+        if width <= 0 or height <= 0:
+            self._json(400, {"ok": False, "error": "width and height must be positive"})
+            return
+        self._json(200, browser_viewport_set(width, height))
 
     def _post_browser_keyboard(self, body: dict) -> None:
         from browser.browser_service import browser_keyboard_press
@@ -901,10 +916,14 @@ class Handler(BaseHTTPRequestHandler):
         try:
             dx = float(body.get("dx", 0))
             dy = float(body.get("dy", 0))
+            raw_x = body.get("x")
+            raw_y = body.get("y")
+            x = float(raw_x) if raw_x is not None else None
+            y = float(raw_y) if raw_y is not None else None
         except (TypeError, ValueError):
             self._json(400, {"ok": False, "error": "dx and dy must be numbers"})
             return
-        self._json(200, browser_mouse_wheel(dx, dy))
+        self._json(200, browser_mouse_wheel(dx, dy, x=x, y=y))
 
     def _post_browser_drag(self, body: dict) -> None:
         from browser.browser_service import browser_mouse_drag
@@ -1054,7 +1073,18 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main() -> None:
-    server = ThreadingHTTPServer((HOST, PORT), Handler)
+    from utils.single_instance import (
+        AlreadyRunning,
+        ExclusiveThreadingHTTPServer,
+        ensure_single_instance,
+    )
+
+    try:
+        ensure_single_instance(PORT, "data_playground")
+    except AlreadyRunning:
+        return  # duplicate — the real instance already serves :8765
+
+    server = ExclusiveThreadingHTTPServer((HOST, PORT), Handler)
     print(
         f"PrettyK playground http://{HOST}:{PORT}  "
         f"(eval + validate + /api/run + /api/checks)",

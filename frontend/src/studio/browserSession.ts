@@ -208,6 +208,22 @@ export class BrowserSession {
     }
   }
 
+  /**
+   * BROWSER-STUDIO-VIEWFIT-FE: подогнать удалённый viewport под размер
+   * контейнера студии. Клампинг [320,3840] и repaint-nudge — на бэке.
+   * Ошибки глушим: деск остаётся на aspect-fit без шума в консоли.
+   */
+  async setViewport(width: number, height: number): Promise<{ ok: boolean; viewportWidth?: number; viewportHeight?: number; clamped?: boolean; error?: string }> {
+    try {
+      return await this.fetchJson('/api/browser/viewport', {
+        method: 'POST',
+        body: JSON.stringify({ width, height }),
+      });
+    } catch {
+      return { ok: false, error: 'viewport set failed' };
+    }
+  }
+
   /** BBA-3: нажатие клавиши. */
   async keyboardPress(key: string): Promise<{ ok: boolean; key?: string; error?: string }> {
     try {
@@ -217,10 +233,15 @@ export class BrowserSession {
     }
   }
 
-  /** BBA-3: wheel-скролл. */
-  async mouseWheel(dx: number, dy: number): Promise<{ ok: boolean; error?: string }> {
+  /** BBA-3 + BROWSER-STUDIO-SCROLL: wheel-скролл; x/y — точка наведения во вьюпорте. */
+  async mouseWheel(dx: number, dy: number, x?: number, y?: number): Promise<{ ok: boolean; error?: string }> {
+    const payload: { dx: number; dy: number; x?: number; y?: number } = { dx, dy };
+    if (typeof x === 'number' && typeof y === 'number') {
+      payload.x = x;
+      payload.y = y;
+    }
     try {
-      return await this.fetchJson('/api/browser/wheel', { method: 'POST', body: JSON.stringify({ dx, dy }) });
+      return await this.fetchJson('/api/browser/wheel', { method: 'POST', body: JSON.stringify(payload) });
     } catch {
       return { ok: false, error: 'wheel failed' };
     }

@@ -19,6 +19,10 @@ VP-B1: Async CDP Screencast Relay.
 4. FIFO-1 backpressure: хранится только последний кадр.
 5. input (pointer) принимается опционально, но фронт VP-F1 использует
    HTTP /api/browser/click, а не WS — этот канал остаётся для будущего.
+6. RELAY-FRAME: relay сам сверяет размер вьюпорта своей CDP-сессией
+   (Runtime.evaluate → window.innerWidth/Height) и при расхождении с текущим
+   кадром форсит свежий кадр Page.captureScreenshot — кадр нового размера
+   доезжает до клиентов без repaint страницы и без чужой sync-сессии воркера.
 
 Архитектурное решение: отдельный asyncio event loop, не разделяющий поток
 с синхронным _BrowserWorker. Эвакуация screencast из sync-контура в async.
@@ -71,6 +75,13 @@ def _pack_frame(jpeg: bytes, width: int, height: int) -> bytes:
     return struct.pack(">HH", width, height) + jpeg
 
 
+# VIEWFIT-BE: screencast-кап холста оператора. Прежние 1280×800 резали
+# контейнеры ≥ этого размера: CDP скейлил кадр и координаты кликов «плыли».
+# 1920×1200 — single source of truth для Page.startScreencast и fallback-метаданных.
+SCREENCAST_MAX_WIDTH = 1920
+SCREENCAST_MAX_HEIGHT = 1200
+
+
 class CdpViewportRelay:
     """Асинхронный CDP → WebSocket relay для screencast + input (SOR-L1: per-session)."""
 
@@ -116,14 +127,20 @@ class CdpViewportRelay:
                 logger.exception("Initial screencast failed, will retry via reconnect loop")
         # Фоновый watch-дог: если браузер упал — реконнект без смерти процесса.
         reconnect_task = asyncio.create_task(self._reconnect_loop())
+        # RELAY-FRAME: фоновый sync размера вьюпорта (кадр в новом размере ≤1s).
+        viewport_task = asyncio.create_task(self._viewport_sync_loop())
         try:
             await self._serve_ws()
         finally:
             reconnect_task.cancel()
-            try:
-                await reconnect_task
-            except asyncio.CancelledError:
-                raise  # NOSONAR — re-raise after cleanup per asyncio contract
+            viewport_task.cancel()
+            for task in (reconnect_task, viewport_task):
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    # NOSONAR: исходный CancelledError/исключение _serve_ws дальше
+                    # продолжит распространение из finally.
+                    pass
 
     async def _reconnect_loop(self) -> None:
         """VP-FIX-L1: реконнект при падении контейнера без смерти процесса.
@@ -229,16 +246,16 @@ class CdpViewportRelay:
                 metadata = params.get("metadata", {}) or {}
                 self._latest.push(jpeg, metadata)
                 # VP-FIX: CDP отдаёт размеры в metadata.deviceWidth/deviceHeight,
-                # а НЕ width/height. Fallback на канон 1280×800 если metadata пустой.
+                # а НЕ width/height. Fallback на screencast-кап (VIEWFIT-BE) если metadata пустой.
                 self._latest_width = int(
                     metadata.get("deviceWidth")
                     or metadata.get("width")
-                    or 1280
+                    or SCREENCAST_MAX_WIDTH
                 )
                 self._latest_height = int(
                     metadata.get("deviceHeight")
                     or metadata.get("height")
-                    or 800
+                    or SCREENCAST_MAX_HEIGHT
                 )
                 self._latest_dpr = float(metadata.get("deviceScaleFactor", 1.0))
 
@@ -255,12 +272,84 @@ class CdpViewportRelay:
             {
                 "format": "jpeg",
                 "quality": 80,
-                "maxWidth": 1280,
-                "maxHeight": 800,
+                "maxWidth": SCREENCAST_MAX_WIDTH,
+                "maxHeight": SCREENCAST_MAX_HEIGHT,
                 "everyNthFrame": 1,
             },
         )
         logger.info("Screencast started via CDP session")
+
+    # ── VIEWPORT SYNC (RELAY-FRAME) ──
+
+    # Период сверки вьюпорта своей CDP-сессией: кадр нового размера должен
+    # доехать до клиентов ≤1s после POST /api/browser/viewport.
+    _VIEWPORT_POLL_INTERVAL = 0.5
+    # Сколько подряд неудачных сверок считаем «сессия мертва» (зомби-защита:
+    # screencast умер, а _browser_connected остался True — тогда reconnect-дог
+    # только по флагу никогда не сработает).
+    _VIEWPORT_FAILS_TO_RECONNECT = 4
+
+    async def _viewport_sync_loop(self) -> None:
+        """RELAY-FRAME: relay — единый источник свежего кадра.
+
+        Resize viewport сам по себе не рождает ``Page.screencastFrame``
+        (композитор молчит на статичной странице), а nudge воркера идёт через
+        ЧУЖУЮ sync-сессию (browser_service) и до screencast-сессии relay не
+        доезжает. Поэтому периодически сверяем размер вьюпорта СВОЕЙ сессией
+        и при расхождении с текущим кадром форсим ``Page.captureScreenshot``
+        на той же сессии, что и screencast.
+        """
+        fails = 0
+        while not self._shutting_down:
+            await asyncio.sleep(self._VIEWPORT_POLL_INTERVAL)
+            try:
+                await self._capture_if_resized()
+                fails = 0
+            except Exception:
+                # CancelledError (BaseException) не ловим — loop умирает только
+                # по shutdown; прочие сбои не должны ронять фоновую сверку.
+                fails += 1
+                logger.debug("viewport sync tick failed (%d)", fails, exc_info=True)
+                if fails >= self._VIEWPORT_FAILS_TO_RECONNECT and self._browser_connected:
+                    logger.warning(
+                        "viewport sync: CDP session unresponsive — marking browser lost for reconnect"
+                    )
+                    self._browser_connected = False
+                    fails = 0
+
+    async def _capture_if_resized(self) -> None:
+        """Сверить window.innerWidth/Height и при расхождении пушить свежий кадр."""
+        if not self._browser_connected or self._cdp_session is None:
+            return
+        res = await self._cdp_session.send(
+            "Runtime.evaluate",
+            {
+                "expression": "window.innerWidth + ',' + window.innerHeight",
+                "returnByValue": True,
+            },
+        )
+        raw = ((res or {}).get("result") or {}).get("value") or ""
+        try:
+            w_str, h_str = str(raw).split(",", 1)
+            w, h = int(w_str), int(h_str)
+        except ValueError:
+            return
+        if w <= 0 or h <= 0:
+            return
+        jpeg, _seq = self._latest.snapshot()
+        if jpeg is not None and (w, h) == (self._latest_width, self._latest_height):
+            return  # кадр уже актуального размера
+        shot = await self._cdp_session.send(
+            "Page.captureScreenshot",
+            {"format": "jpeg", "quality": 80, "captureBeyondViewport": False},
+        )
+        data_b64 = (shot or {}).get("data") or ""
+        if not data_b64:
+            return
+        self._latest.push(base64.b64decode(data_b64), {})
+        self._latest_width = w
+        self._latest_height = h
+        logger.info("viewport sync: pushed fresh frame %sx%s", w, h)
 
     # ── WebSocket server ──
 
@@ -394,4 +483,23 @@ def start_relay(session_id: str = "", ws_port: int = 0) -> None:
 
 
 if __name__ == "__main__":
+    # BOX-IDLE-NORM: the global idle relay owns :9224; refuse a zombie duplicate.
+    import sys
+
+    # Standalone-запуск (python -m browser.cdp_viewport_relay): логи в stderr,
+    # иначе INFO-строки (в т.ч. «viewport sync: pushed fresh frame») теряются.
+    import logging as _logging
+
+    _logging.basicConfig(
+        level=_logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    )
+
+    try:
+        from utils.single_instance import AlreadyRunning, ensure_single_instance
+
+        ensure_single_instance(9224, "cdp_viewport_relay")
+    except AlreadyRunning:
+        sys.exit(0)
+
     start_relay()

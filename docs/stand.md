@@ -18,7 +18,7 @@
 - Python 3.13;
 - Node.js 20.19+ или 22.12+;
 - Docker Engine или Docker Desktop с Compose v2;
-- 8 ГБ свободной памяти, если запускается DefectDojo.
+- 8 ГБ свободной памяти (DefectDojo входит в старт по умолчанию).
 
 ## Установить зависимости
 
@@ -74,9 +74,9 @@ npm.cmd run dev
 ```
 
 Он поднимает Docker Engine при необходимости, Grid, **allure3-secops**, scanner daemon,
-Juice Shop, Editor/playground и idle PrettyK Live, после чего ждёт их HTTP-readiness. Webswing не
-входит в старт по умолчанию. Для DefectDojo используйте
-`.\orchestrator\tools\lab_up.ps1 -IncludeDefectDojo`.
+Juice Shop, Editor/playground, idle PrettyK Live и DefectDojo, после чего ждёт их HTTP-readiness.
+Webswing не входит в старт по умолчанию. SonarQube — опционально:
+`.\orchestrator\tools\lab_up.ps1 -IncludeSonarQube`.
 
 Ниже — ручной fallback для диагностики стартёра.
 
@@ -226,7 +226,7 @@ docker compose -f services\docker-compose.scanner.yml down
 docker compose -f services\docker-compose.yml down
 ```
 
-Если DefectDojo / SonarQube запускались отдельно:
+DefectDojo (по умолчанию) и SonarQube (если запускался):
 
 ```powershell
 docker compose -f services\docker-compose.defectdojo.yml down
@@ -260,7 +260,7 @@ UI: [http://127.0.0.1:8082/scanner](http://127.0.0.1:8082/scanner). Подроб
 
 ### DefectDojo
 
-DefectDojo не участвует в выполнении сценария (шаги/WebDriver). После прогона XML импортируется в finalize; **admission quality gate** читает ACTIVE severity counts из Dojo (scanner — fallback, если Dojo skipped). Поднять для lab:
+DefectDojo не участвует в выполнении сценария (шаги/WebDriver). После прогона XML импортируется в finalize; **admission quality gate** читает ACTIVE severity counts из Dojo (scanner — fallback, если Dojo skipped). Входит в `lab_up.ps1` по умолчанию и поднимается до ready/healthy (nginx/postgres/valkey `healthy`, uwsgi/celery Up, `restart: unless-stopped`). Ручной fallback:
 
 ```powershell
 docker compose -f services\docker-compose.defectdojo.yml up -d

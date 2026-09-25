@@ -7,7 +7,7 @@
   Обязательный контур: allure3-secops (:5050, канон), scanner,
   Juice Shop, pk-api-lab (REST/GraphQL/gRPC), Editor, playground и idle PrettyK Live.
   Webswing намеренно не запускается (см. global skill `prettyk-lab`).
-  DefectDojo — только -IncludeDefectDojo.
+  DefectDojo — по умолчанию (обязательная зависимость, restart: unless-stopped).
   SonarQube — только -IncludeSonarQube.
   Чистку не делает: перед чистым прогоном lab_clean.ps1 -Target allure,live.
 
@@ -15,13 +15,9 @@
   .\orchestrator\tools\lab_up.ps1
 
 .EXAMPLE
-  .\orchestrator\tools\lab_up.ps1 -IncludeDefectDojo
-
-.EXAMPLE
   .\orchestrator\tools\lab_up.ps1 -IncludeSonarQube
 #>
 param(
-    [switch]$IncludeDefectDojo,
     [switch]$IncludeSonarQube
 )
 
@@ -128,9 +124,7 @@ $hasApiLab = Test-Path (Join-Path $RepoRoot 'services\pk-api-lab\Dockerfile')
 if ($hasApiLab) {
     Start-Compose 'services\docker-compose.api-lab.yml'
 }
-if ($IncludeDefectDojo) {
-    Start-Compose 'services\docker-compose.defectdojo.yml'
-}
+Start-Compose 'services\docker-compose.defectdojo.yml'
 if ($IncludeSonarQube) {
     Start-Compose 'services\docker-compose.sonarqube.yml'
 }
@@ -147,9 +141,7 @@ Wait-Http -Name 'Juice Shop' -Url 'http://127.0.0.1:3000/'
 if ($hasApiLab) {
     Wait-Http -Name 'pk-api-lab' -Url 'http://127.0.0.1:8090/health' -TimeoutSeconds 120
 }
-if ($IncludeDefectDojo) {
-    Wait-Http -Name 'DefectDojo' -Url 'http://127.0.0.1:8081/' -TimeoutSeconds 120
-}
+Wait-Http -Name 'DefectDojo' -Url 'http://127.0.0.1:8081/' -TimeoutSeconds 120
 if ($IncludeSonarQube) {
     Wait-Http -Name 'SonarQube' -Url 'http://127.0.0.1:9000/api/system/status' -TimeoutSeconds 300
 }

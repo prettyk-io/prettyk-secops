@@ -69,6 +69,25 @@ reinvent understanding that already exists, potentially working on broken code.
 After completing work, the worker appends one line to the `История` section of
 `PROGRESS.md`:
 ```
+
+`StreamName` is the owning product/workstream whose PO receives and accepts the
+report; it is not the worker or PO name and not an arbitrary task category.
+Use the canonical labels:
+
+| Stream | Report owner / destination |
+|---|---|
+| `SecOps` | Keeper |
+| `Airlock` | Cosmo |
+| `Hub` | Arbiter |
+| `Web IDE` | Vector (Maxim is final owner) |
+| `Platform` | Maxim (Buddy/Meter by his routing) |
+| `Nexus` | Vector (cross-line documents and coordination) |
+
+One dispatch line covers one stream only. A task in the Master backlog for a PO
+still uses that PO's product stream; use `Nexus` only when the deliverable itself
+belongs to the central cross-line surface. If an assignment crosses product
+ownership, split it into owner-aligned cards and dispatch lines instead of using
+an ambiguous `Cross-product` stream.
 YYYY-MM-DD | worker | что сделано | commit/артефакт
 ```
 and updates `Последнее действие`, `Текущее состояние`, `Следующее действие`.
@@ -140,9 +159,9 @@ acceptance prose — the worker reads the card, and the discipline (one-owner,
 stay-in-scope, report format) loads from the worker's own `AGENTS.md`.
 
 ```text
-WorkerName > <ID(s)> -> <absolute path to backlog surface>
+WorkerName > StreamName > <Task-ID(s)> -> <absolute path to backlog surface>
 
-Luna > COS-082 -> D:\prettyk-airlock\docs\BACKLOG.md
+Luna > Airlock > COS-082 -> D:\prettyk-airlock\docs\BACKLOG.md
 ```
 
 **Precondition: the card is complete.** All substance lives in the card on the
@@ -175,6 +194,19 @@ owner, one coherent scope, and one copy-paste box. Do not wait for a ceremonial
 round or redistribute a finished worker into an already-owned surface.
 
 ## 7. Report handling is a transaction
+
+Every worker completion report starts with a routing header on its first line:
+
+```text
+WorkerName > StreamName
+```
+
+The existing report body stays unchanged: keep task ID(s), outcome, acceptance
+evidence, checks, deviations, blockers, and follow-ups as before. The stream must
+match the dispatch. If the header is missing or mismatched, do not guess the
+destination or accept/route the report until it is clarified. Send a separate
+report per stream if a worker has distinct assignments in multiple streams.
+The `PROGRESS.md` history-row format remains unchanged.
 
 For every received report, do all of the following before dispatching the next
 packet:
@@ -216,9 +248,10 @@ The same workflow applies to all three PO agents:
 - Tribunal / Findings Control Station.
 
 They share the worker pool, but they do not share ambiguous ownership. In
-every dispatch the PO guarantees: one named worker, complete card (scope,
-out-of-scope, acceptance), absolute surface path. Cross-repository work is
-split into separate cards and sequenced at the contract boundary.
+every dispatch the PO guarantees: one named worker, one canonical stream,
+complete card (scope, out-of-scope, acceptance), absolute surface path.
+Cross-repository work is split into separate cards and sequenced at the contract
+boundary.
 
 ## 10. Anti-automation rules
 

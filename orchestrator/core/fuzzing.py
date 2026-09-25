@@ -333,6 +333,12 @@ def origin_of(url: str) -> str:
     return f"{parsed.scheme}://{parsed.netloc}"
 
 
+def base_url_of(url: str) -> str:
+    """scheme+netloc+path без query/fragment — скоуп endpoint для alert-diff фаззера."""
+    parsed = urlsplit(url)
+    return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, "", ""))
+
+
 def assert_same_origin(target_url: str, base_url: str) -> None:
     """Guard: бить можно только в origin base_url_override (scope POC)."""
     if origin_of(target_url) != origin_of(base_url):
@@ -1028,17 +1034,33 @@ def alert_fingerprint(alert: Dict[str, Any]) -> str:
     )
 
 
-def snapshot_alert_fingerprints(scanner: Any) -> set[str]:
+def _scanner_alerts(scanner: Any, baseurl: str | None = None) -> list[Dict[str, Any]]:
+    """Alerts от scanner, по возможности скоупленные по baseurl.
+
+    BOX-GATE-NORM: полная пагинация всех alerts (25k+) — известный источник зависания
+    демона (глубокий slice `start=21600`). Для alert-diff фаззера достаточен скоуп endpoint
+    (baseurl без query), а не вся сессия. Fallback на ``get_alerts()`` для fake/старых адаптеров.
+    """
+    if baseurl:
+        getter = getattr(scanner, "get_alerts_by_baseurl", None)
+        if callable(getter):
+            try:
+                return [a for a in (getter(baseurl) or []) if isinstance(a, dict)]
+            except Exception:
+                pass
     getter = getattr(scanner, "get_alerts", None)
     if not callable(getter):
-        return set()
+        return []
     try:
-        alerts = getter() or []
+        return [a for a in (getter() or []) if isinstance(a, dict)]
     except Exception:
-        return set()
-    return {
-        alert_fingerprint(a) for a in alerts if isinstance(a, dict)
-    }
+        return []
+
+
+def snapshot_alert_fingerprints(
+    scanner: Any, baseurl: str | None = None
+) -> set[str]:
+    return {alert_fingerprint(a) for a in _scanner_alerts(scanner, baseurl=baseurl)}
 
 
 def compact_scanner_alert(alert: Dict[str, Any]) -> Dict[str, object]:
@@ -1061,20 +1083,13 @@ def new_alerts_for_origin(
     origin: str,
     before: set[str],
     limit: int = 50,
+    baseurl: str | None = None,
 ) -> list[Dict[str, object]]:
     """DF-13: новые passive alerts на origin цели после ударов."""
-    getter = getattr(scanner, "get_alerts", None)
-    if not callable(getter):
-        return []
-    try:
-        alerts = getter() or []
-    except Exception:
-        return []
+    alerts = _scanner_alerts(scanner, baseurl=baseurl)
     origin_n = (origin or "").rstrip("/")
     out: list[Dict[str, object]] = []
     for raw in alerts:
-        if not isinstance(raw, dict):
-            continue
         fp = alert_fingerprint(raw)
         if fp in before:
             continue
@@ -1663,7 +1678,10 @@ class FuzzCampaignRunner:
             else target_url
         )
         target_origin = origin_of(target_url)
-        alerts_before = snapshot_alert_fingerprints(self.scanner)
+        alert_scope = base_url_of(target_url)
+        alerts_before = snapshot_alert_fingerprints(
+            self.scanner, baseurl=alert_scope
+        )
         baseline = self._send(
             baseline_url,
             method=method,
@@ -1685,7 +1703,10 @@ class FuzzCampaignRunner:
         )
         # DF-13: passive alerts после серии ударов → scanner_alert в deltas.
         scanner_alerts = new_alerts_for_origin(
-            self.scanner, origin=target_origin, before=alerts_before
+            self.scanner,
+            origin=target_origin,
+            before=alerts_before,
+            baseurl=alert_scope,
         )
         if scanner_alerts:
             rows = apply_scanner_alerts_to_rows(rows, scanner_alerts)

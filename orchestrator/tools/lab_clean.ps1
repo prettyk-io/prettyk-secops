@@ -57,26 +57,40 @@ if ($want.Contains('all')) {
 }
 
 function Invoke-AllureClean {
+    # AL3-FRESH-REPAIR: чистка строго по scope (ProjectId), без сноса чужих.
+    # default → файлы корня results + подпапка default отчётов;
+    # чек → только его подпапки (results + отчёт), соседи не тронуты.
     $cleanUrl = "$AllureBase/clean-results?project_id=$ProjectId"
-    Write-Host "allure-light-secops clean-results → $cleanUrl"
+    Write-Host "allure3-secops clean-results → $cleanUrl"
     $body = curl.exe -fsS $cleanUrl
     Write-Host $body
 
     $resultsHost = Join-Path $RepoRoot 'reports\allure-results'
-    if (Test-Path $resultsHost) {
-        Get-ChildItem -Force $resultsHost | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
-        Write-Host "host wipe: $resultsHost"
-    }
+    $reportHost = Join-Path $RepoRoot 'reports\allure3-report'
 
-    $reportHost = Join-Path $RepoRoot 'reports\allure-report'
-    if (Test-Path $reportHost) {
-        Get-ChildItem -Force $reportHost | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
-        Write-Host "report/history wipe: $reportHost"
+    if ($ProjectId -eq 'default') {
+        if (Test-Path $resultsHost) {
+            Get-ChildItem -Force -File $resultsHost | Remove-Item -Force -ErrorAction SilentlyContinue
+            Write-Host "host wipe (results root files only; чек-папки целы): $resultsHost"
+        }
+        $reportScope = Join-Path $reportHost 'default'
+        if (Test-Path $reportScope) {
+            Remove-Item -Recurse -Force $reportScope -ErrorAction SilentlyContinue
+            Write-Host "report wipe: $reportScope"
+        }
+    }
+    else {
+        foreach ($scope in @((Join-Path $resultsHost $ProjectId), (Join-Path $reportHost $ProjectId))) {
+            if (Test-Path $scope) {
+                Remove-Item -Recurse -Force $scope -ErrorAction SilentlyContinue
+                Write-Host "host wipe: $scope"
+            }
+        }
     }
 
     if ($RegenerateEmpty) {
         $genUrl = "$AllureBase/generate-report?project_id=$ProjectId"
-        Write-Host "allure-light-secops generate (empty) → $genUrl"
+        Write-Host "allure3-secops generate (empty) → $genUrl"
         curl.exe -fsS $genUrl | Write-Host
     }
 }

@@ -78,3 +78,43 @@ def test_summarize_scanner_xml_missing(tmp_path: Path):
     out = summarize_scanner_xml(tmp_path / "nope.xml")
     assert out["ok"] is False
     assert out["error"] == "missing"
+
+
+def _bulk_instances(n: int) -> str:
+    rows = [
+        "<instance><uri>http://127.0.0.1:3000/rest/product/%d</uri><param>q</param></instance>" % i
+        for i in range(n)
+    ]
+    return "\n".join(rows)
+
+
+def test_summarize_scanner_xml_no_instance_cap(tmp_path: Path):
+    # SCAN-EXPORT-GAP: collapse должен считаться по ПОЛНОМУ набору инстансов, а не по
+    # passive-подмножеству / обрубку из первых 40 инстансов alertitem.
+    xml = tmp_path / "scanner.xml"
+    xml.write_text(
+        """<?xml version="1.0"?>
+<OWASPscannerReport version="2.14.0">
+  <site name="http://127.0.0.1:3000">
+    <alerts>
+      <alertitem>
+        <pluginid>40018</pluginid>
+        <alertRef>40018</alertRef>
+        <alert>SQL Injection</alert>
+        <name>SQL Injection</name>
+        <riskcode>3</riskcode>
+        <riskdesc>High (High)</riskdesc>
+        <cweid>89</cweid>
+        <count>45</count>
+        <instances>%s</instances>
+      </alertitem>
+    </alerts>
+  </site>
+</OWASPscannerReport>"""
+        % _bulk_instances(45),
+        encoding="utf-8",
+    )
+    out = summarize_scanner_xml(xml)
+    assert out["ok"] is True
+    assert out["instance_count"] == 45
+    assert out["collapse"]["raw_count"] == 45

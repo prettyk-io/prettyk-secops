@@ -37,14 +37,13 @@ http://127.0.0.1:8080/
 ```powershell
 # старт
 .\orchestrator\tools\lab_up.ps1
-.\orchestrator\tools\lab_up.ps1 -IncludeDefectDojo
 
 # чистка перед прогоном, потом старт
 .\orchestrator\tools\lab_clean.ps1 -Target allure,live
 .\orchestrator\tools\lab_up.ps1
 ```
 
-- Обязательный контур: Grid + **allure3-secops** + scanner **demon** + Juice + Editor/playground + Live idle.
+- Обязательный контур: Grid + **allure3-secops** + scanner **demon** + Juice + Editor/playground + Live idle + DefectDojo (по умолчанию, `restart: unless-stopped`).
 - **Webswing не дефолт** — только `scanner_mode=webswing` или явная просьба. URL в пультах всё равно давать (down — пометить).
 - Juice `-Target juice` — только по явной просьбе, не во время прогона.
 - Live clean: diary + meta + **results_hooks.json**; idle-процесс не убивать.

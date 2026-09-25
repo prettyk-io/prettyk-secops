@@ -288,3 +288,47 @@ class TestLivePlaywrightRuntime:
 
         relay = CdpViewportRelay()
         assert relay is not None
+
+
+class TestRuntimeLeakIsolation:
+    """BE-TEST-LOOP-ISOLATION: неудачный connect не оставляет running loop.
+
+    sync_playwright().start() поднимает greenlet-loop в текущем потоке; если
+    runtime не закрыть, asyncio.Runner в том же процессе не стартует —
+    именно это валило async-тесты relay после любого другого файла в прогоне.
+    """
+
+    def test_failed_connect_closes_runtime_and_clears_running_loop(self):
+        import asyncio
+
+        from browser.playwright_runtime import PlaywrightBrowserRuntime
+
+        runtime = PlaywrightBrowserRuntime()
+        with pytest.raises(Exception):
+            runtime.connect_over_cdp("http://127.0.0.1:1")
+
+        assert asyncio.events._get_running_loop() is None
+        asyncio.Runner().run(asyncio.sleep(0))  # не бросает
+        assert runtime._playwright is None
+        assert runtime._launched is False
+
+    def test_failed_launch_closes_runtime_and_clears_running_loop(self):
+        """PW-RUNTIME-LAUNCH-LEAK: падение launch() после start() не течёт.
+
+        Реальная ветка ValueError (неизвестный browser_type) идёт через тот же
+        except-путь, что и падение browser.launch()/new_context(): к этому
+        моменту sync_playwright().start() уже поднял loop, и без close() он
+        остался бы running в thread-local.
+        """
+        import asyncio
+
+        from browser.playwright_runtime import PlaywrightBrowserRuntime
+
+        runtime = PlaywrightBrowserRuntime()
+        with pytest.raises(ValueError):
+            runtime.launch(browser_type="not-a-browser")
+
+        assert asyncio.events._get_running_loop() is None
+        asyncio.Runner().run(asyncio.sleep(0))  # не бросает
+        assert runtime._playwright is None
+        assert runtime._launched is False

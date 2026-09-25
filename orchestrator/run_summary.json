@@ -1,6 +1,6 @@
 {
-  "exit_code": 0,
-  "gate": "pass",
+  "exit_code": 1,
+  "gate": "void",
   "scenarios": {
     "ok": 1,
     "fail": 0,
@@ -8,9 +8,9 @@
     "skip": 0
   },
   "paths": {
-    "allure_results": "D:\\prettyk-secops\\reports\\allure-results\\autotest-mt4ipsbt-7mbdyo",
+    "allure_results": "D:\\prettyk-secops\\reports\\allure-results\\114a306c-4ce5-4e43-88f4-65490947f7ef",
     "allure_report": "D:\\prettyk-secops\\reports\\allure-report",
-    "allure_project_id": "autotest-mt4ipsbt-7mbdyo",
+    "allure_project_id": "114a306c-4ce5-4e43-88f4-65490947f7ef",
     "scanner_html": "D:\\prettyk-secops\\reports\\scanner-results\\scanner-final.html",
     "scanner_xml": "D:\\prettyk-secops\\reports\\scanner-results\\juice_dojo.xml",
     "live": "http://127.0.0.1:8767/"
@@ -21,17 +21,11 @@
   "honest_contract_notes": [
     "imports (1): data_file/har/proto_pack → stream; scenario_json пока ошибка"
   ],
-  "dojo_stats": {
-    "critical": 0,
-    "high": 0,
-    "medium": 3,
-    "low": 2,
-    "info": 1
-  },
+  "admission_void": true,
   "finding_collapse": {
     "kind": "pk_finding_collapse",
     "version": 1,
-    "raw_count": 6,
+    "raw_count": 23,
     "cluster_count": 6,
     "systemic_clusters": 6,
     "totals": {
@@ -43,15 +37,19 @@
     },
     "clusters": [
       {
-        "fingerprint": "3b987b7f8a0f1c14",
+        "fingerprint": "a1277420cf3a3ac0",
         "title": "Content Security Policy (CSP) Header Not Set",
         "severity": "medium",
         "cwe": "693",
-        "rule_id": "10038",
+        "rule_id": "10038-1",
         "systemic": true,
-        "instance_count": 1,
+        "instance_count": 5,
         "sample_endpoints": [
-          "1877"
+          "http://juice-shop:3000",
+          "http://juice-shop:3000/",
+          "http://juice-shop:3000/ftp/coupons_2013.md.bak",
+          "http://juice-shop:3000/ftp/eastere.gg",
+          "http://juice-shop:3000/sitemap.xml"
         ],
         "sample_params": []
       },
@@ -62,22 +60,44 @@
         "cwe": "264",
         "rule_id": "10098",
         "systemic": true,
-        "instance_count": 1,
+        "instance_count": 5,
         "sample_endpoints": [
-          "1881"
+          "http://juice-shop:3000",
+          "http://juice-shop:3000/assets/public/favicon_js.ico",
+          "http://juice-shop:3000/chunk-5K74DZ2F.js",
+          "http://juice-shop:3000/robots.txt",
+          "http://juice-shop:3000/sitemap.xml"
         ],
         "sample_params": []
       },
       {
-        "fingerprint": "9c2dcf1095f28031",
-        "title": "CSP: Failure to Define Directive With No Fallback",
+        "fingerprint": "3546764138bbb35f",
+        "title": "CSP: Failure to Define Directive with No Fallback",
         "severity": "medium",
         "cwe": "693",
-        "rule_id": "10055",
+        "rule_id": "10055-13",
         "systemic": true,
-        "instance_count": 1,
+        "instance_count": 2,
         "sample_endpoints": [
-          "1875"
+          "http://juice-shop:3000/assets",
+          "http://juice-shop:3000/assets/public"
+        ],
+        "sample_params": [
+          "Content-Security-Policy"
+        ]
+      },
+      {
+        "fingerprint": "0657ca8f0e4a4a09",
+        "title": "Timestamp Disclosure - Unix",
+        "severity": "low",
+        "cwe": "497",
+        "rule_id": "10096",
+        "systemic": true,
+        "instance_count": 5,
+        "sample_endpoints": [
+          "http://juice-shop:3000",
+          "http://juice-shop:3000/sitemap.xml",
+          "http://juice-shop:3000/styles.css"
         ],
         "sample_params": []
       },
@@ -90,20 +110,7 @@
         "systemic": true,
         "instance_count": 1,
         "sample_endpoints": [
-          "1886"
-        ],
-        "sample_params": []
-      },
-      {
-        "fingerprint": "0657ca8f0e4a4a09",
-        "title": "Timestamp Disclosure - Unix",
-        "severity": "low",
-        "cwe": "497",
-        "rule_id": "10096",
-        "systemic": true,
-        "instance_count": 1,
-        "sample_endpoints": [
-          "1887"
+          "http://juice-shop:3000/rest/products/search?q=%22%27"
         ],
         "sample_params": []
       },
@@ -111,12 +118,16 @@
         "fingerprint": "af92fa6ad986ec90",
         "title": "Modern Web Application",
         "severity": "info",
-        "cwe": "0",
+        "cwe": "-1",
         "rule_id": "10109",
         "systemic": true,
-        "instance_count": 1,
+        "instance_count": 5,
         "sample_endpoints": [
-          "1890"
+          "http://juice-shop:3000",
+          "http://juice-shop:3000/",
+          "http://juice-shop:3000/juice-shop/build/routes/fileServer.js:69:18",
+          "http://juice-shop:3000/juice-shop/node_modules/express/lib/router/index.js:328:13",
+          "http://juice-shop:3000/sitemap.xml"
         ],
         "sample_params": []
       }
@@ -125,31 +136,52 @@
       {
         "name": "Content Security Policy (CSP) Header Not Set",
         "risk": "medium",
-        "count": 1,
-        "fingerprint": "3b987b7f8a0f1c14",
+        "count": 5,
+        "fingerprint": "a1277420cf3a3ac0",
         "systemic": true,
         "sample_endpoints": [
-          "1877"
+          "http://juice-shop:3000",
+          "http://juice-shop:3000/",
+          "http://juice-shop:3000/ftp/coupons_2013.md.bak",
+          "http://juice-shop:3000/ftp/eastere.gg",
+          "http://juice-shop:3000/sitemap.xml"
         ]
       },
       {
         "name": "Cross-Domain Misconfiguration",
         "risk": "medium",
-        "count": 1,
+        "count": 5,
         "fingerprint": "82982cb3a16a5935",
         "systemic": true,
         "sample_endpoints": [
-          "1881"
+          "http://juice-shop:3000",
+          "http://juice-shop:3000/assets/public/favicon_js.ico",
+          "http://juice-shop:3000/chunk-5K74DZ2F.js",
+          "http://juice-shop:3000/robots.txt",
+          "http://juice-shop:3000/sitemap.xml"
         ]
       },
       {
-        "name": "CSP: Failure to Define Directive With No Fallback",
+        "name": "CSP: Failure to Define Directive with No Fallback",
         "risk": "medium",
-        "count": 1,
-        "fingerprint": "9c2dcf1095f28031",
+        "count": 2,
+        "fingerprint": "3546764138bbb35f",
         "systemic": true,
         "sample_endpoints": [
-          "1875"
+          "http://juice-shop:3000/assets",
+          "http://juice-shop:3000/assets/public"
+        ]
+      },
+      {
+        "name": "Timestamp Disclosure - Unix",
+        "risk": "low",
+        "count": 5,
+        "fingerprint": "0657ca8f0e4a4a09",
+        "systemic": true,
+        "sample_endpoints": [
+          "http://juice-shop:3000",
+          "http://juice-shop:3000/sitemap.xml",
+          "http://juice-shop:3000/styles.css"
         ]
       },
       {
@@ -159,27 +191,21 @@
         "fingerprint": "ca310bdfbee52eb1",
         "systemic": true,
         "sample_endpoints": [
-          "1886"
-        ]
-      },
-      {
-        "name": "Timestamp Disclosure - Unix",
-        "risk": "low",
-        "count": 1,
-        "fingerprint": "0657ca8f0e4a4a09",
-        "systemic": true,
-        "sample_endpoints": [
-          "1887"
+          "http://juice-shop:3000/rest/products/search?q=%22%27"
         ]
       },
       {
         "name": "Modern Web Application",
         "risk": "info",
-        "count": 1,
+        "count": 5,
         "fingerprint": "af92fa6ad986ec90",
         "systemic": true,
         "sample_endpoints": [
-          "1890"
+          "http://juice-shop:3000",
+          "http://juice-shop:3000/",
+          "http://juice-shop:3000/juice-shop/build/routes/fileServer.js:69:18",
+          "http://juice-shop:3000/juice-shop/node_modules/express/lib/router/index.js:328:13",
+          "http://juice-shop:3000/sitemap.xml"
         ]
       }
     ]
@@ -187,12 +213,13 @@
   "executive": {
     "executive_class": "Watch",
     "recommendations": [
+      "Исполнение: сбой (exit 1) — evidence/прогон не завершён штатно; допуск по ACTIVE считать недействительным до повторного успешного прогона.",
       "Заключение: условно удовлетворительно — остаточный soft-риск (medium=3, low=2, info=1); требуется риск-ack / план устранения.",
-      "Кластер: Content Security Policy (CSP) Header Not Set — medium×1 (site-wide).",
-      "Кластер: Cross-Domain Misconfiguration — medium×1 (site-wide).",
-      "Кластер: CSP: Failure to Define Directive With No Fallback — medium×1 (site-wide).",
-      "Кластер: Application Error Disclosure — low×1 (site-wide).",
-      "Кластер: Timestamp Disclosure - Unix — low×1 (site-wide)."
+      "Кластер: Content Security Policy (CSP) Header Not Set — medium×5 (site-wide).",
+      "Кластер: Cross-Domain Misconfiguration — medium×5 (site-wide).",
+      "Кластер: CSP: Failure to Define Directive with No Fallback — medium×2 (site-wide).",
+      "Кластер: Timestamp Disclosure - Unix — low×5 (site-wide).",
+      "Кластер: Application Error Disclosure — low×1 (site-wide)."
     ],
     "risks": {
       "critical": 0,
@@ -201,17 +228,17 @@
       "low": 2,
       "info": 1
     },
-    "source": "dojo_findings",
-    "execution_fault": false
+    "source": "scanner_xml",
+    "execution_fault": true
   },
   "allure_summary": {
-    "passed": 8,
-    "failed": 0,
-    "broken": 0,
+    "passed": 15,
+    "failed": 7,
+    "broken": 4,
     "skipped": 0,
-    "total": 8,
-    "status": "ok"
+    "total": 26,
+    "status": "has_failures"
   },
   "executive_class": "Watch",
-  "built_at": 1790176604.405061
+  "built_at": 1790266103.5336514
 }

@@ -52,7 +52,31 @@ def test_datastream_merge_is_explicit_api():
 
 
 def _stub_controller(monkeypatch) -> Controller:
-    """Controller без scanner/WD; data + core для Пусть / Лог."""
+    """Controller без scanner/WD; data + core для Пусть / Лог.
+
+    Дополнительно нейтрализует Live-побочники (PK_LIVE=0 + no-op для diary_bus /
+    live_server), чтобы юнит-тесты стрима не трогали боевую ``reports/live/…``
+    (BOX-RUN-NORM-1: тест не должен писать в прод-мету).
+    """
+    monkeypatch.setenv("PK_LIVE", "0")
+    monkeypatch.setattr("utils.diary_bus.clear", lambda: None)
+    monkeypatch.setattr("utils.diary_bus.capture_run_start", lambda: 1000.0)
+    monkeypatch.setattr("utils.diary_bus.set_meta", lambda **kwargs: None)
+    monkeypatch.setattr("utils.diary_bus.publish", lambda *a, **k: None)
+    monkeypatch.setattr("utils.diary_bus.clear_ci_meta", lambda: None)
+    monkeypatch.setattr("utils.live_server.start_live_server", lambda **kwargs: None)
+    monkeypatch.setattr("utils.live_server.notify_ci_status", lambda **kwargs: None)
+    monkeypatch.setattr("utils.live_server.notify_live_run_ended", lambda **kwargs: None)
+
+    return _bare_controller(monkeypatch)
+
+
+def _bare_controller(monkeypatch) -> Controller:
+    """Controller.__new__-экземпляр с реальными diary_bus/live_server путями.
+
+    Только безопасные заглушки (allure/env) — Live/CI side effects НЕ глушатся,
+    чтобы регрессия «крах → нет залипшего running» тестировала реальный код.
+    """
     monkeypatch.setenv("PK_AUTH_BOOTSTRAP", "0")
     monkeypatch.setenv("PK_QUALITY_GATE", "0")
 
@@ -286,6 +310,42 @@ def test_failed_scenario_does_not_pollute_global(monkeypatch):
     assert "x" not in list(ctrl.global_stream.names())
     assert ctrl.global_stream.get("role") is None
     assert ctrl.global_stream.get("base_url") == "http://example.test"
+
+
+def test_crash_after_run_started_resets_live_run_state(monkeypatch, tmp_path):
+    """BOX-RUN-NORM-1: крах сразу после RUN_STARTED не оставляет залипший running."""
+    monkeypatch.setattr("utils.diary_bus.LIVE_DIR", tmp_path)
+    monkeypatch.setattr("utils.diary_bus.LIVE_META_JSON", tmp_path / "meta.json")
+    monkeypatch.setattr("utils.diary_bus.DIARY_NDJSON", tmp_path / "diary.ndjson")
+    monkeypatch.setattr("utils.diary_bus.RESULTS_HOOKS_JSON", tmp_path / "results_hooks.json")
+    monkeypatch.setattr("utils.diary_bus.LIVE_EXPORTS_DIR", tmp_path / "exports")
+    monkeypatch.setattr("utils.live_server.start_live_server", lambda **kwargs: None)
+
+    ctrl = _bare_controller(monkeypatch)
+    ctrl._export_suite_imports = lambda stream: None
+
+    def boom_leaf(*_a, **_k):
+        raise RuntimeError("boom")
+
+    ctrl._run_leaf_attempts = boom_leaf
+    ctrl.wired.test_suites = TestSuites(
+        scenarios=[
+            Scenario(
+                scenario_name="S1 fail",
+                steps=[ActionStep(constructor="core|log_message|x", description="fail")],
+            )
+        ]
+    )
+    with pytest.raises(RuntimeError, match="boom"):
+        ctrl.run()
+
+    from utils import diary_bus
+
+    meta = diary_bus.get_meta()
+    assert meta.get("status") == "idle"
+    assert "run_start_ts" not in meta
+    assert not diary_bus.has_run_start()
+    assert str(meta.get("ci_phase") or "") != "in_progress"
 
 
 def test_fixture_Wired_shared_via_data_module():

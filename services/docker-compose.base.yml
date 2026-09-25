@@ -22,6 +22,10 @@
 services:
   # prettyk-allure3 (Allure 3 Awesome: dark + ru). Канон :5050.
   prettyk-allure3:
+    # AL3-FRESH-REPAIR: исходники в services/allure3-secops — образ собирается
+    # воспроизводимо (`docker compose build prettyk-allure3`).
+    build:
+      context: ./allure3-secops
     image: prettyk-allure3:local
     container_name: prettyk-allure3
     restart: unless-stopped
@@ -43,6 +47,9 @@ services:
       - ALLURE_REPORT_NAME=Проверка PK
       - ALLURE_THEME=dark
       - ALLURE_LANG=ru
+      # AL3-FRESH-REPAIR: свежий отчёт без ручного триггера (watcher results).
+      - ALLURE_AUTO_REGEN=1
+      - ALLURE_AUTO_REGEN_DEBOUNCE_SEC=8
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:5050/health"]
       interval: 15s

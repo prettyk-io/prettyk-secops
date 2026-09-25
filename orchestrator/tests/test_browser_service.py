@@ -761,6 +761,71 @@ def test_cmd_viewport_no_browser():
     assert "browser not available" in result.get("error", "")
 
 
+# ── VIEWFIT-BE: смена viewport авторинг-браузера ─────────────────────────────
+
+
+def test_cmd_viewport_set_ok_and_forces_frame():
+    """VIEWFIT-BE: _cmd_viewport_set меняет размер + nudge-screenshot для screencast."""
+    page = _mock_page()
+    worker = _new_worker(page)
+
+    result = worker._cmd_viewport_set(1083, 661)
+    assert result["ok"] is True
+    assert result["viewportWidth"] == 1083
+    assert result["viewportHeight"] == 661
+    assert result["clamped"] is False
+    page.set_viewport_size.assert_called_once_with({"width": 1083, "height": 661})
+    page.screenshot.assert_called_once()
+
+
+def test_cmd_viewport_set_clamps_out_of_range():
+    """VIEWFIT-BE: значения вне [320, 3840] клампятся, ответ — фактический размер."""
+    page = _mock_page()
+    worker = _new_worker(page)
+
+    result = worker._cmd_viewport_set(99999, 100)
+    assert result["ok"] is True
+    assert result["viewportWidth"] == 3840
+    assert result["viewportHeight"] == 320
+    assert result["clamped"] is True
+    page.set_viewport_size.assert_called_once_with({"width": 3840, "height": 320})
+
+
+def test_cmd_viewport_set_rejects_garbage():
+    """VIEWFIT-BE: 0/отрицательные/bool/нечисла — ok:false, браузер не трогаем."""
+    page = _mock_page()
+    worker = _new_worker(page)
+
+    assert worker._cmd_viewport_set(0, 100)["ok"] is False
+    assert worker._cmd_viewport_set(-1, 100)["ok"] is False
+    assert worker._cmd_viewport_set(True, 100)["ok"] is False
+    assert worker._cmd_viewport_set("abc", 100)["ok"] is False
+    page.set_viewport_size.assert_not_called()
+
+
+def test_cmd_viewport_set_no_browser():
+    worker = _new_worker(None)
+    result = worker._cmd_viewport_set(1083, 661)
+    assert result["ok"] is False
+    assert "browser not available" in result.get("error", "")
+
+
+def test_ensure_browser_failed_connect_leaves_no_running_loop():
+    """BE-TEST-LOOP-ISOLATION: dead-endpoint connect не оставляет running loop.
+
+    Регресс-защита: sync_playwright().start() поднимает greenlet-loop в текущем
+    потоке; незакрытый runtime оставлял его «выполняющимся» — после этого
+    pytest-asyncio не мог стартовать свой Runner (relay-файл падал в любом
+    прогоне после другого файла).
+    """
+    import asyncio
+
+    worker = _new_worker(None)
+    result = worker._cmd_back()
+    assert result["ok"] is False
+    assert asyncio.events._get_running_loop() is None
+
+
 def test_cmd_keyboard_press():
     """BBA-3: _cmd_keyboard_press → page.keyboard.press."""
     page = _mock_page()
@@ -781,14 +846,41 @@ def test_cmd_keyboard_press_requires_key():
 
 
 def test_cmd_mouse_wheel():
-    """BBA-3: _cmd_mouse_wheel → page.mouse.wheel(dx, dy)."""
+    """BBA-3 + BROWSER-STUDIO-SCROLL: активация вкладки (Xvfb quirk) → page.mouse.wheel(dx, dy)."""
     page = _mock_page()
     page.mouse.wheel = MagicMock()
     worker = _new_worker(page)
 
     result = worker._cmd_mouse_wheel(dx=0, dy=-600)
     assert result["ok"] is True
+    page.bring_to_front.assert_called_once()
     page.mouse.wheel.assert_called_once_with(0.0, -600.0)
+    page.mouse.move.assert_not_called()
+
+
+def test_cmd_mouse_wheel_with_coords_moves_before_wheel():
+    """BROWSER-STUDIO-SCROLL: x/y → page.mouse.move перед wheel."""
+    page = _mock_page()
+    page.mouse.wheel = MagicMock()
+    worker = _new_worker(page)
+
+    result = worker._cmd_mouse_wheel(dx=0, dy=120, x=640, y=400)
+    assert result["ok"] is True
+    page.mouse.move.assert_called_once_with(640.0, 400.0)
+    page.bring_to_front.assert_called_once()
+    page.mouse.wheel.assert_called_once_with(0.0, 120.0)
+
+
+def test_cmd_mouse_wheel_tolerates_bring_to_front_failure():
+    """BROWSER-STUDIO-SCROLL: сбой активации вкладки не ломает wheel."""
+    page = _mock_page()
+    page.mouse.wheel = MagicMock()
+    page.bring_to_front = MagicMock(side_effect=Exception("no front"))
+    worker = _new_worker(page)
+
+    result = worker._cmd_mouse_wheel(dx=0, dy=-120)
+    assert result["ok"] is True
+    page.mouse.wheel.assert_called_once_with(0.0, -120.0)
 
 
 def test_cmd_mouse_drag():
@@ -836,6 +928,62 @@ def test_observe_start_registers_worker_bound_bindings():
     names = [c.args[0] for c in page.expose_binding.call_args_list]
     assert "__pk_cdp_click__" in names
     assert "__pk_cdp_input__" in names
+
+
+def test_observe_start_injects_named_long_action_handlers():
+    """BROWSER-STUDIO-SCROLL: long-action листенеры именованные (снимаемы в stop)."""
+    page = _mock_page()
+    worker = _new_worker(page)
+
+    worker._cmd_observe_start()
+    js = page.evaluate.call_args_list[-1].args[0]
+    for name, event in (("wheel", "wheel"), ("scroll", "scroll"), ("drag", "mousedown"),
+                        ("hover", "mouseover"), ("key", "keydown"), ("focus", "focusin")):
+        assert f"__pk_cdp_{name}_handler__=function" in js
+        assert f"addEventListener('{event}',window.__pk_cdp_{name}_handler__" in js
+
+
+def test_observe_start_reinjects_when_already_active():
+    """BROWSER-STUDIO-SCROLL: повторный start до-инжектит листенеры (лечит новый документ)."""
+    page = _mock_page()
+    worker = _new_worker(page)
+
+    assert worker._cmd_observe_start()["status"] == "observing"
+    evaluate_calls = page.evaluate.call_count
+    result = worker._cmd_observe_start()
+    assert result["ok"] is True
+    assert result["status"] == "already_active"
+    # ещё раз health-check страницы + повторная инъекция листенеров
+    assert page.evaluate.call_count == evaluate_calls + 2
+
+
+def test_observe_stop_removes_long_action_listeners():
+    """BROWSER-STUDIO-SCROLL: stop снимает хендлеры и гасит флаги (не яд для нового документа)."""
+    page = _mock_page()
+    worker = _new_worker(page)
+    worker._cmd_observe_start()
+    page.evaluate.reset_mock()
+
+    worker._cmd_observe_stop()
+    js = page.evaluate.call_args_list[-1].args[0]
+    assert "removeEventListener('wheel',window.__pk_cdp_wheel_handler__,true)" in js
+    assert "removeEventListener('scroll',window.__pk_cdp_scroll_handler__,true)" in js
+    assert "removeEventListener('focusin',window.__pk_cdp_focus_handler__,true)" in js
+    assert "window.__pk_cdp_wheel_listener__=false" in js
+    assert "__pk_cdp_wheel_listener__=true" not in js
+
+
+def test_navigate_reinjects_observers_when_observing():
+    """BROWSER-STUDIO-SCROLL: navigate при активной observe лечит листенеры нового документа."""
+    page = _mock_page()
+    worker = _new_worker(page)
+    worker._cmd_observe_start()
+    page.evaluate.reset_mock()
+
+    result = worker._cmd_navigate("https://example.com")
+    assert result["ok"] is True
+    evaluated = [str(c.args[0]) for c in page.evaluate.call_args_list]
+    assert any("__pk_cdp_wheel_handler__=function" in js for js in evaluated)
 
 
 def test_on_input_pushes_type_event_to_given_worker():

@@ -1,6 +1,6 @@
 # Lab-up — обязательный контур
 
-> **CANON** — hub topic. Slice: **11 августа 2026** (CULT-4).  
+> **CANON** — hub topic. Slice: **24 сентября 2026** (2FA sealed: DefectDojo — обязательный контур).  
 > PUBLIC команды: [`../stand.md`](../stand.md) · шпаргалка: [`../operator-cheatsheet.md`](../operator-cheatsheet.md).  
 > Roles: [`runtime-shell.md`](runtime-shell.md). scanner: [`scanner-dual.md`](scanner-dual.md). Bounds: [`security-lab.md`](security-lab.md).  
 > Реестр: [`INDEX.md`](INDEX.md). Skill: global **`prettyk-lab`**.
@@ -15,13 +15,13 @@ flowchart TB
   LabUp --> Juice[Juice_Shop]
   LabUp --> UI[Editor_plus_playground]
   LabUp --> Live[PK_Live_idle]
-  LabUp -.->|flag| Dojo[DefectDojo]
+  LabUp --> Dojo[DefectDojo]
 ```
 
 | Входит в `lab_up` | Не входит |
 |---|---|
 | Grid + ноды | Webswing (отдельный up) |
-| allure3-secops (канон) | DefectDojo — только `-IncludeDefectDojo` |
+| allure3-secops (канон) · DefectDojo (обязателен) | api-lab — opt-in |
 | scanner **demon** | prod / VPS |
 | Juice Shop | чистка Juice mid-run без просьбы |
 | Editor + playground + Live idle | — |
@@ -31,7 +31,7 @@ flowchart TB
 | Имя | URL (lab) | Ready smoke |
 |---|---|---|
 | allure3-secops | `http://127.0.0.1:5050/` | `/health` → service `allure3-secops` |
-| DefectDojo | `http://127.0.0.1:8081/` | только если `-IncludeDefectDojo` |
+| DefectDojo | `http://127.0.0.1:8081/` | `/login` 200 |
 | PrettyK Live | `http://127.0.0.1:8767/` | `/api/meta` |
 | Editor | `http://localhost:5173/` | HTML shell (не белый экран) |
 | scanner demon API | `http://127.0.0.1:8080/` | `/JSON/core/view/version/` |
@@ -47,4 +47,4 @@ flowchart TB
 
 ## 4. Честность
 
-Это **lab**, не SLA банка. Dojo/api-lab — opt-in флаги; без флага = не врать «весь контур вверх».
+Это **lab**, не SLA банка. DefectDojo — обязательный контур стенда; api-lab — opt-in флаг (без него не врать «весь контур вверх»).

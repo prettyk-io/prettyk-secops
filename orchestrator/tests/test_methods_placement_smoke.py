@@ -257,6 +257,8 @@ _NAMELESS_BY_DESIGN: Dict[str, frozenset] = {
         "resolve",
         "save_storage_state",
         "screenshot",
+        # session_diary — служебный журнал прогона (зовётся controller'ом), не keyword.
+        "session_diary",
         "session_storage_get",
         "set_context",
         "set_cookie",
@@ -343,6 +345,8 @@ _NAMELESS_BY_DESIGN: Dict[str, frozenset] = {
         "select_by_text",
         "select_by_value",
         "send_keys",
+        # session_diary — служебный журнал прогона (зовётся controller'ом), не keyword.
+        "session_diary",
         "session_storage_get",
         "set_context",
         "set_extra_http_headers",
@@ -385,6 +389,8 @@ _NAMELESS_BY_DESIGN: Dict[str, frozenset] = {
         "unary_grpc_call",
         "start_webswing",
         "stop_daemon_start_webswing",
+        # reset_alerts — авто-санация ZAP-сессии per-run (из _ensure_connected), не keyword.
+        "reset_alerts",
     }),
     "http": frozenset({"bind_run_wired", "set_proxy"}),
     "grpc": frozenset({"bind_run_wired", "set_proxy"}),

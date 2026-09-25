@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useWorkspaceStore } from './workspaceStore';
 
 describe('useWorkspaceStore (PK-EC-2)', () => {
@@ -12,7 +12,8 @@ describe('useWorkspaceStore (PK-EC-2)', () => {
     const s = useWorkspaceStore.getState();
     expect(s.leftPanel.open).toBe(true);
     expect(s.leftPanel.width).toBe(240);
-    expect(s.rightPanel.open).toBe(true);
+    // BROWSER-STUDIO-2: браузер в полноразмерном Desk, шторка закрыта по умолчанию.
+    expect(s.rightPanel.open).toBe(false);
     expect(s.rightPanel.width).toBe(480);
     expect(s.rightPanel.activeTab).toBe('browser');
     expect(s.bottomDrawer.open).toBe(false);
@@ -30,7 +31,7 @@ describe('useWorkspaceStore (PK-EC-2)', () => {
     expect(useWorkspaceStore.getState().leftPanel.open).toBe(true);
 
     s.toggleRight();
-    expect(useWorkspaceStore.getState().rightPanel.open).toBe(false);
+    expect(useWorkspaceStore.getState().rightPanel.open).toBe(true);
 
     s.toggleBottom();
     expect(useWorkspaceStore.getState().bottomDrawer.open).toBe(true);
@@ -99,7 +100,7 @@ describe('useWorkspaceStore (PK-EC-2)', () => {
     s.setDensity('compact');
     s.setRightTab('browser');
 
-    const stored = JSON.parse(localStorage.getItem('pk.editor.workspace.v1') || '{}');
+    const stored = JSON.parse(localStorage.getItem('pk.editor.workspace.v2') || '{}');
     expect(stored.leftPanel?.width).toBe(280);
     expect(stored.density).toBe('compact');
     expect(stored.rightPanel?.activeTab).toBe('browser');
@@ -113,10 +114,59 @@ describe('useWorkspaceStore (PK-EC-2)', () => {
     expect(useWorkspaceStore.getState().lastStudioTabId).toBe('scenario:2');
 
     // Persisted under the same storage key
-    const stored = JSON.parse(localStorage.getItem('pk.editor.workspace.v1') || '{}');
+    const stored = JSON.parse(localStorage.getItem('pk.editor.workspace.v2') || '{}');
     expect(stored.lastStudioTabId).toBe('scenario:2');
 
     s.setLastStudioTabId(null);
     expect(useWorkspaceStore.getState().lastStudioTabId).toBeNull();
+  });
+});
+
+describe('BROWSER-STUDIO-3: migration from v1 (browser-in-shтурка) to v2', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.resetModules();
+  });
+
+  it('drops stale v1 rightPanel.open:true + browser tab and removes the legacy key', async () => {
+    // Застарелый v1 layout у «рецидивного» пользователя: шторка с браузером открыта.
+    localStorage.setItem(
+      'pk.editor.workspace.v1',
+      JSON.stringify({
+        leftPanel: { open: true, width: 240 },
+        rightPanel: { open: true, width: 320, activeTab: 'browser' },
+        bottomDrawer: { open: false, height: 240, activeTab: 'terminal' },
+      }),
+    );
+
+    // Свежий импорт модуля = «монтирование Editor» после обновления.
+    const { useWorkspaceStore } = await import('./workspaceStore');
+    const s = useWorkspaceStore.getState();
+
+    // Шторка-браузер не воскресла: дефолт open:false.
+    expect(s.rightPanel.open).toBe(false);
+    // Застарелый ключ вычищен — браузер живёт только в полноразмерном Desk (v2).
+    expect(localStorage.getItem('pk.editor.workspace.v1')).toBeNull();
+  });
+
+  it('keeps the new v2 default when no key is present', async () => {
+    const { useWorkspaceStore } = await import('./workspaceStore');
+    expect(useWorkspaceStore.getState().rightPanel.open).toBe(false);
+    expect(useWorkspaceStore.getState().rightPanel.activeTab).toBe('browser');
+  });
+
+  it('preserves an explicit v2 reveal across a reload', async () => {
+    // Пользователь явно раскрыл шторку (toggleRight) с не-браузерной вкладкой.
+    localStorage.setItem(
+      'pk.editor.workspace.v2',
+      JSON.stringify({
+        leftPanel: { open: true, width: 240 },
+        rightPanel: { open: true, width: 480, activeTab: 'inspector' },
+        bottomDrawer: { open: false, height: 240, activeTab: 'terminal' },
+      }),
+    );
+
+    const { useWorkspaceStore } = await import('./workspaceStore');
+    expect(useWorkspaceStore.getState().rightPanel.open).toBe(true);
   });
 });

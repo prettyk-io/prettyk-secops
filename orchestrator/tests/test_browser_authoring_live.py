@@ -151,6 +151,39 @@ def _step(session_id, step: dict) -> dict:
     return browser_step_execute(step, session_id=session_id)
 
 
+def _scroll_state(session_id: str) -> dict:
+    """Реальное scroll-состояние живой страницы (window + контейнер #scr).
+
+    Это единственный честный источник side-effect verify для wheel/scroll:
+    читаем фактические ``window.scrollY`` и ``#scr.scrollTop`` через page.evaluate,
+    а не доверяем observe-событию или статусу ``passed``.
+    """
+    return _eval(
+        session_id,
+        "(function(){var s=document.getElementById('scr');"
+        "return {y:window.scrollY,x:window.scrollX,"
+        "scrTop:s?s.scrollTop:null,dh:document.documentElement.scrollHeight,"
+        "wh:window.innerHeight};})()",
+    )
+
+
+def _scroll_state_settled(session_id: str, before: dict, timeout: float = 3.0) -> dict:
+    """Дождаться применения scroll-offset после mouse.wheel (композитор асинхронен).
+
+    ``page.mouse.wheel`` только диспатчит wheel-событие; scroll-offset Chromium
+    применяет асинхронно, поэтому немедленный page.evaluate после шага видит
+    ещё старое состояние. Опрашиваем до фактического изменения, не дольше timeout.
+    """
+    deadline = time.time() + timeout
+    state = _scroll_state(session_id)
+    while time.time() < deadline:
+        if state["scrTop"] != before["scrTop"] or state["y"] != before["y"]:
+            return state
+        time.sleep(0.1)
+        state = _scroll_state(session_id)
+    return state
+
+
 # ───────────────────────────────────────────────────────────────
 # Поток 5/6: точечные live-проверки (BBA-6 click, TYPE-BE type, ACT-BE keyboard/wheel)
 # ───────────────────────────────────────────────────────────────
@@ -297,7 +330,7 @@ def test_browser_authoring_live_keyboard_and_wheel_events():
 # ───────────────────────────────────────────────────────────────
 
 _ACTION_PAGE_HTML = """
-<html><body>
+<html><body style='height:2600px;margin:0'>
   <button id='btn' data-testid='btn'>Click me</button>
   <input id='fld' data-testid='fld' type='text' />
   <select id='sel' data-testid='sel'>
@@ -307,9 +340,11 @@ _ACTION_PAGE_HTML = """
   <div id='scr' data-testid='scr'
        style='height:120px;overflow:auto;border:1px solid black'>
     <div style='height:900px'>tall</div>
+    <div id='scrinner'>INNER</div>
   </div>
   <div id='drag' data-testid='drag'
        style='width:200px;height:60px;background:#eee'>drag zone</div>
+  <div id='bottom' style='margin-top:2400px'>BOTTOM</div>
   <script>
     window.__clicks=0; window.__wheeled=0; window.__scrolled=0; window.__dragged=0;
     window.__hovered=0;
@@ -383,21 +418,31 @@ def test_lvl1_full_action_roundtrip_live():
         wheels = _drain_events(sid, action="wheel")
         assert wheels, "wheel not observed"
         assert "dy" in wheels[0].get("delta", {}), "wheel delta missing"
-        # Round-trip: snake wheel-шаг тоже порождает observe-wheel-событие (тот же
-        # путь page.mouse.wheel). Визуальный scroll-offset в Xvfb-Chromium
-        # детерминированно не применяется (CDP mouseWheel quirk) — поэтому
-        # проверяем именно observe-событие + passed, а не scrollTop.
+
+        # Observe-наблюдение wheel обязательно (delta инжектируется). Реальный
+        # scroll-side-effect от page.mouse.wheel (Xvfb quirk) проверяется
+        # отдельным тестом test_lvl1_wheel_scroll_side_effect_live, чтобы не
+        # обрывать здесь round-trip остальных 8 action.
         assert _step(sid, {"action": "wheel", "value": "0,-120"})["status"] == "passed"
         wheels_after = _drain_events(sid, action="wheel")
         assert wheels_after, "wheel step produced no observe-wheel event (round-trip broken)"
         assert "dy" in wheels_after[0].get("delta", {})
 
-        # ── 5. scroll (реальный scroll у #scr) ────────────────
-        _eval(sid, "document.getElementById('scr').scrollTop = 60")
+        # ── 5. scroll — реальный scroll-side-effect в #scr ────
+        # scroll target-path (scroll_into_view_if_needed) — единственный путь,
+        # который Xvfb честно исполняет. Таргетим off-screen потомка #scrinner
+        # (не сам контейнер — он уже в viewport): так детерминированно меняется
+        # scrollTop контейнера, что и есть реальный side-effect.
+        _eval(sid, "document.getElementById('scr').scrollTop=0; window.scrollTo(0,0)")
+        _drain_events(sid)  # сброс очереди
+        assert _step(sid, {"action": "scroll", "target": "#scrinner", "strategy": "css"})["status"] == "passed"
         scrolls = _drain_events(sid, action="scroll")
         assert scrolls, "scroll not observed"
         assert "dy" in scrolls[0].get("delta", {}), "scroll delta missing"
-        assert _step(sid, {"action": "scroll", "target": "#scr", "strategy": "css"})["status"] == "passed"
+        scr_top_after = _scroll_state(sid)["scrTop"]
+        assert scr_top_after > 0, (
+            f"scroll target-path должен реально скроллить #scr через #scrinner, scrTop={scr_top_after}"
+        )
 
         # ── 6. drag ───────────────────────────────────────────
         rect = _eval(sid, "(function(){var r=document.getElementById('drag').getBoundingClientRect();"
@@ -443,7 +488,7 @@ def test_lvl1_full_action_roundtrip_live():
             {"action": "fill", "target": "#fld", "value": "roundtrip"},
             {"action": "select_option", "target": "#sel", "value": "b"},
             {"action": "wheel", "value": "0,-80"},
-            {"action": "scroll", "target": "#scr", "strategy": "css"},
+            {"action": "scroll", "target": "#scrinner", "strategy": "css"},
             {"action": "drag", "value": f"{cx},{cy},{cx + 20},{cy + 5}"},
             {"action": "hover", "target": "#hov", "strategy": "css"},
             {"action": "press_key", "target": "Enter"},
@@ -461,4 +506,79 @@ def test_lvl1_full_action_roundtrip_live():
         )
     finally:
         browser_scenario_abort(session_id=sid)
+        browser_context_destroy(session_id=sid)
+
+
+@pytest.mark.live
+@pytest.mark.integration
+def test_lvl1_wheel_scroll_side_effect_live():
+    """LVL-1-RW: доказать РЕАЛЬНЫЙ scroll-side-effect wheel/scroll, не событие.
+
+    Раздельный тест: в основном round-trip (выше) wheel/scroll верифицируются по
+    observe-событию + passed (чтобы не обрывать остальные action), а здесь — по
+    фактическому изменению scroll-состояния живой страницы.
+
+    Доказательства (живой прогон):
+      * ``scroll`` target-path (``scroll_into_view_if_needed``) реально скроллит
+        контейнер ``#scr`` — assert ``scrTop > 0`` (детерминированно в Xvfb).
+      * ``wheel``/``scroll`` value-path (``page.mouse.wheel``) — BROWSER-STUDIO-SCROLL:
+        ``_wheel_page`` активирует вкладку (``bring_to_front``) перед wheel, поэтому
+        Xvfb quirk снят и scroll-offset применяется на самом деле.
+    """
+    _skip_if_no_cdp()
+
+    from browser.browser_service import (
+        browser_context_ensure, browser_step_execute, browser_context_destroy,
+    )
+
+    html = (
+        "<html><body style='height:2600px;margin:0'>"
+        "<div id='scr' style='height:120px;overflow:auto;border:1px solid black'>"
+        "<div style='height:900px'>tall</div><div id='scrinner'>INNER</div></div>"
+        "<div id='bottom' style='margin-top:2400px'>BOTTOM</div>"
+        "</body></html>"
+    )
+    sid = "lvl1-rw-scroll"
+    ensured = browser_context_ensure(url=f"data:text/html,{quote(html)}", session_id=sid)
+    if not ensured.get("ok") or not ensured.get("browserId"):
+        pytest.skip(f"browser_context_ensure failed: {ensured}")
+
+    try:
+        # ── scroll target-path: реальный side-effect (детерминирован) ──
+        # #scrinner — off-screen потомок внутри #scr: scroll_into_view_if_needed
+        # реально меняет scrollTop контейнера.
+        _eval(sid, "window.scrollTo(0,0); document.getElementById('scr').scrollTop=0")
+        assert _step(sid, {"action": "scroll", "target": "#scrinner", "strategy": "css"})["status"] == "passed"
+        scr_top = _scroll_state(sid)["scrTop"]
+        assert scr_top > 0, f"scroll target-path должен реально скроллить #scr, scrTop={scr_top}"
+
+        # ── scroll target-path по off-screen маркеру (#bottom) → document ──
+        _eval(sid, "window.scrollTo(0,0)")
+        assert _step(sid, {"action": "scroll", "target": "#bottom", "strategy": "css"})["status"] == "passed"
+        doc_y = _scroll_state(sid)["y"]
+        assert doc_y > 0, f"scroll_into_view_if_needed(#bottom) должен скроллить документ, y={doc_y}"
+
+        # ── wheel / scroll value-path: реальный side-effect (quirk снят) ──
+        # BROWSER-STUDIO-SCROLL: _wheel_page активирует вкладку (bring_to_front)
+        # перед mouse.wheel, поэтому scroll-offset применяется. dy положительный:
+        # скроллим вниз от верха (отрицательный из нуля — no-op по направлению).
+        # Offset применяется асинхронно — ждём изменения состояния (settled).
+        _eval(sid, "window.scrollTo(0,0); document.getElementById('scr').scrollTop=0")
+        before = _scroll_state(sid)
+        assert _step(sid, {"action": "wheel", "value": "0,400"})["status"] == "passed"
+        wheel_after = _scroll_state_settled(sid, before)
+        assert wheel_after["scrTop"] > before["scrTop"] or wheel_after["y"] > before["y"], (
+            f"wheel value-path не дал реального scroll side-effect "
+            f"(doc y={wheel_after['y']}, scrTop={wheel_after['scrTop']})"
+        )
+
+        _eval(sid, "window.scrollTo(0,0); document.getElementById('scr').scrollTop=0")
+        before2 = _scroll_state(sid)
+        assert _step(sid, {"action": "scroll", "value": "0,400"})["status"] == "passed"
+        scroll_after = _scroll_state_settled(sid, before2)
+        assert scroll_after["scrTop"] > before2["scrTop"] or scroll_after["y"] > before2["y"], (
+            f"scroll value-path не дал реального scroll side-effect "
+            f"(doc y={scroll_after['y']}, scrTop={scroll_after['scrTop']})"
+        )
+    finally:
         browser_context_destroy(session_id=sid)

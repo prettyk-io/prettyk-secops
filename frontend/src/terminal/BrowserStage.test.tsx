@@ -4,7 +4,7 @@
  * BBA-FE-2: replay runner в BrowserStage — статусы шагов, ошибка, Continue/Stop.
  */
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
-import { render, cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
+import { render, cleanup, fireEvent, screen, waitFor, act } from '@testing-library/react';
 import { BrowserStage } from './BrowserStage';
 import { useScenarioDeckStore } from '../studio/ScenarioDeckStore';
 import type { ScenarioStepModel } from '../studio/scenarioStepModel';
@@ -289,6 +289,167 @@ describe('BrowserStage — CandidateOverlay (BBA-FE-4)', () => {
       expect(body.step.action).toBe('click');
       expect(body.step.strategy).toBe('css');
       expect(body.step.target).toBe('#login');
+    });
+  });
+});
+
+describe('BrowserStage — колесо мыши (BROWSER-STUDIO-SCROLL)', () => {
+  beforeEach(() => {
+    __resetBrowserSessionForTests();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function mockConnected(): void {
+    mockFetch((url) => {
+      if (url.includes('/api/browser/status')) {
+        return resp(200, { ok: true, connected: true, url: 'http://juice-shop:3000', title: 'Juice', contexts: ['operator'], purpose: 'authoring', transport: 'playwright', runtime: 'container' });
+      }
+      return resp(200, { ok: true });
+    });
+  }
+
+  async function renderWithCanvas(): Promise<HTMLCanvasElement> {
+    useScenarioDeckStore.getState().setDecks([deckWith([])]);
+    mockConnected();
+    const { container } = render(<BrowserStage mode="author" onModeChange={() => {}} cdpConnected />);
+    await waitFor(() => {
+      expect(container.querySelector('canvas')).not.toBeNull();
+    });
+    const canvas = container.querySelector('canvas') as HTMLCanvasElement;
+    canvas.getBoundingClientRect = () => ({
+      left: 0, top: 0, width: 400, height: 300, right: 400, bottom: 300, x: 0, y: 0,
+      toJSON: () => ({}),
+    }) as DOMRect;
+    return canvas;
+  }
+
+  it('батчит дельты и шлёт /api/browser/wheel с координатами вьюпорта', async () => {
+    const canvas = await renderWithCanvas();
+
+    fireEvent.wheel(canvas, { deltaX: 0, deltaY: 120, clientX: 200, clientY: 150 });
+    fireEvent.wheel(canvas, { deltaX: 0, deltaY: 80, clientX: 200, clientY: 150 });
+
+    await waitFor(() => {
+      const calls = (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls;
+      const wheelCalls = calls.filter((c) => String(c[0]).includes('/api/browser/wheel'));
+      expect(wheelCalls).toHaveLength(1);
+      const body = JSON.parse(String(wheelCalls[0]?.[1]?.body ?? '{}'));
+      expect(body.dy).toBe(200);
+      expect(body.x).toBe(640);
+      expect(body.y).toBe(400);
+    });
+  });
+
+  it('не шлёт запрос при нулевых дельтах', async () => {
+    const canvas = await renderWithCanvas();
+
+    fireEvent.wheel(canvas, { deltaX: 0, deltaY: 0, clientX: 200, clientY: 150 });
+    await new Promise((resolve) => setTimeout(resolve, 150));
+
+    const calls = (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls;
+    expect(calls.filter((c) => String(c[0]).includes('/api/browser/wheel'))).toHaveLength(0);
+  });
+
+  it('ловит wheel с оверлея кандидатов (событие всплывает на контейнер вьюпорта)', async () => {
+    const canvas = await renderWithCanvas();
+    const viewport = (canvas.closest('div.relative') as HTMLElement).parentElement as HTMLElement;
+
+    fireEvent.wheel(viewport, { deltaX: 0, deltaY: 60, clientX: 200, clientY: 150 });
+
+    await waitFor(() => {
+      const calls = (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls;
+      const wheelCalls = calls.filter((c) => String(c[0]).includes('/api/browser/wheel'));
+      expect(wheelCalls).toHaveLength(1);
+      const body = JSON.parse(String(wheelCalls[0]?.[1]?.body ?? '{}'));
+      expect(body.dy).toBe(60);
+    });
+  });
+});
+
+describe('BrowserStage — VIEWFIT-FE (подгонка удалённого viewport)', () => {
+  class ResizeObserverStub {
+    static lastCallback: (() => void) | null = null;
+    constructor(cb: () => void) { ResizeObserverStub.lastCallback = cb; }
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+
+  beforeEach(() => {
+    __resetBrowserSessionForTests();
+    ResizeObserverStub.lastCallback = null;
+    vi.stubGlobal('ResizeObserver', ResizeObserverStub);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  const connectedStatus = {
+    ok: true,
+    connected: true,
+    url: 'http://juice-shop:3000',
+    title: 'Juice',
+    contexts: ['operator'],
+    purpose: 'authoring',
+    transport: 'playwright',
+    runtime: 'container',
+  };
+
+  function viewportCalls(): Array<{ width?: number; height?: number }> {
+    const calls = (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls;
+    return calls
+      .filter((c) => String(c[0]).includes('/api/browser/viewport'))
+      .map((c) => JSON.parse(String(c[1]?.body ?? '{}')));
+  }
+
+  it('размер контейнера уходит на POST /api/browser/viewport (debounce), дубли не шлются', async () => {
+    useScenarioDeckStore.getState().setDecks([deckWith([])]);
+    mockFetch((url) => {
+      if (url.includes('/api/browser/status')) return resp(200, connectedStatus);
+      if (url.includes('/api/browser/viewport')) return resp(200, { ok: true, viewportWidth: 1083, viewportHeight: 661, clamped: false });
+      return resp(200, { ok: true });
+    });
+
+    render(<BrowserStage mode="author" onModeChange={() => {}} cdpConnected />);
+    const vp = screen.getByTestId('browser-stage-viewport');
+    Object.defineProperty(vp, 'clientWidth', { value: 1083, configurable: true });
+    Object.defineProperty(vp, 'clientHeight', { value: 661, configurable: true });
+
+    await waitFor(() => {
+      expect(viewportCalls().length).toBeGreaterThan(0);
+    }, { timeout: 2000 });
+    expect(viewportCalls()[0]).toEqual({ width: 1083, height: 661 });
+
+    // Дать успешному ответу осесть в дедупе, затем повторить тот же размер.
+    await new Promise((r) => setTimeout(r, 60));
+    act(() => { ResizeObserverStub.lastCallback?.(); });
+    await new Promise((r) => setTimeout(r, 450));
+    expect(viewportCalls()).toHaveLength(1);
+  });
+
+  it('BE недоступен (500) → запрос падает тихо, деск жив (aspect-fit fallback)', async () => {
+    useScenarioDeckStore.getState().setDecks([deckWith([])]);
+    mockFetch((url) => {
+      if (url.includes('/api/browser/status')) return resp(200, connectedStatus);
+      if (url.includes('/api/browser/viewport')) return resp(500, { ok: false, error: 'backend down' });
+      return resp(200, { ok: true });
+    });
+
+    const { container } = render(<BrowserStage mode="author" onModeChange={() => {}} cdpConnected />);
+    const vp = screen.getByTestId('browser-stage-viewport');
+    Object.defineProperty(vp, 'clientWidth', { value: 1083, configurable: true });
+    Object.defineProperty(vp, 'clientHeight', { value: 661, configurable: true });
+
+    await waitFor(() => {
+      expect(viewportCalls().length).toBeGreaterThan(0);
+    }, { timeout: 2000 });
+    await waitFor(() => {
+      expect(container.querySelector('canvas')).not.toBeNull();
     });
   });
 });

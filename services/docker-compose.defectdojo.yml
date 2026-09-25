@@ -14,6 +14,13 @@ services:
   defectdojo-nginx:
     image: defectdojo/defectdojo-nginx:${DD_NGINX_VERSION:-latest}
     container_name: defectdojo-nginx
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-s", "-o", "/dev/null", "http://localhost:8080/login"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
     depends_on:
       defectdojo-uwsgi:
         condition: service_started
@@ -31,6 +38,7 @@ services:
   defectdojo-uwsgi:
     image: defectdojo/defectdojo-django:${DD_DJANGO_VERSION:-latest}
     container_name: defectdojo-uwsgi
+    restart: unless-stopped
     depends_on:
       defectdojo-initializer:
         condition: service_completed_successfully
@@ -64,6 +72,7 @@ services:
   defectdojo-celeryworker:
     image: defectdojo/defectdojo-django:${DD_DJANGO_VERSION:-latest}
     container_name: defectdojo-celeryworker
+    restart: unless-stopped
     depends_on:
       defectdojo-initializer:
         condition: service_completed_successfully
@@ -91,6 +100,7 @@ services:
   defectdojo-celerybeat:
     image: defectdojo/defectdojo-django:${DD_DJANGO_VERSION:-latest}
     container_name: defectdojo-celerybeat
+    restart: unless-stopped
     depends_on:
       defectdojo-initializer:
         condition: service_completed_successfully
@@ -148,6 +158,7 @@ services:
   defectdojo-postgres:
     image: postgres:16-alpine
     container_name: defectdojo-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_DB: defectdojo
       POSTGRES_USER: defectdojo
@@ -166,6 +177,7 @@ services:
   defectdojo-valkey:
     image: valkey/valkey:8-alpine
     container_name: defectdojo-valkey
+    restart: unless-stopped
     volumes:
       - defectdojo_redis:/data
     healthcheck:

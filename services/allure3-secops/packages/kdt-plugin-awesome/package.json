@@ -1,0 +1,27 @@
+{
+  "name": "@allurereport/plugin-awesome",
+  "version": "3.14.3-kdt.1",
+  "description": "KDT SecOps fork of Allure Awesome plugin — brand header + minimal Overview over awesome data, no external analytics (bank-safe).",
+  "keywords": ["allure", "html", "plugin", "report", "secops", "kdt"],
+  "license": "Apache-2.0",
+  "author": "Qameta Software",
+  "repository": "https://github.com/allure-framework/allure3",
+  "files": ["./dist"],
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "dependencies": {
+    "@allurereport/charts-api": "3.14.3",
+    "@allurereport/core-api": "3.14.3",
+    "@allurereport/plugin-api": "3.14.3",
+    "@allurereport/web-awesome": "3.14.3",
+    "@allurereport/web-commons": "3.14.3",
+    "d3-shape": "^3.2.0",
+    "handlebars": "^4.7.9",
+    "markdown-it": "^14.2.0"
+  }
+}

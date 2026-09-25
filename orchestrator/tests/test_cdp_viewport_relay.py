@@ -4,15 +4,19 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 import socket
 import struct
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import pytest_asyncio
 import websockets
 
 from browser.cdp_viewport_relay import (
+    SCREENCAST_MAX_HEIGHT,
+    SCREENCAST_MAX_WIDTH,
     CdpViewportRelay,
     _LatestFrame,
     _pack_frame,
@@ -315,3 +319,147 @@ class TestBroadcast:
 
 def test_start_relay_function_exists():
     assert callable(start_relay)
+
+
+# ══════════════════════════════════════════════════════════════════════
+# VIEWFIT-BE: screencast-кап под размеры контейнера
+# ══════════════════════════════════════════════════════════════════════
+
+
+class TestScreencastCap:
+    def test_cap_covers_1920x1200_containers(self):
+        """VIEWFIT-BE: кап должен вмещать контейнеры вплоть до 1920×1200."""
+        assert SCREENCAST_MAX_WIDTH >= 1920
+        assert SCREENCAST_MAX_HEIGHT >= 1200
+
+    @pytest.mark.asyncio
+    async def test_start_screencast_uses_viewfit_cap(self):
+        """Page.startScreencast запускается с капом VIEWFIT-BE, а не 1280×800."""
+        relay = CdpViewportRelay()
+        relay._browser = MagicMock()
+        page = MagicMock()
+        cdp = MagicMock()
+        cdp.send = AsyncMock()
+        cdp.on = MagicMock()
+        page.context.new_cdp_session = AsyncMock(return_value=cdp)
+        relay._page = page
+
+        await relay._start_screencast()
+
+        cdp.send.assert_awaited_once_with(
+            "Page.startScreencast",
+            {
+                "format": "jpeg",
+                "quality": 80,
+                "maxWidth": SCREENCAST_MAX_WIDTH,
+                "maxHeight": SCREENCAST_MAX_HEIGHT,
+                "everyNthFrame": 1,
+            },
+        )
+        assert relay._cdp_session is cdp
+
+
+# ══════════════════════════════════════════════════════════════════════
+# RELAY-FRAME: viewport sync — свежий кадр в новом размере
+# ══════════════════════════════════════════════════════════════════════
+
+
+_VIEWFIT_JPEG = b"\xff\xd8\xff\xe0\x00\x10JFIF" + b"\x00" * 8 + b"\xff\xd9"
+
+
+class TestViewportSync:
+    def _relay_with_cdp(self, observed: str):
+        relay = CdpViewportRelay()
+        relay._browser_connected = True
+        calls: list[tuple] = []
+
+        async def fake_send(method, params=None):
+            calls.append((method, params))
+            if method == "Runtime.evaluate":
+                return {"result": {"value": observed}}
+            if method == "Page.captureScreenshot":
+                return {"data": base64.b64encode(_VIEWFIT_JPEG).decode()}
+            raise AssertionError(f"unexpected CDP method: {method}")
+
+        cdp = MagicMock()
+        cdp.send = AsyncMock(side_effect=fake_send)
+        relay._cdp_session = cdp
+        return relay, calls
+
+    @pytest.mark.asyncio
+    async def test_capture_if_resized_pushes_frame_in_new_size(self):
+        """RELAY-FRAME: расхождение размеров → captureScreenshot → _latest в новом размере."""
+        relay, calls = self._relay_with_cdp("1083,661")
+        relay._latest.push(_VIEWFIT_JPEG, {})
+        relay._latest_width, relay._latest_height = 1920, 1080  # старый кадр
+
+        await relay._capture_if_resized()
+
+        assert [c[0] for c in calls] == ["Runtime.evaluate", "Page.captureScreenshot"]
+        jpeg, seq = relay._latest.snapshot()
+        assert seq == 2  # старый кадр + свежий
+        assert jpeg == _VIEWFIT_JPEG
+        assert (relay._latest_width, relay._latest_height) == (1083, 661)
+        packed = _pack_frame(jpeg, relay._latest_width, relay._latest_height)
+        assert struct.unpack(">HH", packed[:4]) == (1083, 661)
+
+    @pytest.mark.asyncio
+    async def test_capture_if_resized_captures_first_frame(self):
+        """Пустой _latest (старт relay) → первый же тик даёт кадр текущего размера."""
+        relay, calls = self._relay_with_cdp("1920,1080")
+
+        await relay._capture_if_resized()
+
+        assert [c[0] for c in calls] == ["Runtime.evaluate", "Page.captureScreenshot"]
+        jpeg, seq = relay._latest.snapshot()
+        assert seq == 1
+        assert jpeg == _VIEWFIT_JPEG
+        assert (relay._latest_width, relay._latest_height) == (1920, 1080)
+
+    @pytest.mark.asyncio
+    async def test_capture_if_resized_skips_when_size_matches(self):
+        """Размер совпал с текущим кадром → лишних captureScreenshot нет."""
+        relay, calls = self._relay_with_cdp("1083,661")
+        relay._latest.push(_VIEWFIT_JPEG, {})
+        relay._latest_width, relay._latest_height = 1083, 661
+
+        await relay._capture_if_resized()
+
+        assert [c[0] for c in calls] == ["Runtime.evaluate"]
+
+    @pytest.mark.asyncio
+    async def test_capture_if_resized_noop_without_connection(self):
+        """Нет CDP-коннекта → тик ничего не шлёт и не падает."""
+        relay = CdpViewportRelay()
+        await relay._capture_if_resized()  # не подключён, нет сессии
+
+    @pytest.mark.asyncio
+    async def test_capture_if_resized_noop_without_cdp_session(self):
+        relay = CdpViewportRelay()
+        relay._browser_connected = True
+        await relay._capture_if_resized()  # сессия ещё не создана
+
+    @pytest.mark.asyncio
+    async def test_sync_loop_marks_browser_lost_after_repeated_failures(self, monkeypatch):
+        """Зомби-сессия: N неудачных сверок подряд → флаг для reconnect-дога."""
+        relay = CdpViewportRelay()
+        relay._browser_connected = True
+        cdp = MagicMock()
+        cdp.send = AsyncMock(side_effect=RuntimeError("session dead"))
+        relay._cdp_session = cdp
+        monkeypatch.setattr(CdpViewportRelay, "_VIEWPORT_POLL_INTERVAL", 0.01)
+
+        task = asyncio.create_task(relay._viewport_sync_loop())
+        try:
+            for _ in range(100):
+                await asyncio.sleep(0.01)
+                if not relay._browser_connected:
+                    break
+            assert relay._browser_connected is False
+        finally:
+            relay._shutting_down = True
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass

@@ -275,8 +275,12 @@ def set_meta(**kwargs: Any) -> None:
     """
     with _lock:
         disk = _read_meta_file() or {}
+        # Диск — кросс-процессный источник истины для ключей, которые текущий
+        # вызов НЕ пишет явно. Иначе долгоживущий idle-процесс держит в _meta
+        # протухший снимок (например run_id прошлого прогона) и на каждом
+        # set_meta затирает им свежие значения, записанные раннером (MON-REWORK).
         for key, value in disk.items():
-            if key not in _meta and key not in kwargs:
+            if key not in kwargs:
                 _meta[key] = value
         for key, value in kwargs.items():
             if value is not None:
@@ -654,7 +658,26 @@ def clear_ci_meta() -> None:
     _write_meta_file(dict(_meta))
 
 
+def reset_run_state() -> None:
+    """Close a (possibly crashed) run: drop the timeline origin + resting status.
+
+    Undoes the runtime side of a started run so an abrupt exit (crash before
+    write_summary, or a direct Controller.run() without the main.py lifecycle)
+    cannot leave the monitor stuck in ``running``: ``run_start_ts`` is cleared,
+    ``status`` returns to ``idle``. CI verdict (ci_phase/ci_* keys) is owned by
+    the caller (main.py / gha_poller) and is deliberately left untouched here.
+    """
+    global _run_start_ts
+    _run_start_ts = None
+    with _lock:
+        _meta.pop("run_start_ts", None)
+        _meta["status"] = "idle"
+    _write_meta_file(dict(_meta))
+
+
 def clear() -> None:
+    global _run_start_ts
+    _run_start_ts = None
     ensure_live_dir()
     with _file_lock:
         try:

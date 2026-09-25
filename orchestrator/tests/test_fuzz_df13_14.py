@@ -19,12 +19,79 @@ from core.fuzzing import (
     FuzzMessage,
     FuzzPolicy,
     apply_scanner_alerts_to_rows,
+    base_url_of,
     build_audit_digest,
     export_fuzz_security_artifacts,
     new_alerts_for_origin,
     sha256_text,
     snapshot_alert_fingerprints,
 )
+
+
+class _scannerWithScopedAlerts:
+    """Fake: get_alerts_by_baseurl (prefix-scoped) + get_alerts (full)."""
+
+    def __init__(self, alerts=None):
+        self._alerts = list(alerts or [])
+        self.calls = []
+        self.scoped_calls = []
+
+    def scanner_http_request(
+        self, method, url, headers=None, body=None, follow_redirects=False
+    ):
+        self.calls.append({"method": method, "url": url, "body": body})
+        return {"status": 200, "body": "ok"}
+
+    def get_alerts_by_baseurl(self, baseurl):
+        self.scoped_calls.append(baseurl)
+        return [
+            a
+            for a in self._alerts
+            if str(a.get("url") or "").startswith(str(baseurl))
+        ]
+
+    def get_alerts(self, context_name=None, risk=None, url=None):
+        return list(self._alerts)
+
+
+def test_base_url_of_strips_query_and_fragment():
+    assert (
+        base_url_of("http://juice-shop:3000/rest/products/search?q=x#f")
+        == "http://juice-shop:3000/rest/products/search"
+    )
+    assert base_url_of("http://h/p") == "http://h/p"
+
+
+def test_alert_diff_uses_baseurl_scope_when_available():
+    scanner = _scannerWithScopedAlerts(
+        [
+            {
+                "pluginId": "1",
+                "name": "old",
+                "risk": "Info",
+                "url": "http://juice-shop:3000/rest/products/search?q=old",
+                "param": "q",
+            }
+        ]
+    )
+    scope = "http://juice-shop:3000/rest/products/search"
+    before = snapshot_alert_fingerprints(scanner, baseurl=scope)
+    assert scanner.scoped_calls == [scope]
+    scanner._alerts.append(
+        {
+            "pluginId": "2",
+            "name": "new",
+            "risk": "Low",
+            "url": "http://juice-shop:3000/rest/products/search?q=x",
+            "param": "q",
+        }
+    )
+    fresh = new_alerts_for_origin(
+        scanner, origin="http://juice-shop:3000", before=before, baseurl=scope
+    )
+    assert scanner.scoped_calls == [scope, scope]
+    assert len(fresh) == 1
+    assert fresh[0]["name"] == "new"
 
 
 class _scannerWithAlerts:

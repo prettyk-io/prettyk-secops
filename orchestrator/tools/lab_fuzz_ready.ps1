@@ -14,8 +14,7 @@
   .\orchestrator\tools\lab_fuzz_ready.ps1 -CheckOnly
 #>
 param(
-    [switch]$CheckOnly,
-    [switch]$IncludeDefectDojo
+    [switch]$CheckOnly
 )
 
 $ErrorActionPreference = 'Stop'
@@ -36,12 +35,8 @@ function Test-HttpOk {
 Write-Host "branch-seat: stay on current (do not switch). cwd=$RepoRoot"
 
 if (-not $CheckOnly) {
-    Write-Host "START lab_up.ps1$(if ($IncludeDefectDojo) { ' -IncludeDefectDojo' } else { '' })"
-    if ($IncludeDefectDojo) {
-        & $LabUp -IncludeDefectDojo
-    } else {
-        & $LabUp
-    }
+    Write-Host "START lab_up.ps1"
+    & $LabUp
     if ($LASTEXITCODE -ne 0) {
         throw "lab_up.ps1 failed (exit $LASTEXITCODE)"
     }

@@ -39,6 +39,18 @@ def har_sequence_live_enabled() -> bool:
     return raw in {"1", "true", "yes", "on"}
 
 
+# SCAN-DEPTH: статик-мусор, который раздувает scope активного скана. SPA-рекурсия
+# (`/assets/public/assets/public/…`), source-maps и node_modules дают тысячи узлов,
+# на которых active scan тонет и не доходит до реальных injection-точек (например
+# `/rest/products/search` на Juice Shop). Исключаем из контекста до атаки.
+ACTIVE_SCAN_NOISE_EXCLUDES: tuple = (
+    r".*\.(js|css|ico|png|jpe?g|gif|svg|woff2?|ttf|eot|map|webp|avif)(\?.*)?$",
+    r".*/node_modules/.*",
+    r".*/assets/.*",
+    r".*/\.well-known/.*",
+)
+
+
 def scanner_har_file_for_api(host_path: str) -> str:
     """
     Map host HAR path under reports/runs to the path scanner Docker sees.
@@ -89,6 +101,11 @@ class ScannerAdapter(BaseAdapter):
         self.ajax_spider_timeout = 15
         self.client_spider_timeout = 15
         self.active_scan_timeout = 30
+        # SCAN-EXPORT-GAP: честность таймаута — обрезанный скан не выдаётся за полный.
+        self.active_scan_truncated = False
+        # SCAN-DEPTH: aggressive depth (High/Low) применяется один раз на процесс.
+        self._active_scan_hardened = False
+        self._scope_excluded_contexts = set()
         # Если прогресс паука не меняется столько секунд — гасим (антизависание).
         self.spider_stall_seconds = 60
 
@@ -2446,6 +2463,12 @@ class ScannerAdapter(BaseAdapter):
         # Из wire таймаут приходит строкой; 0.5 = 30 секунд — тоже валидно.
         timeout_minutes = self._as_timeout_minutes(timeout_minutes, self.active_scan_timeout)
 
+        self.active_scan_truncated = False
+
+        # SCAN-DEPTH: агрессивная глубина (High/Low) + чистый scope ДО атаки, иначе
+        # active scan на DEFAULT strength тонет в статик-мусоре и не доходит до SQLi/XSS.
+        self.harden_active_scan(context_name)
+
         context = context_name or self.context_name
         if context:
             context_id = self._get_context_id(context)
@@ -2464,6 +2487,7 @@ class ScannerAdapter(BaseAdapter):
         while True:
             # Проверяем таймаут
             if time.time() - start_time > timeout_minutes * 60:
+                self.active_scan_truncated = True
                 logger.warning(f"Active scan timed out after {timeout_minutes} minutes, stopping scan")
                 try:
                     self._scanner.ascan.stop(scan_id)
@@ -2482,7 +2506,15 @@ class ScannerAdapter(BaseAdapter):
             time.sleep(5)
 
         count = self._count_alerts(baseurl=url)
-        logger.info(f"Active scan completed, found {count} alerts")
+        if self.active_scan_truncated:
+            logger.error(
+                "Active scan STOPPED BY TIMEOUT (truncated) after %.2f min — partial count %s; "
+                "not a complete scan",
+                timeout_minutes,
+                count,
+            )
+        else:
+            logger.info(f"Active scan completed, found {count} alerts")
         return count
 
     def _count_alerts(self, *, baseurl=None):
@@ -2814,23 +2846,77 @@ class ScannerAdapter(BaseAdapter):
         return {"profile": key, "policy": policy, "strength": strength, "threshold": threshold}
 
     def _set_policy_defaults(self, policy_name, strength, threshold):
-        """Выставить default strength/threshold для всех правил политики."""
-        rule_id = "-1"
-        for setter, value, kw in (
-            (getattr(self._scanner.ascan, "set_policy_attack_strength", None), strength, "attackStrength"),
-            (getattr(self._scanner.ascan, "set_policy_alert_threshold", None), threshold, "alertThreshold"),
-        ):
-            if setter is None:
-                continue
-            try:
-                setter(rule_id, value, scanpolicyname=policy_name)
-            except TypeError:
+        """Выставить default strength/threshold для всех категорий политики.
+
+        ZAP `setPolicyAttackStrength` проводит sentinel ``-1`` (all) без эффекта:
+        strength остаётся DEFAULT. Работает только перебор категорий политики
+        (id 0-4), полученных из ``ascan.policies``.
+        """
+        set_strength = getattr(self._scanner.ascan, "set_policy_attack_strength", None)
+        set_threshold = getattr(self._scanner.ascan, "set_policy_alert_threshold", None)
+        category_ids = ["0", "1", "2", "3", "4"]
+        try:
+            pols = self._scanner.ascan.policies(scanpolicyname=policy_name)
+            if isinstance(pols, list) and pols and isinstance(pols[0], dict):
+                got = [
+                    str(p.get("id"))
+                    for p in pols
+                    if isinstance(p, dict) and p.get("id") is not None
+                ]
+                if got:
+                    category_ids = got
+        except Exception as exc:
+            logger.debug(
+                "ascan policies unavailable (%s); using default category ids", exc
+            )
+        for cid in category_ids:
+            if set_strength is not None:
                 try:
-                    setter(id=rule_id, **{kw: value, "scanPolicyName": policy_name})
-                except TypeError:
-                    logger.debug(
-                        "ascan policy default %s skipped for %s", kw, policy_name
-                    )
+                    set_strength(cid, strength, scanpolicyname=policy_name)
+                except Exception as exc:
+                    logger.debug("ascan policy strength id=%s failed: %s", cid, exc)
+            if set_threshold is not None:
+                try:
+                    set_threshold(cid, threshold, scanpolicyname=policy_name)
+                except Exception as exc:
+                    logger.debug("ascan policy threshold id=%s failed: %s", cid, exc)
+
+    def harden_active_scan(self, context_name=None):
+        """SCAN-DEPTH: агрессивная глубина + чистый scope перед активным сканом.
+
+        Корень «active scan 100% passive / High=0» — не отключённые правила (все
+        enabled), а DEFAULT strength/threshold + scope, раздутый статик-мусором
+        (8617 узлов; скан стопился на 35%, не дойдя до SQLi-точки). Тут:
+          1) strength=HIGH / threshold=LOW на политике по умолчанию (один раз);
+          2) static/node_modules/assets — out of scope (один раз на контекст).
+        """
+        self._ensure_connected()
+        if not self._active_scan_hardened:
+            try:
+                self._set_policy_defaults("Default Policy", "High", "Low")
+                self._active_scan_hardened = True
+                logger.info(
+                    "active scan hardened: Default Policy strength=High threshold=Low"
+                )
+            except Exception as exc:
+                logger.warning("active scan depth hardening failed: %s", exc)
+
+        ctx = (context_name or self.context_name or "").strip()
+        if ctx and ctx not in self._scope_excluded_contexts:
+            ok = 0
+            for rx in ACTIVE_SCAN_NOISE_EXCLUDES:
+                try:
+                    self._scanner.context.exclude_from_context(ctx, rx)
+                    ok += 1
+                except Exception as exc:
+                    logger.debug("context exclude %s skipped: %s", rx, exc)
+            self._scope_excluded_contexts.add(ctx)
+            logger.info(
+                "active scan scope cleanup: %s/%s noise excludes for context %s",
+                ok,
+                len(ACTIVE_SCAN_NOISE_EXCLUDES),
+                ctx,
+            )
 
     # ========== АЛЕРТЫ ==========
 
@@ -2841,22 +2927,51 @@ class ScannerAdapter(BaseAdapter):
         копит alerts И site-tree между run'ами: `_fetch_alerts_paginated` упирается в глубокий
         slice (`start=21600`) → ProxyError → рестарт контейнера. `new_session` чистит и alerts,
         и сайты (детерминированный per-run объём); фолбэк — `delete_all_alerts` (только alerts).
-        Возвращает True при успехе, False при недоступности — прогон не отбрасывается.
+        Дополнительно (BOX-SAN-1) удаляет именованные контексты (`juice_ctx` и др.), чтобы
+        active/spider не тащили чужой скоуп прошлого прогона. Возвращает True при успехе,
+        False при недоступности — прогон не отбрасывается.
         """
         self._ensure_connected()
+        reset_ok = False
         try:
             self._scanner.core.new_session()
             logger.info("scanner new session (fresh per run)")
-            return True
+            reset_ok = True
         except Exception as e:
             logger.warning("scanner new_session unavailable (%s); fallback delete_all_alerts", e)
+        if not reset_ok:
+            try:
+                self._scanner.core.delete_all_alerts()
+                logger.info("scanner alerts reset (fresh session for run)")
+                reset_ok = True
+            except Exception as e:
+                logger.warning("scanner delete_all_alerts skipped: %s", e)
+        # BOX-SAN-1: new_session/delete_all_alerts чистит alerts/site-tree, но именованные
+        # контексты могли остаться от прошлого прогона — явно удаляем их.
+        self._purge_named_contexts()
+        return reset_ok
+
+    def _purge_named_contexts(self) -> None:
+        """BOX-SAN-1: удалить именованные ZAP-контексты от прошлого прогона.
+
+        `Default Context` не трогаем; локальный `context_name` обнуляется. Best-effort —
+        любой сбой только логируется (прогон не отбрасывается).
+        """
         try:
-            self._scanner.core.delete_all_alerts()
-            logger.info("scanner alerts reset (fresh session for run)")
-            return True
-        except Exception as e:
-            logger.warning("scanner delete_all_alerts skipped: %s", e)
-            return False
+            contexts = self.list_contexts()
+        except Exception as exc:
+            logger.debug("scanner list_contexts unavailable: %s", exc)
+            self.context_name = None
+            return
+        for name in contexts or []:
+            if not name or str(name).strip() == "Default Context":
+                continue
+            try:
+                self._scanner.context.remove_context(name)
+                logger.info("scanner removed stale context: %s", name)
+            except Exception as exc:
+                logger.warning("scanner remove_context(%s) skipped: %s", name, exc)
+        self.context_name = None
 
     def _fetch_alerts_paginated(self, *, riskid=None, baseurl=None, page_size=200):
         """
@@ -2931,6 +3046,24 @@ class ScannerAdapter(BaseAdapter):
         if url:
             alerts = [a for a in alerts if a.get("url") == url]
         return alerts
+
+    def get_alerts_by_baseurl(self, baseurl, risk=None):
+        """Alerts по baseurl (scope/prefix на стороне scanner) БЕЗ exact-match.
+
+        BOX-GATE-NORM: для alert-diff фаззера достаточно скоупа endpoint (baseurl без
+        query), а не всей сессии. Полная пагинация всех alerts (25k+) — источник
+        зависания демона; тут сужаем выборку ДО пагинации.
+        """
+        self._ensure_connected()
+        risk_l = str(risk).strip().lower() if risk else ""
+        riskid = {
+            "high": "3",
+            "medium": "2",
+            "low": "1",
+            "informational": "0",
+            "info": "0",
+        }.get(risk_l)
+        return self._fetch_alerts_paginated(riskid=riskid, baseurl=baseurl)
 
     def get_alert_count(self, context_name=None):
         self._ensure_connected()
@@ -3541,8 +3674,8 @@ class ScannerAdapter(BaseAdapter):
     ):
         """
         Генерирует отчёт scanner и сохраняет его.
-        format/template: html/traditional-html, sarif/sarif-json (Report Generation add-on),
-        xml/json/md — legacy core.*report (Dojo XML через format=xml).
+        format/template: html→legacy core.htmlreport (детерминированный файл);
+        xml→полный OWASP XML из alerts (Dojo); sarif/json/md/traditional-* — add-on/legacy.
         attach_to_allure: только для html; по умолчанию false (отчёт тяжёлый).
         Явно true/1 — приложить HTML к Allure.
         """
@@ -3571,7 +3704,19 @@ class ScannerAdapter(BaseAdapter):
             "high-level-report",
             "modern",
         }
-        if template_id in addon_templates or fmt in ("html", "sarif", "sarif-json", "traditional-html"):
+        if fmt == "xml" and template_id not in addon_templates:
+            # SCAN-EXPORT-GAP: core.xmlreport() legacy недоэкспортирует (6 alertitem/23
+            # инстанса против полных 6937) — собираем OWASP XML из полного набора alerts.
+            return str(self._export_owasp_xml_full(output_path))
+        if fmt == "html" and template_id == "traditional-html":
+            # html пишется в СВОЙ файл детерминированно (нет add-on path mismatch и
+            # глоба `{stem}*`, подхватывающего stale-файл прошлого шага).
+            report = self._scanner.core.htmlreport()
+            output_path.write_text(report, encoding="utf-8")
+            if attach_to_allure:
+                attach_scanner_html(report, name=output_path.name)
+            return str(output_path)
+        if template_id in addon_templates or fmt in ("sarif", "sarif-json", "traditional-html"):
             path = self._generate_report_via_addon(
                 template_id,
                 output_path,
@@ -3579,21 +3724,14 @@ class ScannerAdapter(BaseAdapter):
             )
             return str(path)
 
-        if fmt == "html":
-            report = self._scanner.core.htmlreport()
-        elif fmt == "json":
+        if fmt == "json":
             report = self._scanner.core.jsonreport()
-        elif fmt == "xml":
-            report = self._scanner.core.xmlreport()
         elif fmt == "md":
             report = self._scanner.core.mdreport()
         else:
             raise ValueError(f"Unsupported report format: {format}")
 
         output_path.write_text(report, encoding="utf-8")
-
-        if attach_to_allure and fmt == "html":
-            attach_scanner_html(report, name=output_path.name)
 
         return str(output_path)
 
@@ -3651,6 +3789,73 @@ class ScannerAdapter(BaseAdapter):
             except Exception as exc:
                 logger.debug("Allure attach skipped for addon report: %s", exc)
 
+        return output_path
+
+    def _export_owasp_xml_full(self, output_path):
+        """SCAN-EXPORT-GAP: полный OWASPscannerReport XML из полного набора alerts.
+
+        `core.xmlreport()` (legacy движок) отдаёт только пассивную подвыборку (6
+        alertitem / 23 инстанса) — Dojo/collapse поедают обрубок. Собираем XML сама
+        из `_fetch_alerts_paginated()`: reset_alerts() гарантирует per-run объём
+        (новый сессион на каждый прогон), так что «все alerts сессии» = «все находки
+        этого прогона», и Dojo получает честные active/passive целиком.
+        """
+        import xml.etree.ElementTree as ET
+
+        alerts = self._fetch_alerts_paginated()
+
+        first_url = alerts[0].get("url", "") if alerts else ""
+        site_name = (self.base_url or first_url or "scanner-target").strip()
+
+        root = ET.Element("OWASPscannerReport")
+        root.set("version", "2.14.0")
+        site = ET.SubElement(root, "site")
+        site.set("name", site_name)
+        alerts_el = ET.SubElement(site, "alerts")
+
+        risk_map = {
+            "Informational": ("0", "Informational"),
+            "Low": ("1", "Low"),
+            "Medium": ("2", "Medium"),
+            "High": ("3", "High"),
+            "Critical": ("3", "High"),
+        }
+
+        groups = {}
+        for alert in alerts:
+            pid = str(alert.get("pluginId") or alert.get("pluginid") or "")
+            name = str(alert.get("name") or alert.get("alert") or "(alert)")
+            risk = str(alert.get("risk") or "Informational")
+            groups.setdefault((pid, name, risk), []).append(alert)
+
+        for (pid, name, risk), items in groups.items():
+            code, label = risk_map.get(risk, ("0", str(risk)))
+            item_el = ET.SubElement(alerts_el, "alertitem")
+            ET.SubElement(item_el, "pluginid").text = pid
+            ET.SubElement(item_el, "alertRef").text = str(
+                items[0].get("alertRef") or pid or ""
+            )
+            ET.SubElement(item_el, "alert").text = name
+            ET.SubElement(item_el, "name").text = name
+            ET.SubElement(item_el, "riskcode").text = code
+            ET.SubElement(item_el, "riskdesc").text = f"{label} ({label})"
+            ET.SubElement(item_el, "cweid").text = str(items[0].get("cweid") or "")
+            ET.SubElement(item_el, "count").text = str(len(items))
+            instances_el = ET.SubElement(item_el, "instances")
+            for alert in items:
+                inst = ET.SubElement(instances_el, "instance")
+                ET.SubElement(inst, "uri").text = str(alert.get("url") or site_name)
+                ET.SubElement(inst, "param").text = str(alert.get("param") or "")
+                ET.SubElement(inst, "method").text = str(alert.get("method") or "")
+                ET.SubElement(inst, "attack").text = str(alert.get("attack") or "")
+                ET.SubElement(inst, "evidence").text = str(alert.get("evidence") or "")
+
+        tree = ET.ElementTree(root)
+        try:
+            ET.indent(tree, space="  ")
+        except Exception:
+            pass
+        tree.write(output_path, encoding="utf-8", xml_declaration=True)
         return output_path
 
     # ========== УПРАВЛЕНИЕ СЕССИЕЙ ==========

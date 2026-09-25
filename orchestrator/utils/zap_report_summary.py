@@ -89,7 +89,7 @@ def _ingest_alertitem(
             "site": site_name,
         }
     )
-    for inst in instances[:40]:
+    for inst in instances:
         uri = _text(inst.find("uri"))
         param = _text(inst.find("param"))
         findings.append(

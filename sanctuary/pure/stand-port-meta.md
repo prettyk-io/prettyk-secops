@@ -1,6 +1,6 @@
 # Stand Port META — порты и команды стенда
 
-> **CANON** — hub topic. Slice: **16 августа 2026** (порт-инцидент `4173`).  
+> **CANON** — hub topic. Slice: **24 сентября 2026** (2FA sealed: DefectDojo — обязательный контур).  
 > Реестр: [`INDEX.md`](INDEX.md). Lab detail: [`lab-up.md`](lab-up.md) · [`runtime-shell.md`](runtime-shell.md).  
 > Skills: global **`prettyk-lab`** · **`browser-hands-pure`**.  
 > Порт и команда = из этого документа. Если агент ошибся — он не читал CANON. Хардкод порта = инцидент.
@@ -37,11 +37,10 @@
 ```powershell
 # Из корня репозитория. Делает ВСЁ.
 .\orchestrator\tools\lab_up.ps1
-.\orchestrator\tools\lab_up.ps1 -IncludeDefectDojo
 .\orchestrator\tools\lab_up.ps1 -IncludeSonarQube
 ```
 
-`lab_up.ps1` внутри: compose (Grid/Chrome/Firefox/Allure 2+3) → scanner → Juice → api-lab → `lab_ensure_ui.ps1 -StartIfDown` (Editor+Playground) → `run_live_idle.py` (Live) → HTTP-readiness всех.
+`lab_up.ps1` внутри: compose (Grid/Chrome/Firefox/Allure 2+3 → DefectDojo) → scanner → Juice → api-lab → `lab_ensure_ui.ps1 -StartIfDown` (Editor+Playground) → `run_live_idle.py` (Live) → HTTP-readiness всех.
 
 ### Только Editor + Playground (без Docker)
 

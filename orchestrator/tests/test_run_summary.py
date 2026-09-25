@@ -18,6 +18,7 @@ from utils.reporter import (
     write_run_summary_from_controller,
     persist_live_run_summary,
     read_live_run_summary,
+    purge_stale_run_artifacts,
 )
 
 
@@ -151,3 +152,55 @@ def test_run_ui_summary_contains_run_id(tmp_path, monkeypatch):
 
     # No filter returns the stored data
     assert read_run_ui_summary() is not None
+
+
+# ========== BOX-SAN-1: очистка stale-артефактов на старте прогона ==========
+
+
+def test_purge_stale_run_artifacts_removes_summary_and_scanner(tmp_path, monkeypatch):
+    # симулируем прошлый прогон: run_summary.json + live-зеркало + stale XML в scanner-results.
+    run_summary = tmp_path / "run_summary.json"
+    run_summary.write_text('{"exit_code": 0, "gate": "pass"}', encoding="utf-8")
+    live_dir = tmp_path / "live"
+    live_dir.mkdir()
+    live_summary = live_dir / "run_summary.json"
+    live_summary.write_text('{"exit_code": 0, "gate": "pass"}', encoding="utf-8")
+    scanner_dir = tmp_path / "scanner-results"
+    scanner_dir.mkdir()
+    stale_xml = scanner_dir / "juice_dojo.xml"
+    stale_xml.write_text("<OWASPZAPReport>old</OWASPZAPReport>", encoding="utf-8")
+    stale_html = scanner_dir / "report.html"
+    stale_html.write_text("<html>old</html>", encoding="utf-8")
+
+    monkeypatch.setattr("utils.reporter._run_dir", lambda: tmp_path)
+    monkeypatch.setattr("utils.reporter.LIVE_RUN_SUMMARY_PATH", live_summary)
+    monkeypatch.setattr("utils.reporter.scanner_RESULTS_DIR", scanner_dir)
+
+    result = purge_stale_run_artifacts()
+    assert run_summary.exists() is False
+    assert live_summary.exists() is False
+    assert stale_xml.exists() is False
+    assert stale_html.exists() is False
+    assert len(result["removed"]) == 4
+    assert result["skipped"] == []
+
+
+def test_purge_stale_run_artifacts_noop_when_nothing_present(tmp_path, monkeypatch):
+    scanner_dir = tmp_path / "scanner-results"
+    scanner_dir.mkdir()
+    monkeypatch.setattr("utils.reporter._run_dir", lambda: tmp_path)
+    monkeypatch.setattr("utils.reporter.LIVE_RUN_SUMMARY_PATH", tmp_path / "live" / "run_summary.json")
+    monkeypatch.setattr("utils.reporter.scanner_RESULTS_DIR", scanner_dir)
+
+    result = purge_stale_run_artifacts()
+    assert result["removed"] == []
+    assert result["skipped"] == []
+
+
+def test_purge_stale_run_artifacts_never_raises(tmp_path, monkeypatch):
+    # Сбойная live-директория не должна бросать исключение (best-effort честный gate).
+    monkeypatch.setattr("utils.reporter._run_dir", lambda: tmp_path / "missing")
+    monkeypatch.setattr("utils.reporter.LIVE_RUN_SUMMARY_PATH", tmp_path / "missing" / "nope.json")
+    monkeypatch.setattr("utils.reporter.scanner_RESULTS_DIR", tmp_path / "missing")
+    result = purge_stale_run_artifacts()
+    assert result["removed"] == []

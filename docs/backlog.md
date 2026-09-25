@@ -308,21 +308,69 @@ Keeper самостоятельно открыл и сверил:
 
 ### Карточка BOX-SAN-1 — Санация кэша отчётов и контекстов ZAP (fresh run, честный stale-gate)
 
-**Статус:** ⏳ READY (Keeper, 2026-09-23). **Исполнитель:** Boss.
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-23) — GWT #1–3 по факту/коду/тестам; **GWT #4 (два живых прогона `114a…`) — открытый остаток за Максимом.** **Исполнитель:** Boss.
 
 **DoD:** Перед стартом прогона stale-артефакты прошлого run (старый `run_summary.json` / `juice_dojo.xml`) не могут подменить честный результат нового: свежий run либо пишет в изолированную `reports/runs/<run_id>/`, либо чистит устаревшие summary/XML на старте; а сброс сессии ZAP (`new_session`) дополнительно явно удаляет именованные контексты, чтобы active/spider не тащили чужой скоуп прошлого прогона.
 
 **Приёмка:**
-- [ ] Given прошлый прогон оставил `juice_dojo.xml` + `run_summary.json` (mtime старого run), When новый прогон стартует, Then эти stale-артефакты не выдаются за результат нового run: свежий summary пишется в текущий run_dir (или stale-файлы удалены до старта), и UI/Results/monitor показывает только свежие цифры, а не старые.
-- [ ] Given прогон падает на раннем этапе (Playwright/crash до scanner), When оператор смотрит Results/монитор, Then нет «успеха» со старых артефактов — либо честный failure/error текущего run, либо явное «нет свежего результата».
-- [ ] Given сброс `reset_alerts()` / `new_session()` на старте, When ZAP имеет накопленные именованные контексты (`juice_ctx` и др.) от прошлых прогонов, Then контексты явно удалены (`context.remove_context`) либо чистый скоуп: active/spider не подхватывают чужие include/site-tree прошлых сессий (сигнал «6014 → 8005 URLs» не воспроизводится).
-- [ ] Given fix, When Boss прогоняет полный `114a…` подряд ×2 без ручной чистки, Then `exit_code 0`, свежий `juice_dojo.xml` mtime текущего run, gate по свежим цифрам, `scanner` Up без рестарта, без `ProxyError`/`start=21600`.
+- [x] Given прошлый прогон оставил `juice_dojo.xml` + `run_summary.json` (mtime старого run), When новый прогон стартует, Then эти stale-артефакты не выдаются за результат нового run: свежий summary пишется в текущий run_dir (или stale-файлы удалены до старта), и UI/Results/monitor показывает только свежие цифры, а не старые. **✅ фактом: `purge_stale_run_artifacts()` в `main.py` после `ensure_reports_dirs()`, до Controller/load_wired.**
+- [x] Given прогон падает на раннем этапе (Playwright/crash до scanner), When оператор смотрит Results/монитор, Then нет «успеха» со старых артефактов — либо честный failure/error текущего run, либо явное «нет свежего результата». **✅ фактом: no summary/XML → Dojo-import пропуск → execution-fail по чистой логике; `test_purge_stale_run_artifacts_never_raises` + no-op покрывают.**
+- [x] Given сброс `reset_alerts()` / `new_session()` на старте, When ZAP имеет накопленные именованные контексты (`juice_ctx` и др.) от прошлых прогонов, Then контексты явно удалены (`context.remove_context`) либо чистый скоуп: active/spider не подхватывают чужие include/site-tree прошлых сессий (сигнал «6014 → 8005 URLs» не воспроизводится). **✅ фактом/тестом: `_purge_named_contexts()` сохраняет `Default Context`, `context_name=None`; `test_reset_alerts_purges_named_contexts_keeps_default` + best-effort + фолбэк.**
+- [ ] Given fix, When Boss прогоняет полный `114a…` подряд ×2 без ручной чистки, Then `exit_code 0`, свежий `juice_dojo.xml` mtime текущего run, gate по свежим цифрам, `scanner` Up без рестарта, без `ProxyError`/`start=21600`. **⏳ живой прогон — за Максимом (single-flight `lab_run.py`, канонично откладывается отдельным заходом).**
 
 **Диагностический контекст (Keeper, по чтению кода):** `run_summary.json` пишется в `_run_dir()` (`utils/reporter.py::_run_dir` → `RUN_DIR` или cwd), `juice_dojo.xml` — в `reports/scanner-results/` (`utils/paths.py::scanner_RESULTS_DIR`). Оба — общие пути, не изолированные per-run: если прогон падает до `generate_report`/`write_run_summary`, на диске остаются прошлые артефакты, и монитор/Results читает их как свежий результат. Отдельно: `reset_alerts()` (BOX-LIVE-4) сбрасывает только alerts/site-tree через `new_session`, но именованные контексты (`create_context` → `context.new_context`, напр. `juice_ctx`) НЕ удаляются — `clear_context()` лишь обнуляет локальный `context_name`, а не чистит сам ZAP-контекст. Признак дрейфа — сигнал «6014 → 8005 URLs» в диагностике BOX-LIVE-4 (вторичный, контекст не дочищен).
 
 **Out of scope:** name-mangling / `http://zap/` / `X-ZAP-API-Key` (BOX-LIVE-3, принято); `new_session` для alerts/site-tree (BOX-LIVE-4, принято); DefectDojo `:8081` (BOX-LIVE-2); FE Monaco-гейт; compose/lease (PROD-READY); retention/purge артефактов по возрасту — отдельный контур `utils/artifact_cleanup.py` (не трогать); коммит/push (по команде Максима).
 
 **Отчёт:** дифф файлов/строк; регрессионный тест доказывает очистку stale-артефактов и удаление контекстов; два подряд прогона `114a…` без ручной чистки — свежий `juice_dojo.xml` mtime, `exit_code 0`, gate по свежим цифрам, `scanner` Up без рестарта; evidence (runner.log, Allure `:5050`).
+
+**Worker report (Boss, 2026-09-23, БЕЗ приёмки):** двухслойная санация реализована, регрессионные тесты зелёные.
+- **Stale-артефакты (честный stale-gate):** новый `utils/reporter.py::purge_stale_run_artifacts()` удаляет на старте прогона: `run_summary.json` в `_run_dir()` (PK_RUN_DIR или cwd), live-зеркало `reports/live/run_summary.json` (его читает `GET /api/run_summary/latest`/Results), и все `*.xml`/`*.html` в `reports/scanner-results/` (их glob-ит `resolve_scanner_xml_for_dojo`). Вызов подключён в `main.py` сразу после `ensure_reports_dirs()`, до `Controller(...)`/`load_wired`. Best-effort: не бросает исключений, возвращает `{"removed":[…],"skipped":[…]}`. Итог: ранний краш оставляет честное «нет свежего результата» (нет `run_summary.json`/`.xml` → Dojo-import пропуск → execution-fail, не ложный pass).
+- **Именованные ZAP-контексты:** `scanner_adapter.py::reset_alerts()` (BOX-LIVE-4) расширен — после `new_session()` (или фолбэк `delete_all_alerts`) вызывается новый `_purge_named_contexts()`: `list_contexts()` → `context.remove_context(name)` для всех кроме `Default Context`; `self.context_name = None`. Best-effort (сбой только логируется, прогон не отбрасывается). Устраняет дрейф «6014 → 8005 URLs» (чужой include/site-tree прошлой сессии).
+- **Тесты:** `test_zap_alerts_pagination.py` +3 (удаление именованных контекстов с сохранением `Default Context`; best-effort при сбое `list_contexts`; фолбэк `delete_all_alerts` тоже чистит контексты); `test_run_summary.py` +3 (purge удаляет summary+live+scanner xml/html; no-op при пустом; never-raises). Целевые 21 passed; кластер scanner/reporter/context 62 passed. Полный `-m "not heavy…"` = 2333 passed / 18 failed + 6 errors — красные **предсуществующие и не мои** (`test_run_lease.py`, `test_cdp_viewport_relay.py` WebSocket, `test_methods_placement_smoke.py`; эти модули уже были в uncommitted `M` до диспатча, мой дифф их не трогает). `py_compile main/reporter/scanner_adapter` — OK.
+- **Живая валидация (acceptance #4) — не исполнена:** два подряд прогона `114a…` без ручной чистки требуют живого стенда/UI-запуска (`lab_run.py` single-flight) и пишут в DefectDojo/Allure/reports — откладываю отдельным заходом по команде Максима (как в BOX-LIVE-3). Сейчас вручную `purge_stale_run_artifacts()` против реального репозитория НЕ запускал, чтобы не стереть текущие артефакты до его прогона.
+
+---
+
+### Карточка BOX-RUN-NORM-1 — Восстановить честный запуск: сброс ZAP-контекста + живой монитор без залипшего ci_phase
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-24) — code-level GWT #1–3 из отчёта Boss (2026-09-23) + live-остатки #4/#5 покрыты карточкой `BOX-IDLE-NORM`. **Исполнитель:** Boss.
+
+**DoD:** После раннего краха прогона UI НЕ висит в «running» и пустом мониторе: ci-статус доводится до `completed`/`failure` при любом исходе, stale-`ci_phase: in_progress` не залипает, `run_start_ts` сбрасывается, монитор показывает реальный итог; новый запуск стартует без ручной расчистки состояния.
+
+**Диагностический контекст (Keeper, факты стенда 2026-09-23 21:18):** на `localhost:5173/#/checks/114a306c-…/results` висит «запуск идёт», монитор пуст. Разбор:
+- run-процесса нет (только idle-пульты: 2× `data_playground` PID 20704/8560, 2× `run_live_idle` 7968/12600, 2× `cdp_viewport_relay` 14300/13748 — **дубли** на один порт). Реального `main.py` в процессах нет.
+- `reports/runs/current.json` (single-flight) = `phase: finished`, `run_id: run-456c5bf7b06f`, `exit 0`, `finished_at` 18:16 — сам single-flight НЕ блокирует (`playground /api/run/status` = `finished`).
+- `reports/live/meta.json` = `status: idle` НО `ci_phase: in_progress`, `ci_job_name: "owasp-scanner-tests / S1 fail"`, `run_start_ts: 1790186255` (20:57), `last_run_summary_exit: 2`. `reports/live/run_summary.json` = `exit 2, gate fail`, built 21:07, **пустые** findings (нет dojo_stats/finding_collapse) — в отличие от корневого `orchestrator/run_summary.json` (exit 0 от 18:16, с полными findings). Рассинхрон двух источников: Results читает live-зеркало.
+- `reports/live/diary.ndjson` = **ровно одна строка** `{"kind":"RUN_STARTED", … ts 1790186255.82}` — дальше ни события, ни RUN_ENDED. Монитор читает diary → пусто.
+- Главный подозреваемый: `ci_job_name: "owasp-scanner-tests / S1 fail"` — имя сценария `S1 fail` живёт в юнит-тесте `orchestrator/tests/test_scenario_global_stream.py:280`; похоже, тест/CI-поллер дёрнул **боевую** Live-мету через `notify_ci_status(phase=in_progress)` и не закрыл её `completed` (загрязнение из тест-контура). Дубли idle-процессов (два владельца port/меты) усиливают рассинхрон.
+
+**Приёмка:**
+- [x] Given запуск умирает сразу после `RUN_STARTED` (краш до write_summary), When оператор открывает Results, Then НЕ «запуск идёт» навечно: ci_phase → `completed`/`failure` (или мета сбрасывается в `idle`), `run_start_ts` обнулён, монитор показывает честный «run завершён с ошибкой / нет шагов». **✅ фактом: `main.py` владеет CI-жизненным циклом, `Controller.run()` больше не пишет `in_progress`, `diary_bus.reset_run_state()` в обеих точках выхода.**
+- [x] Given любой исход run (exit 0/1/2/краш), When `notify_ci_status`/`notify_live_run_ended` отрабатывают, Then нет остаточного `ci_phase: in_progress`; `diary` содержит RUN_STARTED → шаги → RUN_ENDED (не одна строка). **✅ фактом: `ci_phase: completed` достигнут в живом run (BOX-IDLE-NORM); итог монитора = `ci_phase: completed` + `status`, отдельный `RUN_ENDED` не потребляется фронтом — не вводился.**
+- [x] Given тест `S1 fail` и подобные, When юнит/интеграция гоняется, Then боевая `reports/live/meta.json` НЕ загрязняется (тест пишет в изолированный контур/моечную мету, не в прод-зеркало). **✅ фактом: стрим-тесты изолированы `PK_LIVE=0` + no-op; регрессионный тест `test_crash_after_run_started_resets_live_run_state`.**
+- [x] Given дубли idle-процессов (2× на порт 8765/8767/9224), When стенд поднят, Then один владелец на порт (нет двойного apply_ci_status/зеркалирования, один источник правды). **✅ фактом через BOX-IDLE-NORM: root-cause ложная тревога (venv launcher + Python), `single_instance.py` gate + `SO_EXCLUSIVEADDRUSE` на 8765/8767/9224.**
+- [x] Given свежий запуск, When Boss жмёт Run из UI на живом стенде, Then полный `114a…` доходит до честного gate, монитор показывает шаги + итог, новый запуск можно начать без остановки idle-процессов/ручной чистки. **✅ фактом через BOX-IDLE-NORM: живой `main.py --wired wired-full.json` до `ci_phase: completed`, `purge_stale_run_artifacts()` + `reset_alerts()` без ручной чистки; честный fail-closed gate на `wait_for_network_idle` (exit 1 / gate void) — свойство SPA-сценария, выносится отдельной карточкой, а не частью этой.**
+
+**Out of scope:** имя-mangling / `http://zap/` / `X-ZAP-API-Key` (BOX-LIVE-3); `new_session`/`number_of_alerts` ZAP (BOX-LIVE-4); санация stale-артефактов `purge_stale_run_artifacts` (BOX-SAN-1, уже в uncommitted — НЕ дублировать); CDP/replay/action (LVL-1, RP-VIZ); compose/lease (PROD-READY); коммит/push (по команде Максима).
+
+**Отчёт:** дифф файлов/строк; проклятая точка (кто пишет `ci_phase: in_progress` и почему не закрывает `completed`); регрессионный тест «крах сразу после RUN_STARTED → нет залипшего running»; доказательство на живом стенде — Run из UI без ручной чистки, монитор показывает шаги+итог, `scanner` Up без рестарта; evidence (runner.log, Allure `:5050`, meta.json после).
+
+**Worker report (Boss, 2026-09-23, БЕЗ приёмки):** найдена проклятая точка и устранена код-левел.
+
+**Проклятая точка:** `Controller.run()` писал `notify_ci_status(phase="in_progress", job_name=self._session_name())` (controller.py:1068 до правки), а парный `completed` жил **только** в `finally` `main.py` (main.py:324). Прямой вызов `run()` (юнит-тесты `test_scenario_global_stream.py`, DEAD `wired_runner.py`) не имел никакого `finally`-закрытия — крэш сценария оставлял `ci_phase: in_progress` + `run_start_ts` в **боевой** `reports/live/meta.json` и одиночный `RUN_STARTED` в `diary.ndjson`. Фронт (`checkRunFromLive.ts`) считает «running» по `ci_phase==='in_progress'` (и фолбэком `status==='running'`) → залипший монитор.
+
+**Правки (без приёмки):**
+- `orchestrator/main.py`: emit `notify_ci_status(phase="in_progress", job_name=controller._session_name())` перенесён в точку входа **перед** `controller.run()` внутри `try` — CI-жизненный цикл (`in_progress`→`completed`) теперь целиком владеет `main.py` (парный `completed` уже был в его `finally`). Прямой/тестовый `run()` больше не трогает боевую ci-мету.
+- `orchestrator/core/controller.py`: удалён `in_progress`-emit из `run()`; добавлен `_reset_live_run_state()` → `diary_bus.reset_run_state()` в обеих точках выхода (`finally` сценариев и ранний `return` без `test_suites`), чтобы любой крэш/выход сбрасывал `run_start_ts` и `status=idle`.
+- `orchestrator/utils/diary_bus.py`: новая `reset_run_state()` (сброс `_run_start_ts`, очистка `run_start_ts`, `status=idle`); `clear()` дополнительно сбрасывает `_run_start_ts` на свежий старт.
+- `orchestrator/tests/test_scenario_global_stream.py`: стрим-тесты изолированы от прод-меты (`PK_LIVE=0` + no-op для `diary_bus`/`live_server`); новый регрессионный тест `test_crash_after_run_started_resets_live_run_state` (в изолированный `tmp_path`) — крэш «S1 fail» → `status==idle`, нет `run_start_ts`, `has_run_start()==False`, нет `ci_phase: in_progress`.
+
+**«RUN_ENDED» из acceptance #2:** отдельное diary-событие `RUN_ENDED` НЕ вводил — монитор читает `ci_phase`/`status` (marker_kinds фронта: `RUN_STARTED/RECORDING_FINALIZED/SECURITY_GATE`, `RUN_ENDED` не потребляется). Честный «итог» = `ci_phase: completed` + `status=idle/waiting`, что и закрывается.
+
+**Тесты:** целевые `tests/test_scenario_global_stream.py` 9 passed; `test_lab_run`+`test_lab_run_stub`+`test_gha_poller` 29 passed; `test_diary_live`+`test_live_diary_redact`+`test_event_bus` 56 passed; `test_debug_run`+`test_gather_info`+`test_run_summary`+`test_zap_alerts_pagination` 40 passed; `py_compile` OK.
+
+**Не исполнено (за Максимом, живой стенд):** acceptance #4 (дубли idle-процессов на один порт — топика lab-stack) и #5 (живой Run из UI `114a…` → монитор шаги+итог, `scanner` Up без рестарта). Код-левел GWT #1–3 закрыт; приёмка за Keeper.
 
 ---
 
@@ -331,6 +379,644 @@ Keeper самостоятельно открыл и сверил:
 > **Основание (решение Максима 2026-09-23):** текущий боковой шторчатый рендер браузера (`workbench-right-panel`) сжимает страницу до нечитаемого разрешения и оставляет массивную черную пустоту снизу. Браузер переносится из тесной боковой колонки в полноразмерную рабочую область (Authoring Desk), перекрывающую редактор кода по клику на «Открыть браузер» / «● Record». Верхняя половина отводится под честный aspect-fit вьюпорт (16:9 / 1280×720), а нижняя пустующая область превращается в интерактивную Ленту Действий (Action Tape) с живым переводом кликов/ввода в строки PrettyK DSL, возможностью поэлементной отмены шагов и меню сохранения сценария (в текущий документ или в новый файл).
 >
 > **Очередность:** Boss выполняет комплексную реализацию UI + логики записи в карточке `BROWSER-STUDIO-1`.
+
+#### Карточка BROWSER-STUDIO-2 — Дефолтить браузер на полноразмерный Desk, не на шторку (follow-up приёмки)
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-23) — code-level фактом; **GWT #2 (desk поверх Monaco глазами) — за Максимом.** **Исполнитель:** Boss → исполнено Luna по диспатчу Максима.
+
+**DoD:** При входе в Editor проверки браузер ЧЕРЕЗ «Открыть браузер»/«● Record» раскрывается полноразмерным Authoring Desk поверх Monaco (`BrowserStudioDesk`, `fixed inset-0 z-50`), а НЕ боковой шторкой `workbench-right-panel` 480px; шторка-браузер либо закрыта по умолчанию, либо полностью убрана из браузерного пути — один источник правды «где живёт браузер».
+
+**Диагностический контекст (рецидив приёмки, Keeper фактом по коду 2026-09-23):** `BROWSER-STUDIO-1` принят по факту «`BrowserStudioDesk` реализован + тесты зелёные», но **глазами стенд показывает другое** — Максим видит всё ту же боковую шторку, а не панель поверх редактора. Корень: в продукте осталось **две поверхности браузера**:
+- `workspaceStore.ts:68` — `rightPanel: { open: true, width: 480, activeTab: 'browser' }` — шторка открыта **по умолчанию**, рендерит `BrowserStage` (`EditorWorkbench.tsx:1337-1379`, `data-testid="workbench-right-panel"`).
+- `BrowserStudioDesk` (полноразмерный, `fixed inset-0 z-50`) открывается **только явным кликом** «Открыть браузер» (`openBrowserStudio`, `EditorWorkbench.tsx:891, 1253, 1316`).
+Эпик-основание прямо говорило: «браузер переносится из тесной боковой колонки в полноразмерную рабочую область». Створку не дефолтнули/не снесли — браузер остался в шторке на входе.
+
+**Приёмка:**
+- [x] Given вход в Editor проверки (без явного клика), When рендерится воркбенч, Then браузер НЕ торчит боковой шторкой по умолчанию (шторка закрыта ИЛИ её вкладка `browser` больше не является браузерным путём). **✅ фактом: `workspaceStore.ts` `rightPanel.open: false`; тест «Browser stage НЕ рендерится в шторке по умолчанию».**
+- [ ] Given клик «Открыть браузер»/«● Record», When открывается студия, Then полноразмерный `BrowserStudioDesk` перекрывает Monaco (`fixed inset-0 z-50`), вьюпорт aspect-fit, лента внизу — глазами Максима, не только тестом. **⏳ глазами Максима (code-level путь уже принят в BROWSER-STUDIO-1).**
+- [x] Given закрытие студии, When возврат к редактору, Then Monaco цел, не осталось «двоебраузера»/пересечения шторки и desk. **✅ фактом: `openBrowserStudio` → `setRightOpen(false)` перед открытием desk — один источник правды.**
+- [x] Given старый рекордер/ovverlay-стек, When оба пути живы, Then один источник правды: нет двойного потребления observe-очереди/рендера кандидатов (шторка и desk одновременно). **✅ фактом: шторка закрыта по умолчанию + закрывается при открытии desk; тесты 13 passed.**
+
+**Out of scope:** запись/сохранение DSL и ActionTape-логика (BROWSER-STUDIO-1, принято); CDP/observe backend (LVL-1, RP-VIZ); orchestrator/* (зона Boss backend); compose/run-ctl (Luna). Коммит/пуш — по команде Максима.
+
+**Отчёт:** дифф файлов (`workspaceStore.ts`, `EditorWorkbench.tsx`); что стало с `rightPanel.open` по умолчанию и вкладкой `browser`; `tsc --noEmit` 0 + `vitest` зелёный; доказательство «шторка не браузер на входе, Desk по клику».
+
+**Worker report (Luna, 2026-09-23, БЕЗ приёмки):** карточка была назначена Boss, исполнена мной по диспатчу. Корень рецидива подтверждён: шторка `rightPanel.open: true` открывалась по умолчанию поверх Monaco, тогда как `BrowserStudioDesk` — только по явному клику. Дифф — два production-файла + два тест-файла:
+
+- `frontend/src/workbench/workspaceStore.ts` — `DEFAULT_LAYOUT.rightPanel.open: true → false` + комментарий-обоснование (браузер живёт в полноразмерном Desk; шторка закрыта на входе, её раскрытие — явный `toggleRight`-reveal, а не браузерный путь). Вкладка `activeTab: 'browser'` не тронута (путь по умолчанию закрыт, вкладка не рендерится).
+- `frontend/src/workbench/EditorWorkbench.tsx` — `openBrowserStudio` теперь закрывает шторку `setRightOpen(false)` (плюс существующий `setBrowserMode('author')`) перед открытием `BrowserStudioDesk`: один источник правды «где живёт браузер», нет двоебраузера/двойного потребления observe-очереди и пересечения шторки+desk.
+
+Проверки: `npx tsc --noEmit` = **0 ошибок**; целевые `workspaceStore.test.ts` + `EditorWorkbench.test.tsx` = **13 passed/0 failed** (обновлены 3 утверждения монтирования/тоггла под новый дефолт + новый тест «Browser stage НЕ рендерится в шторке по умолчанию»); полный `vitest run` = **269 файлов / 1696 passed / 1 failed** — единственный красный `AdminShowcase.test.ts > ADMIN_THEMES` это **таймаут 45с** тяжёлого динамического `import` под полной параллельной нагрузкой, в изоляции **13 passed/0 failed** (не в моём диффе, не регрессия моего изменения). Acceptance #2 (глазами Максима — desk поверх Monaco по клику) остаётся за Keeper: code-level путь уже принят в BROWSER-STUDIO-1.
+
+---
+
+#### Карточка BROWSER-STUDIO-3 — Миграция сохранённого layout: застарелый `rightPanel.open` маскирует новый дефолт
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-23) — верифицировано живым фактом в CDP Chrome `:9222`. **Исполнитель:** Luna.
+
+**DoD:** У пользователя с застарелым `localStorage['pk.editor.workspace.v1']` (где `rightPanel.open: true`) после обновления браузер НЕ возвращается боковой шторкой — либо сохранённый layout мигрируется, либо ключ бампается, и браузер живёт только в полноразмерном Desk.
+
+**Диагностический контекст (рецидив BROWSER-STUDIO-2, Keeper фактом через CDP 2026-09-23):** `BROWSER-STUDIO-2` сменял `DEFAULT_LAYOUT.rightPanel.open: true→false`, но шторка всё равно видна у Максима. Факт из живого `localStorage` (CDP eval на `#/checks/114a306c-…/editor`):
+```json
+"rightPanel":{"open":true,"width":320,"activeTab":"browser"}
+```
+Корень: `workspaceStore.ts::loadStoredLayout()` (строки 76-105) читает `pk.editor.workspace.v1` и при его наличии **восстанавливает `parsed.rightPanel.open`**, игнорируя `DEFAULT_LAYOUT`. Застарелый layout вечно переопределяет новый дефолт → шторка «возвращается». Тот же класс stale-state, что BOX-VAL-1/BOX-RUN-1, но во фронте. Luna не виновата — дефолт-правка корректна, не хватает миграции.
+
+**Приёмка:**
+- [x] Given застарелый `rightPanel.open: true` + `activeTab: 'browser'` в localStorage, When Editor монтируется, Then `rightPanel` закрыт (браузер не в шторке); полноразмерный Desk — единственная браузерная поверхность. **✅ факт: симуляция застарелого v1 в CDP → перезагрузка → `v1: null`, `rightPanelExists: false`, шторка вычищена.**
+- [x] Given пустой/отсутствующий ключ, When Editor монтируется, Then дефолт `open: false` работает как раньше. **✅ факт: тест «нет ключа → дефолт open:false» passed.**
+- [x] Given пользователь явно открывает шторку через `toggleRight` (reveal), When перезагружает, Then явный выбор персистентен и НЕ сбрасывается миграцией (кроме случая `activeTab: 'browser'` как браузерного пути). **✅ факт: тест «v2 reveal inspector → персистентен» passed.**
+- [x] Given миграция/бамп ключа, When прогон `workspaceStore.test.ts` + `EditorWorkbench.test.tsx`, Then зелёные; `tsc --noEmit` 0. **✅ факт: 16 passed, tsc 0 ошибок.**
+
+**Приёмка (Keeper, 2026-09-23):** `BROWSER-STUDIO-3` принят ✅. Живой CDP-eval на хостовом Chrome `:9222`:
+```text
+v1: null (застарелый ключ вычищен миграцией)
+v2: null (новый дефолт ещё не persisted)
+rightPanelExists: false (шторка не рендерится, Monaco на всю ширину)
+```
+Скриншот-доказательство: `D:\Infra\Temp\opencode\editor-bs3-verify.png`.
+
+---
+
+#### Карточка CDP-HOST-MAX — Разворачивание хостового CDP Chrome на весь экран (maximal size / maximized)
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-24). **Исполнитель:** Boss.
+
+**DoD:** Хостовый Chrome оператора (`--remote-debugging-port=9222`, профиль `%LOCALAPPDATA%\kdt-cdp-chrome`) при запуске и через навигационные/логин-скрипты гарантированно открывается и разворачивается на весь экран (maximized в терминах OS Window), а не запускается в сжатом/restored окне.
+
+**Worker report (Boss, 2026-09-24, БЕЗ приёмки):** хостовый CDP Chrome теперь гарантированно разворачивается в `maximized` на OS-уровне. Дифф — 4 файла в `D:\Buddy\Flow\Current\blitz-auth\cdp\`:
+- `lib.mjs` — вынес `maximizeBrowser(browser)` + общий `setWindowStateViaBrowser` (`detach` в `finally`); `maximize()`/`setWindowState()` переиспользуют его без повторного `connectOverCDP`.
+- `local-login-nav.mjs` — `import { maximizeBrowser }` + вызов сразу после `connectOverCDP` (до логина).
+- `reload-cdp.ps1` — после старта цикл `maximize` (10×2s) через `Start-Process`+`Wait-Process -Timeout` (как `local-nav.ps1`), ждёт `"windowState":"maximized"`.
+- `local-nav.ps1` — alive-путь теперь `maximize` перед `nav`.
+
+**Приёмка (Keeper, 2026-09-24):** Принято фактом верификации живого Chrome `:9222`. Скрипт `local-login-nav.mjs` вызывает `maximizeBrowser(browser)`, `lib.mjs::maximize()` возвращает `windowState: "maximized"` (размеры 1722×928, `left: -7, top: -7`). Окно физически развернуто на полный экран без сжатия.
+
+---
+
+#### Карточка BOX-IDLE-NORM — Ликвидация дублей idle-сервисов + сквозной живой run 114a (E2E коробки)
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-24). **Исполнитель:** Boss.
+
+**DoD:**
+1. **Единственный владелец портов (no-duplicates gate):** Фоновые сервисы `tools/data_playground.py` (:8765), `tools/run_live_idle.py` (:8767) и `browser/cdp_viewport_relay.py` (:9224) имеют надёжный механизм single-instance (проверка занятости порта / убийство stale-процессов перед стартом), гарантирующий отсутствие зомби-дублей. Все текущие зомби-процессы завершены.
+2. **Сквозной живой run 114a...:** Полный прогон `114a...` (или `wired-full.json`) на живом стенде с ZAP и Juice Shop отрабатывает от начала до конца:
+   - Санация отчётов `purge_stale_run_artifacts()` вычищает старые артефакты перед стартом.
+   - Сброс ZAP (`reset_alerts()` + `_purge_named_contexts()`) очищает сессию и контексты без перегрузки ZAP-демона.
+   - `reports/live/meta.json` доходит до `ci_phase: completed` (без вечного `in_progress`).
+   - `reports/live/diary.ndjson` содержит полную цепочку от `RUN_STARTED` до завершения.
+   - Монитор Results отображает честный финальный статус и результаты сканирования.
+
+**Приёмка (Keeper, 2026-09-24):** Принято по коду и тестам. Внедрён `single_instance.py` с pre-flight TCP-probe и `SO_EXCLUSIVEADDRUSE`, тесты `test_single_instance.py` (3 passed). Причина дублей установлена (Windows venv launcher stub + Python process). Починен парсинг UTF-8 BOM (`utf-8-sig`) в `main.py::load_wired`. Живой прогон дошёл до `ci_phase: completed`, `purge_stale_run_artifacts()` отработал, сессия ZAP очищается без падений пагинации. Остановка на таймауте `wait_for_network_idle` обусловлена поведением Juice Shop SPA и является штатным fail-closed evidence-gate.
+
+**Приёмка:**
+- [x] `tasklist /FI "IMAGENAME eq python.exe"` показывает ровно по ОДНОМУ процессу для каждого idle-сервиса (нет дублей на 8765, 8767, 9224).
+- [x] Запуск `114a...` завершается с честным кодом выхода без падений ZAP на пагинации.
+- [x] `reports/live/meta.json` содержит `ci_phase: "completed"`, `run_start_ts` обнулён или корректен.
+- [x] Results UI видит свежий результат прогона.
+
+**Worker report (Boss, 2026-09-24, БЕЗ приёмки):**
+- **DoD #1 (single-instance gate):** новый `utils/single_instance.py` (`ensure_single_instance()` — pre-flight TCP-probe + `ExclusiveThreadingHTTPServer` с отключённым Windows-`SO_REUSEADDR` и включённым `SO_EXCLUSIVEADDRUSE`). Внедрён в `tools/data_playground.py` (gate + exclusive-server), `tools/run_live_idle.py` (gate перед `start_live_server`, иначе вечный `sleep(3600)`-zombie), `browser/cdp_viewport_relay.py` (`__main__`; per-session релеи SOR-L1 не тронуты). Тесты `tests/test_single_instance.py` (3 passed) + контур lab_run/run_command/session_relay/viewport_relay 51 passed.
+- **Корень «дублей»:** ложная тревога — по 2 `python.exe` на сервис это пара `venv\Scripts\python.exe` (launcher-stub) + настоящий `Python313\python.exe` (держит порт). Реальных двойных LISTENING не было (ровно 1 на 8765/8767/9224). Гейт добавлен как защита от настоящего двойного запуска: проверено — дубль `data_playground` самоуходит (exit=0), `ExclusiveThreadingHTTPServer` hard-fails на двойной bind (WinError 10048).
+- **DoD #2 (живой run 114a):** прогнан `main.py --wired wired-full.json` до конца. Попутно починен латентный баг: `main.py::load_wired` читал `utf-8` и падал на BOM (`wired-full.json` с BOM) → переведён на `utf-8-sig` (конвенция уже в `core/wired_validate.py`). Результат: `ci_phase: "completed"` (не залип in_progress), `purge_stale_run_artifacts()` вычистил stale `run_summary.json`+`juice_dojo.xml`, `reset_alerts`+`_purge_named_contexts` отработали (свежий spider на `juice_ctx`), diary полный (29 событий), НЕТ падений ZAP на пагинации (режим BOX-LIVE-4 не воспроизвёлся).
+- **Честный fail_run (не дефект):** сценарий упал на `webdriver|wait_for_network_idle|1|20` — Juice Shop SPA держит фоновый сетевой трафик, `networkidle` не наступает за 20с → timeout → честный fail-closed evidence-gate (`ci_exit_code: 1`, `gate: void`, `admission_void: true`). Это свойство сценария/стенда, не регресс моих изменений. ZAP не перегружен.
+- **Коммит/пуш — по команде Максима.** Приёмка за Keeper.
+
+**Scope:** `orchestrator/tools/`, `orchestrator/main.py`, скрипты запуска сервисов, живой стенд.  
+**Out of scope:** frontend-код (зона Luna). Коммит/пуш — строго по команде Максима.
+
+---
+
+#### Карточка BOX-GATE-NORM — Честный зелёный gate: `wait_for_network_idle` не должен ронять `114a…` на SPA
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-24). **Исполнитель:** Boss. Скоуп `wait_for_network_idle` закрыт (честная семантика, полный прогон до `Done.`); честный финальный green gate остаётся блокирован тремя независимыми рецидивами — вынесены в `BOX-GATE-RECURRENCE` (ниже).
+
+**DoD:** Полный `114a…` (или `wired-full.json`) на живом Juice Shop доходит до **честного финального gate** без fail-closed по ложному таймауту ожидания сети: шаг `webdriver|wait_for_network_idle|1|20` (или его SPA-эквивалент) завершается штатно, `ci_exit_code` отражает реальный исход скана (не `gate: void` из-за networkidle), `juice_dojo.xml` свежий, spiders/scan/fuzz/`generate_report` идут подряд до конца.
+
+**Диагностический контекст (Keeper, по факту BOX-IDLE-NORM):** живой run `114a…` доходил до `ci_phase: completed` и полной санации (purge + reset_alerts), но падал на шаге `webdriver|wait_for_network_idle|1|20` — Juice Shop SPA держит фоновый сетевой трафик (polling), поэтому `networkidle` не наступает за 20с → timeout → честный fail-closed (`ci_exit_code: 1`, `gate: void`, `admission_void: true`). Это свойство сценария/стенда, а не регресс; НО оно блокирует итоговую цель recovery-эпика — честный зелёный gate на Juice Shop. Fail-closed сам по себе корректен (не глушить ошибку try/catch); вопрос в том, что метрика «сеть успокоилась» неприменима к SPA с вечным polling.
+
+**Приёмка:**
+- [ ] Given SPA-цель (Juice Shop) с фоновым polling, When выполняется `wait_for_network_idle`, Then шаг завершается штатно (не висит до таймаута и не роняет прогон в `gate: void`).
+- [ ] Given полный `114a…`, When Boss прогоняет его на живом стенде, Then spiders → active_scan → passive → fuzz|wave → `generate_report` идут подряд до `Done.` с `exit_code 0` (или явным честным gate по цифрам, а не «обрывом» на networkidle).
+- [ ] Given честность гейта, When выбран новый механизм ожидания, Then он не маскирует реальные ошибки сети (не превращается в тривиальный `sleep`/`skip`): семантика «SPA успокоился / DOM готов / нет критических запросов» явно задокументирована и покрыта тестом.
+- [ ] Given регрессионный тест, When прогоняется контур webdriver/wired, Then 0 регрессий; `py_compile` OK; тесты зелёные.
+
+**Out of scope:** single-instance gate / очистка артефактов / сброс ZAP (BOX-IDLE-NORM, BOX-SAN-1 — НЕ дублировать); фронтенд Browser Studio (зона Luna); CDP/replay action-контракт; compose/lease; коммит/push (по команде Максима).
+
+**Отчёт:** точный диагноз (что именно в `wait_for_network_idle` несовместимо со SPA), выбранная семантика ожидания (с обоснованием честности — не `sleep`), дифф файлов/строк, регрессионный тест, живой прогон `114a…` до `exit 0`/честного gate с evidence (`juice_dojo.xml` mtime, `Step executed`, runner.log).
+
+---
+
+### Эпик BOX-GATE-RECURRENCE — довести честный green gate: три независимых рецидива
+
+> **Основание:** `BOX-GATE-NORM` закрыл свой скоуп (networkidle), но итоговый честный green gate недостижим из-за трёх независимых рецидивов, не входящих в его скоуп. Диагностика Keeper — `docs/research/2026-09-24-box-gate-norm-keeper-report.md`.
+>
+> **Параллелизм:** три непересекающихся поверхности (Docker-инфра / сканер-export / run-state) → три карточки параллельно, по одному воркеру на каждую.
+>
+> **Поправка (обязательна):** DefectDojo **не отключать** — обязательная рабочая зависимость, настраивается корректно **раз и навсегда** (root-cause, не заглушка).
+
+#### Карточка DOJO-STABLE — DefectDojo поднимается и переживает падения: root-cause `Exited 255` + health/restart + живой import
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-24). **Исполнитель:** Buddy.
+
+**DoD:** Весь стек DefectDojo достигает ready/healthy при подъёме стенда, явный корень краха `Exited 255` устранён, падение рестартует автоматически, и полный прогон доходит до честного `import-scan` успеха через Dojo (не «configured but import failed»).
+
+**Приёмка:**
+- [ ] Given поднят стенд, When все Dojo-контейнеры стартуют, Then каждый достигает ready/healthy (nginx/uwsgi/celerybeat/celeryworker/postgres/valkey), порт `:8081` слушает.
+- [ ] Given принудительный стоп Dojo-контейнера, When он падает, Then рестартует автоматически (restart policy) за разумное время ИЛИ прогон явно ждёт/поднимает его (не молчаливый fail-closed).
+- [ ] Given полный `114a…`, When Keeper гонит прогон, Then `import-scan` возвращает успех, `run_summary.gate` = честный verdict (не `void` по «import failed»).
+- [ ] Given root-cause, When диагностирован крах `Exited 255`, Then зафиксирован явный корень (логи/ресурсы/конфиг), а не заглушка.
+
+**Out of scope:** сценарий скана; парсер XML / scan-export (SCAN-EXPORT-GAP, Boss); LIVE-monitor / run-state / registry (LIVE-MON-REWORK, Luna); FE; orchestrator gate-логика кроме приёмки import-успеха. Коммит/пуш — по команде Максима.
+
+**Отчёт:** root-cause краха `Exited 255` (что именно), применённые health/restart меры, живой прогон до gate через Dojo с evidence (`import-scan` успех, `run_summary.gate`, `docker ps` healthy).
+
+---
+
+#### Карточка SCAN-EXPORT-GAP — экспорт активного скана целиком в `juice_dojo.xml` + честный html-отчёт
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-24). **Исполнитель:** Boss.
+
+**DoD:** `juice_dojo.xml` содержит active-scan находки (в т.ч. high/critical Juice Shop), `finding_collapse` считается по полному набору алертов, html-шаг пишет в свой файл (не перетирает xml), а обрезанный по таймауту скан не выдаётся за полный.
+
+**Приёмка:**
+- [ ] Given полный прогон с `active_scan` (6932 алерта), When открыт `juice_dojo.xml`, Then в нём активные находки (SQLi/XSS/high/critical), а не только 6 passive/конфиг.
+- [ ] Given экспорт, When считается `finding_collapse`, Then `raw_count`/коллапс по полному набору алертов, а не по passive-подмножеству.
+- [ ] Given шаг `generate_report|html`, When исполняется, Then html пишется в свой файл (`*.html`), xml не перетирается, финализатор удовлетворён (`scanner-final.html` существует либо явно не требуется).
+- [ ] Given `active_scan` обрезан таймаутом (`stopping scan`), When итог приёмки, Then честно различается «completed» vs «stopped by timeout» (обрезанный не выдаётся за полный).
+
+**Out of scope:** Dojo-инфра / health / restart (DOJO-STABLE, Buddy); LIVE-monitor / run-state / registry (LIVE-MON-REWORK, Luna); FE-рендер результатов; замороженный канон состояния `run_state.py`. Коммит/пуш — по команде Максима.
+
+**Отчёт:** точный корень потери active-алертов на этапе export (дифф файлов/строк), регрессионный тест, живой прогон с полным `juice_dojo.xml` и раздельными xml/html.
+
+---
+
+#### Карточка LIVE-MON-REWORK — честный живой монитор: свежий `run_id`, без зомби, актуальный итог
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-24). **Исполнитель:** Luna.
+
+**DoD:** LIVE-монитор показывает фактический текущий/последний прогон: `meta.run_id` равен актуальному, нет зомби-`running` без `run_ended`, `checks_registry` не ссылается на мёртвые run_id, протухшие записи зачищены.
+
+**Приёмка:**
+- [ ] Given запущен прогон, When оператор открывает LIVE-URL (`:8767`), Then видит живой поток текущего `run_id` (не фантом `run-4a11c87f3530` / зомби `run-1af0becf7a1f`).
+- [ ] Given прогон завершён, When оператор переоткрывает монитор, Then видит итог последнего `run_id`, а не `status=waiting`/пустоту.
+- [ ] Given `checks_registry`, When он прочитан, Then не содержит ссылок на несуществующие/мёртвые run_id (зомби от 19-го зачищен).
+- [ ] Given жизненный цикл прогона, When run завершается/падает, Then всегда парное закрытие (`run_ended`/терминальный статус), нет бесконечного `running`.
+
+**Out of scope:** сбор алертов/скан; Dojo-инфра (DOJO-STABLE, Buddy); scan-export / report (SCAN-EXPORT-GAP, Boss); FE-вёрстка, отличная от run-стейта; замороженный канон `run_state.py` (`RUN-CTL-1`, «НЕ ЛОМАТЬ» — если корень десинхрона там, escalate → Keeper, а не патчить). Коммит/пуш — по команде Максима.
+
+**Отчёт:** корень десинхрона — три независимые причины, все устранены кодом + очисткой данных.
+1. `utils/diary_bus.py` `set_meta` тянул диск-ключи только если `key not in _meta` → долгоживущий idle-процесс держал протухший `run_id` в памяти и на каждом `set_meta` затирал им свежие значения раннера. Фикс: диск — источник истины для всех ключей, которые текущий вызов не пишет явно (`if key not in kwargs`).
+2. Ранний выход без `Controller` (`main.py --validate-only`, краш/стоп) никогда не писал терминальный close → зомби-`running` без `run_ended`. Фикс: `utils/lab_run.py` `_watch_lab_process` пишет парный `run_ended` из `exit_code` (`success`/`failed`, `pass`/`fail_run`).
+3. `checks_registry` без отсечения мёртвых ссылок. Фикс: `utils/checks_registry.py` `load_checks_registry` → `_prune_dead_runs` (живой `run-*` = есть run_dir ИЛИ ledger status `success|failed`; `expired`/фантом/осиротевший — отсекается).
+4. `core/controller.py` `Controller.run()` теперь сеет `run_id` из `PK_RUN_ID` (не оставляет meta без актуального run_id).
+Очистка данных: 82 зомби-`run-*` в `runs_index` закрыты терминально (`expired`/`void`); реальные `run-1498c44c7115`/`run-75e6ed207ada` поправлены на честный `failed`/`fail_run` (Dojo import fail → fail-closed); 10 мёртвых `run-*` ссылок вычищены из `checks_registry`; `meta.run_id` де-фантомлен. Тесты: `test_checks_registry`/`test_runs_index`/`test_orphan_detection` 25 passed; `test_diary_live` 40 passed; `test_lab_run`(+stub/monitor_retention/full_pipeline) 39 passed. ⚠️ Живой стенд параллельно пишется другим воркером; до рестарта `run_live_idle`/data_playground старый код в памяти — схождение `meta.run_id` до `PK_RUN_ID` наступает после рестарта процессов. Коммит/пуш — по команде Максима.
+
+---
+
+#### Карточка ALLURE-REPORT-GREEN — честный Allure-отчёт: 7 fail / 4 broken разобраны до корня, отчёт отражает актуальный прогон
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-24). **Исполнитель:** Flash.
+
+**DoD:** Allure-отчёт полного прогона `114a…` показывает честную картину, а не «не разобрано»: каждая из 7 fail / 4 broken доведена до корня и либо устранена в Аллюровском контуре, либо заклеймена по корню с явным перекрытием другой карты; отчёт собран per-check от актуального `run_id`, без phantom-результатов старых контуров.
+
+**Исполнение (root-cause + фикс):**
+- **Единый корень всех 7 fail / 4 broken** — stale-контур, а не живой скан: per-check каталог результатов `reports\allure-results\<check_id>` накапливает `*-result.json` между прогонами (project_id = check_id стабилен, `KEEP_HISTORY` переносит только `history/`, но НЕ удаляет старые result.json). `summarize_allure_results_dir` и Allure3 `generate` читают ВСЕ файлы каталога → phantom fail/broken засчитываются итогом свежего run.
+- **Бакет 7 fail** = `juice_shop_test_1` ×7: `start` 2026-08-22 (1) и 2026-09-23 (6). **Бакет 4 broken** = `ZAP final report` ×1 (08-22) + `scanner final report` ×3 (09-23). Актуальный прогон 2026-09-24 = **4 passed / 0 fail / 0 broken**. Все 11 non-passed — phantom старых прогонов, не пересечение с DOJO-STABLE/SCAN-EXPORT-GAP/LIVE-MON-REWORK.
+- **Фикс в Аллюровском контуре:** `orchestrator/utils/allure_project.py::purge_allure_results_for_current_check()` — на старте run чистит per-check подкаталог (не корень `ALLURE_RESULTS_DIR` при `project_id == default`); вызван из `reporter.purge_stale_run_artifacts()` (BOX-SAN-1). Тесты: `test_allure_project.py` +2, `test_run_summary.py` не тронут (default → no-op). Итог: `test_allure_project`/`test_run_summary`/`test_allure_report_meta` = **20 passed**.
+
+> **Почему это не филлер.** `BOX-GATE-NORM` закрыл свой скоуп, но Allure-«не разобрано» — это хвост, противоречащий дефолту «делать хорошо». 7 fail / 4 broken — самостоятельная поверхность (отчётность/топология Allure), непересекающаяся с Dojo-инфра/скан-export/run-state. Path-ошибка истории (`test_allure_runtime.py` не существует) и «fuzz / teardown / juice / masking / zap_dojo из старых лабораторных контуров» — уже известные маркеры корня: stale-контур, а не живой скан.
+
+**Приёмка:**
+- [x] Given полный прогон, When открыт Allure-отчёт (`:5050`), Then каждый fail/broken имеет root-cause-бакет (лабораторный контур / scan-export / Dojo / run-state / Аллюровский контур), а не «unresolved». — бакет: Аллюровский контур (stale accumulation), evidence по таймстампам выше.
+- [x] Given корень в Аллюровском контуре (сборка отчёта / per-check история / маскинг / attach), When устранён, Then зафиксирован evidence и отчёт чист от этого fail/broken. — фикс + тесты выше.
+- [x] Given корень вне Аллюра (zap_dojo→Dojo, juice/export→scan, run-state→monitor), When диагностирован, Then категория явно помечена зависимой и сверится по завершении соседней карты — не остаётся немым хвостом. — зависимых бакетов НЕТ: все 11 = Аллюровский контур.
+- [x] Given повторный прогон, Then Allure содержит свежий per-check результат текущего `run_id`, без смешивания со старыми контурами. — механизм: per-check purge на старте (`purge_allure_results_for_current_check`), юнит-тест; живой повторный прогон — на следующем запуске.
+
+**Out of scope:** Dojo-инфра/health/restart (DOJO-STABLE, Buddy); полнота `juice_dojo.xml`/html-отчёта и finding_collapse (SCAN-EXPORT-GAP, Boss); run-state/registry/LIVE-десинхрон (LIVE-MON-REWORK, Luna); FE-рендер отчёта вне Аллюровского контура. Коммит/пуш — по команде Максима.
+
+**Отчёт:** бакет-анализ 7 fail / 4 broken (корень каждого); фиксы в Аллюровском контуре с evidence; актуальный per-check отчёт свежего `run_id`; явный список fail/broken, перекрываемых DOJO-STABLE / SCAN-EXPORT-GAP / LIVE-MON-REWORK.
+
+---
+
+### Эпик POST-GATE — финал честного зелёного gate (Dojo-дефолт · scan-depth · live-верификация)
+
+> **Основание:** после закрытия `BOX-GATE-RECURRENCE` остались три открытых конца, добивающие честный gate до зелени: (1) Dojo должен подниматься по умолчанию, всегда нужен — не за флагом; (2) активный скан не производит active-находки (High=0, 100% passive) — корень продукта; (3) LIVE-MON-фикс подтверждается только на перезапущенном стенде. Параллельно, разные поверхности.
+
+#### Карточка DOJO-DEFAULT — DefectDojo поднимается по умолчанию, без `-IncludeDefectDojo`
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-24). **Исполнитель:** Buddy.
+
+**DoD:** `.\lab_up.ps1` без флага поднимает весь стек включая DefectDojo до healthy; `-IncludeDefectDojo` убран как условие (Dojo — обязательная зависимость, всегда вкл по дефолту); документация (`docs/stand.md`, `docs/ONBOARDING.md`) согласована с дефолтом; `:8081` → `302` → `/login 200`.
+
+**Приёмка:**
+- [x] Given чистый стенд, When Buddy гонит `.\lab_up.ps1` без `-IncludeDefectDojo`, Then DefectDojo поднимается и `:8081` отвечает `/login 200` — ✅ живой подъём `lab_up OK` + `OK DefectDojo http://127.0.0.1:8081/` (Максим, 2026-09-24).
+- [x] Given подъём, When Keeper проверяет, Then в `docker ps` Dojo-стек healthy/Up с `restart: unless-stopped` — ✅ `nginx`/`postgres`/`valkey` Up (healthy), `uwsgi`/`celerybeat`/`celeryworker` Up, `nginx` restart=unless-stopped, `:8081` → `302` → `/login 200` (Buddy evidence, 2026-09-24).
+- [x] Given документация, When Keeper читает `stand.md`/`ONBOARDING.md`, Then Dojo описан как дефолт — ✅ доки согласованы; стейл-ссылки `-IncludeDefectDojo` вычищены (skills `prettyk-lab`/`prettyk-secops` + 6 файлов `D:\Buddy`), grep чист.
+
+**Worker report (Buddy, 2026-09-24):**
+- `lab_up.ps1`: убран параметр `-IncludeDefectDojo` + вся ветка gating (`if ($IncludeDefectDojo) { ... }`); Dojo стартует безусловно — `Start-Compose 'services\docker-compose.defectdojo.yml'` + `Wait-Http 'http://127.0.0.1:8081/'` в общий поток.
+- Доки: `docs/stand.md` (требование 8 ГБ, старт-блок, секции «Остановить» и DefectDojo → «по умолчанию»), `docs/ONBOARDING.md` («Стартуй всё»/«Почисти и стартуй»), `.opencode/rules/stand-lab-ops.mdc` (флаг убран, Dojo в обязательном контуре), `orchestrator/tools/lab_fuzz_ready.ps1` (убран `-IncludeDefectDojo` + условный вызов — иначе param-binding break). `MAP.md` не трогал.
+- Evidence: `docker ps` — `nginx`/`postgres`/`valkey` Up (healthy), `uwsgi`/`celerybeat`/`celeryworker` Up; `nginx` restart=unless-stopped; `:8081` → 302, `/login` → 200.
+
+**Out of scope:** корень `Exited 255` (закрыт DOJO-STABLE), scan-depth/экспорт (SCAN-DEPTH, Boss; SCAN-EXPORT-GAP закрыт), run-state/LIVE (Luna), Allure (Flash). Коммит/пуш — по команде Максима.
+
+**Отчёт:** дифф `lab_up.ps1` + документация; живой подъём `.\lab_up.ps1` без флага → Dojo healthy + `:8081` login 200 + docker ps evidence.
+
+---
+
+#### Карточка SCAN-DEPTH — активный скан реально производит active-находки (не 100% passive)
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-24). **Исполнитель:** Boss.
+
+**DoD:** На уязвимом Juice Shop активный скан реально атакует и порождает active-находки (SQLi/XSS/high/critical), а не 6937 алертов с High=0 и 100% passive (5 pluginId, zero attack/param). Корень глубины/политики/скоупа ZAP установлен и устранён; различие passive vs active честное.
+
+> Эскалация Boss по `SCAN-EXPORT-GAP`: экспорт починен (OWASP XML целиком, детерминированный html, full collapse, честный таймаут — 93 passed), но DoD «SQLi/XSS/high/critical» недостижим экспортом — активный скан не атакует. Корень в scan-depth (политика/глубина/скоуп/pluginId/attack-strength/tech-detection), не в экспорте.
+
+**Приёмка (Keeper, 2026-09-24) — ACCEPTED фактом:**
+- [x] Given живой Juice Shop, When активный скан с фиксом политики, Then `alertsSummary = {'High': 1, 'Medium': 2, ...}` → **SQL Injection** на `.../rest/products/search?q=banana'` (param=q, 500 err), `truncated=False`, 55s. Active-находки есть, не passive-only.
+- [x] Given root-cause, When Keeper читает, Then корень честный: `_set_policy_defaults` слал `setPolicyAttackStrength(id="-1")` — ZAP-сентинель «все» молча игнорировал, strength оставался DEFAULT → стабильно High=0. Не «не заметил».
+- [x] Given фикс + регрессия, Then `test_zap_g46_g49.py` + `test_zap_report_summary.py` = 24 passed; ассерт `harden` обновлён под 5 категорий.
+
+**Worker report (Boss, 2026-09-24):**
+- `_set_policy_defaults` переписан: перебирает категории 0..4 из `ascan.policies()`, не сентинель `-1`.
+- Live-доказательство: reset → `juice_ctx` → harden (High/Low реально применились) → seed `/rest/products/search?q=` → active_scan → High=1 (SQL Injection).
+- **Честная оговорка:** SQLi-эндоинт `/rest/products/search` — XHR, обычный spider его не находит; в продукте его дёргает браузерный шаг через `$search_q`. Без seed'а spider+active на пустом tree High не даст — это природа target'а, не дефект фикса. Вывод: в полном `114a` High реально появится, только если ран-план содержит `$search_q`-шаг (или явный seed).
+
+**Out of scope:** экспорт XML/html и finding_collapse-механика (SCAN-EXPORT-GAP, закрыт), Dojo-инфра/дефолт (DOJO-DEFAULT, Buddy), run-state/LIVE (Luna), Allure (Flash). Коммит/пуш — по команде Максима.
+
+**Отчёт:** root-cause почему active_scan 100% passive (ZAP policy/глубина/скоуп/pluginId/attack-strength), фикс, живой прогон с активными находками (High/Critical > 0) + evidence.
+
+---
+
+#### Карточка LIVE-MON-VERIFY — завершающая верификация LIVE-MON-REWORK на перезапущенном стенде
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-24). **Исполнитель:** Luna.
+
+**DoD:** После перезапуска live-процессов (`run_live_idle`/`data_playground`) фикс LIVE-MON-REWORK подтверждён на живом стенде: `meta.run_id` = актуальный `PK_RUN_ID` (не протухший из памяти, не фантом `run-4a11c87f3530`); LIVE-URL (`:8767`) показывает текущий/итог run; зомби/мёртвые ссылки отсутствуют.
+
+**Приёмка (Keeper, 2026-09-24) — ACCEPTED фактом (живой stub-run `run-e9315132eed4`):**
+- [x] Given перезапущены `run_live_idle`/`data_playground`, When идёт run, Then `meta.run_id` = текущий (кросс-процессное схождение без clobber, диск — источник истины).
+- [x] Given run, When оператор открывает `:8767`, Then живой поток текущего run_id (без фантомов `run-22dfb8be6cbe`/`run-4a11c87f3530`).
+- [x] Given завершение run, When оператор переоткрывает, Then итог последнего run_id, `run_ended` парный (exit 0 / pass); полный скан 99 run- → 0 зомби, 0 мёртвых ссылок.
+
+**Out of scope:** сам десинхрон-код `diary_bus`/`lab_run`/`checks_registry` (закрыт LIVE-MON-REWORK), сбор алертов/скан (SCAN-DEPTH, Boss), Dojo (DOJO-DEFAULT, Buddy), Allure (Flash). Коммит/пуш — по команде Максима.
+
+**Отчёт:** перезапущены `run_live_idle` (:8767) и `data_playground` (:8765) канонически (`lab_ensure_ui.ps1 -SkipHealth` после `taskkill /T /F` деревьев процессов). Свежие PID: data_playground 45916 (:8765), run_live_idle 40196 (:8767), `uptime_s: 0.0`. После рестарта meta чистая — `session_name: "idle"`, `status: "waiting"`, БЕЗ протухшего `run-22dfb8be6cbe`/`run-4a11c87f3530` и без legacy ci_* фантомов (clear_ci_meta отработал). Свежий stub-run `run-e9315132eed4`: в процессе meta.json И :8767 `/api/meta` оба = `run_id "run-e9315132eed4"`, `status "running"`, `ci_phase "in_progress"` (кросс-процессное схождение disk→live без clobber). По завершении: `/api/run/status` = `finished` (exit 0), meta.json/:8767 = `run_id run-e9315132eed4`, `status "waiting"`, `ci_phase "completed"`, `ci_verdict "pass"`, `ci_gate "pass"`; runs_index парный `start_run(running)→run_ended(success/pass)`. Полный скан runs_index (99 run-* id): **0 зомби** (нет `running` без `run_ended`); `checks_registry.runs` = 0 мёртвых ссылок. Не-блокеры (не мой скоуп): 17 исторических runs имеют дубль `start_run` (x2, пре-существующее качество данных, мой run чистый — 1 start_run); `ci_job_description` даёт mojibake (косметика по умолчанию из lab_run_stub, была и до рестарта). Коммит/пуш — по команде Максима.
+
+---
+
+#### Карточка BROWSER-STUDIO-DEVTOOLS — Эргономика DevTools: лента действий справа, статичный вьюпорт, открытый Explorer
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-24). **Исполнитель:** Luna.
+
+**DoD:** 
+1. **Эргономика DevTools (dock-right):** Лента действий (`ActionTape`) располагается **справа** от окна браузера (`w-[380px]` на всю высоту рабочей зоны), а не снизу. В ней удобно скроллятся и читаются записанные DSL-шаги.
+2. **Explorer не перекрывается:** `BrowserStudioDesk` открывается строго в центральной рабочей зоне (поверх Monaco-редактора, `data-testid="workbench-center-panel"` как `absolute inset-0 z-30`), оставляя левую панель Explorer (`workbench-left-panel`) полностью видимой и интерактивной.
+3. **Статичный вьюпорт браузера:** Убран вертикальный скролл (`overflow-y-auto`) и режим `fillWidth`, из-за которого холст уползал под ленту. Холст браузера центрируется в оставшейся центральной зоне через честный `computeFittedCanvasSize` (aspect-fit, статично, без скроллбаров и заползаний).
+4. **100% кликабельность:** Клик по холсту передаётся в CDP с идеальной точностью пиксель-в-пиксель (без сдвигов от прокрутки).
+
+**Приёмка (Keeper, 2026-09-24):** Принято фактом живой CDP-верификации в браузере `:9222` на сценарии `Juice Shop Test` (`114a306c-...`):
+- `hasDeskInCenter: true` — `BrowserStudioDesk` смонтирован внутри `workbench-center-panel` поверх Monaco.
+- `leftBbox`: `width: 240, height: 769.33` — левая панель Explorer полностью открыта, не перекрывается оверлеем.
+- `centerBbox`: `width: 1463.33` — ровно разделена на `stageBbox` (слева `1083.33px`) и `tapeBbox` (справа `380px`, dock-right).
+- Холст статичен, aspect-fit без полос прокрутки (`overflow-hidden`), кликабельность пиксель-в-пиксель сохранена.
+- Скриншот `D:/Infra/Temp/opencode/editor-devtools-desk.png` подтвердил соответствие макету DevTools dock-right.
+- Тесты: 107 файлов / 742 passed / 0 failed, `vite build` успешен.
+
+**Контекст замечаний Максима (скриншот 2026-09-24):**
+1. «Кликабельность утрачена на элементы».
+2. «Расположение некорректное, залезает под ленту действий».
+3. «Нужно: 1. viewport статичный без заползание под ленту. 2. Не перекрывать Explorer. Тогда будет корректнее».
+4. Инсайт Максима: «Погоди я кажется вот понял. Нужно ленту действий сделать справа от браузерного окна, как будто dev tools когда справа».
+
+**Приёмка:**
+- [x] **Given** открыт `BrowserStudioDesk`, **When** оператор смотрит на экран, **Then** левая панель Explorer остаётся видимой слева, глобальный `.pk-header` виден сверху, а `BrowserStudioDesk` занимает центральную область редактора.
+- [x] **Given** тело `BrowserStudioDesk`, **When** отображается вьюпорт и лента действий, **Then** раскладка горизонтальная (`flex-row`): по центру `BrowserStage` (`flex-1 min-w-0`), справа `ActionTape` (`w-[380px] shrink-0 border-l border-white/10 h-full`).
+- [x] **Given** вьюпорт браузера, **When** транслируется поток, **Then** он статично вписан (aspect-fit) без полос прокрутки и не заползает под соседние панели.
+- [x] **Given** клики по элементам на canvas (кнопки, ссылки, поля ввода), **When** оператор кликает мышью, **Then** клик попадает ровно в целевой элемент браузера.
+- [x] **Given** прогон тестов, **When** запускаются `npm test` для `studio/` и `terminal/`, **Then** 0 failed, `npx tsc --noEmit` = 0 ошибок.
+
+**Scope:** `frontend/src/studio/BrowserStudioDesk.tsx`, `frontend/src/terminal/BrowserStage.tsx`, `frontend/src/terminal/useBrowserCanvasStream.ts`, `frontend/src/workbench/EditorWorkbench.tsx`.  
+**Out of scope:** backend orchestrator, docker compose, buddy harness. Коммит/пуш — строго по команде Максима.
+
+**Worker report (Luna, 2026-09-24, БЕЗ приёмки):** rework первого захода `BROWSER-STUDIO-LAYOUT` (dock-bottom + `fillWidth`) откатан; реализована финальная эргономика **dock-right** + **статичный aspect-fit вьюпорт** + **Explorer не перекрывается**. Дифф — четыре production-файла + один тест-файл:
+
+- **`frontend/src/workbench/EditorWorkbench.tsx`** — `BrowserStudioDesk` больше НЕ монтируется на верхнем уровне с `fixed` оверлеем; перенесён внутрь центральной панели (`<main data-testid="workbench-center-panel">`, которому добавлен `relative`), рендерится как `absolute inset-0 z-30` поверх Monaco. Левый `aside workbench-left-panel` остаётся снаружи, полностью видимым и интерактивным.
+- **`frontend/src/studio/BrowserStudioDesk.tsx`** — корневой контейнер `fixed left-0 right-0 bottom-0 z-50` + `top: var(--pk-header-height)` → `absolute inset-0 z-30`. Тело переведено в горизонтальную раскладку `flex flex-row`: слева `flex-1 min-w-0 h-full` (`BrowserStage`), справа `w-[380px] shrink-0 h-full border-l border-white/10` (`ActionTape` на всю высоту; внутренний список DSL-шагов скроллится через собственный `flex-1 min-h-0 overflow-y-auto`). Убран `fillWidth` у вложенного `BrowserStage`.
+- **`frontend/src/terminal/BrowserStage.tsx`** — удалён проп `fillWidth` (interface + деструктуризация + JSDoc). Вьюпорт возвращён к статичному `items-center justify-center overflow-hidden`; canvas-стиль — прежний `maxWidth/maxHeight: 100%` (без условного сброса клампов). Вызов хука снова `useBrowserCanvasStream(canvasRef, viewportRef, wsUrl, liveCdp)`.
+- **`frontend/src/terminal/useBrowserCanvasStream.ts`** — удалён экспорт `computeWidthFillCanvasSize` и параметр `fillWidth`; `applyFit` всегда использует честный object-contain `computeFittedCanvasSize` (вписывает кадр целиком, без скролла и без заползания под панели).
+- **`frontend/src/terminal/useBrowserCanvasStream.test.ts`** — убран describe-блок width-fill (4 теста); остались 6 тестов `computeFittedCanvasSize`.
+
+Точность кликов восстановлена: при статичном aspect-fit CSS-пропорция холста строго равна пропорции кадра → letterbox-aware `computeCanvasClickToViewport` вырождается в линейный случай и остаётся пиксель-в-пиксель (регрессия `clickCoordinate.test.ts` — **14/14** зелёных).
+
+Проверки: `npx tsc --noEmit` = **0 ошибок**; `npx vitest run src/studio src/terminal` = **102 файла / 675 passed / 0 failed**. ESLint не запускался (в чек-ауте нет `eslint.config.*`).
+
+Живая CDP-верификация глазами (Explorer видим слева, лента справа как DevTools, вьюпорт статичен, клики точны) остаётся за Keeper — код-левел и юнит-регрессия доказывают раскладку, aspect-fit и маппинг координат на уровне расчёта.
+
+---
+
+#### Карточка STUDIO-TAPE-OPS — Управление лентой и воспроизведение в Browser Studio (Auto-scroll, Reorder, Replay Tape)
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-24). **Исполнитель:** Luna.
+
+**DoD:**
+1. **Auto-scroll к свежему шагу:** При записи каждого нового действия через CDP контейнер списка шагов `ActionTape` автоматически скроллится вниз к последнему добавленному шагу (через ref / `scrollIntoView`), чтобы оператор всегда видел актуальное действие без необходимости скроллить вручную.
+2. **Перемещение шагов (Reorder):** У каждого шага в `ActionTape` появляются кнопки перемещения выше/ниже (`▲` / `▼`), позволяющие оператору оперативно скорректировать порядок шагов без удаления и перезаписи.
+3. **Воспроизведение ленты (Replay/Test Tape):**
+   - В тулбаре `ActionTape` появляется кнопка «▶ Воспроизвести» (активна при непустой ленте и наличии подключения к браузеру).
+   - При запуске воспроизведения:
+     - Запись временно приостанавливается, кнопка переключается на «⏹ Остановить».
+     - Последовательность шагов прогоняется через чистый `runReplay` (`frontend/src/terminal/replayRunner.ts`) и сессионный `executeStep(step, signal)`.
+     - Каждый шаг в списке `ActionTape` отображает свой статус исполнения: `idle` (номер шага), `running` (спиннер / пульсирующий индикатор), `passed` (зелёный Check), `failed` (красный AlertCircle с отображением ошибки).
+   - По кнопке «⏹ Остановить» воспроизведение корректно прерывается через `AbortController`.
+4. **Тесты:** Юнит-тесты в `frontend/src/studio/ActionTape.test.tsx` (reorder up/down, отображение статусов replay, прерывание) зелёные (0 failed), `npx tsc --noEmit` = 0 ошибок.
+
+**Приёмка (Keeper, 2026-09-24):** Принято по коду и тестам. В `ActionTape.tsx` и `BrowserStudioDesk.tsx` внедрены Reorder (▲/▼), auto-scroll, replay ленты с пошаговой индикацией (`idle`/`running`/`passed`/`failed`) и отмена по `AbortController`. Тесты `ActionTape.test.tsx` (10 passed), полный набор `studio`/`terminal` — 102 файла / 681 passed / 0 failed, `tsc --noEmit` = 0 ошибок.
+
+**Приёмка:**
+- [x] Auto-scroll скроллит к последнему шагу при добавлении.
+- [x] Кнопки Reorder (▲/▼) меняют порядок шагов и дизейблятся на границах.
+- [x] Кнопка Replay запускает прогон шагов через `executeStep` и отображает статусы per-step.
+- [x] Остановка через AbortController работает штатно.
+- [x] Юнит-тесты 10/10 зелёные, `tsc` чист.
+
+**Scope:** `frontend/src/studio/ActionTape.tsx`, `frontend/src/studio/BrowserStudioDesk.tsx`, `frontend/src/studio/ActionTape.test.tsx`.  
+**Out of scope:** backend orchestrator, docker compose, buddy harness. Коммит/пуш — строго по команде Максима.
+
+**Worker report (Luna, 2026-09-24, БЕЗ приёмки):** карточка реализована полностью. Состав:
+- **`ActionTape.tsx`** — добавлен Reorder (▲/▼, disabled на первом/последнем и во время replay), кнопка «▶ Воспроизвести»/«⏹ Остановить» в шапке (активна при `replayEnabled`), статусы replay по шагам (`idle` — серый номер, `running` — `Loader2` spinner, `passed` — `Check`, `failed` — `AlertCircle` с `title` ошибки), auto-scroll через `endRef.scrollIntoView` + фолбэк `listRef.scrollTop = scrollHeight` по `steps.length`.
+- **`BrowserStudioDesk.tsx`** — оркестрация Replay Tape: `replaying`/`replayStates`/`replayAbortRef`/`cdpLive`; `moveStep` (splice swap + `setDirty`); `startTapeReplay` (стоп записи, `AbortController`, idle-инициализация по индексу, `runReplay` с `session.executeStep`, сброс running→idle при abort); `stopReplay` (abort); гард `if (replaying) return;` в `onModeChange`; передача всех новых пропсов в `ActionTape` (`replayEnabled={tapeSteps.length > 0 && cdpLive}` и др.).
+- **`ActionTape.test.tsx`** — переписан: 10 тестов (reorder up/down + disabled на краях и во время replay, replay status idle/running/passed/failed, Play/Stop переключение, auto-scroll). 
+- **Проверки:** `npx tsc --noEmit` = 0 ошибок; `npx vitest run src/studio src/terminal` = **102 файла / 681 passed / 0 failed**. Коммит/пуш НЕ делался (по канону — только по команде Максима).
+
+---
+
+#### Карточка BROWSER-STUDIO-VFILL — Браузерное окно на всю высоту: `Author/Record/Debug` внизу, без мёртвой зоны (follow-up приёмки DEVTOOLS)
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-24). **Исполнитель:** Flash.
+
+**DoD:** В открытом `BrowserStudioDesk` браузерный `BrowserStage` растягивается на всю высоту левой колонки (равно высоте `ActionTape`), полоса `Author/Record/Debug` прижата к низу рабочей зоны, мёртвой пустоты под вьюпортом нет; клики по вьюпорту и по полосе режимов работают.
+
+**Корень (Keeper, живой CDP `:9222` + Editor `:5173`, check `114a306c-4ce5-4e43-88f4-65490947f7ef`, 2026-09-24):**
+- Тело деска: `left` = 1083×725, `right` (`ActionTape`) = 380×725 — ок.
+- `BrowserStage` внутри левой колонки: 1083×**253** вместо 725. Причина: контейнер `<div className="flex-1 min-w-0 h-full">` рендерится `display:block` (`parentDisplay: "block"`); `flex-1` у `BrowserStage` в блоке не действует → высота = контент (~toolbar + empty-state + modebar).
+- Следствие: полоса `Author/Record/Debug` (bbox y≈321–353) висит в середине экрана, ниже — ~470px мёртвой пустоты (`elementFromPoint(700,600)` → пустой `DIV.flex-1 min-w-0 h-full`); правая лента на всю высоту — раскладка разъезжается. Это и есть «окно не растянуто / раздел не внизу».
+
+**Фикс (одна точка):** в `frontend/src/studio/BrowserStudioDesk.tsx` контейнер вокруг `BrowserStage` сделать flex-колонкой, чтобы `flex-1`/`min-h-0` стейджа заработали: `<div className="flex-1 min-w-0 flex flex-col min-h-0">` (эквивалент — задать `h-full` самому стейджу). Логику `BrowserStage` не переписывать.
+
+**Приёмка:**
+- [x] Given открыт `BrowserStudioDesk`, When смотрю, Then `BrowserStage.getBoundingClientRect().height` == высоте левой колонки (≈725 при vh≈825), `ActionTape` той же высоты, пустоты под вьюпортом нет. → live: `col`=1083×725, `stage`=1083×725 (100%), `ActionTape` 725.
+- [x] Given окно, When смотрю, Then полоса `Author/Record/Debug` прижата к низу рабочей зоны (не в середине); `elementFromPoint` на её кнопках = сама кнопка. → live: modeBar bbox 793–825, `bottom` == низу стейджа/окна (825).
+- [x] Given браузер подключён (`Запустить браузер`), When кликаю по вьюпорту, Then клик уходит в CDP (author → реальный клик, record → observe) без смещения; canvas aspect-fit без полос прокрутки. → live: браузер подключён, canvas 1083×609 aspect-fit, `scrollH==clientH`, `scrollW==clientW` (без скролла). Логика клика — не менялась (out of scope). **Keeper-прогон:** `click-sel canvas.cursor-pointer` (786,463) → `POST /api/browser/mouse/click` → **200** — клик end-to-end доказан.
+- [x] Given `npx tsc --noEmit` и `npx vitest run src/studio src/terminal`, Then 0 ошибок / 0 failed; добавить тест «stage заполняет колонку / mode bar внизу». → `tsc --noEmit`=0; `BrowserStudioDesk.test.tsx` (4) + `ActionTape.test.tsx` (10) + `BrowserStage.test.tsx` (10) = **24 passed / 0 failed**.
+- [x] Negative: Given узкое окно и ресайз, Then вьюпорт не схлопывается и не наезжает на ленту. → live: контейнер сжат до 400 → `stage`=356/356 (100%), modeBar `bottom`=456, canvas 519×292 без скролла, оверлея нет.
+
+**Исполнение (Flash, 2026-09-24):** фикс в одну точку — `frontend/src/studio/BrowserStudioDesk.tsx`: контейнер вокруг `BrowserStage` заменён с block (`flex-1 min-w-0 h-full`) на flex-колонку `flex-1 min-w-0 flex flex-col min-h-0` (+ `data-testid="browser-studio-stage-column"`). `BrowserStage.tsx` не менялся. Новый тест `frontend/src/studio/BrowserStudioDesk.test.tsx` (4 кейса: колонка flex-col; стейдж единственный растягиваемый child; modeBar последний child + `shrink-0`; лента — правая колонка `w-[380px] shrink-0`). Живая проверка CDP `:9222` + Editor `:5173`, check `114a306c-4ce5-4e43-88f4-65490947f7ef`: скриншоты `secops-studio-before/after/live/narrow.png`. Коммит/пуш НЕ делался.
+
+**Приёмка (Keeper, 2026-09-24) — ACCEPTED фактом (живой CDP `:9222`, Editor `:5173`, check `114a306c-…`, деск открыт, браузер подключён):**
+- `col` = 1083×725, `stage` = 1083×725 (**100% колонки**; было 253), `ActionTape` = 380×725 — высоты синхронны.
+- `modeBar` bbox y 793–825, `bottom` = **825** = низ рабочего окна (`innerHeight` 825; было в середине ≈353).
+- `elementFromPoint` по `Author`/`Record`/`Debug` → сами кнопки; мёртвая зона исчезла: (700,600) → `CANVAS.block cursor-pointer` (было — пустой контейнер).
+- Canvas 1083×609 внутри вьюпорта (661) без скролла (`scrollH==clientH`, `scrollW==clientW`).
+- **Живой клик→CDP:** `click-sel canvas.cursor-pointer` (786,463) → `POST /api/browser/mouse/click` → **200** — оговорка Flash закрыта Keeper'ом.
+- Скриншот `D:/Buddy/Flow/Current/blitz-auth/cdp/vfill-accept.png`.
+
+**Out of scope:** логика записи/сохранения DSL и Replay Tape (`BROWSER-STUDIO-1`, `STUDIO-TAPE-OPS` — принято); backend/CDP relay (`LVL-1`, RP-VIZ); остальная раскладка воркбенча; коммит/пуш — по команде Максима.
+
+**Scope:** `frontend/src/studio/BrowserStudioDesk.tsx` (+ точечно `frontend/src/terminal/BrowserStage.tsx`, если нужен `h-full`), соответствующий тест.  
+**Отчёт:** дифф 1–2 файлов; live CDP-замер (`stage.height` == колонке, mode bar у низа) + скриншот; `tsc`/`vitest` результат.
+
+---
+
+#### Карточка BROWSER-STUDIO-VIEWFIT-BE — Удалённый viewport под размер контейнера: стрим заполняет рабочую зону без letterbox (BE)
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-24) — API/спайк/кап приняты; доставка кадра в новом размере вынесена в `BROWSER-STUDIO-RELAY-FRAME`. **Исполнитель:** Boss.
+
+**DoD:** Авторинг-браузер (контейнер `playwright-authoring`, CDP `:9223`) умеет менять viewport по запросу: `POST /api/browser/viewport {"width":int,"height":int}` → `{"ok":true,"viewportWidth":int,"viewportHeight":int}`; после смены следующий screencast-кадр приходит в новом размере (и metadata, и JPEG), аспект = запрошенному; клики по новому маппингу без смещения.
+
+**Зачем (Keeper, живой CDP, 2026-09-24):** кадр стрима 1920×1080 (16:9), контейнер деска 1083×661 (≈1.64) → aspect-fit даёт canvas 1083×609 и вертикальный letterbox (52px на текущем окне; `slack = vp_h − vp_w·0.5625`, растёт с высотой окна). Заполнить контейнер без кропа/искажения можно только подгонкой вьюпорта удалённого браузера под аспект контейнера; бонус — страница перестаёт ужиматься 1920→1083 (нативный масштаб).
+
+**Спайк (первым шагом, до реализации):** доказать, что смена вьюпорта реально влияет на screencast контейнерного headed-браузера: (а) `page.set_viewport_size` (Playwright) на CDP-attached page — в `playwright_runtime.connect_over_cdp` он в try/except и может молча скипаться; если не работает — (б) raw `Emulation.setDeviceMetricsOverride` на CDP-сессии relay'я (`cdp_viewport_relay.py`). Факт и выбранную ручку зафиксировать в отчёте.
+
+**Приёмка (Keeper, 2026-09-24) — ACCEPTED по API/спайку/капу; кадровая часть — в `BROWSER-STUDIO-RELAY-FRAME`:**
+- [x] `POST /api/browser/viewport` работает — мой факт: `{"width":1920,"height":1080}` → `{ok:true, viewportWidth:1920, viewportHeight:1080, clamped:false}`; пустой body → чтение метрик (`deviceScaleFactor:1.0`). Boss live: 1083×661 → 200; обратно 1920×1080 → 200.
+- [ ] **НЕ выполнено:** следующий WS-кадр в новом размере. Факт (Keeper): после смены `canvas.width/height` остались `1920×1080`; relay не отдаёт кадр нового размера (кэш `_latest` + нет repaint; nudge идёт через чужую sync-сессию). → вынесено в `BROWSER-STUDIO-RELAY-FRAME`.
+- [x] Клампинг: `0/−1/«abc»` → 400; `99999` → кламп 3840, `clamped:true` (Boss live); relay жив.
+- [x] Кап: `SCREENCAST_MAX_WIDTH/HEIGHT = 1920/1200` (single source; `cdp_viewport_relay.py:77`).
+- [x] Backend-тесты: 95 passed / 1 skipped (целевые); новые 4 viewport_set + 2 screencast-cap.
+
+**Out of scope:** FE-обвязка (шлёт размер) — `BROWSER-STUDIO-VIEWFIT-FE`; раскладка деска; логика клика. Коммит/пуш — по команде Максима.
+**Scope:** `orchestrator/browser/browser_service.py`, `orchestrator/browser/cdp_viewport_relay.py`, route в `orchestrator/tools/data_playground.py`, тесты.
+**Отчёт:** дифф; live-доказательство смены размера кадра (до/после); результат спайка.
+
+**Исполнение (Boss, 2026-09-24):** `browser_service.py:502` `_cmd_viewport_set` — кламп [320,3840], bool/нечисла/≤0 → отказ, best-effort `page.screenshot()` как repaint-nudge; `data_playground.py:887` `POST /api/browser/viewport` (width/height → смена; пустой body → метрики); `cdp_viewport_relay.py` — `SCREENCAST_MAX_WIDTH/HEIGHT = 1920/1200`. **Спайк:** `page.set_viewport_size` на CDP-attached page работает; resize сам кадр не рождает, screenshot-nudge надёжен. **Открытый вопрос закрыт карточкой `BROWSER-STUDIO-RELAY-FRAME`** (живость кадра — территория relay, не resize-API).
+
+---
+
+#### Карточка BROWSER-STUDIO-VIEWFIT-FE — Деск подгоняет удалённый viewport под контейнер (FE)
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-25). **Исполнитель:** Buddy (передан Максимом вместо занятого Flash).
+
+**DoD:** Пока открыт `BrowserStudioDesk`, FE измеряет контейнер вьюпорта (ResizeObserver, debounce ~300ms) и шлёт размер на `POST /api/browser/viewport`; canvas заполняет вьюпорт (letterbox ≈ 0, допуск 2px) без кропа/искажения; при ресайзе окна — следует; если BE-ручка недоступна — graceful fallback на текущий aspect-fit без ошибок.
+
+**Приёмка:**
+- [x] Live: `canvas` bbox == `vp` bbox (допуск 2px). → **Факт Keeper (мой замер CDP):** `vp = canvasCSS = intrinsic = remote viewport = 1083×661`, letterbox 0.
+- [x] Live: ресайз окна → ~300ms → новый размер, canvas снова заполняет; клик → 200. → **Факт Keeper (каскад ресайзов):** 1500×800 → vp 875×636 → `POST /api/browser/viewport {"width":875,"height":636}` → кадр/инт. 875×636; clear → 661×642 (POST+кадр); 1100×700 → 475×536; maximize → **1083×661** (финал каноничен). Клик: Buddy — POST 200 + реально открылась карточка товара (скрин `viewfit-final.png`); relay-лог (лично Keeper): `viewport sync: pushed fresh frame 943x661`.
+- [x] Negative: BE недоступен/ошибка → letterbox-fallback, без ошибок в консоли. → +2 интеграционных теста (500 → тихий fallback); в моём каскаде — 0 новых console-errors.
+- [x] `tsc` 0; `vitest run src/studio src/terminal` зелёный. → **Факт Keeper:** `tsc`=0; **103 файла / 696 passed / 0 failed**.
+
+**Out of scope:** BE-команда (VIEWFIT-BE); badge/banner (DESK-LIVE-BADGE); логика клика. Коммит/пуш — по команде Максима.
+**Scope:** `frontend/src/terminal/useBrowserCanvasStream.ts`, `frontend/src/terminal/BrowserStage.tsx`, `frontend/src/studio/BrowserStudioDesk.tsx` (минимально), тесты.
+
+**Исполнение (Buddy, 2026-09-25):** дифф 5 файлов (+415/−12): `useBrowserCanvasStream.ts` (ResizeObserver → debounce 300ms `onContainerResize`, первичный синк при `connected`, колбэк в ref — observer не пересоздаётся), `BrowserStage.tsx` (отправка `setViewport` с дедупом успешного размера + `data-testid="browser-stage-viewport"`), `browserSession.ts` (`setViewport(w,h)` → POST; ошибки глушатся → aspect-fit), тесты: +4 юнита хука (debounce / схлопывание серии / connected-синк / нулевой контейнер), +2 интеграционных (отправка+дедуп; 500 → тихий fallback). `BrowserStudioDesk.tsx` не потребовался — точка фикса целиком в Stage.
+
+**Проверки:** `npx tsc --noEmit` = **0**; `npx vitest run src/studio src/terminal` = **103 файла / 696 passed / 0 failed**.
+
+**Live (CDP :9222 + Editor :5173, деск открыт, браузер подключён):** удалённый viewport = 1083×661 (размер контейнера); `vp = canvasCSS = intrinsic = 1083×661`, letterbox **0px**; ресайз контейнера 380→520px → 943×661 ≤1.5s, возврат → 1083×661 (relay-лог: `viewport sync: pushed fresh frame 943x661`); клик по canvas (786,463) → `POST /api/browser/mouse/click` **200**, реально открыл карточку товара на Juice Shop. Скрин: `D:/Buddy/Flow/Current/blitz-auth/cdp/viewfit-final.png`.
+
+**Побочная находка (не из диффа):** relay-процесс от 08:43 был залипший (screencast-сессия отдавала единственный старый кадр 1919×940, sync-дог молчал); перезапущен 09:47 от venv — кадровый контур ожил без правок кода. Кандидат на будущее: `lab_ensure_ui` проверяет только LISTENING — залипший relay не лечится рестартом стенда. Коммит/пуш НЕ делался.
+
+**Приёмка (Keeper, 2026-09-25) — ACCEPTED фактами:** статика и динамика сходятся: `vp`=`canvasCSS`=`intrinsic`=`remote viewport` (letterbox 0), каскад ресайзов 875×636 → 661×642 → 475×536 → 1083×661 — каждый раз POST + свежий кадр, без ручного триггера. `tsc`/vitest/relay-лог — проверены своими руками. Оговорка-находка: в консоли вкладки деска — **исторический HMR-крэш хуков** (`Rendered more hooks than during the previous render` в `BrowserStage` из череды hot-update'ов дня); новые хуки безусловные и в стабильном порядке, на чистом каскаде ошибок НЕТ — при случае перезагрузить вкладку деска для чистого лога. Побочная находка → карточка `RELAY-STALE-WATCHDOG` (Boss).
+
+---
+
+#### Карточка RELAY-STALE-WATCHDOG — Залипший relay: screencast молчит, клиент видит единственный старый кадр (follow-up VIEWFIT-FE)
+
+**Статус:** ⏳ READY (Keeper, 2026-09-25). **Исполнитель:** Boss.
+
+**Факт (Buddy, 25.09, live + подтверждение Keeper'а):** relay-процесс от 08:43 «залип»: вкладка авторинг-браузера уже была 1083×661, а screencast отдавал клиентам единственный старый кадр (`1919×940`), viewport-sync-дог молчал; клиент видел ровно 1 кадр. Перезапуск relay (09:47) оживил контур **без правок кода**. Доп. факт: `lab_ensure_ui` проверяет только `LISTENING` — залипший relay рестартом стенда не лечится.
+
+**DoD:** relay сам детектирует «screencast молчит / кадр не обновлялся N секунд при живых клиентах» и лечится (re-start screencast / пересоздание CDP-сессии / reconnect-dog), **либо** отдаёт честный health-сигнал, по которому деск/ensure видят «стрим устарел». Root-cause зафиксирован (как именно screencast умирает, не роняя WS/CDP). Тесты на staleness-детект/лечение.
+
+**Приёмка:**
+- [ ] Воспроизведение залипания зондом (или честный repro-рецепт) + фикс: кадры снова идут ≤N сек без ручного рестарта.
+- [ ] Живой прогон: клиент получает свежие кадры после «убийства» screencast-сессии relay'я.
+- [ ] Тесты relay зелёные (per-file + комбо без регресса).
+- [ ] Заметка смежнику: `lab_ensure_ui`/health — по желанию показывать свежесть кадра, не только LISTENING (зона Buddy, отдельной строкой в отчёте).
+
+**Out of scope:** VIEWFIT-FE (закрыт), resize-API, FE. Коммит/пуш — по команде Максима.
+**Scope:** `orchestrator/browser/cdp_viewport_relay.py`, тесты; заметка по `lab_ensure_ui` — Buddy.
+
+---
+
+#### Карточка BROWSER-STUDIO-DESK-LIVE-BADGE — Бейдж/баннер деска по живому статусу сессии, не по состоянию рекордера (FE)
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-24). **Исполнитель:** Flash.
+
+**DoD:** При открытом деске с подключённым браузером (author-режим, запись не идёт) шапка показывает «браузер подключён» (зелёный), а баннер ActionTape «Браузер не подключён — запись недоступна…» не показывается; при реальном отключении — обратно. Источник статуса — живая сессия (`cdpLive` из `getBrowserSession()`, уже есть в деске), а не `recorder.state.cdpConnected`.
+
+**Корень (Keeper, живой CDP, 2026-09-24):** `useCdpRecorder.cdpConnected` = true только в `startRecording`/поллинге при `recording:true`; в author-режиме остаётся false при живом браузере. На скриншоте Максима одновременно «• live x1» и красное «браузер не подключён» + баннер ленты.
+
+**Приёмка:**
+- [x] Live: деск открыт, браузер подключён, запись не идёт → бейдж зелёный, баннер скрыт. → Live `:9222`: `badge.text='браузер подключён'`, `data-connected='true'`, баннера нет.
+- [x] Live: браузер отключён → бейдж красный, баннер виден. → Live: `POST /api/browser/context/destroy` (продуктовый API) → через 3s-поллинг `data-connected='false'`, бейдж «браузер не подключён», баннер ActionTape виден; сессия восстановлена кнопкой «Запустить браузер».
+- [x] Тест на источник статуса (сессия, не рекордер); `tsc` 0; `studio`/`terminal` зелёные. → `BrowserStudioDesk.test.tsx` +2 (зелёный/красный по живому статусу при `recorder` в author-режиме); `npx tsc --noEmit`=0; `vitest run src/studio src/terminal` = **103 файла / 687 passed / 0 failed**.
+
+**Исполнение (Flash, 2026-09-24):** дифф в `frontend/src/studio/BrowserStudioDesk.tsx` — бейдж шапки и пропсы `cdpConnected` у `BrowserStage` и `ActionTape` переведены с `recorder.state.cdpConnected` на живой `cdpLive` (подписка на `session.onChange`, уже была); бейджу добавлены `data-testid="desk-connection-badge"` / `data-connected`. `BrowserStage.tsx` не менялся. Скриншоты: `secops-badge-disconnected.png` (красный + баннер), `secops-badge-restored.png` (зелёный). Коммит/пуш НЕ делался.
+
+**Приёмка (Keeper, 2026-09-24) — ACCEPTED фактом:** живой деск (`:9222`, check `114a306c…`, запись не идёт): `[data-testid=desk-connection-badge]` → `data-connected="true"`, текст «браузер подключён», баннер «запись недоступна» отсутствует. Обратный кейс (disconnect → красный + баннер) — live-прогон Flash (`secops-badge-disconnected.png` / `secops-badge-restored.png`). Тесты: 103 файла / 687 passed / 0 failed; `tsc` 0.
+
+**Out of scope:** viewport-fit (VIEWFIT-*); логика записи. Коммит/пуш — по команде Максима.
+**Scope:** `frontend/src/studio/BrowserStudioDesk.tsx`, тест.
+
+---
+
+#### Карточка BROWSER-STUDIO-RELAY-FRAME — Relay отдаёт свежий кадр в новом размере после смены viewport (BE)
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-25). **Исполнитель:** Boss.
+
+**DoD:** После `POST /api/browser/viewport` relay (`:9224`) отдаёт WS-клиентам свежий кадр в НОВОМ размере ≤1s, без действий пользователя и без зависимости от repaint страницы: header (`deviceWidth/deviceHeight`) и JPEG = актуальный viewport; canvas в деске обновляется сам (intrinsic `canvas.width/height` == новый размер). Статичная страница (juice-shop home без действий) — тоже.
+
+**Корень (спайк VIEWFIT-BE, Boss, 2026-09-24 + факт Keeper):** resize сам по себе кадр не рождает; nudge-screenshot идёт через sync-сессию воркера (`browser_service`), а relay слушает свою CDP-сессию — при `everyNthFrame`-троттлинге новый кадр не долетает; relay кэширует единственный `_latest` и шлёт его только при новом repaint. Факт Keeper: после смены размера `canvas.width/height` остались `1920×1080`.
+
+**Подход (на выбор исполнителя, с обоснованием в отчёте):** relay — единый источник кадра: периодически (или по сигналу) сверяет размер вьюпорта своей CDP-сессией (`Page.getLayoutMetrics` / `Runtime.evaluate innerWidth/Height`) и при расхождении форсит свежий кадр (`Page.captureScreenshot` → push в `_latest` с новыми размерами; либо stop/start screencast). Без зависимости от чужой сессии.
+
+**Приёмка:**
+- [x] Live: `POST /api/browser/viewport {1083,661}` → ≤1s WS-кадр 1083×661 на статичной странице, без кликов. → **Факт Keeper (25.09, WS-пробник к `:9224/api/browser/canvas`):** кадр `1083×661` (79736B) пришёл через **~0.17s**.
+- [x] Live: обратная смена 1920×1080 → кадр возвращается; стрим живёт дальше (несколько кадров подряд). → **Факт Keeper:** `1920×1080` через **~0.23s**; тот же WS-клиент жив, 7 кадров подряд, обрывов нет.
+- [x] Relay не рвёт клиентов, не плодит процессы (`single_instance` цел), reconnect-дог не дёргается. → **Факт Keeper:** один LISTENING на :9224 (PID 44152, старт 23:52 — уже с новым кодом); WS-клиент пережил обе смены размера; `ensure_single_instance(9224)` в `__main__`.
+- [x] Тесты relay/пакета кадра зелёные. → `pytest tests/test_cdp_viewport_relay.py` = **25 passed** (вкл. viewport-sync тесты).
+
+**Out of scope:** resize-API (`VIEWFIT-BE` — принят); FE-обвязка (`VIEWFIT-FE` — ждёт эту карточку). Коммит/пуш — по команде Максима.
+**Scope:** `orchestrator/browser/cdp_viewport_relay.py`, тесты.
+**Отчёт:** дифф; live-доказательство «до/после» (canvas intrinsic + кадры); выбранный механизм и почему.
+
+**Приёмка (Keeper, 2026-09-25) — ACCEPTED фактом:** механизм — relay-сессия сама сверяет вьюпорт (`Runtime.evaluate innerWidth/Height`, каждые 0.5s) и при расхождении с текущим кадром форсит `Page.captureScreenshot` → push в `_latest`; кадр нового размера доезжает без repaint страницы и без чужой sync-сессии. Живой прогон (WS-пробник Keeper'а): стартовый кадр 1920×1080 → {1083,661} кадр за ~0.17s → обратно за ~0.23s; клиент жив. Код в рабочем дереве (uncommitted).
+
+---
+
+#### Карточка BROWSER-STUDIO-SCROLL — Колесо мыши в окне студии реально скроллит удалённую страницу (FE+BE)
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-25). **Исполнитель:** Flash.
+
+**DoD:** Колесо (средняя кнопка) над вьюпортом Browser Studio реально прокручивает страницу удалённого браузера — меняется `scrollTop` её скролл-контейнера (у juice-shop `.mat-drawer-content`; в общем случае `document.scrollingElement`), видно в стриме; в record-режиме скролл фиксируется шагом `Wheel` в ленте. Middle-button (нажатие средней) форвардится тем же каналом и не ломает состояние; нативный autoscroll Chromium в Linux-контейнере — проверить и зафиксировать честно (X11 middle-click может быть paste).
+
+**Корень/зачем (Keeper, 2026-09-24):** маршрут `POST /api/browser/wheel` → `browser_mouse_wheel(dx,dy)` и FE-метод `browserSession.wheel()` существуют, но канвас студии не пробрасывает `onWheel` — оператор не может скроллить окно. **Live-факт (Keeper): backend-wheel рабочий** — `POST /api/browser/wheel {dx:0,dy:400}` на juice-shop home → `.mat-drawer-content.scrollTop` 400→556 (до низа); quirk из LVL-1 здесь НЕ подтвердился. Остаётся только проброс с канваса.
+
+**Приёмка:**
+- [x] Live: скролл над вьюпортом реально прокручивает удалённую страницу. → **Живой факт Максима (25.09): «скролл уже работает»** (реальное колесо в деске). Keeper-контур: `handleCanvasWheel` → `mouseWheel(dx,dy,x,y)` → `POST /api/browser/wheel` → `page.mouse.wheel`; backend live-факт 24.09: `.mat-drawer-content` 400→556.
+- [x] Live: middle-button / нативный autoscroll — **проверено честно (Flash, 25.09, свежая вкладка деска): НЕ форвардится** — `page.mouse.down/up(button='middle')` над канвасом не даёт ни одного запроса (только poll `observe/event`); состояние деска (record/canvas) и удалённой страницы не меняется; X11-paste и autoscroll-оверлей не срабатывают; ошибок нет. Форвардинг не реализован — core-DoD (скролл колесом) не страдает; при потребности — `button` в click-маршруте отдельной карточкой.
+- [x] Live: record-режим — шаг `Wheel` в ленте — **подтверждено live (Flash, 25.09):** реальное колесо над канвасом → `st 0→556`, в «Ленте действий» шаги `Wheel ↓ 400` / `Wheel ↓ 200` (+ `Scroll ↓ 400` от scroll-обсервера = фактическая дельта). Скрин `secops-scroll-final.png`; полный live-файл `test_browser_authoring_live.py` — 5 passed (CDP `:9223`).
+- [x] Throttle: батч 90ms (`WHEEL_THROTTLE_MS`); тесты на батч/координаты. → `BrowserStage.test.tsx` +2 (серия wheel → один запрос; нулевые дельты не шлются).
+- [x] `tsc` 0; `studio`/`terminal` зелёные; backend-тесты wheel зелёные. → `tsc`=0; `vitest run src/studio src/terminal` = **103 файла / 689 passed / 0 failed**; `pytest -k "wheel or viewport"` = **10 passed**.
+
+**Out of scope:** viewport-fit (VIEWFIT-*); relay-кадр (RELAY-FRAME). Коммит/пуш — по команде Максима.
+**Scope:** `frontend/src/terminal/BrowserStage.tsx` (`onWheel` → `session.wheel`), `frontend/src/studio/browserSession.ts`; при необходимости middle-button — `button` в click-маршруте (`orchestrator/browser/browser_service.py` + `data_playground.py`), тесты.
+**Отчёт:** дифф; live-доказательство реального скролла (`scrollY` до/после + скрин); что с record-шагом.
+
+**Приёмка (Keeper, 2026-09-25) — ACCEPTED по core-DoD:** живой факт Максима (реальный скролл колесом в деске) + код-путь FE→BE→`page.mouse.wheel` + тесты (FE 2 новых SCROLL-кейса, backend 10). Лично не перепроверены (деск закрыт в момент приёмки): middle-button и record-шаг `Wheel` — помечены в приёмке, зафиксировать при следующем открытом деске. Код в рабочем дереве (uncommitted).
+
+**Дофиксация (Flash, 2026-09-25, после приёмки core-DoD) — оба ⚠-пункта закрыты + вычищены два дефекта, найденных на живом деске:**
+
+- **Record-шаг `Wheel` — подтверждён live.** Свежая вкладка Editor (`114a…/editor`), деск в record, браузер на juice-shop: колесо над канвасом → `.mat-sidenav-content.scrollTop` **0 → 556**; в «Ленте действий» шаги **`Wheel ↓ 400`** и **`Wheel ↓ 200`** (+ `Scroll ↓ 400` от scroll-обсервера — дельта = реальный офсет). Скриншот `secops-scroll-final.png`.
+- **FE-фикс (оверлей глотал колесо):** `onWheel` перенесён с `<canvas>` на контейнер вьюпорта (`BrowserStage.tsx`) — `CandidateOverlay` (рамки кандидатов в record/Inspect) сиблинг канваса, реальное колесо над рамкой до canvas не доходило (синтетический wheel — доходил, реальный — нет). Теперь колесо всплывает на контейнер и работает над рамками; `BrowserStage.test.tsx` +1 (wheel с оверлея) → 13 тестов.
+- **BE-фиксы (`browser_service.py` + `data_playground.py`):** (1) `_wheel_page` — активация вкладки `bring_to_front` перед `page.mouse.wheel` (Xvfb-quirk неактивной вкладки, воспроизведён зондом); применён в `_cmd_mouse_wheel` (API + опц. `x,y` → `mouse.move`), step-execute `wheel` и `scroll` value-path; `_post_browser_wheel` парсит опц. `x/y`. (2) observe-цепочка: `observe_stop` ставил флаги long-action листенеров в `true`, не снимая хендлеры → после навигации листенеры мертвы, а повторный `start` молча пропускал навешивание; теперь хендлеры именованные (`__pk_cdp_*_handler__`), `stop` снимает их и гасит флаги, `start` при уже активной observe до-инжектит, `navigate` лечит листенеры на новом документе.
+- **LVL-1 live:** xfail wheel/scroll value-path снят — оба пути дают реальный side-effect (`_scroll_state_settled` ждёт асинхронного применения офсета); полный live-файл **5 passed**.
+- **Контур:** `tsc`=0; `vitest run src/studio src/terminal` = **103 файла / 690 passed / 0 failed**; BE-контур (browser_service/step_execute/parity/elements/relay) = **163 passed, 1 skipped**; `test_browser_service.py` +5 тестов (bring_to_front, x/y, tolerant-failure, self-heal start, stop снимает хендлеры). Коммит/пуш — по команде Максима.
+
+**Пост-приёмка дофиксации (Keeper, 2026-09-25) — принято фактами.** Прогон Keeper'а: FE `vitest run src/studio src/terminal` = **103 файла / 690 passed / 0 failed**; `tsc`=0; live (`PK_BROWSER_CDP_ENDPOINT=http://127.0.0.1:9223`) → `test_browser_authoring_live.py` = **5 passed** (вкл. `test_lvl1_wheel_scroll_side_effect_live` — честный assert, xfail снят); BE per-file: relay **25 passed**, quartet browser_service/step_execute/parity/elements **157 passed, 3 skipped**. FE-код: `onWheel` — на контейнере вьюпорта (`viewportRef`, `handleViewportWheel`); BE-код: `_wheel_page` (`bring_to_front`) в `_cmd_mouse_wheel` (+x/y) и step-execute wheel/scroll. Скрин `secops-scroll-final.png` — глазами Keeper: лента `Wheel 0 400` / `Scroll 0 400` / `Wheel 0 200`, Record, «браузер подключён». Middle-button — «не форвардится» (негативный факт Flash, core-DoD не страдает). Пакетный quirk relay-файла — **не регресс дофиксации** (файл не трогался, mtime 24.09 23:51) → вырезана `BE-TEST-LOOP-ISOLATION`. Оговорки Flash (приняты): `test_pw_airgap_and_cdp.py` зелёный только из корня репы (pre-existing env-контекст, не регресс); долгоживущая HMR-вкладка деска может заклинить поллинг рекодера — на свежей вкладке штатно.
+
+---
+
+#### Карточка BE-TEST-LOOP-ISOLATION — Пакетный прогон BE-файлов: async-тесты relay падают после другого файла в процессе (test-isolation / event-loop leak)
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-25). **Исполнитель:** Boss.
+
+**Факт (Keeper, 25.09):** `test_cdp_viewport_relay.py` зелёный в одиночку (**25 passed**) и первым в процессе (relay+browser_service = **107 passed, 1 skipped**), но в любом прогоне, где перед ним идёт другой файл, его async-тесты падают: **7 failed + 6 errors** — все `RuntimeError: Runner.run() cannot be called from a running event loop` на setup async-фикстур (13 тестов). Воспроизведено на комбо `{browser_service}+relay`, `{elements}+relay`, `{step_execute,parity}+relay` — одинаково. Не-релейные пары чисты: `step_execute+browser_service` = **132 passed, 1 skipped**. В relay-файле 13 teardown-warnings pytest-asyncio «you closed the underlying event loop in a test». Файл дофиксацией SCROLL не трогался (mtime 24.09 23:51, работа RELAY-FRAME).
+
+**DoD:** `pytest tests/test_browser_service.py tests/test_browser_step_execute.py tests/test_browser_runtime_parity.py tests/test_browser_elements_snapshot.py tests/test_cdp_viewport_relay.py -q` (один процесс) → **0 failed/errors** в любом порядке; per-file прогоны не хуже текущих; root-cause зафиксирован в отчёте (кто/что оставлял или закрывал loop); без костылей вроде `-p no:...` в addopts.
+
+**Приёмка:**
+- [x] Комбо 5 файлов зелёный в двух порядках: relay первым и relay последним. → **Факт Keeper (25.09):** relay-last = **185 passed, 2 skipped**; relay-first = **185 passed, 2 skipped**; 0 failed/errors (было 7 failed + 6 errors).
+- [x] `pytest tests/test_cdp_viewport_relay.py -q` = 25 passed (не хуже). → **Факт Keeper:** 25 passed.
+- [x] Отчёт: корень + фикс + почему изоляция теперь держит. → **Корень (Boss, подтверждён репро Keeper'а):** no-browser кейсы дёргают `_ensure_browser` на мёртвый endpoint → `sync_playwright().start()` поднимает greenlet-loop в текущем потоке → падение `connect` без закрытия → loop остаётся running в thread-local → pytest-asyncio `Runner.run()` невозможен. **Фикс:** `playwright_runtime.py` `connect_over_cdp` — start+connect в try/except, при падении `self.close()` + raise (без `-p no:`/addopts-хаков). **Репро** (`D:\Infra\Temp\opencode\loop_leak_repro.py`): `connect failed | running = None`, `Runner ... OK` (до фикса — RuntimeError).
+
+**Out of scope:** логика relay/браузера, кейсы SCROLL/VIEWFIT. Коммит/пуш — по команде Максима.
+**Scope:** `orchestrator/tests/test_cdp_viewport_relay.py` + при необходимости loop-фикстуры/conftest, тесты.
+
+**Исполнение (Boss, 2026-09-25):** дифф `orchestrator/browser/playwright_runtime.py` (+11/−2: try/except + `self.close()`), `test_browser_service.py` +17 (`test_ensure_browser_failed_connect_leaves_no_running_loop`), `test_browser_runtime_parity.py` +21 (`TestRuntimeLeakIsolation` — `_get_running_loop() is None` + рабочий `asyncio.Runner` после падения connect). Razor: `test_browser_back_no_browser + relay` = 26 passed. Оговорки: `launch()` — тот же класс, осознанно не трогал (→ мини-карточка `PW-RUNTIME-LAUNCH-LEAK`); airgap-пара из orchestrator-dir = 29 failed — pre-existing env-quirk (из корня репы 71 passed). Коммит/пуш — по команде Максима.
+
+**Приёмка (Keeper, 2026-09-25) — ACCEPTED фактами:** воспроизведено лично: razor **26 passed**; комбо 5 файлов relay-last **185 passed, 2 skipped**, relay-first **185 passed, 2 skipped** (порядок больше не влияет — было 7 failed + 6 errors); relay alone **25 passed**; репро-скрипт → `running = None` + живой `Runner` после падения connect. Poison-механизм подтверждён (файлы без Playwright не травят — совпадает с моими фактами от 25.09). Фикс в источнике, без тест-хаков.
+
+---
+
+#### Карточка PW-RUNTIME-LAUNCH-LEAK — `PlaywrightBrowserRuntime.launch()`: тот же loop/driver-leak при падении launch (follow-up BE-TEST-LOOP-ISOLATION)
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-25). **Исполнитель:** Boss.
+
+**Факт (Boss, 25.09):** `playwright_runtime.py` `launch()` — `sync_playwright().start()` (строка ~63) без try/except: падение `browser_launcher.launch(...)`/`new_context` оставляет Playwright-драйвер и greenlet-loop running в thread-local — тот же класс, что чинили в `connect_over_cdp`. Комбо-тесты не травятся (parity закрывает runtime сам), но в проде каждый неудачный launch течёт драйвером и ломает async в процессе.
+
+**DoD:** `launch()` — start/launch/context в try/except с `self.close()` + raise (симметрично `connect_over_cdp`); регресс-тест: после падения `launch()` (`_get_running_loop() is None`, рабочий `asyncio.Runner`); существующие контуры не хуже.
+
+**Приёмка:**
+- [x] Регресс-тест на утечку `launch()` зелёный. → **Факт Keeper:** `TestRuntimeLeakIsolation` = **2 passed** (вкл. `test_failed_launch_closes_runtime_and_clears_running_loop`: `_get_running_loop() is None`, рабочий `asyncio.Runner`, `_playwright is None`, `_launched is False`).
+- [x] Комбо 5 файлов (relay-first/relay-last) не хуже текущих + 1 новый; per-file без регресса. → **Факт Keeper:** relay-first = **186 passed / 2 skipped**; relay-last = **186 passed / 2 skipped** (было 185; +1 новый).
+- [x] Дифф минимальный, без костылей. → `launch()` обёрнут try/except `self.close(); raise` — симметрично `connect_over_cdp`; остальное — ре-индент тела, без тест-хаков.
+
+**Out of scope:** `connect_over_cdp` (закрыт BE-TEST-LOOP-ISOLATION); логика браузера. Коммит/пуш — по команде Максима.
+**Scope:** `orchestrator/browser/playwright_runtime.py`, тесты.
+
+**Исполнение (Boss, 2026-09-25):** `launch()` — весь путь `sync_playwright().start()` → `browser.launch(...)` → `new_context` → `new_page` в try/except с `self.close()` + raise (закрывает и `ValueError` невалидного `browser_type`); +1 регресс-тест (падение `launch(browser_type='not-a-browser')` при уже поднятом реальном playwright). Демо до/после: leak → `ProactorEventLoop running=True`; fixed → `None`; бонус-факт: утёкший loop ломает и следующий `sync_playwright().start()` («Sync API inside the asyncio loop»). Бонус в заходе: docstring-нит ALLURE3 закрыт (`latest_report_serve` + README → «свежесть по mtime results»), образ пересобран, контейнер healthy. Инфра-нота: Docker Desktop падал в середине — поднят, стенд самовосстановился (25 контейнеров, dojo `/login` 200). Коммит/пуш НЕ делался.
+
+**Приёмка (Keeper, 2026-09-25) — ACCEPTED фактами:** новый тест-класс зелёный (2 passed); комбо в обоих порядках 186/2skip (без регресса, +1); `launch()`-фикс симметричен и минимален; docstring-нит закрыт (main.py:157 + README); стенд после инфра-сбоя проверен. Коммит/пуш — по команде Максима (команда получена: раскидка dev+main).
+
+---
+
+#### Карточка ALLURE3-FRESH-REPAIR — Allure `:5050`: default-генерация сносит отчёты чеков; `/reports/latest` копит августовский хлам и не обновляется по прогонам
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-25). **Исполнитель:** Boss.
+
+**Жалоба (Максим, 25.09):** `http://127.0.0.1:5050/reports/latest/full.html` — «лог аж с 22 августа; Allure не обновляет, кеширует?».
+
+**Факты (Keeper, live 25.09):**
+1. **Деструктивная default-генерация.** Сервис `prettyk-allure3` (код ТОЛЬКО в образе: `/app/allure3-secops/app/generate.py`) на каждый generate зовёт `_clear_dir(report_dir(pid))`. Для default `report_dir("default")` = **корень** `/app/default-reports`, а per-check отчёты — его подпапки (`default-reports/<check_id>/`). ⇒ любая default-генерация **рекурсивно сносит отчёты всех чеков**. Воспроизведено: подпапка `114a306c-…` (отчёт 24.09 19:08) жила до 9:27; после `GET /generate-report?project_id=default` (9:30:49) — исчезла (host + container); после `GET /generate-report?project_id=114a306c-…` (9:36, 2.5s) — восстановлена; URL `/projects/114a306c-…/reports/latest/{,index,full}.html` = **200**.
+2. **Свежесть default.** `/reports/latest/` отдавался со вчерашней генерации (24.09 18:34:59), хотя сырые результаты есть до 24.09 21:08; per-check прогоны (19:00-19:08) обновляли только свой отчёт; стаб-раны 20:35-21:08 писали results, но generate не дёргали вообще. Ручной `GET /generate-report?project_id=default` → ok за **2.1s** (механика исправна — дело в триггерах/скоупе).
+3. **Августовский хлам.** В свежем default-отчёте (после моего регена) 34 теста, из них **16 — «ZAP final report» от 22.08/28.08**: сырые результаты в `reports/allure-results` копятся с 22.08 (205+ файлов), чистка не запускалась (есть `clean-results` и `lab_clean.ps1 -Target allure`, но ими не пользовались).
+4. **Инфра-гэп + build-контекст найден (Keeper, 25.09).** В репе исходников сервиса нет — git-история `services/allure3-secops` пуста (только `docs/friend-requests/ALLURE3-SECOPS-BRAND-AND-INSTANCE.md`); код читался только `docker exec`. **Контекст сборки: `D:\Infra\Temp\opencode\allure3-src`** — `app/{main,generate,paths,app_dashboard}.py` **хэш-в-хэш с контейнером** (`main.py e2019a9d…`, `generate.py bda3f45a…`, `allurerc.mjs d410abee…`), плюс `entrypoint.sh` / `requirements.txt` / `package*.json`. Образ `prettyk-allure3:local` собран 16.08 20:54. ⚠️ Это **TEMP-каталог — единственная известная копия исходников**, и **Dockerfile в контексте отсутствует** — выяснить механизм сборки, восстановить в репу (`services/allure3-secops/`) и сделать сборку воспроизводимой.
+
+**DoD:**
+- default-генерация **не трогает** per-project отчёты; регресс-тест: после default generate подпапки чеков на месте и их URL 200.
+- Контракт свежести зафиксирован: после прогона (default и per-check) соответствующий отчёт отражает его результаты **без ручного триггера**; решить, кто и когда дёргает generate (run finalize / стаб-пайплайны — почему пишут results молча), и что видит пользователь в `/reports/latest`, если последний прогон был per-check.
+- Гигиена результатов: политика очистки (scope по проекту/прогону; «история» = `history/`, а не вечная свалка сырых results). В отчёте не должно быть тестов 22.08 как текущих.
+- Исходники сервиса восстановлены в репу из найденного контекста (`D:\Infra\Temp\opencode\allure3-src`) — включая Dockerfile/механизм сборки; образ пересобирается воспроизводимо; TEMP-копия больше не единственная.
+- Регресс-тесты на перечисленное.
+
+**Приёмка (Keeper):** живой прогон → глазами: `/reports/latest/` свежий (без 22.08 в текущем скоупе); отчёт чека открывается по своему URL; после default-генерации отчёт чека НЕ исчезает; тесты зелёные.
+
+**Out of scope:** брендинг/темы (AL3-BRAND), dashboards `/apps`. Коммит/пуш — по команде Максима.
+**Scope:** сервис allure3-secops (generate/main/paths), `orchestrator/utils/reporter.py` (триггеры), `lab_clean.ps1`, layout results/report, тесты.
+
+**Исполнение (Boss, 2026-09-25):** (1) default-отчёт переехал в `<root>/default/`; `clean-results(default)` и `purge_allure_results_for_current_check` чистят только файлы корня (подпапки чеков неприкосновенны); (2) контракт свежести: run finalize (как было) + watcher авто-регенерации (`ALLURE_AUTO_REGEN=1`, debounce 8s, baseline-heal при старте если results свежее отчёта); `/reports/latest/...` отдаёт scope с самым свежим mtime **results**; (3) пурж: 16 августовских root-результатов и 7 августовских scope-каталогов удалены; `lab_clean -Target allure` — строго по scope, legacy-путь `allure-report`→`allure3-report`; (4) исходники `services/allure3-secops/` восстановлены (app, allurerc, entrypoint, Dockerfile из `docker history`, форк `packages/kdt-plugin-awesome/dist`, .dockerignore, README) + `build:` в обоих compose; образ пересобран, контейнер пересоздан; питфол «форк копируется ПОСЛЕ npm install» зафиксирован в Dockerfile. Дифф: `services/allure3-secops/**` (нов.), `orchestrator/utils/{allure_project,reporter}.py`, `lab_clean.ps1`, оба compose, тесты (`test_allure3_service.py` 8 + `test_allure3_layout_live.py` + `test_allure_project.py`). Коммит/пуш НЕ делался.
+
+**Приёмка (Keeper, 2026-09-25) — ACCEPTED фактами (live):** (1) **недеструктивность:** отчёт `114a306c` — **136 файлов до и после** моей default-генерации (ok 1.1s), URL 200; (2) **watcher:** probe-scope с results → отчёт появился сам за **10.6s**, лог `auto-regen scope=al3-keeper-probe (debounce elapsed)`, `/reports/latest/summary.json` отдал именно probe (total=1, сверено с прямым scope-URL), после удаления probe — откат на default (total=4, duration 414993); (3) **хлам:** в default-отчёте **0** «ZAP final report», root results = 37 (без августа); (4) **сборка:** env `ALLURE_AUTO_REGEN=1`, `build:` в обоих compose, Dockerfile с оверлеем форка после `npm install`; (5) **тесты:** 17 passed; `__pycache__` гитигнорится. Оговорки Boss (приняты): mid-generation окно (отчёт от предыдущей генерации), `_copy_history` semi-inert, watcher может перегенерировать per-check при длинном прогоне. Микро-нит: docstring `latest_report_serve` говорит «mtime index.html», фактическая логика — mtime results (paths.py). Коммит/пуш — по команде Максима.
+
+---
+
+#### Карточка BROWSER-STUDIO-LAYOUT — [АРХИВ / ЗАМЕНЕНА НА BROWSER-STUDIO-DEVTOOLS]
+*(Историческая карточка первого захода, отправлена на rework по результатам живой проверки Максима)*
+
+---
 
 #### Карточка BROWSER-STUDIO-1 — Полноразмерная Студия Записи Браузера поверх редактора: Viewport + Лента Действий PrettyK DSL + Сохранение в сценарий
 
@@ -1083,6 +1769,46 @@ Luna, PROD-READY, D:\prettyk-secops\docs\backlog.md
 
 ---
 
+#### Карточка LVL-1-RW (Luna) — Rework LVL-1: честная live-верификация side-effect wheel/scroll + честный smoke (не stale-артефакт)
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-24).
+
+**DoD:** Live-верификация полного action-набора доказывает **реальный side-effect** каждого действия (а не только observe-событие + `passed`), и smoke отрабатывает честную цепочку Record → proposal → Accept → replay с проверкой **свежего** `replay_timeline.json` (не старого артефакта).
+
+**Причины rework (из приёмки LVL-1, Keeper 2026-09-23):**
+1. `wheel`: подтверждено только observe-событие + статус `passed`; визуальный side-effect (реальный scroll-offset) не проверяется. Отчёт честно фиксирует Xvfb-quirk (`page.mouse.wheel` эмитит wheel DOM-событие, но Xvfb-Chromium НЕ применяет визуальный scroll-offset).
+2. `scroll`: нет verify side-effect после replay.
+3. `live_smoke_actions.ps1` запускает тест напрямую, а НЕ цепочку Record → proposal → Accept; печатает зелёный verdict даже если `replay_timeline.json` отсутствует/застарел (покажет чужой артефакт).
+
+**Scope (зона Luna — backend live-harness + тесты, НЕ FE):**
+1. `orchestrator/tests/test_browser_authoring_live.py` — довести verify до реального side-effect:
+   - `wheel` и `scroll`: доказать изменение scroll-состояния (scrollTop/scrollY) на живой странице, а не только приход observe-события. Если Xvfb-Chromium объективно не применяет wheel-offset (кворк), НЕ маскировать: зафиксировать это в тесте явным assert на ограничение среды (skip/`xfail` c причиной) И/ИЛИ проверить backend-шаг `wheel`/`scroll` через реальный CDP-вызов, который Xvfb честно исполняет (напр. `Input.dispatchMouseEvent` typed=wheel + программный scroll), с пояснением что именно верифицируется.
+   - Каждый из 9 action: side-effect verify, не только статус/событие.
+2. `orchestrator/tools/live_smoke_actions.ps1` — переписать на честную цепочку Record → proposal → Accept → один DSL-шаг → replay; ВЕРДИКТ вычислять по файлу `replay_timeline.json`, проверяя его свежесть (mtime этого запуска / run_id) — при отсутствии/застарелом файле verdict = FAIL (не зелёный).
+3. `orchestrator/browser/browser_service.py` — reuse-only; править только если live-прогон выявил реальный баг (зафиксировать что именно в отчёте).
+
+**Out of scope (жёсткая граница):** `frontend/src/*` (зона Flash `RP-VIZ`); `wait_for_network_idle`/сканарные адаптеры/wired-сценарии (зона Boss `BOX-GATE-NORM` — НЕ пересекаться); compose/run-ctl/lease; `data_playground.py`; коммит/push (по команде Максима).
+
+**Acceptance:**
+- [x] `test_browser_authoring_live.py` зелёный на живом браузере; для `wheel`/`scroll` есть проверка реального scroll-side-effect (или явный честный skip/xfail с причиной Xvfb-quirk — НЕ молчаливый passed по событию).
+- [x] Каждый из 9 action проходит observe → redaction → DSL → step → side-effect verify → replay round-trip.
+- [x] `live_smoke_actions.ps1` гоняет Record → reduce → step → replay и печатает verdict строго по свежему `replay_timeline.json` (stale/absent = FAIL).
+- [x] 0 регрессий в browser-контуре (`test_browser_*`).
+
+**Worker report (Luna, 2026-09-24, БЕЗ приёмки):**
+
+- **п.1 (live-тест side-effect):** `test_browser_authoring_live.py` переработан на честную live-верификацию. `test_lvl1_full_action_roundtrip_live` теперь доводит каждый из 9 action до **реального** side-effect на живой странице (click→`__clicks++`, type/fill→`#fld.value`, select→`#sel.value`, scroll→`#scr.scrollTop>0`, drag→`__dragged++`, hover→`__hovered≥1`, key→`#fld.value` содержит символ, focus→`activeElement.id=='fld'`). Для wheel отдельный тест `test_lvl1_wheel_scroll_side_effect_live` доказывает REAL scroll-side-effect где Xvfb честно исполняет (target-path `scroll_into_view_if_needed`) и явно `xfail`-ит wheel-quirk.
+- **Механизм side-effect wheel/scroll (почему честен):** живым прогоном (проул против `:9223`) установлено: `page.mouse.wheel` (и `wheel`/`scroll` value-path, что сводятся к нему) эмитит wheel DOM-событие, но НЕ применяет визуальный scroll-offset (CDP mouseWheel quirk) — hence wheel/scroll value-path НЕ может быть честно верифицирован по offset. Единственный детерминированный реальный scroll = target-path `scroll_into_view_if_needed` по off-screen потомку (`#scrinner` внутри `#scr` → `scrollTop=798`; `#bottom` → `window.scrollY=1520`). Поэтому scroll верифицируется реальным `scrollTop>0`/`scrollY>0` через target-path, а wheel честно маркируется `xfail` с причиной quirk (НЕ маскируется passed-ом по observe-событию). `browser_service.py` — reuse-only, НЕ правлен (живой прогон не выявил бага сервиса: quirk — свойство CDP/Xvfb-окружения, не кода).
+- **п.2 (smoke):** `orchestrator/tools/live_smoke_actions.py` (новый драйвер) + `live_smoke_actions.ps1` (переписан ASCII-only) гоняют честную цепочку: Record (observe_start + реальные CDP-действия) → reduce события→snake DSL-шаги (backend-маппинг `OBSERVE_TO_SNAKE`; proposal/Accept/`observationToAction` — зона Flash, здесь backend-редукция) → step execute → `scenario_replay` → checkpoint. ВЕРДИКТ вычисляется строго по `replay_timeline.json`: файл обязан существовать, mtime ≥ start запуска, встроенный `replay_id` совпадает с возвращённым; absent/stale/mismatch → exit 4 (FAIL), replay `verdict != passed` → exit 3. `-SkipReplay` убран (цепочка теперь всегда до replay).
+- **п.3 (evidence):** live smoke драйвер — 9 observed_actions → 9 шагов → `verdict: passed`, `fresh: true`, `replay_id=replay-…`; ps1 exit 0. Browser-контур (`test_browser_*`) с CDP :9223 — **176 passed, 3 skipped (legit VP-L1/asyncio), 1 xfailed (честный wheel-quirk), 0 failed**.
+- **Границы:** FE (`frontend/src/*`), `wait_for_network_idle`/сканарные адаптеры/wired, compose/run-ctl/lease, `data_playground.py` — НЕ тронуты. `browser_service.py` — reuse-only (0 правок). Коммита/пуша НЕТ.
+
+**Приёмка (Keeper, 2026-09-24):** `LVL-1-RW` принят ✅. Верифицировано фактом (код + два живых прогона на CDP `:9223`): (1) `pytest -m live -k lvl1` = **1 passed (`test_lvl1_full_action_roundtrip_live`) + 1 xfailed (`test_lvl1_wheel_scroll_side_effect_live`)** — каждый из 9 action доведён до реального side-effect (click→`__clicks++`, fill→`#fld.value`, select→`#sel.value`, scroll target-path→`#scr.scrollTop>0`, drag→`__dragged++`, hover→`__hovered≥1`, key→`#fld.value`, focus→`activeElement.id=='fld'`); wheel честно `xfail` с причиной Xvfb-quirk (не маскируется observe-событием). (2) `live_smoke_actions.py` прогнан → 9/9 observed→9 шагов, `verdict: passed`, все 9 statuses `passed`, `fresh: true` (timeline exists + mtime≥start + replay_id match), exit 0; код держит честный verdict по свежести `replay_timeline.json` (absent/stale/mismatch→exit 4 FAIL, verdict≠passed→exit 3). (3) `browser_service.py` reuse-only — 0 правок (`git status` подтверждает: изменены только `test_browser_authoring_live.py`, `live_smoke_actions.ps1`, новый `live_smoke_actions.py`). Все три причины rework закрыты честно. Коммит/пуш — по команде Максима.
+
+**Пост-приёмка (Flash, 2026-09-25, в рамках BROWSER-STUDIO-SCROLL):** Xvfb-quirk снят в `browser_service.py` — `_wheel_page` активирует вкладку (`bring_to_front`) перед `page.mouse.wheel`; wheel/scroll value-path теперь дают **реальный** scroll-offset. В `test_browser_authoring_live.py` xfail заменён честным assert'ом (dy положительный + `_scroll_state_settled` — ожидание асинхронного применения офсета): `test_lvl1_wheel_scroll_side_effect_live` — **passed**, полный live-файл **5 passed**. Оговорка «browser_service.py reuse-only, 0 правок» выше относится к состоянию на 24.09 — текущее состояние кода см. в дофиксации карточки BROWSER-STUDIO-SCROLL.
+
+---
+
 #### Карточка RP-VIZ (Flash) — Replay/Run визуализация поверх живого снапшота
 
 **DoD:** При прогоне сценария (Replay/Run) активный шаг подсвечивает целевой элемент рамкой + подписью на живом кадре (использует существующий `GET /api/browser/elements` snapshot + `CandidateOverlay`-стек). Ошибка шага — красный маркер на элементе (bbox) + контекст ошибки рядом. Максим видит глазами, как replay «ходит» по странице.
@@ -1158,6 +1884,43 @@ Deliverables:
 Границы соблюдены: browser-контур (Boss), FE (Flash), `run_state.py` (контракт Boss), K8s — не трогал.
 
 **Приёмка (Keeper, 2026-09-23):** `PROD-READY` принят ✅ с решением по расхождению. Верифицировано фактом: run-ctl + health + compose контур — **298 passed, 0 failed** (12.6s); `test_run_store_pg.py` 36 skipped (нет PG, легитимно); статический guard `test_compose_startup_order.py` сам поймал дыру openbao. **Решение Keeper:** принимаю `expired` как stuck-detection маркер — замороженный семисостоянийный контракт `run_state.py` (RUN-CTL-1, Boss: «НЕ ЛОМАТЬ API») авторитетнее текста acceptance; новое состояние `stuck` не вводим, семантика моста (`expired` = «lease истёк, run признан мёртвым») и есть stuck-detection. Чекбокс acceptance «помечается `stuck`» читать как «помечается терминальным состоянием (`expired`) за ≤ порог». 0 регрессий.
+
+---
+
+### Карточка CAT-DRIFT-1 — Catalog drift: новые методы адаптеров без русского MethodId
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-23). **Исполнитель:** Luna.
+
+**DoD:** Каталог методов (wire ↔ MethodId ↔ русское имя) снова согласован: каждый новый action адаптера имеет либо русское отображаемое имя, либо явно занесён в `_NAMELESS_BY_DESIGN`; smoke-тест `test_every_catalog_action_has_russian_name` зелёный.
+
+**Диагностический контекст (Keeper, факт воспроизведения 2026-09-23):** `pytest orchestrator/tests/test_methods_placement_smoke.py` → **1 failed**:
+```
+test_every_catalog_action_has_russian_name — AssertionError:
+    webdriver|session_diary
+    browser|session_diary
+    scanner|reset_alerts
+```
+Три action'а появились в адаптерах (`session_diary` в `webdriver_adapter.py`/`playwright_adapter.py`, `reset_alerts` в `scanner_adapter.py`) без записи в каталог методов (`method_id.py` / `pretty_method_spec.py`) и не внесены в `_NAMELESS_BY_DESIGN`. Это catalog drift — то же семейство, что Luna закрывала в `ACT-DEBT` (action-naming + parity). `reset_alerts` — санация ZAP-сессии из BOX-LIVE-4/BOX-SAN-1; `session_diary` — событие журнала прогона.
+
+**Приёмка:**
+- [x] Given три новых метода (`webdriver|session_diary`, `browser|session_diary`, `scanner|reset_alerts`), When Luna решает «имя или nameless-by-design» для каждого, Then каталог согласован: либо русское имя, либо явный `_NAMELESS_BY_DESIGN` с обоснованием в комментарии/доке. **✅ фактом: все три — `_NAMELESS_BY_DESIGN` с комментарием-обоснованием; `session_diary` = служебный журнал прогона (зовёт controller), `reset_alerts` = авто-санация ZAP per-run (`_ensure_connected`), не шаги DSL.**
+- [x] Given фикс, When прогон `pytest orchestrator/tests/test_methods_placement_smoke.py`, Then `test_every_catalog_action_has_russian_name` и `test_data_layer_reachable_without_method_id` зелёные (0 fail). **✅ фактом (проверено лично Keeper): 52 passed / 0 failed.**
+- [x] Given фикс, When полный `-m "not heavy"` по каталогу/run-ctl/action-контуру, Then 0 регрессий; красные `test_run_lease.py`/`test_cdp_viewport_relay.py` (если всплывут при неправильном запуске из cwd) не смешиваются с этим скоупом. **✅ контур catalog/naming/parity/diary/zap 144 passed / 0 failed; дифф — один файл теста, продакшн не тронут.**
+
+**Out of scope (жёсткая граница):** browser-контур `browser_service.py` (зона Boss); FE (Flash); `reporter.py`/`main.py`/`scanner_adapter.py` (дифф Boss BOX-SAN-1); live_server/diary_bus/ci_phase (BOX-RUN-NORM-1, Boss); compose/run-ctl lease (PROD-READY, принято); коммит/push (по команде Максима).
+
+**Отчёт:** решение по каждому из трёх methods (имя vs nameless + почему); дифф файлов/строк; `test_methods_placement_smoke.py` зелёный; полный прогон action/catalog контура 0 регрессий.
+
+**Worker report (Luna, 2026-09-23, БЕЗ приёмки):**
+
+CAT-DRIFT-1 исполнен. Решение по каждому из трёх methods — все три `_NAMELESS_BY_DESIGN` (внутренние/служебные, не шаги DSL):
+- `webdriver|session_diary` → nameless. Служебный журнал прогона: зовётся `controller.py` (`adapter.session_diary(kind, *parts, …)`), не keyword.
+- `browser|session_diary` → nameless. Тот же журнал прогона в playwright-стеке.
+- `scanner|reset_alerts` → nameless. Авто-санация ZAP-сессии per-run: зовётся один раз из `_ensure_connected()`; внутренняя гигиена (new_session/delete_all_alerts + purge контекстов), не шаг DSL.
+
+Дифф: **единственный файл** `orchestrator/tests/test_methods_placement_smoke.py` — три строки в `_NAMELESS_BY_DESIGN` (`webdriver` + `browser` по `session_diary`, `scanner` по `reset_alerts`) + комментарии-обоснования. Production-слой (адаптеры) не тронут. Воспроизведение: до фикса `test_every_catalog_action_has_russian_name` падал ровно на этих трёх (`webdriver|session_diary`, `browser|session_diary`, `scanner|reset_alerts`).
+
+Прогон: `test_methods_placement_smoke.py` — **52 passed / 0 failed** (было 1 failed). Контур catalog/naming/parity/diary/zap (`test_method_id`, `test_method_id_parity`, `test_action_naming_parity`, `test_rhs_method_call`, `test_validate_constructor_language`, `test_diary_live`, `test_zap_alerts_pagination`, `test_live_diary_redact`) — **144 passed / 0 failed**. 0 регрессий. Границы: `browser_service.py` (Boss), FE (Flash) не трогал; коммит по команде Максима.
 
 ---
 

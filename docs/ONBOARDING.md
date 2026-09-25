@@ -11,8 +11,8 @@
 Канон стенда: глобальный skill `prettyk-lab` · правило `.opencode/rules/stand-lab-ops.mdc` · [`docs/stand.md`](stand.md).
 
 ### Команды
-- **«Стартуй всё»** → обязательный docker compose (Grid / allure3-secops / scanner demon / Juice Shop) + ensure UI + Live idle.
-- **«Почисти и стартуй»** → allure3-secops + Live (+ Dojo hint) → старт.
+- **«Стартуй всё»** → обязательный docker compose (Grid / allure3-secops / scanner demon / Juice Shop / DefectDojo) + ensure UI + Live idle.
+- **«Почисти и стартуй»** → allure3-secops + Live + DefectDojo → старт.
 - **После правок FE:** playground restart (если затронут Python API); фронтенд — ensure с телом формы.
 
 ### Адреса пультов (выдавать автоматом при старте)

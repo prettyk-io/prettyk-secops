@@ -1,0 +1,9 @@
+{
+  "name": "kdt-allure3-secops",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Opt-in Allure Report 3 Awesome generator for KDT lab",
+  "dependencies": {
+    "allure": "^3.0.0"
+  }
+}

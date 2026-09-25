@@ -193,6 +193,7 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
     resizeLeft,
     resizeRight,
     resizeBottom,
+    setRightOpen,
     setBottomTab,
     setDensity,
     setActiveCheck,
@@ -891,9 +892,12 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
   const openBrowserStudio = useCallback((record: boolean) => {
     // Остановить side-panel рекордер (иначе двойное потребление observe-очереди).
     setBrowserMode('author');
+    // BROWSER-STUDIO-2: закрыть боковую шторку с браузером — один источник
+    // правды «где живёт браузер» (полноразмерный Desk), нет двоебраузера.
+    setRightOpen(false);
     setBrowserStudioRecord(record);
     setBrowserStudioOpen(true);
-  }, []);
+  }, [setRightOpen]);
 
   const closeBrowserStudio = useCallback(() => {
     setBrowserStudioOpen(false);
@@ -1234,7 +1238,7 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
         {/* CENTER PANEL: Monaco DSL Editor */}
         <main
           data-testid="workbench-center-panel"
-          className="flex-1 flex flex-col min-w-0 bg-[#080c16] overflow-hidden"
+          className="relative flex-1 flex flex-col min-w-0 bg-[#080c16] overflow-hidden"
         >
           {/* Breadcrumb Bar */}
           <div className="h-9 px-3 border-b border-white/10 flex items-center justify-between shrink-0 bg-[#0b101c]/60">
@@ -1323,6 +1327,17 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
               <span>UTF-8</span>
             </div>
           </div>
+
+          {/* BROWSER-STUDIO-LAYOUT: студия внутри центральной панели поверх Monaco,
+              чтобы левый Explorer (workbench-left-panel) оставался видимым и интерактивным. */}
+          {browserStudioOpen && (
+            <BrowserStudioDesk
+              initialRecording={browserStudioRecord}
+              onClose={closeBrowserStudio}
+              onSaveToCurrent={saveTapeToCurrent}
+              onSaveToNewScenario={saveTapeToNewScenario}
+            />
+          )}
         </main>
 
         {/* Right Resize Splitter Handle */}
@@ -1434,15 +1449,6 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
         </div>
       )}
 
-      {/* 4. BROWSER-STUDIO-1: полноразмерная студия записи поверх Monaco */}
-      {browserStudioOpen && (
-        <BrowserStudioDesk
-          initialRecording={browserStudioRecord}
-          onClose={closeBrowserStudio}
-          onSaveToCurrent={saveTapeToCurrent}
-          onSaveToNewScenario={saveTapeToNewScenario}
-        />
-      )}
     </div>
   );
 }

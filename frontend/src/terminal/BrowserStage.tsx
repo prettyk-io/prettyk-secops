@@ -31,6 +31,9 @@ export type BrowserStageMode = 'author' | 'record' | 'debug';
 /** Стабильная ссылка на пустой массив для zustand-селекторов (useSyncExternalStore). */
 const EMPTY_STEPS: ScenarioStepModel[] = [];
 
+/** BROWSER-STUDIO-SCROLL: окно батчинга wheel-дельт (мс) — быстрый скролл не заваливает backend. */
+const WHEEL_THROTTLE_MS = 90;
+
 export interface BrowserStageProps {
   mode: BrowserStageMode;
   onModeChange: (mode: BrowserStageMode) => void;
@@ -80,6 +83,10 @@ export function BrowserStage({
   const clickMarkerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [clickMarker, setClickMarker] = useState<{ id: number; x: number; y: number } | null>(null);
 
+  // ── BROWSER-STUDIO-SCROLL: батч wheel-дельт за окно throttle ──
+  const wheelAccumRef = useRef<{ dx: number; dy: number; x: number | null; y: number | null }>({ dx: 0, dy: 0, x: null, y: null });
+  const wheelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // ── BBA-FE-4: живой overlay кандидатов observe ──
   const [candidates, setCandidates] = useState<CandidateElement[]>([]);
   const [inspectOn, setInspectOn] = useState(false);
@@ -117,8 +124,23 @@ export function BrowserStage({
 
   const liveCdp = cdpStatus?.connected ?? cdpConnected;
 
-  // VP-F1: WS canvas stream
-  const { frameInfo, framesReceived } = useBrowserCanvasStream(canvasRef, viewportRef, wsUrl, liveCdp);
+  // ── VIEWFIT-FE: удалённый viewport подгоняется под контейнер (letterbox → 0) ──
+  // Дедуп: успешно отправленный размер не дублируем; при ошибке — повторим на
+  // следующем событии (resize/подключение), деск остаётся на aspect-fit без шума.
+  const lastViewportSentRef = useRef('');
+  const handleViewportResize = useCallback((width: number, height: number) => {
+    if (!liveCdp) return;
+    const key = `${width}x${height}`;
+    if (lastViewportSentRef.current === key) return;
+    void getBrowserSession().setViewport(width, height).then((r) => {
+      if (r.ok) lastViewportSentRef.current = key;
+    });
+  }, [liveCdp]);
+
+  // VP-F1: WS canvas stream (+ VIEWFIT-FE: синк размера вьюпорта)
+  const { frameInfo, framesReceived } = useBrowserCanvasStream(
+    canvasRef, viewportRef, wsUrl, liveCdp, handleViewportResize,
+  );
 
   useEffect(() => {
     if (cdpStatus?.url) setNavUrl(cdpStatus.url);
@@ -127,6 +149,7 @@ export function BrowserStage({
   // BBA-FE-1: очистка ripple-таймера при размонтировании.
   useEffect(() => () => {
     if (clickMarkerTimerRef.current) clearTimeout(clickMarkerTimerRef.current);
+    if (wheelTimerRef.current) clearTimeout(wheelTimerRef.current);
   }, []);
 
   // ─ BBA-FE-1: клик по canvas — реальный клик (author) + observe (record) ─
@@ -160,6 +183,36 @@ export function BrowserStage({
     }
     clickLockRef.current = false;
   }, [cdpObserving, frameInfo, liveCdp]);
+
+  // ── BROWSER-STUDIO-SCROLL: flush накопленных wheel-дельт одним запросом ──
+  const flushWheel = useCallback(() => {
+    wheelTimerRef.current = null;
+    const { dx, dy, x, y } = wheelAccumRef.current;
+    wheelAccumRef.current = { dx: 0, dy: 0, x: null, y: null };
+    if (!dx && !dy) return;
+    void getBrowserSession().mouseWheel(dx, dy, x ?? undefined, y ?? undefined);
+  }, []);
+
+  // ── BROWSER-STUDIO-SCROLL: колесо над вьюпортом → скролл удалённой страницы ──
+  const handleViewportWheel = useCallback((e: React.WheelEvent<HTMLElement>) => {
+    if (!liveCdp) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const fi = frameInfo.current;
+    const frameW = fi?.frameWidth ?? 1280;
+    const frameH = fi?.frameHeight ?? 800;
+    const vp = computeCanvasClickToViewport(canvas, frameW, frameH, e.clientX, e.clientY);
+    const acc = wheelAccumRef.current;
+    acc.dx += e.deltaX;
+    acc.dy += e.deltaY;
+    if (vp) {
+      acc.x = vp.x;
+      acc.y = vp.y;
+    }
+    if (wheelTimerRef.current === null) {
+      wheelTimerRef.current = setTimeout(flushWheel, WHEEL_THROTTLE_MS);
+    }
+  }, [flushWheel, frameInfo, liveCdp]);
 
   // ── BBA-FE-4: кандидаты observe → живой overlay ──
   const loadCandidates = useCallback(async () => {
@@ -472,7 +525,12 @@ export function BrowserStage({
       </div>
 
       {/* Viewport: canvas (VP-F1) */}
-      <div ref={viewportRef} className="flex-1 min-h-0 flex items-center justify-center bg-[#080c14] relative overflow-hidden">
+      <div
+        ref={viewportRef}
+        data-testid="browser-stage-viewport"
+        className="flex-1 min-h-0 flex items-center justify-center bg-[#080c14] relative overflow-hidden"
+        onWheel={liveCdp ? handleViewportWheel : undefined}
+      >
         {!liveCdp ? (
           <div className="flex flex-col items-center gap-4 text-center px-4">
             <Monitor className="size-16 text-slate-600" />

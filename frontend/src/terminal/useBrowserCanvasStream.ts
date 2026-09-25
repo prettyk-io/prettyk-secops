@@ -9,9 +9,17 @@
  *   ResizeObserver следит за контейнером и перерисовывает fitted-размер при
  *   каждом изменении панели, даже когда страница статична и новых кадров нет.
  *
- * Использование: useBrowserCanvasStream(canvasRef, containerRef, wsUrl, connected)
+ * BROWSER-STUDIO-VIEWFIT-FE: подгонка удалённого viewport.
+ *   ResizeObserver (debounce ~300ms) сообщает актуальный размер контейнера
+ *   через `onContainerResize` — вызывающий шлёт его на POST /api/browser/viewport,
+ *   чтобы стрим пришёл 1:1 без letterbox. При `connected` — первичная синхронизация.
+ *
+ * Использование: useBrowserCanvasStream(canvasRef, containerRef, wsUrl, connected, onContainerResize?)
  */
 import { useEffect, useRef, useCallback } from 'react';
+
+/** BROWSER-STUDIO-VIEWFIT-FE: окно debounce синхронизации размера контейнера (мс). */
+export const VIEWPORT_SYNC_DEBOUNCE_MS = 300;
 
 export interface CanvasFrameInfo {
   width: number;
@@ -53,12 +61,34 @@ export function useBrowserCanvasStream(
   containerRef: React.RefObject<HTMLDivElement | null>,
   wsUrl: string,
   connected: boolean,
+  onContainerResize?: (width: number, height: number) => void,
 ): UseBrowserCanvasStreamResult {
   const frameInfo = useRef<CanvasFrameInfo>({ width: 0, height: 0, frameWidth: 1280, frameHeight: 800 });
   const framesReceived = useRef(0);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rafRef = useRef<number | null>(null);
+
+  // ── VIEWFIT-FE: debounced-синк размера контейнера ──
+  // Колбэк держим в ref: ResizeObserver создаётся один раз и не должен
+  // пересоздаваться при новом inline-колбэке на каждом рендере.
+  const viewportTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onContainerResizeRef = useRef(onContainerResize);
+  onContainerResizeRef.current = onContainerResize;
+
+  const scheduleViewportSync = useCallback(() => {
+    if (!onContainerResizeRef.current) return;
+    if (viewportTimerRef.current != null) clearTimeout(viewportTimerRef.current);
+    viewportTimerRef.current = setTimeout(() => {
+      viewportTimerRef.current = null;
+      const container = containerRef.current;
+      const report = onContainerResizeRef.current;
+      if (!container || !report) return;
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      if (width > 0 && height > 0) report(width, height);
+    }, VIEWPORT_SYNC_DEBOUNCE_MS);
+  }, [containerRef]);
 
   // ── BBA-FE-1: fitted-размер canvas под текущий контейнер ──
   const applyFit = useCallback(() => {
@@ -93,16 +123,29 @@ export function useBrowserCanvasStream(
       });
     };
 
-    const observer = new ResizeObserver(schedule);
+    const observer = new ResizeObserver(() => {
+      schedule();
+      scheduleViewportSync();
+    });
     observer.observe(container);
     schedule(); // первичная подгонка при монтировании
+    scheduleViewportSync(); // VIEWFIT-FE: первичный синк при открытии деска
 
     return () => {
       observer.disconnect();
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
+      if (viewportTimerRef.current != null) {
+        clearTimeout(viewportTimerRef.current);
+        viewportTimerRef.current = null;
+      }
     };
-  }, [containerRef, applyFit]);
+  }, [containerRef, applyFit, scheduleViewportSync]);
+
+  // ── VIEWFIT-FE: браузер подключился — сразу синхронизировать размер ──
+  useEffect(() => {
+    if (connected) scheduleViewportSync();
+  }, [connected, scheduleViewportSync]);
 
   const connect = useCallback(() => {
     if (!connected) return;

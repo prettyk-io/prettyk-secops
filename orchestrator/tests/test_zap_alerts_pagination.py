@@ -85,6 +85,55 @@ def test_reset_alerts_swallows_failure():
     assert scanner.reset_alerts() is False
 
 
+# ========== BOX-SAN-1: удаление именованных ZAP-контекстов при сбросе ==========
+
+
+def test_reset_alerts_purges_named_contexts_keeps_default():
+    scanner = ScannerAdapter.__new__(ScannerAdapter)
+    scanner._scanner = MagicMock()
+    scanner._ensure_connected = lambda: None
+    scanner.context_name = "juice_ctx"
+    contexts = ["Default Context", "juice_ctx", "other_ctx"]
+
+    def fake_list_contexts():
+        return list(contexts)
+
+    scanner.list_contexts = fake_list_contexts
+    assert scanner.reset_alerts() is True
+    # Default Context не трогаем; остальные именованные удаляем.
+    removed = [c.args[0] for c in scanner._scanner.context.remove_context.call_args_list]
+    assert removed == ["juice_ctx", "other_ctx"]
+    assert scanner.context_name is None
+
+
+def test_reset_alerts_purge_best_effort_on_list_failure():
+    scanner = ScannerAdapter.__new__(ScannerAdapter)
+    scanner._scanner = MagicMock()
+    scanner._ensure_connected = lambda: None
+    scanner.context_name = "juice_ctx"
+
+    def boom():
+        raise RuntimeError("context_list down")
+
+    scanner.list_contexts = boom
+    # list_contexts упал — это не отбрасывает сброс alerts.
+    assert scanner.reset_alerts() is True
+    scanner._scanner.context.remove_context.assert_not_called()
+    assert scanner.context_name is None
+
+
+def test_reset_alerts_fallback_purges_contexts_too():
+    scanner = ScannerAdapter.__new__(ScannerAdapter)
+    scanner._scanner = MagicMock()
+    scanner._scanner.core.new_session.side_effect = RuntimeError("unsupported")
+    scanner._ensure_connected = lambda: None
+    scanner.list_contexts = lambda: ["juice_ctx"]
+    assert scanner.reset_alerts() is True
+    # фолбэк delete_all_alerts + удаление именованного контекста.
+    scanner._scanner.core.delete_all_alerts.assert_called_once()
+    scanner._scanner.context.remove_context.assert_called_once_with("juice_ctx")
+
+
 def test_count_alerts_uses_number_of_alerts():
     scanner = ScannerAdapter.__new__(ScannerAdapter)
     scanner._scanner = MagicMock()

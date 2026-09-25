@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -76,6 +77,67 @@ def _normalize_items(raw: Any) -> List[Dict[str, Any]]:
     return out
 
 
+_LOCAL_RUN_RE = re.compile(r"^run-[0-9a-f]{12}$", re.IGNORECASE)
+
+
+def _alive_run_ids() -> set:
+    """Локальные run_id, которые считаются живыми (не мёртвые ссылки).
+
+    Живой = есть run_dir на диске (активный/недавно завершённый прогон) ЛИБО
+    в runs_index есть терминальный *реальный* итог (status=success|failed).
+    Фантомы (validate-only/stub/пустой app_code) закрываются как ``expired`` —
+    это терминально для ledger (нет «вечного running»), но НЕ является реальным
+    итогом, поэтому registry-ссылки на них считаются мёртвыми и отсекаются.
+    """
+    alive: set = set()
+    try:
+        from utils.runs_index import read_runs_index
+
+        latest: Dict[str, Dict[str, Any]] = {}
+        for rec in read_runs_index():
+            rid = rec.get("run_id")
+            if rid:
+                latest[str(rid)] = rec
+        for rid, rec in latest.items():
+            if str(rec.get("status") or "") in ("success", "failed"):
+                alive.add(rid)
+    except Exception:
+        pass
+    try:
+        from utils.paths import RUNS_DIR
+
+        runs_dir = Path(RUNS_DIR)
+        if runs_dir.is_dir():
+            alive.update(p.name for p in runs_dir.iterdir() if p.is_dir())
+    except Exception:
+        pass
+    return alive
+
+
+def _prune_dead_runs(items: List[Dict[str, Any]]) -> Tuple[List[Dict[str, Any]], int]:
+    """Отсечь мёртвые локальные ``run-*`` ссылки из runs[]. Возвращает (items, pruned)."""
+    alive = _alive_run_ids()
+    pruned = 0
+    for item in items:
+        runs = item.get("runs")
+        if not isinstance(runs, list):
+            continue
+        keep = [
+            r
+            for r in runs
+            if not (
+                isinstance(r, dict)
+                and isinstance(r.get("run_id"), str)
+                and bool(_LOCAL_RUN_RE.match(r["run_id"]))
+                and r["run_id"] not in alive
+            )
+        ]
+        pruned += len(runs) - len(keep)
+        if len(keep) != len(runs):
+            item["runs"] = keep
+    return items, pruned
+
+
 def load_checks_registry() -> Dict[str, Any]:
     """Load registry snapshot. Missing file → empty."""
     path = _ensure_registry_dir()
@@ -104,13 +166,18 @@ def load_checks_registry() -> Dict[str, Any]:
         payload["ok"] = True
         payload["warning"] = f"unsupported version {version!r}"
         return payload
-    return {
+    items = _normalize_items(data.get("items"))
+    items, pruned = _prune_dead_runs(items)
+    result = {
         "ok": True,
         "version": CHECKS_REGISTRY_VERSION,
-        "items": _normalize_items(data.get("items")),
+        "items": items,
         "saved_at": data.get("saved_at"),
         "path": str(path),
     }
+    if pruned:
+        result["pruned_dead_runs"] = pruned
+    return result
 
 
 def save_checks_registry(body: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:

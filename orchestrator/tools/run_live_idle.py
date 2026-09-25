@@ -13,7 +13,7 @@ if str(ROOT) not in sys.path:
 
 from utils.diary_bus import clear_ci_meta, set_meta
 from utils.env_dual import pk_env
-from utils.live_server import default_novnc_url, start_live_server
+from utils.live_server import default_novnc_url, live_port, start_live_server
 
 logger = logging.getLogger("orchestrator")
 
@@ -54,6 +54,15 @@ def _maybe_start_gha_poller() -> None:
 
 
 if __name__ == "__main__":
+    from utils.single_instance import AlreadyRunning, ensure_single_instance
+
+    # BOX-IDLE-NORM: refuse to start a zombie duplicate before touching meta.
+    # The real Live shell owns :8767; a duplicate would linger in the sleep loop.
+    try:
+        ensure_single_instance(live_port(), "run_live_idle")
+    except AlreadyRunning:
+        sys.exit(0)
+
     # Clean stale CI verdicts from disk before idle — otherwise Results shows old run data.
     clear_ci_meta()
     set_meta(

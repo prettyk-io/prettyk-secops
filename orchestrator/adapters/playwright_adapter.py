@@ -617,8 +617,47 @@ class PlaywrightAdapter(BaseAdapter, metaclass=_WireActionMeta):
 
     @wire_action("ЖдатьПростойСети")
     def wait_for_network_idle(self, idle_seconds=0.5, timeout=15):
-        self._ensure_page().wait_for_load_state("networkidle", timeout=float(timeout) * 1000)
-        return True
+        """
+        Ждёт, пока страница перестанет тянуть новые ресурсы.
+
+        Обоснование (BOX-GATE-NORM): native Playwright ``wait_for_load_state("networkidle")``
+        ждёт минимум 500ms с НУЛЁМ открытых сетевых соединений. SPA-цель (Juice Shop)
+        держит постоянный websocket + фоновый polling, поэтому «ноль соединений»
+        не наступает никогда → ложный таймаут → прогон уводится в ``gate: void``.
+        Метрика «сеть успокоилась» к такому SPA неприменима как предикат ноля.
+
+        Честная альтернатива (симметрична webdriver_adapter): считаем число entries в
+        Resource Timing API (``performance.getEntriesByType('resource').length``).
+        Догрузка данных SPA добавляет entries — их рост виден; а вечный websocket/keep-alive
+        entries НЕ добавляет, поэтому не мешает стабилизации. Возвращает True, когда
+        счётчик не меняется ``idle_seconds`` подряд; False по таймауту (не валит шаг —
+        это ожидание). Не маскирует реальные ошибки: невозможность прочитать тайминги
+        и неограниченный рост счётчика без стабилизации = честный False.
+        """
+        page = self._ensure_page()
+        idle_seconds = float(idle_seconds)
+        timeout = float(timeout)
+        script = "window.performance.getEntriesByType('resource').length"
+
+        deadline = time.time() + timeout
+        last_count = -1
+        stable_since = time.time()
+        while time.time() < deadline:
+            try:
+                count = int(page.evaluate(script))
+            except Exception as e:
+                logger.warning(f"wait_for_network_idle: cannot read resource timings: {e}")
+                return False
+            if count != last_count:
+                last_count = count
+                stable_since = time.time()
+            elif time.time() - stable_since >= idle_seconds:
+                logger.info(f"Network idle: {count} resources, stable {idle_seconds}s")
+                return True
+            time.sleep(0.1)
+
+        logger.warning(f"Network did not go idle within {timeout}s (resources: {last_count})")
+        return False
 
     # ========== WAIT / SLEEP ==========
 
