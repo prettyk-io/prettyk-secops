@@ -1,0 +1,435 @@
+/* KDT SecOps report chrome — dark minimal shell.
+   Keep radius small (~6px), placeholders/faint muted text, no fluff. */
+
+:root {
+  --kdt-bg: #0d1117;
+  --kdt-bg-soft: #161b22;
+  --kdt-card: #10151c;
+  --kdt-border: #334155;
+  --kdt-text: #f8fafc;
+  --kdt-muted: #94a3b8;
+  --kdt-accent: #8ab4f8;
+  --kdt-passed: #3fb950;
+  --kdt-failed: #f85149;
+  --kdt-broken: #d29922;
+  --kdt-skipped: #94a3b8;
+}
+
+body.kdt-secops {
+  margin: 0;
+  background: var(--kdt-bg);
+  color: var(--kdt-text);
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+#kdt-app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.kdt-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--kdt-border);
+  background: var(--kdt-bg-soft);
+}
+
+.kdt-header__logo {
+  height: 24px;
+  width: auto;
+  flex: 0 0 auto;
+}
+
+.kdt-header__title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.kdt-header__meta {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--kdt-muted);
+}
+
+/* SecOps Lab wordmark — зеркало cosmo/src/shell/Wordmark.tsx (.kdt-secops-mark) */
+.kdt-secops-mark {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  flex: 0 0 auto;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  line-height: 1;
+  padding: 0 6px 4px 2px;
+  margin: 0 2px;
+  transform: translateY(-1px);
+  user-select: none;
+}
+
+.kdt-secops-mark-bracket {
+  margin-right: 5px;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  user-select: none;
+}
+
+.kdt-secops-mark-sec {
+  color: #f8fafc;
+  user-select: none;
+}
+
+.kdt-secops-mark-ops {
+  color: #8ab4f8;
+  user-select: none;
+}
+
+.kdt-secops-mark-lab {
+  color: #f8fafc;
+  margin-left: 6px;
+  user-select: none;
+}
+
+.kdt-secops-mark-bar {
+  position: absolute;
+  bottom: 0;
+  left: 2px;
+  right: 2px;
+  height: 2px;
+  border-radius: 1px;
+  background: linear-gradient(
+    90deg,
+    #8ab4f8 0%,
+    #8ab4f8 65%,
+    #334155 65%,
+    #334155 80%,
+    #8ab4f8 80%,
+    #8ab4f8 100%
+  );
+}
+
+.kdt-secops-mark--has-lab .kdt-secops-mark-bar {
+  background: linear-gradient(
+    90deg,
+    #8ab4f8 0%,
+    #8ab4f8 44%,
+    #334155 44%,
+    #334155 52%,
+    #8ab4f8 52%,
+    #8ab4f8 100%
+  );
+}
+
+.kdt-main {
+  flex: 1;
+  padding: 20px;
+  max-width: 1200px;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 auto;
+}
+
+.kdt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.kdt-card {
+  background: var(--kdt-card);
+  border: 1px solid var(--kdt-border);
+  border-radius: 6px;
+  padding: 12px 14px;
+}
+
+.kdt-card__value {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.kdt-card__label {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--kdt-muted);
+}
+
+.kdt-card--passed .kdt-card__value { color: var(--kdt-passed); }
+.kdt-card--failed .kdt-card__value { color: var(--kdt-failed); }
+.kdt-card--broken .kdt-card__value { color: var(--kdt-broken); }
+.kdt-card--skipped .kdt-card__value { color: var(--kdt-skipped); }
+.kdt-card--retries .kdt-card__value { color: var(--kdt-muted); }
+
+.kdt-panel {
+  background: var(--kdt-card);
+  border: 1px solid var(--kdt-border);
+  border-radius: 6px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.kdt-panel__title {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--kdt-muted);
+  margin-bottom: 10px;
+}
+
+.kdt-cat {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.6);
+  font-size: 13px;
+}
+
+.kdt-cat:last-child { border-bottom: none; }
+
+.kdt-cat__name { color: var(--kdt-text); }
+.kdt-cat__count { color: var(--kdt-failed); font-weight: 600; }
+
+.kdt-gate {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.kdt-gate--ok { background: rgba(63, 185, 80, 0.12); color: var(--kdt-passed); }
+.kdt-gate--bad { background: rgba(248, 81, 73, 0.12); color: var(--kdt-failed); }
+
+.kdt-var {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+}
+
+.kdt-var:last-child { border-bottom: none; }
+.kdt-var__name { color: var(--kdt-muted); }
+.kdt-var__value { color: var(--kdt-text); font-family: ui-monospace, "JetBrains Mono", monospace; }
+
+.kdt-statrow {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 13px;
+}
+
+.kdt-statrow__name { color: var(--kdt-muted); }
+.kdt-statrow__value { color: var(--kdt-text); }
+
+.kdt-muted { color: var(--kdt-muted); font-size: 13px; }
+
+/* Full report link — keep awesome SPA available */
+.kdt-open-report {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  padding: 8px 14px;
+  background: var(--kdt-card);
+  border: 1px solid var(--kdt-border);
+  border-radius: 6px;
+  color: var(--kdt-accent);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.kdt-open-report:hover {
+  background: var(--kdt-bg-soft);
+  border-color: var(--kdt-accent);
+  text-decoration: none;
+}
+
+/* Back to overview button in full SPA view */
+.kdt-back-to-overview {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--kdt-card, #1e293b);
+  border: 1px solid var(--kdt-border, #334155);
+  border-radius: 6px;
+  color: var(--kdt-accent, #8ab4f8);
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.kdt-back-to-overview:hover {
+  background: var(--kdt-bg-soft, #1e293b);
+  border-color: var(--kdt-accent, #8ab4f8);
+  color: var(--kdt-text, #f8fafc);
+}
+
+/* Hide broken fallback img if any logo in web-awesome tries to render missing img */
+img[alt="repor"], img[alt="report logo"], img[alt="logo"] {
+  display: none !important;
+}
+
+@media (max-width: 640px) {
+  .kdt-header__meta { display: none; }
+  .kdt-main { padding: 12px; }
+}
+
+/* ── История запусков ── */
+.kdt-history-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.kdt-history-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 0;
+}
+
+.kdt-history-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.kdt-history-dot--passed { background: var(--kdt-passed); }
+.kdt-history-dot--failed { background: var(--kdt-failed); }
+.kdt-history-dot--muted  { background: var(--kdt-muted); }
+
+.kdt-history-item {
+  font-size: 12px;
+  font-weight: 600;
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  color: var(--kdt-accent);
+  text-decoration: none;
+  border-bottom: 1px dashed transparent;
+  transition: border-color 120ms ease;
+}
+
+.kdt-history-item:hover {
+  border-bottom-color: var(--kdt-accent);
+}
+
+.kdt-history-item + .kdt-history-label {
+  margin-left: 2px;
+}
+
+.kdt-history-label {
+  font-size: 11px;
+  color: var(--kdt-muted);
+  white-space: nowrap;
+}
+
+/* ── Кликабельная категория ── */
+.kdt-cat__link {
+  color: var(--kdt-text);
+  text-decoration: none;
+  transition: color 120ms ease;
+}
+
+.kdt-cat__link:hover {
+  color: var(--kdt-accent);
+}
+
+/* ── App-дашборд (secops-overview-app.js) ── */
+.kdt-app-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.kdt-app-card {
+  background: var(--kdt-card);
+  border: 1px solid var(--kdt-border);
+  border-radius: 6px;
+  padding: 14px 16px;
+}
+
+.kdt-app-card__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--kdt-text);
+  margin-bottom: 8px;
+}
+
+.kdt-app-card__url {
+  font-size: 12px;
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  color: var(--kdt-muted);
+  margin-bottom: 10px;
+  word-break: break-all;
+}
+
+.kdt-app-instance {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-top: 1px solid rgba(51, 65, 85, 0.5);
+  font-size: 13px;
+}
+
+.kdt-app-instance:first-child {
+  border-top: none;
+}
+
+.kdt-app-instance-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.kdt-app-instance-dot--success { background: var(--kdt-passed); }
+.kdt-app-instance-dot--failed  { background: var(--kdt-failed); }
+.kdt-app-instance-dot--running { background: var(--kdt-accent); }
+
+.kdt-app-instance-id {
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  color: var(--kdt-text);
+  font-size: 12px;
+}
+
+.kdt-app-instance-date {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--kdt-muted);
+}
+
+.kdt-app-instance-link {
+  color: var(--kdt-accent);
+  text-decoration: none;
+  font-size: 12px;
+  transition: opacity 120ms ease;
+}
+
+.kdt-app-instance-link:hover {
+  opacity: 0.8;
+}

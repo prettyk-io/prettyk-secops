@@ -162,3 +162,8 @@ frontend/playwright-report/
 
 # LLM model (QWEN3-ALERT-ASSISTANT) — 1.2GB, не коммитить
 services/llm-model/*.gguf
+
+# allure3-secops: вендоренный форк kdt-plugin-awesome/dist — НУЖЕН Dockerfile COPY
+# (сборка из чистого клона), несмотря на глобальный dist/
+!services/allure3-secops/packages/kdt-plugin-awesome/dist/
+!services/allure3-secops/packages/kdt-plugin-awesome/dist/**
