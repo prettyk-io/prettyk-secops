@@ -44,8 +44,28 @@ def test_read_and_filter_journal(tmp_path: Path):
     journal = build_journal_from_export(nd, preset="errors", run_id="r1")
     assert journal["kind"] == "pk_run_journal"
     assert journal["run_id"] == "r1"
-    assert journal["events_shown"] == 2
-    assert journal["counts"]["HIGH"] == 1
+    # MONITOR-LIVE-DEEPLINK: legacy-экспорт без run_id + strict run-фильтр —
+    # unscoped-события НЕ подмешиваются в snapshot рана.
+    assert journal["events_shown"] == 0
+
+    strict = tmp_path / "run-strict.ndjson"
+    strict.write_text(
+        "\n".join(
+            json.dumps(r)
+            for r in [
+                {"ts": 1, "kind": "HIGH", "channel": "scanner", "text": "own", "run_id": "r1"},
+                {"ts": 2, "kind": "ERROR", "channel": "diary", "text": "unscoped"},
+                {"ts": 3, "kind": "HIGH", "channel": "scanner", "text": "foreign", "run_id": "r2"},
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    strict_journal = build_journal_from_export(strict, preset="errors", run_id="r1")
+    assert strict_journal["events_shown"] == 1
+    assert [e["text"] for e in strict_journal["events"]] == ["own"]
+    assert all(e.get("run_id") == "r1" for e in strict_journal["events"])
+    assert strict_journal["counts"]["HIGH"] == 1
 
 
 def test_missing_export():

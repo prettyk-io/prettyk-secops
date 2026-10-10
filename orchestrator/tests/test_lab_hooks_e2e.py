@@ -18,6 +18,7 @@ import pytest
 FIX = Path(__file__).resolve().parents[1] / "fixtures" / "validate_ok.json"
 PLAY = "http://127.0.0.1:8765"
 LIVE = "http://127.0.0.1:8767"
+SCANNER_RESULTS = Path(__file__).resolve().parents[2] / "reports" / "scanner-results"
 
 
 def _http_json(method: str, url: str, body: dict | None = None, timeout: float = 10):
@@ -111,23 +112,37 @@ def test_e2e_start_clears_then_finalize_hooks():
         pytest.fail(f"run {run_id} did not finish")
 
     deadline = time.time() + 60
-    allure_url = dojo_url = None
+    hooks: dict = {}
+    allure_url = None
     while time.time() < deadline:
         _, hooks = _http_json("GET", f"{LIVE}/api/results/hooks")
         a = hooks.get("allure") or {}
-        d = hooks.get("dojo") or {}
         allure_url = a.get("report_url") if isinstance(a, dict) else None
-        dojo_url = d.get("report_url") if isinstance(d, dict) else None
-        if allure_url and dojo_url:
+        if allure_url:
             break
         time.sleep(1)
+
+    assert allure_url, f"allure hook не восстановлен: {hooks}"
+    time.sleep(2)  # finalize дописывает dojo/scanner хуки
+    _, hooks = _http_json("GET", f"{LIVE}/api/results/hooks")
+    d = hooks.get("dojo") or {}
+    dojo_url = d.get("report_url") if isinstance(d, dict) else None
+
+    # BOX-SAN fail-closed: прогон без scanner XML (validate-only) не импортируется
+    # в DefectDojo → dojo-хука нет by design; при наличии XML — хук обязателен.
+    xml_present = any(SCANNER_RESULTS.glob("*.xml"))
+    if xml_present:
+        assert dojo_url, f"scanner XML есть, а dojo hook не восстановлен: {hooks}"
     else:
-        pytest.fail(f"hooks not restored: allure={allure_url!r} dojo={dojo_url!r}")
+        assert dojo_url is None, f"scanner XML нет, а dojo hook есть: {dojo_url!r}"
 
     assert allure_url.startswith("http://127.0.0.1:5050"), allure_url
     assert "allure-docker-service" not in allure_url
-    assert allure_url.rstrip("/").endswith("5050") or "/5050/" in allure_url + "/"
-    assert dojo_url.startswith("http://127.0.0.1:8081/"), dojo_url
-    assert "engagement" in dojo_url
+    # Канон движка 3: базовый :5050/ или per-project /projects/<id>/reports/latest/
+    # (legacy-форма «/5050/» больше не существует).
+    assert allure_url.rstrip("/").endswith("5050") or "/reports/latest/" in allure_url, allure_url
     assert "stale=1" not in allure_url
-    assert "/engagement/999" not in dojo_url
+    if dojo_url:
+        assert dojo_url.startswith("http://127.0.0.1:8081/"), dojo_url
+        assert "engagement" in dojo_url
+        assert "/engagement/999" not in dojo_url

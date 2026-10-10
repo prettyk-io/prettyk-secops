@@ -30,6 +30,26 @@ def test_parse_caller_and_matrix():
     assert may_view_owner(caller="debug", owner="legacy")
 
 
+def test_parse_caller_user_loopback_fallback(monkeypatch):
+    """MONITOR-ACL-IDENTITY: loopback без явной identity → локальная (admin)."""
+    monkeypatch.delenv("PK_LIVE_LOCAL_IDENTITY", raising=False)
+    # loopback — прозрачная локальная identity
+    assert parse_caller_user({}, peer_host="127.0.0.1") == "admin"
+    assert parse_caller_user({}, peer_host="::1") == "admin"
+    # явная identity всегда главнее fallback
+    assert parse_caller_user({"X-PK-User": "debug"}, peer_host="127.0.0.1") == "debug"
+    assert parse_caller_user({"Cookie": "pk_user=alice"}, peer_host="127.0.0.1") == "alice"
+    # НЕ loopback — ACL не ослабляем
+    assert parse_caller_user({}, peer_host="10.0.0.5") is None
+    # без peer_host (старые вызывающие) — прежнее поведение
+    assert parse_caller_user({}) is None
+
+
+def test_parse_caller_user_local_identity_env(monkeypatch):
+    monkeypatch.setenv("PK_LIVE_LOCAL_IDENTITY", "appsec-expert")
+    assert parse_caller_user({}, peer_host="127.0.0.1") == "appsec-expert"
+
+
 def test_redact_and_filter():
     meta = redact_meta_for_caller(
         {"owner_user_id": "admin", "novnc_url": "http://n", "hooks": {"allure_report_url": "http://a"}},

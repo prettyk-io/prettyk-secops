@@ -23,6 +23,10 @@ VP-B1: Async CDP Screencast Relay.
    (Runtime.evaluate → window.innerWidth/Height) и при расхождении с текущим
    кадром форсит свежий кадр Page.captureScreenshot — кадр нового размера
    доезжает до клиентов без repaint страницы и без чужой sync-сессии воркера.
+7. RELAY-STALE-WATCHDOG: свежесть стрима под контролем — все CDP-вызовы цикла
+   под таймаутом (зависший вызов на мёртвой сессии не морозит watchdog),
+   молчание кадров при живых клиентах лечится heartbeat-кадром и stop/start
+   screencast на месте, долгие сбои — реконнектом.
 
 Архитектурное решение: отдельный asyncio event loop, не разделяющий поток
 с синхронным _BrowserWorker. Эвакуация screencast из sync-контура в async.
@@ -111,6 +115,13 @@ class CdpViewportRelay:
         self._page: Optional[AsyncPage] = None
         self._browser_connected: bool = False
         self._shutting_down: bool = False
+        # RELAY-STALE-WATCHDOG: часы свежести стрима (monotonic, сек).
+        # _last_push_ts — любой push в _latest (screencast | watchdog-heartbeat);
+        # _last_screencast_ts — только screencast-кадры (для «мёртв ли screencast»);
+        # _last_screencast_restart_ts — cooldown stop/start-лечения.
+        self._last_push_ts: float = 0.0
+        self._last_screencast_ts: float = 0.0
+        self._last_screencast_restart_ts: float = 0.0
 
     # ── Public API ──
 
@@ -165,16 +176,24 @@ class CdpViewportRelay:
                 logger.warning("Reconnect attempt failed, will retry in 5s")
 
     async def _teardown_browser(self) -> None:
-        """Закрыть текущий browser/session перед переподключением."""
+        """Закрыть текущий browser/session перед переподключением.
+
+        RELAY-STALE-WATCHDOG: detach/close — под таймаутом; зависший на мёртвой
+        сессии await здесь заморозил бы reconnect-дог навсегда.
+        """
         if self._cdp_session:
             try:
-                await self._cdp_session.detach()
+                await asyncio.wait_for(
+                    self._cdp_session.detach(), timeout=self._CDP_CALL_TIMEOUT_SEC
+                )
             except Exception:
                 pass
             self._cdp_session = None
         if self._browser:
             try:
-                await self._browser.close()
+                await asyncio.wait_for(
+                    self._browser.close(), timeout=self._CDP_CALL_TIMEOUT_SEC
+                )
             except Exception:
                 pass
             self._browser = None
@@ -186,12 +205,16 @@ class CdpViewportRelay:
         self._shutting_down = True
         if self._cdp_session:
             try:
-                await self._cdp_session.detach()
+                await asyncio.wait_for(
+                    self._cdp_session.detach(), timeout=self._CDP_CALL_TIMEOUT_SEC
+                )
             except Exception:
                 pass
         if self._browser:
             try:
-                await self._browser.close()
+                await asyncio.wait_for(
+                    self._browser.close(), timeout=self._CDP_CALL_TIMEOUT_SEC
+                )
             except Exception:
                 pass
         self._browser_connected = False
@@ -258,6 +281,9 @@ class CdpViewportRelay:
                     or SCREENCAST_MAX_HEIGHT
                 )
                 self._latest_dpr = float(metadata.get("deviceScaleFactor", 1.0))
+                now = time.monotonic()
+                self._last_push_ts = now
+                self._last_screencast_ts = now
 
                 session_id = params.get("sessionId", 0)
                 if session_id:
@@ -267,19 +293,13 @@ class CdpViewportRelay:
 
         cdp.on("Page.screencastFrame", _on_frame)
 
-        await cdp.send(
-            "Page.startScreencast",
-            {
-                "format": "jpeg",
-                "quality": 80,
-                "maxWidth": SCREENCAST_MAX_WIDTH,
-                "maxHeight": SCREENCAST_MAX_HEIGHT,
-                "everyNthFrame": 1,
-            },
-        )
+        await cdp.send("Page.startScreencast", self._screencast_params())
+        clock = time.monotonic()
+        self._last_push_ts = clock
+        self._last_screencast_ts = clock
         logger.info("Screencast started via CDP session")
 
-    # ── VIEWPORT SYNC (RELAY-FRAME) ──
+    # ── VIEWPORT SYNC + STALE WATCHDOG (RELAY-FRAME / RELAY-STALE-WATCHDOG) ──
 
     # Период сверки вьюпорта своей CDP-сессией: кадр нового размера должен
     # доехать до клиентов ≤1s после POST /api/browser/viewport.
@@ -288,22 +308,35 @@ class CdpViewportRelay:
     # screencast умер, а _browser_connected остался True — тогда reconnect-дог
     # только по флагу никогда не сработает).
     _VIEWPORT_FAILS_TO_RECONNECT = 4
+    # RELAY-STALE-WATCHDOG: все CDP-вызовы цикла — под таймаутом, иначе
+    # зависший Runtime.evaluate намертво морозит sync-loop (клиенты видят один
+    # старый кадр, никаких логов/эскалации — «relay залип»).
+    _CDP_CALL_TIMEOUT_SEC = float(os.environ.get("PK_RELAY_CDP_TIMEOUT_SEC", "5"))
+    # Молчание кадров при живых клиентах дольше этого = stale → heartbeat.
+    _STREAM_STALE_SEC = float(os.environ.get("PK_RELAY_STALE_SEC", "6"))
+    # Cooldown stop/start-лечения screencast (не чаще раза в N сек).
+    _SCREENCAST_RESTART_COOLDOWN_SEC = float(
+        os.environ.get("PK_RELAY_RESTART_COOLDOWN_SEC", "30")
+    )
 
     async def _viewport_sync_loop(self) -> None:
-        """RELAY-FRAME: relay — единый источник свежего кадра.
+        """RELAY-FRAME + RELAY-STALE-WATCHDOG: relay — единый источник кадра.
 
         Resize viewport сам по себе не рождает ``Page.screencastFrame``
         (композитор молчит на статичной странице), а nudge воркера идёт через
         ЧУЖУЮ sync-сессию (browser_service) и до screencast-сессии relay не
         доезжает. Поэтому периодически сверяем размер вьюпорта СВОЕЙ сессией
-        и при расхождении с текущим кадром форсим ``Page.captureScreenshot``
-        на той же сессии, что и screencast.
+        и при расхождении с текущим кадром форсим ``Page.captureScreenshot``.
+
+        Плюс watchdog: если у клиентов давно нет кадров — форсим heartbeat-кадр
+        и при явной смерти screencast перезапускаем его (см. ``_heal_stale_stream``).
         """
         fails = 0
         while not self._shutting_down:
             await asyncio.sleep(self._VIEWPORT_POLL_INTERVAL)
             try:
                 await self._capture_if_resized()
+                await self._heal_stale_stream()
                 fails = 0
             except Exception:
                 # CancelledError (BaseException) не ловим — loop умирает только
@@ -317,39 +350,138 @@ class CdpViewportRelay:
                     self._browser_connected = False
                     fails = 0
 
-    async def _capture_if_resized(self) -> None:
-        """Сверить window.innerWidth/Height и при расхождении пушить свежий кадр."""
-        if not self._browser_connected or self._cdp_session is None:
-            return
-        res = await self._cdp_session.send(
-            "Runtime.evaluate",
-            {
-                "expression": "window.innerWidth + ',' + window.innerHeight",
-                "returnByValue": True,
-            },
+    async def _read_viewport(self) -> tuple[int, int] | None:
+        """CSS-размер вьюпорта своей сессией (под таймаутом; None — не прочитался)."""
+        res = await asyncio.wait_for(
+            self._cdp_session.send(
+                "Runtime.evaluate",
+                {
+                    "expression": "window.innerWidth + ',' + window.innerHeight",
+                    "returnByValue": True,
+                },
+            ),
+            timeout=self._CDP_CALL_TIMEOUT_SEC,
         )
         raw = ((res or {}).get("result") or {}).get("value") or ""
         try:
             w_str, h_str = str(raw).split(",", 1)
             w, h = int(w_str), int(h_str)
         except ValueError:
-            return
+            return None
         if w <= 0 or h <= 0:
+            return None
+        return (w, h)
+
+    async def _capture_jpeg(self) -> bytes | None:
+        """Свежий кадр на своей сессии (под таймаутом)."""
+        shot = await asyncio.wait_for(
+            self._cdp_session.send(
+                "Page.captureScreenshot",
+                {"format": "jpeg", "quality": 80, "captureBeyondViewport": False},
+            ),
+            timeout=self._CDP_CALL_TIMEOUT_SEC,
+        )
+        data_b64 = (shot or {}).get("data") or ""
+        return base64.b64decode(data_b64) if data_b64 else None
+
+    def _push_frame(self, jpeg: bytes, width: int, height: int) -> None:
+        """Опубликовать кадр клиентам и обновить часы свежести."""
+        self._latest.push(jpeg, {})
+        self._latest_width = width
+        self._latest_height = height
+        self._last_push_ts = time.monotonic()
+
+    async def _capture_if_resized(self) -> None:
+        """Сверить window.innerWidth/Height и при расхождении пушить свежий кадр."""
+        if not self._browser_connected or self._cdp_session is None:
             return
+        dims = await self._read_viewport()
+        if dims is None:
+            return
+        w, h = dims
         jpeg, _seq = self._latest.snapshot()
         if jpeg is not None and (w, h) == (self._latest_width, self._latest_height):
             return  # кадр уже актуального размера
-        shot = await self._cdp_session.send(
-            "Page.captureScreenshot",
-            {"format": "jpeg", "quality": 80, "captureBeyondViewport": False},
-        )
-        data_b64 = (shot or {}).get("data") or ""
-        if not data_b64:
+        new_jpeg = await self._capture_jpeg()
+        if new_jpeg is None:
             return
-        self._latest.push(base64.b64decode(data_b64), {})
-        self._latest_width = w
-        self._latest_height = h
+        self._push_frame(new_jpeg, w, h)
         logger.info("viewport sync: pushed fresh frame %sx%s", w, h)
+
+    async def _heal_stale_stream(self) -> None:
+        """RELAY-STALE-WATCHDOG: клиенты есть, а кадры молчат — лечим.
+
+        1) Heartbeat: форсим кадр тем же CDP-путём — клиент видит свежий кадр,
+           даже если screencast «умер» (сессия и страница живы).
+        2) Если контент изменился, а screencast-кадров нет — stop/start
+           screencast на своей сессии (лечение мёртвого screencast).
+
+        Все CDP-вызовы под wait_for: зависшая сессия не морозит цикл, а
+        эскалируется счётчиком fails (→ reconnect-дог).
+        """
+        if not self._clients or not self._browser_connected or self._cdp_session is None:
+            return
+        now = time.monotonic()
+        if (now - self._last_push_ts) < self._STREAM_STALE_SEC:
+            return
+        dims = await self._read_viewport()
+        if dims is None:
+            return
+        w, h = dims
+        jpeg = await self._capture_jpeg()
+        if jpeg is None:
+            return
+        prev_jpeg, _seq = self._latest.snapshot()
+        changed = prev_jpeg != jpeg
+        self._push_frame(jpeg, w, h)
+        # Свежий now ПОСЛЕ publish: пока делали capture, мог прийти screencast-кадр
+        # (тогда «молчание» маленькое и restart не нужен).
+        after = time.monotonic()
+        screencast_silent = max(0.0, after - self._last_screencast_ts)
+        logger.info(
+            "stale stream: watchdog frame %sx%s (clients=%d screencast_silent=%.0fs changed=%s)",
+            w,
+            h,
+            len(self._clients),
+            screencast_silent,
+            changed,
+        )
+        if (
+            changed
+            and screencast_silent >= self._STREAM_STALE_SEC
+            and (after - self._last_screencast_restart_ts) >= self._SCREENCAST_RESTART_COOLDOWN_SEC
+        ):
+            await self._restart_screencast()
+
+    @staticmethod
+    def _screencast_params() -> dict:
+        return {
+            "format": "jpeg",
+            "quality": 80,
+            "maxWidth": SCREENCAST_MAX_WIDTH,
+            "maxHeight": SCREENCAST_MAX_HEIGHT,
+            "everyNthFrame": 1,
+        }
+
+    async def _restart_screencast(self) -> None:
+        """RELAY-STALE-WATCHDOG: stop/start screencast на СВОЕЙ CDP-сессии.
+
+        Обработчик кадров уже навешен на сессию — повторно ``.on`` не
+        регистрируем (иначе каждый кадр обрабатывался бы дважды).
+        """
+        self._last_screencast_restart_ts = time.monotonic()
+        try:
+            await asyncio.wait_for(
+                self._cdp_session.send("Page.stopScreencast"),
+                timeout=self._CDP_CALL_TIMEOUT_SEC,
+            )
+        except Exception:
+            logger.debug("screencast restart: stop failed", exc_info=True)
+        await asyncio.wait_for(
+            self._cdp_session.send("Page.startScreencast", self._screencast_params()),
+            timeout=self._CDP_CALL_TIMEOUT_SEC,
+        )
+        logger.warning("stale screencast: restarted (stop/start on same session)")
 
     # ── WebSocket server ──
 

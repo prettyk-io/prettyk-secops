@@ -71,7 +71,10 @@ def test_reject_absolute_host_in_args():
 
 def test_resolve_grpc_module_cascade():
     if not PROTO_PACK.is_dir() or not any(PROTO_PACK.rglob("*.proto")):
-        pytest.skip("lab proto_pack missing")
+        pytest.skip(
+            "pk-api-lab proto_pack not provisioned in repo (external opt-in, "
+            "see services/pk-api-lab/README.md)"
+        )
     m = _Wired()
     resolved = resolve_grpc_module(m, "bank_grpc", wired_dir=str(ROOT))
     assert resolved.from_module

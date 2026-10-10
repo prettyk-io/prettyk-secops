@@ -191,11 +191,11 @@ class TestPW_C1_Cutover:
     def test_compose_has_playwright(self):
         assert "playwright-authoring:" in COMPOSE_FILE.read_text(encoding="utf-8")
 
-    def test_default_runtime_is_playwright(self):
-        """PW-C1 (cutover): дефолт — playwright. Читает реальный resolve_browser_runtime,
-        не хардкод `or "playwright"`."""
+    def test_default_runtime_is_selenium(self):
+        """RUNTIME-UN-CUTOVER-GRID-WEBM: дефолт — selenium (боевой Grid);
+        playwright — за явным флагом PK_BROWSER_RUNTIME=playwright."""
         from core.controller import resolve_browser_runtime
-        assert resolve_browser_runtime() == "playwright"
+        assert resolve_browser_runtime() == "selenium"
 
     def test_pw_adapter_importable(self):
         from adapters.playwright_adapter import PlaywrightAdapter

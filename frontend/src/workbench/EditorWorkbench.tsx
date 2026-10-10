@@ -67,6 +67,10 @@ import { studioTabWireDiagnostics } from '../studio/studioDiagnostics';
 import { flashDiscoveredLine } from '../monaco/discoveredPulse';
 import { VALIDATE_CONSTRUCTOR_COMMAND_ID } from '../monaco/scenarioValidateCodeLens';
 import { applySugarDiagnostics } from '../monaco/MonacoDiagnostics';
+import {
+  clearGateMarkersForModel,
+  setActiveGateModel,
+} from '../monaco/penguinDiagnosticsGate';
 import { getActiveCheckId, getCheck } from '../checks/checksStore';
 import { parseWired } from '../wired/parse';
 import {
@@ -79,6 +83,15 @@ import {
   resolveNeighborDslTab,
 } from '../wired/wiredDslCodec';
 import { StudioExplorer } from '../studio/StudioExplorer';
+import { FuzzerForm } from '../studio/FuzzerForm';
+import { ResourceFormPanel } from '../studio/ResourceFormPanel';
+import {
+  isFormSurfaceTabId,
+  resolveStudioFormSurface,
+} from '../studio/studioFormSurface';
+import { updateFuzzer, type FuzzerPatch } from '../studio/studioFuzzers';
+import { updateResource, type ResourceFields } from '../studio/studioResources';
+import { renameContentKey } from '../studio/resourceContents';
 import { collectStudioNodes, findNodeByTabId, tabFromNode } from '../studio/collectStudioNodes';
 import type { StudioTabId } from '../studio/studioTabs';
 import { BrowserStage, type BrowserStageMode } from '../terminal/BrowserStage';
@@ -503,6 +516,48 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
     return findNodeByTabId(collectStudioNodes(formData), studioSelection)?.title ?? null;
   }, [controlled, formData, studioSelection]);
 
+  /* ── STUDIO-FUZZER-FORM-SURFACE (Editor): фаззер/ресурс в Редакторе
+     рендерится той же формой, что и каноническая Студия (а не заглушкой
+     «открой в Студии»). Резолвер и патч-хелперы — общие с Studio. ── */
+  const formSurface = useMemo(() => {
+    if (!controlled || !formData) return null;
+    return resolveStudioFormSurface(formData, studioSelection);
+  }, [controlled, formData, studioSelection]);
+
+  const wantsFormSurface = isFormSurfaceTabId(studioSelection);
+
+  const patchFuzzer = useCallback(
+    (patch: FuzzerPatch) => {
+      if (!formSurface || formSurface.kind !== 'fuzzer' || !formData || !onFormDataChange) return;
+      const next = updateFuzzer(formData, formSurface.index, patch);
+      if (next !== undefined) onFormDataChange(next);
+    },
+    [formSurface, formData, onFormDataChange],
+  );
+
+  const patchResource = useCallback(
+    (patch: { path?: string; kind?: ResourceFields['kind']; as?: string; import_paths?: string[] }) => {
+      if (!formSurface || formSurface.kind !== 'resource' || !formData || !onFormDataChange) return;
+      const prevAs = formSurface.value.as;
+      const next = updateResource(formData, formSurface.index, patch);
+      if (next === undefined) return;
+      onFormDataChange(next);
+      const nextAs = (patch.as ?? prevAs).trim();
+      if (patch.as !== undefined && prevAs && nextAs && prevAs !== nextAs) {
+        onResourceContentsChange?.(renameContentKey(resourceContents ?? {}, prevAs, nextAs));
+      }
+    },
+    [formSurface, formData, onFormDataChange, resourceContents, onResourceContentsChange],
+  );
+
+  const setResourceContent = useCallback(
+    (text: string) => {
+      if (!formSurface || formSurface.kind !== 'resource' || !formSurface.value.as) return;
+      onResourceContentsChange?.({ ...(resourceContents ?? {}), [formSurface.value.as]: text });
+    },
+    [formSurface, resourceContents, onResourceContentsChange],
+  );
+
   /* ── Load active check metadata from checksStore ── */
   useEffect(() => {
     const targetId = checkId || getActiveCheckId();
@@ -572,6 +627,7 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
     // B4: применить живую диагностику при mount
     const model = editorInstance.getModel();
     if (model) {
+      setActiveGateModel(model); // RUN-GATE-MARKERS: fallback-скоуп гейта (основной путь — видимые редакторы)
       applyDiagnostics(monacoInstance, model, liveDiagnostics);
       applySugarDiagnostics(monacoInstance, model); // DSL-F4
     }
@@ -594,10 +650,18 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
     const ed = editorRef.current;
     const model = ed?.getModel();
     if (ed && model) {
+      setActiveGateModel(model); // RUN-GATE-MARKERS: fallback-скоуп гейта = текущая модель
       applyDiagnostics(monaco, model, liveDiagnostics);
       applySugarDiagnostics(monaco, model); // DSL-F4
     }
   }, [liveDiagnostics, controlled]);
+
+  /* ── RUN-GATE-MARKERS: гигиена при размонтировании воркбенча ── */
+  useEffect(() => () => {
+    const model = editorRef.current?.getModel();
+    if (model) clearGateMarkersForModel(monaco, model);
+    setActiveGateModel(null);
+  }, []);
 
 /* ── WIRE-SYNC-F1: deep-link из ScenarioStepCard → Monaco линия ── */
   useEffect(() => {
@@ -1290,7 +1354,46 @@ export function EditorWorkbench(props: EditorWorkbenchProps): React.JSX.Element 
                 lineHeight: density === 'compact' ? 18 : 20,
               }}
             />
-            {controlled && nonMonacoLabel && (
+            {controlled && formSurface && (
+              <div
+                className="absolute inset-0 z-10 overflow-auto bg-[#080c16]"
+                data-testid="workbench-form-surface"
+              >
+                {formSurface.kind === 'fuzzer' ? (
+                  <FuzzerForm
+                    value={formSurface.value}
+                    formData={formData}
+                    onChange={patchFuzzer}
+                  />
+                ) : (
+                  <ResourceFormPanel
+                    as={formSurface.value.as}
+                    path={formSurface.value.path}
+                    kind={formSurface.value.kind}
+                    content={(resourceContents ?? {})[formSurface.value.as] ?? ''}
+                    importPaths={formSurface.value.import_paths || []}
+                    onPatchAs={patchResource}
+                    onContentChange={setResourceContent}
+                    onImportPathsChange={
+                      formSurface.value.kind === 'proto_pack'
+                        ? (paths) => patchResource({ import_paths: paths })
+                        : undefined
+                    }
+                  />
+                )}
+              </div>
+            )}
+            {controlled && !formSurface && wantsFormSurface && (
+              <div
+                className="absolute inset-0 z-10 flex items-center justify-center bg-[#080c16] p-4"
+                data-testid="workbench-form-surface-missing"
+              >
+                <span className="text-xs text-slate-500">
+                  Элемент не найден — выберите элемент в дереве
+                </span>
+              </div>
+            )}
+            {controlled && !formSurface && !wantsFormSurface && nonMonacoLabel && (
               <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-[#080c16] text-slate-500">
                 <FileText className="size-8 opacity-30" />
                 <p className="text-sm font-semibold text-slate-400">{nonMonacoLabel}</p>

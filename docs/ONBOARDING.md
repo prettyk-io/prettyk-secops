@@ -90,7 +90,7 @@ git diff --stat
 - Сначала определить change surface: `SERIAL`, `REFACTOR-SERIAL` или `PARALLEL`.
 - Рефакторинг существующего модуля — строго один worker-поток на модуль.
 - Одна задача = один named owner и одна copy-paste коробка. Записи `Boss + Luna` запрещены.
-- Диспетч по канону PK-DIR-006: одна строка `Worker, CARD-ID, D:\prettyk-secops\docs\backlog.md`.
+- Диспетч по канону PK-DIR-006 · PK-DIR-010: одна строка `Worker > Stream > Task-ID(s) -> D:\prettyk-secops\docs\backlog.md` (stream `SecOps`); первая строка отчёта — `Worker > SecOps`.
 - Каждый отчёт сначала закрывает done/follow-up в бэклоге, затем выдаётся следующий пакет на 20–30 часов.
 
 ---

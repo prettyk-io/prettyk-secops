@@ -18,8 +18,21 @@ import Editor from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
 import { Canvas } from "./Canvas";
 import { BrowserPanel } from "./BrowserPanel";
+import { StudioExplorer } from "./StudioExplorer";
+import { FuzzerForm } from "./FuzzerForm";
+import { ResourceFormPanel } from "./ResourceFormPanel";
+import {
+  isFormSurfaceTabId,
+  resolveStudioFormSurface,
+} from "./studioFormSurface";
+import { updateFuzzer, type FuzzerPatch } from "./studioFuzzers";
+import { updateResource, type ResourceFields } from "./studioResources";
 import { updateCheck } from "../checks/checksStore";
-import { saveResourceContents, type ResourceContentsMap } from "./resourceContents";
+import {
+  renameContentKey,
+  saveResourceContents,
+  type ResourceContentsMap,
+} from "./resourceContents";
 import { collectStudioNodes, findNodeByTabId, tabFromNode } from "./collectStudioNodes";
 import type { StudioTabId } from "./studioTabs";
 // ── B4: полноценный конструктор (PrettyK Monaco, gutter-run, diagnostics) ──
@@ -149,6 +162,65 @@ export function Studio({
     [controlled, controlledOnResourceContentsChange, checkId],
   );
 
+  // ── STUDIO-FUZZER-FORM-SURFACE: form-surface (фаззер/ресурс) в канонической
+  // Студии. Легаси-форма жила только в StudioWorkspace (studio-old) — здесь
+  // резолвим выбранную сущность и рендерим те же FuzzerForm/ResourceFormPanel.
+  const surface = useMemo(
+    () => resolveStudioFormSurface(formData, selectedTabId),
+    [formData, selectedTabId],
+  );
+  const wantsFormSurface = isFormSurfaceTabId(selectedTabId);
+
+  const patchFuzzer = useCallback(
+    (patch: FuzzerPatch) => {
+      if (surface?.kind !== "fuzzer") return;
+      const next = updateFuzzer(formData, surface.index, patch);
+      if (next !== undefined) {
+        handleFormDataChange(next);
+      }
+    },
+    [surface, formData, handleFormDataChange],
+  );
+
+  const patchResource = useCallback(
+    (patch: {
+      path?: string;
+      kind?: ResourceFields["kind"];
+      as?: string;
+      import_paths?: string[];
+    }) => {
+      if (surface?.kind !== "resource") return;
+      const prevAs = surface.value.as;
+      const next = updateResource(formData, surface.index, patch);
+      if (next === undefined) return;
+      handleFormDataChange(next);
+      const nextAs = (patch.as ?? prevAs).trim();
+      if (patch.as !== undefined && prevAs && nextAs && prevAs !== nextAs) {
+        handleResourceContentsChange(
+          renameContentKey(resourceContents, prevAs, nextAs),
+        );
+      }
+    },
+    [
+      surface,
+      formData,
+      resourceContents,
+      handleFormDataChange,
+      handleResourceContentsChange,
+    ],
+  );
+
+  const setResourceContent = useCallback(
+    (text: string) => {
+      if (surface?.kind !== "resource" || !surface.value.as) return;
+      handleResourceContentsChange({
+        ...resourceContents,
+        [surface.value.as]: text,
+      });
+    },
+    [surface, resourceContents, handleResourceContentsChange],
+  );
+
   // ── B1: честное пустое состояние (нет проверки И нет манифеста) ──
   const hasCheck = Boolean(checkId) || formData !== undefined;
   if (!hasCheck) {
@@ -173,14 +245,75 @@ export function Studio({
       {/* Глобальный header (бренд + переключение Студия/Редактор) — в App.tsx.
           Здесь — только навигация canvas: Сущности / Сценарии. */}
       <div className="flex-1 flex overflow-hidden">
+        {/* ER-1: канонический Explorer (тот же, что в Редакторе) — выбор сущностей.
+            STUDIO-FUZZER-FORM-SURFACE: без него выбор фаззера/ресурса в Студии был недостижим. */}
+        <div
+          className="shrink-0 flex flex-col overflow-hidden"
+          data-testid="studio-explorer-pane"
+          style={{ background: "#0b101c", width: 264, borderRight: "1px solid #1e293b" }}
+        >
+          <div className="flex items-center h-9 shrink-0 px-3" style={{ borderBottom: "1px solid #1e293b" }}>
+            <span className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: "#64748b" }}>
+              Explorer
+            </span>
+          </div>
+          <div className="flex-1 overflow-hidden min-h-0">
+            <StudioExplorer
+              formData={formData}
+              onFormDataChange={handleFormDataChange}
+              resourceContents={resourceContents}
+              onResourceContentsChange={handleResourceContentsChange}
+              selectedTabId={selectedTabId}
+              onSelectTab={setSelectedTabId}
+            />
+          </div>
+        </div>
         <div className="flex-1 flex flex-col overflow-hidden min-w-0" style={{ borderRight: "1px solid #1e293b" }}>
-          <Canvas counts={{
-            pages: tree.pages.length,
-            scenarios: tree.scenarios.length,
-            modules: tree.modules.length,
-            fuzzers: tree.fuzzers.length,
-            resources: tree.resources.length,
-          }} />
+          {surface ? (
+            <div className="flex-1 min-h-0 overflow-auto" data-testid="studio-form-surface">
+              {surface.kind === "fuzzer" ? (
+                <FuzzerForm
+                  value={surface.value}
+                  formData={formData}
+                  onChange={patchFuzzer}
+                />
+              ) : (
+                <ResourceFormPanel
+                  as={surface.value.as}
+                  path={surface.value.path}
+                  kind={surface.value.kind}
+                  content={resourceContents[surface.value.as] ?? ""}
+                  importPaths={surface.value.import_paths || []}
+                  onPatchAs={patchResource}
+                  onContentChange={setResourceContent}
+                  onImportPathsChange={
+                    surface.value.kind === "proto_pack"
+                      ? (paths) => patchResource({ import_paths: paths })
+                      : undefined
+                  }
+                />
+              )}
+            </div>
+          ) : wantsFormSurface ? (
+            /* Негатив: сущность удалена/не разрешается — честное «не найдено»,
+               без фантомной формы и без чужого конструктора шагов. */
+            <div
+              className="flex-1 flex items-center justify-center p-4"
+              data-testid="studio-form-surface-missing"
+            >
+              <span className="text-xs" style={{ color: "#475569" }}>
+                Элемент не найден — выберите элемент в дереве
+              </span>
+            </div>
+          ) : (
+            <Canvas counts={{
+              pages: tree.pages.length,
+              scenarios: tree.scenarios.length,
+              modules: tree.modules.length,
+              fuzzers: tree.fuzzers.length,
+              resources: tree.resources.length,
+            }} />
+          )}
         </div>
         <div className="shrink-0 flex flex-col overflow-hidden" style={{ background: "#0f172a", width: 380 }}>
           <div className="flex items-center h-9 shrink-0" style={{ borderBottom: "1px solid #1e293b" }}>

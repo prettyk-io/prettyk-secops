@@ -391,6 +391,10 @@ _NAMELESS_BY_DESIGN: Dict[str, frozenset] = {
         "stop_daemon_start_webswing",
         # reset_alerts — авто-санация ZAP-сессии per-run (из _ensure_connected), не keyword.
         "reset_alerts",
+        # SCAN-DEPTH/EXPORT helpers: harden_active_scan зовётся из scan-setup контура
+        # (_set_policy_defaults-путь), get_alerts_by_baseurl — экспорт алертов; не keyword.
+        "harden_active_scan",
+        "get_alerts_by_baseurl",
     }),
     "http": frozenset({"bind_run_wired", "set_proxy"}),
     "grpc": frozenset({"bind_run_wired", "set_proxy"}),

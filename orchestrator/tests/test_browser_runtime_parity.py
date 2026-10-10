@@ -133,17 +133,17 @@ class TestRuntimeSelection:
         monkeypatch.setenv("PK_BROWSER_RUNTIME", "selenium")
         assert resolve_browser_runtime() == "selenium"
 
-    def test_default_is_playwright(self, monkeypatch):
-        """PW-C1: без PK_BROWSER_RUNTIME дефолт — playwright (cutover выполнен)."""
+    def test_default_is_selenium(self, monkeypatch):
+        """RUNTIME-UN-CUTOVER-GRID-WEBM: без PK_BROWSER_RUNTIME дефолт — selenium (Grid)."""
         monkeypatch.delenv("PK_BROWSER_RUNTIME", raising=False)
         from core.controller import resolve_browser_runtime
-        assert resolve_browser_runtime() == "playwright"
+        assert resolve_browser_runtime() == "selenium"
 
-    def test_unknown_runtime_falls_back_to_playwright(self, monkeypatch):
-        """Неизвестное значение → playwright (fail-safe, не падаем)."""
+    def test_unknown_runtime_falls_back_to_selenium(self, monkeypatch):
+        """Неизвестное значение → selenium (боевой дефолт, fail-safe)."""
         monkeypatch.setenv("PK_BROWSER_RUNTIME", "webkit-whatever")
         from core.controller import resolve_browser_runtime
-        assert resolve_browser_runtime() == "playwright"
+        assert resolve_browser_runtime() == "selenium"
 
     def test_both_adapters_importable(self):
         from adapters.playwright_adapter import PlaywrightAdapter

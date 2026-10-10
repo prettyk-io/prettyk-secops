@@ -508,7 +508,12 @@ def export_diary_snapshot(
     preset = (filter_preset or "all").strip().lower() or "all"
     raw_events = read_file_backlog("all")
     if run_id:
-        raw_events = [e for e in raw_events if not e.get("run_id") or e.get("run_id") == run_id]
+        # MONITOR-LIVE-DEEPLINK: run-export — ТОЛЬКО события этого run.
+        # Unscoped/чужие события не подмешиваются (provenance, один ID).
+        rid = run_id.strip()
+        raw_events = [
+            e for e in raw_events if str(e.get("run_id") or "").strip() == rid
+        ]
     events = _filter_events_for_preset(raw_events, preset)
     export_dir = ensure_live_exports_dir()
     stem = _safe_export_stem(run_id)

@@ -112,3 +112,56 @@ def test_cleanup_temp_dumps(tmp_path, monkeypatch):
     assert res["deleted_count"] == 1
     assert not temp_1.exists()
     assert protected_meta.exists()
+
+
+# ── MONITOR-RETENTION-TEST-LEAK: full-wipe guard ────────────────────────────
+
+
+def test_cleanup_artifacts_refuses_full_wipe_without_confirm(tmp_path, monkeypatch):
+    """days_older_than=0 (снести всё) без allow_full_wipe → отказ, файлы живы."""
+    video_dir = tmp_path / "video"
+    video_dir.mkdir(parents=True)
+    fresh = video_dir / "fresh.mp4"
+    fresh.write_bytes(b"x")
+
+    # MONITOR-RETENTION-TEST-LEAK: все retention-каталоги — tmp (не реальные reports/).
+    monkeypatch.setattr("utils.retention_manager.VIDEO_DIR", video_dir)
+    monkeypatch.setattr("utils.retention_manager.LIVE_EXPORTS_DIR", tmp_path / "exports")
+    monkeypatch.setattr("utils.retention_manager.RUNS_DIR", tmp_path / "runs")
+
+    res = cleanup_artifacts(days_older_than=0)
+    assert res["ok"] is False
+    assert "allow_full_wipe" in str(res.get("error") or "")
+    assert fresh.exists()
+
+
+def test_cleanup_artifacts_full_wipe_with_confirm(tmp_path, monkeypatch):
+    """Явное подтверждение (allow_full_wipe=True) разрешает days=0."""
+    video_dir = tmp_path / "video"
+    video_dir.mkdir(parents=True)
+    fresh = video_dir / "fresh.mp4"
+    fresh.write_bytes(b"x")
+    old = time.time() - 10
+    os.utime(fresh, (old, old))
+
+    # MONITOR-RETENTION-TEST-LEAK: обязательная изоляция ВСЕХ каталогов —
+    # иначе allow_full_wipe=True вычищает реальные exports/runs (так и утекло).
+    monkeypatch.setattr("utils.retention_manager.VIDEO_DIR", video_dir)
+    monkeypatch.setattr("utils.retention_manager.LIVE_EXPORTS_DIR", tmp_path / "exports")
+    monkeypatch.setattr("utils.retention_manager.RUNS_DIR", tmp_path / "runs")
+
+    res = cleanup_artifacts(days_older_than=0, allow_full_wipe=True)
+    assert res["ok"] is True
+    assert res["deleted_count"] >= 1
+    assert not fresh.exists()
+
+
+def test_cleanup_artifacts_rejects_garbage_days(tmp_path, monkeypatch):
+    video_dir = tmp_path / "video"
+    video_dir.mkdir(parents=True)
+    monkeypatch.setattr("utils.retention_manager.VIDEO_DIR", video_dir)
+    monkeypatch.setattr("utils.retention_manager.LIVE_EXPORTS_DIR", tmp_path / "exports")
+    monkeypatch.setattr("utils.retention_manager.RUNS_DIR", tmp_path / "runs")
+
+    res = cleanup_artifacts(days_older_than="abc")
+    assert res["ok"] is False

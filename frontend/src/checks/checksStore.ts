@@ -388,7 +388,10 @@ export function upsertCheckRun(
           ...prevRuns[existingIdx],
           ...run,
           run_id: rid,
+          // MONITOR-FRESH-STAMP: времена жизненного цикла не теряются при merge
+          // (ref без started_at/ended_at не затирает уже штампованные).
           started_at: run.started_at ?? prevRuns[existingIdx]?.started_at,
+          ended_at: run.ended_at ?? prevRuns[existingIdx]?.ended_at,
           owner_user_id: run.owner_user_id || prevRuns[existingIdx]?.owner_user_id || owner,
         }
       : { ...run, run_id: rid, owner_user_id: owner };

@@ -9,6 +9,9 @@
 #   - authoring-браузер (Playwright + Xvfb + noVNC) с CDP :9222 и relay :9223;
 #   - тестовую цель Juice Shop на internal DNS juice-shop:3000;
 #   - demo API-lab (REST/GraphQL/gRPC) на internal DNS pk-api-lab:8090.
+#     ⚠ api-lab — внешне-провижининг: build-контекст ./pk-api-lab в репо не
+#       поставляется → docker/lab-тесты session-контура скипаются с явной
+#       причиной; см. services/pk-api-lab/README.md.
 #
 # Инварианты:
 #   - НЕТ фиксированных container_name.

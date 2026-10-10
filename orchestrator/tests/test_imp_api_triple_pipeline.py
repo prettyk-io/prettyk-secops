@@ -128,7 +128,10 @@ def test_triple_controller_pipe_dry():
     if not OAS.is_file():
         pytest.skip("OAS fixture missing")
     if not PROTO_PACK.is_dir() or not any(PROTO_PACK.rglob("*.proto")):
-        pytest.skip("lab proto_pack missing")
+        pytest.skip(
+            "pk-api-lab proto_pack not provisioned in repo (external opt-in, "
+            "see services/pk-api-lab/README.md)"
+        )
 
     wired = _bank_wired()
     scanner = ScannerAdapter.__new__(ScannerAdapter)

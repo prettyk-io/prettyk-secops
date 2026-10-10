@@ -92,6 +92,32 @@ def _resolve_admission_counts(controller, report_status: dict):
         return None, "scanner", str(exc)
 
 
+def _finalize_init_failure(reason: str) -> None:
+    """MONITOR-RUN-LIFECYCLE-ARCHIVE: ранний крах инициализации оставляет
+    честный per-run журнал (событие обрыва + экспорт) — монитор по run_id
+    не пустует, лог нужнее всего именно при падении.
+    """
+    try:
+        from utils.diary_bus import publish
+
+        publish("ERROR", f"run initialization failed: {reason}")
+    except Exception:  # noqa: BLE001 — финализация не должна падать
+        pass
+    try:
+        from utils.diary_bus import _active_run_id
+        from utils.live_server import notify_live_run_ended
+
+        notify_live_run_ended(run_id=(_active_run_id() or "").strip())
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("init-failure run_ended notify skipped: %s", exc)
+    try:
+        from utils.diary_bus import reset_run_state
+
+        reset_run_state()
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("init-failure run-state reset skipped: %s", exc)
+
+
 def main():
     parser = argparse.ArgumentParser(description="PrettyK Runner")
     parser.add_argument("--wired", required=True, help="Path to wired JSON")
@@ -121,6 +147,7 @@ def main():
     except Exception as e:
         logger.error(f"FATAL ERROR: run initialization failed: {e}")
         logger.debug(traceback.format_exc())
+        _finalize_init_failure(str(e))
         sys.exit(1)
 
     failed = False

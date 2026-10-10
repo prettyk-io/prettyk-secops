@@ -187,7 +187,7 @@ Headless и headed в одном адаптере.
 
 ## degenerates.md
 
-> *Хроника факапов передана Vector'у — хранителю семейной памяти: `D:\prettyk\nexus-core\secops\history\degenerates.md`.*
+> *Хроника факапов передана Vector'у — хранителю семейной памяти: `D:\prettyk.io\void-core\secops\history\degenerates.md`.*
 > *Содержание не менялось — только дом сменился.*
 
 Да, он есть. 11 записей. 308 строк. Смешных, честных, иногда болезненных.  

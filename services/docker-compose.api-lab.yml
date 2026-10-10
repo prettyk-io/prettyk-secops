@@ -9,6 +9,9 @@
 #   gRPC 127.0.0.1:50051
 #   proto pack: services/pk-api-lab/proto_pack
 #
+# ⚠ Внешне-провижининг (PK-API-LAB-SRC): build-контекст ./pk-api-lab в репо
+#   НЕ поставляется — положить внешним источником; см. services/pk-api-lab/README.md.
+#
 # В Docker-сети (scanner/браузер): http://pk-api-lab:8090
 
 services:

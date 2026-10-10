@@ -38,6 +38,10 @@ services:
     container_name: playwright-authoring
     restart: unless-stopped
     shm_size: 2gb
+    volumes:
+      # MONITOR-LIVE-DEEPLINK: контейнерный ffmpeg пишет запись прогона
+      # напрямую в reports/video (tom, который читает Monitor).
+      - ../reports/video:/reports/video
     ports:
       - "7902:7902"   # noVNC stream (live Chromium under Xvfb)
       - "9223:9223"   # CDP socat relay (0.0.0.0:9223 → 127.0.0.1:9222) для connect_over_cdp

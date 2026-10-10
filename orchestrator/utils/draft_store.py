@@ -45,7 +45,11 @@ def _now_iso() -> str:
 
 
 def load_draft(check_id: str) -> Optional[Dict[str, Any]]:
-    """Вернуть сохранённый DraftPayload (без служебной обёртки), или None."""
+    """Вернуть сохранённый DraftPayload (+ meta.revision из обёртки), или None.
+
+    DRAFT-CONFLICT-TRUTH: revision обязан лететь в GET — иначе свежая сессия
+    не может адоптировать серверную версию и вечно ловит 409.
+    """
     path = _draft_path(check_id)
     if not path.is_file():
         return None
@@ -58,6 +62,12 @@ def load_draft(check_id: str) -> Optional[Dict[str, Any]]:
     payload = raw.get("payload")
     if not isinstance(payload, dict):
         return None
+    revision = raw.get("revision")
+    meta = payload.get("meta")
+    if isinstance(revision, int) and isinstance(meta, dict):
+        enriched = dict(payload)
+        enriched["meta"] = {**meta, "revision": revision}
+        return enriched
     return payload
 
 

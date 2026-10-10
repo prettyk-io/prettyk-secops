@@ -218,11 +218,16 @@ class WebDriverAdapter(BaseAdapter):
 
     @staticmethod
     def _video_enabled():
-        """По умолчанию запись вкл.; явный 0/false на PK_SELENIUM_VIDEO (или legacy) — выкл."""
-        if pk_env("SELENIUM_VIDEO") is not None:
-            return _env_flag("PK_SELENIUM_VIDEO")
-        if pk_env("SELENOID_VIDEO") is not None:
-            return _env_flag("PK_SELENOID_VIDEO")
+        """По умолчанию запись вкл.; явный 0/false на PK_SELENIUM_VIDEO (или legacy) — выкл.
+
+        RUNTIME-UN-CUTOVER-GRID-WEBM: видео снова штатное (Grid sidecar).
+        ВАЖНО: pk_env возвращает "" при отсутствии ключа (не None) — проверяем
+        окружение напрямую, иначе запись молча выключалась бы всегда.
+        """
+        for key in ("PK_SELENIUM_VIDEO", "PK_SELENOID_VIDEO"):
+            raw = os.getenv(key)
+            if raw is not None:
+                return raw.strip().lower() in ("1", "true", "yes", "on")
         return True
 
     def _create_remote_driver(self, browser, headless, options):

@@ -31,6 +31,11 @@ export type CheckRunRef = {
   live_session?: string;
   /** PERS: lab owner (FE-auth user id). */
   owner_user_id?: string;
+  /**
+   * MONITOR-DEEPLINK-FRESH: чек, которому принадлежит ран (штамп при записи).
+   * Отсутствует у legacy-записей (миграция) — тогда принадлежность не проверить.
+   */
+  check_id?: string;
 };
 
 /** Cap History runs[] per check (newest kept). */

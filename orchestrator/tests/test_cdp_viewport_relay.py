@@ -8,6 +8,7 @@ import base64
 import json
 import socket
 import struct
+import time
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -463,3 +464,162 @@ class TestViewportSync:
                 await task
             except asyncio.CancelledError:
                 pass
+
+
+# ══════════════════════════════════════════════════════════════════════
+# RELAY-STALE-WATCHDOG: heartbeat + лечение зависшего screencast
+# ══════════════════════════════════════════════════════════════════════
+
+
+class TestStaleWatchdog:
+    _JPEG_OLD = b"\xff\xd8OLD-FRAME\xff\xd9"
+    _JPEG_NEW = b"\xff\xd8NEW-FRAME\xff\xd9"
+
+    def _relay(self, captured: bytes):
+        """Relay с фейковой CDP-сессией: evaluate + captureScreenshot."""
+        relay = CdpViewportRelay()
+        relay._browser_connected = True
+        relay._clients = {object()}
+
+        async def fake_send(method, params=None):
+            if method == "Runtime.evaluate":
+                return {"result": {"value": "1083,661"}}
+            if method == "Page.captureScreenshot":
+                return {"data": base64.b64encode(captured).decode()}
+            if method in {"Page.stopScreencast", "Page.startScreencast"}:
+                return {}
+            raise AssertionError(f"unexpected CDP method: {method}")
+
+        cdp = MagicMock()
+        cdp.send = AsyncMock(side_effect=fake_send)
+        relay._cdp_session = cdp
+        return relay, cdp
+
+    @pytest.mark.asyncio
+    async def test_stale_with_changed_content_pushes_and_restarts(self):
+        """Молчание + изменившийся контент → heartbeat-кадр + restart screencast."""
+        relay, _cdp = self._relay(self._JPEG_NEW)
+        relay._latest.push(self._JPEG_OLD, {})
+        relay._latest_width, relay._latest_height = 1083, 661
+        relay._last_push_ts = time.monotonic() - 100  # стрим давно молчит
+        relay._last_screencast_ts = time.monotonic() - 100
+        relay._last_screencast_restart_ts = 0.0
+
+        restarts: list[str] = []
+
+        async def _fake_restart() -> None:
+            restarts.append("restart")
+
+        relay._restart_screencast = _fake_restart  # type: ignore[method-assign]
+
+        await relay._heal_stale_stream()
+
+        jpeg, seq = relay._latest.snapshot()
+        assert seq == 2 and jpeg == self._JPEG_NEW
+        assert relay._last_push_ts > time.monotonic() - 5
+        assert restarts == ["restart"]
+
+    @pytest.mark.asyncio
+    async def test_stale_with_static_content_no_restart(self):
+        """Статичная страница (кадр не изменился) → heartbeat без restart."""
+        relay, _cdp = self._relay(self._JPEG_OLD)
+        relay._latest.push(self._JPEG_OLD, {})
+        relay._latest_width, relay._latest_height = 1083, 661
+        relay._last_push_ts = time.monotonic() - 100
+        relay._last_screencast_ts = time.monotonic() - 100
+
+        restarts: list[str] = []
+
+        async def _fake_restart() -> None:
+            restarts.append("restart")
+
+        relay._restart_screencast = _fake_restart  # type: ignore[method-assign]
+
+        await relay._heal_stale_stream()
+
+        assert restarts == []
+        _jpeg, seq = relay._latest.snapshot()
+        assert seq == 2  # heartbeat всё равно опубликован
+
+    @pytest.mark.asyncio
+    async def test_fresh_stream_no_work(self):
+        """Кадры свежие → watchdog молчит (никаких CDP-вызовов)."""
+        relay, cdp = self._relay(self._JPEG_NEW)
+        relay._last_push_ts = time.monotonic()
+
+        await relay._heal_stale_stream()
+
+        cdp.send.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_no_clients_no_work(self):
+        """Без клиентов heartbeat не нужен."""
+        relay, cdp = self._relay(self._JPEG_NEW)
+        relay._clients = set()
+        relay._last_push_ts = time.monotonic() - 100
+
+        await relay._heal_stale_stream()
+
+        cdp.send.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_restart_uses_same_session_without_rehandlers(self, monkeypatch):
+        """Restart — stop/start на той же сессии, .on повторно не зовётся."""
+        relay, cdp = self._relay(self._JPEG_NEW)
+
+        await relay._restart_screencast()
+
+        methods = [c.args[0] for c in cdp.send.await_args_list]
+        assert methods == ["Page.stopScreencast", "Page.startScreencast"]
+        start_params = cdp.send.await_args_list[1].args[1]
+        assert start_params["maxWidth"] == SCREENCAST_MAX_WIDTH
+        cdp.on.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_hung_cdp_call_escalates_via_timeout(self, monkeypatch):
+        """Зависший Runtime.evaluate не морозит цикл: timeout → эскалация."""
+        relay = CdpViewportRelay()
+        relay._browser_connected = True
+
+        async def _hang(method, params=None):
+            await asyncio.sleep(3600)
+
+        cdp = MagicMock()
+        cdp.send = AsyncMock(side_effect=_hang)
+        relay._cdp_session = cdp
+        monkeypatch.setattr(CdpViewportRelay, "_VIEWPORT_POLL_INTERVAL", 0.01)
+        monkeypatch.setattr(CdpViewportRelay, "_CDP_CALL_TIMEOUT_SEC", 0.05)
+
+        task = asyncio.create_task(relay._viewport_sync_loop())
+        try:
+            for _ in range(200):
+                await asyncio.sleep(0.01)
+                if not relay._browser_connected:
+                    break
+            assert relay._browser_connected is False
+        finally:
+            relay._shutting_down = True
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+
+    @pytest.mark.asyncio
+    async def test_teardown_hung_detach_does_not_freeze(self, monkeypatch):
+        """Зависший detach не морозит reconnect-дог: teardown завершается по таймауту."""
+        relay = CdpViewportRelay()
+        relay._browser_connected = True
+
+        async def _hang():
+            await asyncio.sleep(3600)
+
+        cdp = MagicMock()
+        cdp.detach = AsyncMock(side_effect=_hang)
+        relay._cdp_session = cdp
+        monkeypatch.setattr(CdpViewportRelay, "_CDP_CALL_TIMEOUT_SEC", 0.05)
+
+        await asyncio.wait_for(relay._teardown_browser(), timeout=2.0)
+
+        assert relay._browser_connected is False
+        assert relay._cdp_session is None

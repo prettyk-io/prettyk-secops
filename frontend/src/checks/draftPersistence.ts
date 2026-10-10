@@ -278,16 +278,31 @@ export function markDraftClean(checkId: string, wired: unknown, resources: Recor
 // Reload restore
 // ---------------------------------------------------------------------------
 
+export interface RestoreDraftOutcome {
+  /** Черновик для восстановления (новее локального состояния), иначе null. */
+  draft: DraftPayload | null;
+  /**
+   * DRAFT-CONFLICT-TRUTH: серверный revision черновика (meta.revision) —
+   * нужен для optimistic concurrency даже когда черновик не новее локального
+   * (иначе свежая сессия стартует с expected=0 и вечно ловит 409).
+   */
+  revision: number | null;
+}
+
 /**
  * При загрузке страницы: попытаться восстановить черновик с сервера.
  * Если черновик новее локального состояния — вернуть его.
+ * Revision отдаётся всегда, когда черновик существует.
  */
 export async function restoreDraftIfNewer(
   checkId: string,
   localUpdatedAt: string,
-): Promise<DraftPayload | null> {
+): Promise<RestoreDraftOutcome> {
   const draft = await fetchDraft(checkId);
-  if (!draft) return null;
+  if (!draft) return { draft: null, revision: null };
+
+  const revision =
+    typeof draft.meta?.revision === 'number' ? draft.meta.revision : null;
 
   // Если черновик сохранён после последнего обновления чека — восстанавливаем
   const draftTs = new Date(draft.meta.savedAt).getTime();
@@ -295,10 +310,10 @@ export async function restoreDraftIfNewer(
 
   if (draftTs > localTs) {
     lastSavedHash.set(checkId, draft.meta.contentHash);
-    return draft;
+    return { draft, revision };
   }
 
   // Черновик не новее — игнорируем, но хеш запоминаем для dirty-guard
   lastSavedHash.set(checkId, draft.meta.contentHash);
-  return null;
+  return { draft: null, revision };
 }

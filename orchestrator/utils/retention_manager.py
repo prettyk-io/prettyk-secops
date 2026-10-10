@@ -158,15 +158,30 @@ def cleanup_artifacts(
     days_older_than: int = 7,
     keep_pinned: bool = True,
     dry_run: bool = False,
+    allow_full_wipe: bool = False,
 ) -> Dict[str, Any]:
     """
-    Очистка артефактов (видео, экспорты, старые прогоны) старше указанного количества дней.
-    
+    Чистка артефактов (видео, экспорты, каталоги прогонов) старше указанного возраста.
+
     Не удаляет:
-      - runs_index.ndjson и служебные файлы
-      - проверки с активным legal_hold (если keep_pinned=True)
+      - runs_index.ndjson и другие мета-файлы
+      - прогоны с активным legal_hold (если keep_pinned=True)
+
+    MONITOR-RETENTION-TEST-LEAK: days_older_than < 1 — разрушительный режим
+    («старше сейчас» = снести всё); без явного allow_full_wipe=True отказываем,
+    чтобы случайный/тестовый вызов не вычищал реальные архивы в ноль.
     """
-    days = max(0, int(days_older_than))
+    try:
+        days = int(days_older_than)
+    except (TypeError, ValueError):
+        return {"ok": False, "error": "days_older_than must be an integer"}
+    if days < 1 and not allow_full_wipe:
+        return {
+            "ok": False,
+            "error": "refusing full wipe: days_older_than < 1 requires allow_full_wipe=true",
+            "days_older_than": days,
+        }
+    days = max(0, days)
     cutoff_ts = time.time() - (days * 86400.0)
 
     deleted_files: List[str] = []

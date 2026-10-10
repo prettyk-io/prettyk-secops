@@ -35,8 +35,19 @@ def resolve_run_owner_user_id(explicit: Optional[str] = None) -> Optional[str]:
     return None
 
 
-def parse_caller_user(headers: Mapping[str, str]) -> Optional[str]:
-    """Lab stub: ``X-PK-User`` header or Cookie ``pk_user=``."""
+def parse_caller_user(
+    headers: Mapping[str, str],
+    *,
+    peer_host: Optional[str] = None,
+) -> Optional[str]:
+    """Lab stub: ``X-PK-User`` header or Cookie ``pk_user=``.
+
+    MONITOR-ACL-IDENTITY: если identity не пришла явно, но запрос с loopback
+    (``peer_host`` передан вызывающим), отдаём локальную identity стенда
+    (``PK_LIVE_LOCAL_IDENTITY``, default ``admin``) — на dev-стенде deep-link
+    открывается штатно, без ручных кук. Для НЕ-localhost fallback не
+    применяется: ACL не ослабляется для удалённых клиентов.
+    """
     raw = ""
     for key, value in headers.items():
         if key.lower() == "x-pk-user":
@@ -52,7 +63,20 @@ def parse_caller_user(headers: Mapping[str, str]) -> Optional[str]:
     m = re.search(r"(?:^|;\s*)pk_user=([^;]+)", cookie)
     if m:
         return m.group(1).strip()
+    if _is_loopback_host(peer_host):
+        ident = local_identity()
+        return ident or None
     return None
+
+
+def _is_loopback_host(host: Optional[str]) -> bool:
+    h = (host or "").strip().lower()
+    return h in {"127.0.0.1", "::1", "localhost"} or h.startswith("127.")
+
+
+def local_identity() -> str:
+    """Локальная identity dev-стенда (loopback-fallback для монитора)."""
+    return pk_env_name("PK_LIVE_LOCAL_IDENTITY", "admin").strip()
 
 
 def is_secops_admin(user: Optional[str]) -> bool:

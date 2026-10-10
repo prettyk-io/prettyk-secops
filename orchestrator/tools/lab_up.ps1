@@ -6,6 +6,8 @@
 .DESCRIPTION
   Обязательный контур: allure3-secops (:5050, канон), scanner,
   Juice Shop, pk-api-lab (REST/GraphQL/gRPC), Editor, playground и idle PrettyK Live.
+  RUNTIME-UN-CUTOVER-GRID-WEBM: Selenium Grid (hub :4444, chrome noVNC :7900,
+  firefox noVNC :7901, chrome-video) — боевой рантайм прогонов.
   Webswing намеренно не запускается (см. global skill `prettyk-lab`).
   DefectDojo — по умолчанию (обязательная зависимость, restart: unless-stopped).
   SonarQube — только -IncludeSonarQube.
@@ -31,8 +33,17 @@ function Test-PortListen {
 }
 
 function Test-DockerEngine {
-    & docker.exe info --format '{{.ServerVersion}}' 2>$null | Out-Null
-    return $LASTEXITCODE -eq 0
+    # LIVE-MONITOR-REVIVE: без капкана EAP=Stop на native stderr - иначе
+    # недоступный engine роняет lab_up до Ensure-DockerEngine вместо честного
+    # автоподъёма Docker Desktop.
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & docker.exe info --format '{{.ServerVersion}}' 2>&1 | Out-Null
+        return $LASTEXITCODE -eq 0
+    } finally {
+        $ErrorActionPreference = $prev
+    }
 }
 
 function Ensure-DockerEngine {
@@ -120,6 +131,7 @@ Ensure-DockerEngine
 Start-Compose 'services\docker-compose.base.yml'
 Start-Compose 'services\docker-compose.zap.yml'
 Start-Compose 'services\docker-compose.target.yml'
+Start-Compose 'services\docker-compose.grid.yml'
 $hasApiLab = Test-Path (Join-Path $RepoRoot 'services\pk-api-lab\Dockerfile')
 if ($hasApiLab) {
     Start-Compose 'services\docker-compose.api-lab.yml'
@@ -136,8 +148,12 @@ if ($LASTEXITCODE -ne 0) {
 
 Ensure-LiveIdle
 Wait-Http -Name 'Allure' -Url 'http://127.0.0.1:5050/health'
-Wait-Http -Name 'scanner daemon' -Url 'http://127.0.0.1:8080/JSON/core/view/version/'
+Wait-Http -Name 'scanner daemon' -Url 'http://127.0.0.1:8080/JSON/core/view/version/' -TimeoutSeconds 240
 Wait-Http -Name 'Juice Shop' -Url 'http://127.0.0.1:3000/'
+# RUNTIME-UN-CUTOVER-GRID-WEBM: боевой рантайм — Selenium Grid (hub + noVNC).
+Wait-Http -Name 'Selenium Grid hub' -Url 'http://127.0.0.1:4444/status' -TimeoutSeconds 120
+Wait-Http -Name 'Selenium chrome noVNC' -Url 'http://127.0.0.1:7900/' -TimeoutSeconds 120
+Wait-Http -Name 'Selenium firefox noVNC' -Url 'http://127.0.0.1:7901/' -TimeoutSeconds 120
 if ($hasApiLab) {
     Wait-Http -Name 'pk-api-lab' -Url 'http://127.0.0.1:8090/health' -TimeoutSeconds 120
 }

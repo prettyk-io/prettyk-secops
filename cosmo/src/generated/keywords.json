@@ -1376,6 +1376,34 @@
             }
           ]
         },
+        "session_diary": {
+          "defined_in": "orchestrator/adapters/playwright_adapter.py",
+          "description": "Кураторская строка дневника: STEP / ERROR / HIGH / NOTE.",
+          "params": [
+            {
+              "kind": "positional",
+              "name": "kind",
+              "required": true
+            },
+            {
+              "kind": "var_positional",
+              "name": "parts",
+              "required": false
+            },
+            {
+              "default": true,
+              "kind": "keyword_only",
+              "name": "live",
+              "required": false
+            },
+            {
+              "default": "",
+              "kind": "keyword_only",
+              "name": "pretty",
+              "required": false
+            }
+          ]
+        },
         "session_storage_get": {
           "defined_in": "orchestrator/adapters/playwright_adapter.py",
           "description": "Get a sessionStorage item.",
@@ -1698,6 +1726,7 @@
         },
         "wait_for_network_idle": {
           "defined_in": "orchestrator/adapters/playwright_adapter.py",
+          "description": "Ждёт, пока страница перестанет тянуть новые ресурсы.",
           "params": [
             {
               "default": 0.5,
@@ -4329,7 +4358,7 @@
             {
               "default": "",
               "kind": "positional",
-              "name": "wired_json",
+              "name": "manifest_json",
               "required": false
             }
           ]
@@ -4394,6 +4423,23 @@
               "default": null,
               "kind": "positional",
               "name": "url",
+              "required": false
+            }
+          ]
+        },
+        "get_alerts_by_baseurl": {
+          "defined_in": "orchestrator/adapters/scanner_adapter.py",
+          "description": "Alerts по baseurl (scope/prefix на стороне scanner) БЕЗ exact-match.",
+          "params": [
+            {
+              "kind": "positional",
+              "name": "baseurl",
+              "required": true
+            },
+            {
+              "default": null,
+              "kind": "positional",
+              "name": "risk",
               "required": false
             }
           ]
@@ -4469,6 +4515,18 @@
               "kind": "positional",
               "name": "context_name",
               "required": true
+            }
+          ]
+        },
+        "harden_active_scan": {
+          "defined_in": "orchestrator/adapters/scanner_adapter.py",
+          "description": "SCAN-DEPTH: агрессивная глубина + чистый scope перед активным сканом.",
+          "params": [
+            {
+              "default": null,
+              "kind": "positional",
+              "name": "context_name",
+              "required": false
             }
           ]
         },
@@ -4833,6 +4891,11 @@
             }
           ]
         },
+        "reset_alerts": {
+          "defined_in": "orchestrator/adapters/scanner_adapter.py",
+          "description": "Каноничная свежая сессия ZAP на каждый прогон (follow-up BOX-LIVE-4).",
+          "params": []
+        },
         "run_automation_plan": {
           "defined_in": "orchestrator/adapters/scanner_adapter.py",
           "description": "Запустить AF YAML через automation.runPlan и ждать завершения.",
@@ -4912,6 +4975,56 @@
               "default": null,
               "kind": "positional",
               "name": "context_name",
+              "required": false
+            }
+          ]
+        },
+        "scanner_http_raw_request": {
+          "defined_in": "orchestrator/adapters/scanner_adapter.py",
+          "params": [
+            {
+              "kind": "positional",
+              "name": "raw_request",
+              "required": true
+            },
+            {
+              "default": true,
+              "kind": "positional",
+              "name": "follow_redirects",
+              "required": false
+            }
+          ]
+        },
+        "scanner_http_request": {
+          "defined_in": "orchestrator/adapters/scanner_adapter.py",
+          "description": "HTTP через scanner core.sendHarRequest (HAR entry JSON).",
+          "params": [
+            {
+              "kind": "positional",
+              "name": "method",
+              "required": true
+            },
+            {
+              "kind": "positional",
+              "name": "url",
+              "required": true
+            },
+            {
+              "default": null,
+              "kind": "positional",
+              "name": "headers",
+              "required": false
+            },
+            {
+              "default": null,
+              "kind": "positional",
+              "name": "body",
+              "required": false
+            },
+            {
+              "default": true,
+              "kind": "positional",
+              "name": "follow_redirects",
               "required": false
             }
           ]
@@ -5455,56 +5568,6 @@
               "default": "{}",
               "kind": "positional",
               "name": "request_json",
-              "required": false
-            }
-          ]
-        },
-        "scanner_http_raw_request": {
-          "defined_in": "orchestrator/adapters/scanner_adapter.py",
-          "params": [
-            {
-              "kind": "positional",
-              "name": "raw_request",
-              "required": true
-            },
-            {
-              "default": true,
-              "kind": "positional",
-              "name": "follow_redirects",
-              "required": false
-            }
-          ]
-        },
-        "scanner_http_request": {
-          "defined_in": "orchestrator/adapters/scanner_adapter.py",
-          "description": "HTTP через scanner core.sendHarRequest (HAR entry JSON).",
-          "params": [
-            {
-              "kind": "positional",
-              "name": "method",
-              "required": true
-            },
-            {
-              "kind": "positional",
-              "name": "url",
-              "required": true
-            },
-            {
-              "default": null,
-              "kind": "positional",
-              "name": "headers",
-              "required": false
-            },
-            {
-              "default": null,
-              "kind": "positional",
-              "name": "body",
-              "required": false
-            },
-            {
-              "default": true,
-              "kind": "positional",
-              "name": "follow_redirects",
               "required": false
             }
           ]
@@ -6807,6 +6870,34 @@
             }
           ]
         },
+        "session_diary": {
+          "defined_in": "orchestrator/adapters/playwright_adapter.py",
+          "description": "Кураторская строка дневника: STEP / ERROR / HIGH / NOTE.",
+          "params": [
+            {
+              "kind": "positional",
+              "name": "kind",
+              "required": true
+            },
+            {
+              "kind": "var_positional",
+              "name": "parts",
+              "required": false
+            },
+            {
+              "default": true,
+              "kind": "keyword_only",
+              "name": "live",
+              "required": false
+            },
+            {
+              "default": "",
+              "kind": "keyword_only",
+              "name": "pretty",
+              "required": false
+            }
+          ]
+        },
         "session_storage_get": {
           "defined_in": "orchestrator/adapters/playwright_adapter.py",
           "description": "Get a sessionStorage item.",
@@ -7129,6 +7220,7 @@
         },
         "wait_for_network_idle": {
           "defined_in": "orchestrator/adapters/playwright_adapter.py",
+          "description": "Ждёт, пока страница перестанет тянуть новые ресурсы.",
           "params": [
             {
               "default": 0.5,

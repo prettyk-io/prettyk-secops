@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
 import { EditorWorkbench } from './EditorWorkbench';
 import { useWorkspaceStore } from './workspaceStore';
 
@@ -74,6 +74,19 @@ vi.mock('../studio/ScenarioDeckStore', () => ({
     if (selector) return selector(state);
     return state;
   },
+}));
+
+// STUDIO-FUZZER-FORM-SURFACE: реальное дерево тяжёлое (dnd/antd/ThemeProvider) —
+// в юнит-тестах Редактора даём лёгкий стаб с кнопками выбора (как в Studio.test).
+vi.mock('../studio/StudioExplorer', () => ({
+  StudioExplorer: (props: { onSelectTab: (id: string) => void }) => (
+    <div data-testid="studio-explorer">
+      <button data-testid="select-fuzzer-0" onClick={() => props.onSelectTab('fuzzer:0')} />
+      <button data-testid="select-fuzzer-1" onClick={() => props.onSelectTab('fuzzer:1')} />
+      <button data-testid="select-resource-0" onClick={() => props.onSelectTab('resource:0')} />
+      <button data-testid="select-deleted-fuzzer" onClick={() => props.onSelectTab('fuzzer:9')} />
+    </div>
+  ),
 }));
 
 describe('EditorWorkbench (PK-EC-1 & PK-EC-5)', () => {
@@ -157,4 +170,102 @@ describe('EditorWorkbench (PK-EC-1 & PK-EC-5)', () => {
 
     expect(window.location.hash).toBe('#/home');
   });
+});
+
+describe('EditorWorkbench — STUDIO-FUZZER-FORM-SURFACE: форма вместо заглушки', () => {
+  const formData = {
+    test_suites: {
+      fuzzers: [
+        {
+          id: 'juice_search_q',
+          targets: [
+            {
+              url: 'http://juice-shop:3000/rest/products/search?q=',
+              method: 'GET',
+              corpus: 'intent_sqli_smoke',
+            },
+          ],
+        },
+      ],
+      imports: [{ path: 'resources/customers.txt', kind: 'data_file', as: 'customers' }],
+    },
+  };
+
+  beforeEach(() => {
+    localStorage.clear();
+    useWorkspaceStore.getState().resetLayout();
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it('выбран фаззер → в Редакторе рендерится форма фаззера (Corpus), а не заглушка', () => {
+    render(
+      <EditorWorkbench
+        formData={formData}
+        onFormDataChange={vi.fn()}
+        resourceContents={{}}
+        onResourceContentsChange={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByTestId('select-fuzzer-0'));
+
+    const surface = screen.getByTestId('workbench-form-surface');
+    expect(within(surface).getByText('Corpus (словарь)')).toBeDefined();
+    expect(screen.getByDisplayValue('juice_search_q')).toBeDefined();
+    // тупиковой заглушки «открой в Студии» больше нет
+    expect(screen.queryByText(/настраивается в форме/)).toBeNull();
+  }, 20000);
+
+  it('правки формы уходят в чек (targets → onFormDataChange)', () => {
+    const onFormDataChange = vi.fn();
+    render(
+      <EditorWorkbench
+        formData={formData}
+        onFormDataChange={onFormDataChange}
+        resourceContents={{}}
+        onResourceContentsChange={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByTestId('select-fuzzer-0'));
+
+    fireEvent.click(screen.getByText('+ Добавить цель'));
+
+    expect(onFormDataChange).toHaveBeenCalled();
+    const next = onFormDataChange.mock.calls.at(-1)?.[0] as {
+      test_suites: { fuzzers: { targets: unknown[] }[] };
+    };
+    expect(next.test_suites.fuzzers[0]?.targets.length).toBe(2);
+  }, 20000);
+
+  it('выбран ресурс → в Редакторе рендерится форма ресурса', () => {
+    render(
+      <EditorWorkbench
+        formData={formData}
+        onFormDataChange={vi.fn()}
+        resourceContents={{}}
+        onResourceContentsChange={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByTestId('select-resource-0'));
+
+    expect(screen.getByTestId('workbench-form-surface')).toBeDefined();
+    expect(screen.getByDisplayValue('resources/customers.txt')).toBeDefined();
+  }, 20000);
+
+  it('негатив: удалённый фаззер → честное «не найдено», без фантомной формы', () => {
+    render(
+      <EditorWorkbench
+        formData={formData}
+        onFormDataChange={vi.fn()}
+        resourceContents={{}}
+        onResourceContentsChange={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByTestId('select-deleted-fuzzer'));
+
+    expect(screen.getByTestId('workbench-form-surface-missing')).toBeDefined();
+    expect(screen.queryByTestId('workbench-form-surface')).toBeNull();
+  }, 20000);
 });

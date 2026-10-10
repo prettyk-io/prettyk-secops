@@ -145,6 +145,12 @@ curl.exe -fsS http://127.0.0.1:8767/api/meta
 | allure3-secops | [http://127.0.0.1:5050/](http://127.0.0.1:5050/) (корень → последний отчёт, канон) |
 | scanner API | [http://127.0.0.1:8080/](http://127.0.0.1:8080/) |
 
+> **pk-api-lab — внешне-провижининг (PK-API-LAB-SRC):** build-контекст
+> (`Dockerfile` + сервис) в репо не поставляется, `proto_pack` пуст; строки
+> таблицы выше — контракт, когда api-lab поднят opt-in
+> (`docker compose -f services/docker-compose.api-lab.yml up -d --build`).
+> Как включить — `services/pk-api-lab/README.md`.
+
 Внутри Docker-сети Juice Shop доступен как `http://juice-shop:3000`. Именно этот адрес используют wired-файлы с remote-браузером.
 
 ## Проверить wired

@@ -5,7 +5,7 @@
 import { syncDeployGatesForCheck } from '../admin/deployStore';
 import { pipelineStatusFromMeta } from '../results/pipelineVerdict';
 import type { LiveMetaSnapshot } from '../results/types';
-import { getActiveCheckId, upsertCheckRun } from './checksStore';
+import { getCheck, listChecks, upsertCheckRun } from './checksStore';
 import type { CheckRunRef, CheckRunStatus, CheckStatus } from './types';
 
 function str(value: unknown): string {
@@ -110,20 +110,65 @@ export function checkRunRefFromLiveMeta(meta: LiveMetaSnapshot | null): CheckRun
   };
 }
 
-/** Best-effort: bind Live meta to target CheckInstance.runs[]. */
+/** Чек-владелец рана по уже записанной связи (update-only, без создания новой). */
+function findRunOwnerCheckId(runId: string): string | null {
+  const rid = runId.trim();
+  if (!rid) {
+    return null;
+  }
+  for (const item of listChecks()) {
+    if (item.runs?.some((r) => r.run_id === rid)) {
+      return item.check_id;
+    }
+  }
+  return null;
+}
+
+/**
+ * Best-effort: bind Live meta to target CheckInstance.runs[].
+ *
+ * MONITOR-DEEPLINK-LIVE-CLIENT: принадлежность чеку — только доказанная:
+ *   1) явный штамп `meta.check_id` (server provenance); или
+ *   2) ран уже записан в чек (создан стартом из редактора — onRunStarted).
+ * Фолбэк «активный чек в открытой вкладке» убран: открытый чек НЕ делает
+ * unscoped ран своим — иначе validate-only/CLI-раны подшиваются к чужой
+ * проверке (факт: run-118ec442680d в истории 114a). Unscoped ран не получает
+ * НОВОЙ связи; уже записанный — обновляется в своём чеке (update-only).
+ */
 export function syncActiveCheckRunFromLive(meta: LiveMetaSnapshot | null): void {
   if (!meta) {
-    return;
-  }
-  const metaCheckId = typeof meta.check_id === 'string' ? meta.check_id.trim() : '';
-  const checkId = metaCheckId || getActiveCheckId();
-  if (!checkId) {
     return;
   }
   const ref = checkRunRefFromLiveMeta(meta);
   if (!ref) {
     return;
   }
-  upsertCheckRun(checkId, ref);
+  const metaCheckId = typeof meta.check_id === 'string' ? meta.check_id.trim() : '';
+  const checkId = metaCheckId || findRunOwnerCheckId(ref.run_id);
+  if (!checkId) {
+    return;
+  }
+  const existing = getCheck(checkId)?.runs.find((r) => r.run_id === ref.run_id);
+  const stamped: CheckRunRef = { ...ref };
+  // Штамп принадлежности: явный из meta или уже имеющийся у записи; для
+  // legacy-записи без штампа — НЕ выдумываем принадлежность.
+  const stamp = metaCheckId || existing?.check_id;
+  if (stamp) {
+    stamped.check_id = stamp;
+  }
+  // MONITOR-FRESH-STAMP: старт не через FE (CLI/CI) не оставляет времени —
+  // штампуем первое наблюдение живого рана. Терминалу без времени из meta —
+  // ended_at. Одноразово: merge не даёт сдвинуть уже проставленные штампы.
+  if (ref.status === 'running' && !existing?.started_at) {
+    stamped.started_at = new Date().toISOString();
+  }
+  if (
+    (ref.status === 'success' || ref.status === 'failed') &&
+    !ref.ended_at &&
+    !existing?.ended_at
+  ) {
+    stamped.ended_at = new Date().toISOString();
+  }
+  upsertCheckRun(checkId, stamped);
   syncDeployGatesForCheck(checkId);
 }

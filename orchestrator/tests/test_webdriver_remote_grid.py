@@ -54,9 +54,24 @@ def test_grid_capabilities_name_and_video_on_by_default():
     adapter._apply_grid_capabilities(options, headless=False)
     caps = options.to_capabilities()
     assert caps.get("se:name") == "Juice Smoke"
-    # PW-C1: Grid removed. _video_enabled() returns False by default
-    # when PK_SELENIUM_VIDEO is not set (double-PK prefix check in _env_flag).
+    # RUNTIME-UN-CUTOVER-GRID-WEBM: Grid — боевой рантайм; запись по умолчанию ВКЛ
+    # (регресс cutover-эры: pk_env-контракт молча выключал видео всегда).
+    assert caps.get("se:recordVideo") is True
+    assert str(caps.get("se:videoName") or "").endswith(".mp4")
     assert "selenoid:options" not in caps
+
+
+def test_grid_capabilities_video_name_has_run_id(monkeypatch):
+    """run_id-префикс в имени видео → Monitor находит файл по ?run_id=."""
+    monkeypatch.setenv("PK_RUN_ID", "run-abc123456789")
+    adapter = WebDriverAdapter.__new__(WebDriverAdapter)
+    adapter.session_name = "Juice Smoke"
+    adapter.headless = False
+    options = ChromeOptions()
+    adapter._apply_grid_capabilities(options, headless=False)
+    video_name = str(options.to_capabilities().get("se:videoName") or "")
+    assert video_name.startswith("run-abc123456789_")
+    assert video_name.endswith(".mp4")
 
 
 def test_grid_capabilities_video_off_explicit(monkeypatch):

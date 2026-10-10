@@ -233,17 +233,33 @@ def handle_get_trend(*, days: int = 30) -> dict:
     _ensure_tables()
     s = get_session()
     try:
+        # LIVE-SUMMARY-TREND-MEMORY: окно ограничено (1..365) до вычисления cutoff.
+        days = max(1, min(int(days or 30), 365))
         cutoff = _utcnow() - timedelta(days=days)
-        runs = (
+        # LIVE-SUMMARY-TREND-MEMORY: totals считаем скалярно (SQL), а по-прогонный
+        # ряд ограничиваем капом (последние N), чтобы json.dumps не материализовал
+        # тысячи строк и не положил shell через MemoryError. Форма by_day сохранена.
+        from sqlalchemy import func
+
+        days = max(1, min(int(days or 30), 365))
+        cutoff = _utcnow() - timedelta(days=days)
+        base = s.query(func.count(RunRecord.id)).filter(
+            RunRecord.finished_at >= cutoff, RunRecord.finished_at.isnot(None)
+        )
+        total = int(base.scalar() or 0)
+        passed = int(base.filter(RunRecord.status == "succeeded").scalar() or 0)
+        failed = int(base.filter(RunRecord.status == "failed").scalar() or 0)
+        with_findings = int(base.filter(RunRecord.findings_count > 0).scalar() or 0)
+
+        by_day_limit = 500
+        capped = (
             s.query(RunRecord)
             .filter(RunRecord.finished_at >= cutoff, RunRecord.finished_at.isnot(None))
-            .order_by(RunRecord.finished_at)
+            .order_by(RunRecord.finished_at.desc())
+            .limit(by_day_limit)
             .all()
         )
-        total = len(runs)
-        passed = sum(1 for r in runs if r.status == "succeeded")
-        failed = sum(1 for r in runs if r.status == "failed")
-        with_findings = sum(1 for r in runs if (r.findings_count or 0) > 0)
+        capped.reverse()
         return {
             "ok": True, "days": days,
             "total_runs": total,
@@ -257,8 +273,10 @@ def handle_get_trend(*, days: int = 30) -> dict:
                              if (r.finished_at or r.created_at) else ""),
                     "status": r.status, "findings": r.findings_count or 0,
                 }
-                for r in runs
+                for r in capped
             ],
+            "by_day_truncated": total > by_day_limit,
+            "by_day_limit": by_day_limit,
         }
     finally:
         s.close()

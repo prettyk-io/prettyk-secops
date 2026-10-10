@@ -243,18 +243,66 @@ describe('flushDraft', () => {
 // ---------------------------------------------------------------------------
 
 describe('restoreDraftIfNewer', () => {
-  it('returns null when server has no draft', async () => {
+  it('returns empty outcome when server has no draft', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(null, { status: 404 }),
     );
 
     const result = await restoreDraftIfNewer(CHECK_ID, '2024-01-01T00:00:00.000Z');
-    expect(result).toBeNull();
+    expect(result.draft).toBeNull();
+    expect(result.revision).toBeNull();
   });
 
-  it('returns draft when server version is newer', async () => {
+  it('returns draft + server revision when server version is newer', async () => {
     const draftPayload: DraftPayload = {
       wired: makeWired('Restored'),
+      resource_contents: {},
+      meta: {
+        checkId: CHECK_ID,
+        contentHash: 'abc12345',
+        savedAt: Date.now(),
+        surface: 'editor',
+        revision: 7,
+      },
+    };
+
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify(draftPayload), { status: 200 }),
+    );
+
+    const result = await restoreDraftIfNewer(CHECK_ID, '2024-01-01T00:00:00.000Z');
+    expect(result.draft).not.toBeNull();
+    expect(result.draft?.wired).toEqual(makeWired('Restored'));
+    expect(result.revision).toBe(7);
+  });
+
+  it('exposes revision even when server draft is older (DRAFT-CONFLICT-TRUTH)', async () => {
+    const oldDate = new Date('2024-01-01').getTime();
+    const draftPayload: DraftPayload = {
+      wired: makeWired('Old'),
+      resource_contents: {},
+      meta: {
+        checkId: CHECK_ID,
+        contentHash: 'abc12345',
+        savedAt: oldDate,
+        surface: 'editor',
+        revision: 5,
+      },
+    };
+
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify(draftPayload), { status: 200 }),
+    );
+
+    // Local is newer → сам черновик не восстанавливаем, но revision обязан вернуться.
+    const result = await restoreDraftIfNewer(CHECK_ID, new Date().toISOString());
+    expect(result.draft).toBeNull();
+    expect(result.revision).toBe(5);
+  });
+
+  it('revision is null for legacy draft without server revision', async () => {
+    const draftPayload: DraftPayload = {
+      wired: makeWired('Legacy'),
       resource_contents: {},
       meta: {
         checkId: CHECK_ID,
@@ -269,37 +317,16 @@ describe('restoreDraftIfNewer', () => {
     );
 
     const result = await restoreDraftIfNewer(CHECK_ID, '2024-01-01T00:00:00.000Z');
-    expect(result).not.toBeNull();
-    expect(result?.wired).toEqual(makeWired('Restored'));
+    expect(result.draft).not.toBeNull();
+    expect(result.revision).toBeNull();
   });
 
-  it('returns null when server draft is older than local', async () => {
-    const oldDate = new Date('2024-01-01').getTime();
-    const draftPayload: DraftPayload = {
-      wired: makeWired('Old'),
-      resource_contents: {},
-      meta: {
-        checkId: CHECK_ID,
-        contentHash: 'abc12345',
-        savedAt: oldDate,
-        surface: 'editor',
-      },
-    };
-
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify(draftPayload), { status: 200 }),
-    );
-
-    // Local is newer
-    const result = await restoreDraftIfNewer(CHECK_ID, new Date().toISOString());
-    expect(result).toBeNull();
-  });
-
-  it('returns null on network error', async () => {
+  it('returns empty outcome on network error', async () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('network down'));
 
     const result = await restoreDraftIfNewer(CHECK_ID, '2024-01-01T00:00:00.000Z');
-    expect(result).toBeNull();
+    expect(result.draft).toBeNull();
+    expect(result.revision).toBeNull();
   });
 });
 

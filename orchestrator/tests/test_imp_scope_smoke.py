@@ -70,7 +70,10 @@ def test_imp_scope_oa_gql_grpc_parse_smoke():
     gql = parse_sdl_ops(sdl.read_text(encoding="utf-8"))
     assert gql is not None
     if not proto.is_file():
-        pytest.skip("lab proto_pack missing")
+        pytest.skip(
+            "pk-api-lab proto_pack not provisioned in repo (external opt-in, "
+            "see services/pk-api-lab/README.md)"
+        )
     svcs = parse_proto_services(proto.read_text(encoding="utf-8"))
     assert isinstance(svcs, dict)
     assert svcs.get("services") or svcs.get("ok") is not False

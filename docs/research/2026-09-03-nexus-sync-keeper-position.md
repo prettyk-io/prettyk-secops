@@ -1,6 +1,6 @@
 # Nexus Sync · Keeper Position · 2026-09-03
 
-> Ответ на: `D:\prettyk\nexus-core\meetings\2026-09-02-operational-sync.md`
+> Ответ на: `D:\prettyk.io\void-core\meetings\2026-09-02-operational-sync.md`
 > Статус: delivered. Детали ниже; short-form в пакете.
 
 ## Position: agree

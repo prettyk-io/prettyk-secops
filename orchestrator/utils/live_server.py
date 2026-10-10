@@ -73,6 +73,64 @@ def default_novnc_url(browser: str = "chrome") -> str:
     return f"http://127.0.0.1:{port}/?autoconnect=1&resize=scale"
 
 
+def _diary_event_matches(ev: dict, want_run: str = "", want_kind: str = "") -> bool:
+    """MONITOR-LIVE-DEEPLINK: строгий run-фильтр diary-событий.
+
+    При запросе конкретного run'а проходят ТОЛЬКО события этого run —
+    unscoped/чужие (другого прогона) не подмешиваются.
+    """
+    if want_run and str(ev.get("run_id") or "").strip() != want_run:
+        return False
+    if want_kind:
+        from utils.diary_bus import _kind_match
+
+        if not _kind_match(want_kind, ev.get("kind", "")):
+            return False
+    return True
+
+
+def run_is_live_shared(run_id: str) -> bool:
+    """MONITOR-RUN-LIFECYCLE-ARCHIVE: общий (межпроцессный) сигнал «живой».
+
+    Источник — статус-файл раннера ``reports/runs/current.json`` (``lab_run``),
+    доступный и раннеру, и live-shell. Не опирается на env дочернего процесса
+    (``PK_RUN_ID``), поэтому «live» однозначен во всех процессах.
+    """
+    rid = (run_id or "").strip()
+    if not rid:
+        return False
+    try:
+        from utils.lab_run import get_run_status
+
+        st = get_run_status()
+        return (
+            str(st.get("phase") or "") == "running"
+            and str(st.get("run_id") or "").strip() == rid
+        )
+    except Exception:
+        return False
+
+
+def shared_run_phase(run_id: str) -> str:
+    """Фаза общего раннера для ``run_id``: ``running`` | ``finished`` | ``""``.
+
+    Источник — ``reports/runs/current.json`` (``lab_run``) — общий для всех
+    процессов, в отличие от env дочернего раннера.
+    """
+    rid = (run_id or "").strip()
+    if not rid:
+        return ""
+    try:
+        from utils.lab_run import get_run_status
+
+        st = get_run_status()
+        if str(st.get("run_id") or "").strip() == rid:
+            return str(st.get("phase") or "")
+    except Exception:
+        pass
+    return ""
+
+
 class _LiveHandler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         logger.debug("live_server: " + fmt, *args)
@@ -157,9 +215,6 @@ class _LiveHandler(BaseHTTPRequestHandler):
             return
         if path == "/api/summary/latest":
             self._serve_summary_latest()
-            return
-        if path == "/api/summary/trend":
-            self._serve_summary_trend()
             return
         if path == "/api/evidence":
             self._serve_evidence()
@@ -591,8 +646,33 @@ class _LiveHandler(BaseHTTPRequestHandler):
 
     def _serve_meta(self):
         qs = parse_qs(urlparse(self.path).query)
-        run_id = (qs.get("run_id") or [""])[0]
-        if run_id and not self._gate_run_id(run_id):
+        run_id = (qs.get("run_id") or [""])[0].strip()
+        run_source = ""
+        if run_id:
+            if not self._gate_run_id(run_id):
+                return
+            run_source = self._run_source(run_id)
+        if run_id and not run_source:
+            # REGISTRY-RUN-STATUS-HYGIENE: неизвестный/вычищенный прогон —
+            # честный empty-state, а НЕ мета живого чужого прогона (не подменяем).
+            payload = {
+                "ok": True,
+                "run_found": False,
+                "requested_run_id": run_id,
+                "status": "unknown",
+                "reason": (
+                    "прогон не найден в текущем окне: "
+                    "неизвестный run_id или события вычищены"
+                ),
+            }
+            body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store")
+            self._cors_headers()
+            self.end_headers()
+            self.wfile.write(body)
             return
         meta = diary_bus.get_meta()
         # EXP-01: inject AI assistant toggle into meta for FE
@@ -607,10 +687,16 @@ class _LiveHandler(BaseHTTPRequestHandler):
         if run_id:
             meta = dict(meta)
             meta["requested_run_id"] = run_id
+            meta["run_found"] = True
+            meta["run_source"] = run_source
+            # MON-13-инъекция активного run_id не должна подменять requested
+            # чужим (живым) прогоном.
+            if run_source != "active":
+                meta.pop("run_id", None)
         try:
             from utils.live_pers_acl import parse_caller_user, redact_meta_for_caller
 
-            caller = parse_caller_user(self.headers)
+            caller = parse_caller_user(self.headers, peer_host=self.client_address[0])
             if isinstance(meta, dict):
                 meta = redact_meta_for_caller(meta, caller=caller)
         except Exception:
@@ -1139,15 +1225,22 @@ class _LiveHandler(BaseHTTPRequestHandler):
         days = payload.get("days_older_than", 7)
         keep_pinned = payload.get("keep_pinned", True)
         dry_run = bool(payload.get("dry_run"))
+        # MONITOR-RETENTION-TEST-LEAK: days<1 = «снести всё» — только с явным подтверждением.
+        allow_full_wipe = payload.get("allow_full_wipe") is True
         try:
             from utils.retention_manager import cleanup_artifacts
+
             result = cleanup_artifacts(
                 days_older_than=days,
                 keep_pinned=keep_pinned,
                 dry_run=dry_run,
+                allow_full_wipe=allow_full_wipe,
             )
         except Exception as exc:
             self._json_error(500, str(exc))
+            return
+        if not result.get("ok"):
+            self._write_json(400, result)
             return
         body = json.dumps(result, ensure_ascii=False).encode("utf-8")
         self.send_response(200)
@@ -1315,27 +1408,6 @@ class _LiveHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def _serve_summary_trend(self):
-        """RES-4: severity trend points for Results chart. ?run_id= filter."""
-        qs = parse_qs(urlparse(self.path).query)
-        run_id = (qs.get("run_id") or [""])[0] or None
-        try:
-            from utils.run_ui_summary import read_severity_trend
-
-            points = read_severity_trend(run_id=run_id)
-            payload = {"ok": True, "points": points}
-        except Exception as exc:
-            self._json_error(500, str(exc))
-            return
-        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(body)))
-        self.send_header("Cache-Control", "no-store")
-        self._cors_headers()
-        self.end_headers()
-        self.wfile.write(body)
-
     def _serve_evidence(self):
         """RES-3: CheckEvidenceRefs registry (deep-links + thin meta)."""
         try:
@@ -1344,7 +1416,7 @@ class _LiveHandler(BaseHTTPRequestHandler):
 
             snap = load_evidence_registry()
             raw_list = list_all_evidence()
-            caller = parse_caller_user(self.headers)
+            caller = parse_caller_user(self.headers, peer_host=self.client_address[0])
             filtered, hidden = filter_evidence_list(raw_list, caller=caller)
             items = snap.get("items") if isinstance(snap.get("items"), dict) else {}
             if hidden and isinstance(items, dict):
@@ -1546,6 +1618,7 @@ class _LiveHandler(BaseHTTPRequestHandler):
         qs = parse_qs(urlparse(self.path).query)
         preset = (qs.get("preset") or ["signal"])[0]
         run_id = (qs.get("run_id") or [""])[0]
+        requested_run = bool(run_id.strip())
         if run_id and not self._gate_run_id(run_id):
             return
         try:
@@ -1572,10 +1645,10 @@ class _LiveHandler(BaseHTTPRequestHandler):
                     limit=max(1, min(limit, 1000)),
                 )
             elif run_id:
-                # run_id задан, но экспорта нет — пустой journal
-                from utils.run_journal import build_run_journal
-                payload = build_run_journal(
-                    events=[],
+                # MONITOR-LIVE-DEEPLINK: run ещё выполняется (экспорта нет) —
+                # отдаём ЖИВЫЕ события этого run из diary (строгий run-фильтр),
+                # а не пустой journal.
+                payload = build_journal_from_live_diary(
                     preset=str(preset or "signal"),
                     run_id=run_id,
                     limit=max(1, min(limit, 1000)),
@@ -1587,6 +1660,28 @@ class _LiveHandler(BaseHTTPRequestHandler):
                     limit=max(1, min(limit, 1000)),
                 )
             payload["ok"] = True
+            if requested_run:
+                # REGISTRY-RUN-STATUS-HYGIENE + MONITOR-LIVE-DEEPLINK:
+                # честный empty-state/архив/live для replay; MONITOR-RETENTION-TEST-LEAK:
+                # у завершённого рана без архива — «архив недоступен/вычищен», не «live».
+                rid = run_id.strip()
+                export_ready = export_path is not None and export_path.is_file()
+                events_have = bool(payload.get("events"))
+                payload["run_archive"] = export_ready
+                if export_ready:
+                    payload["run_found"] = True
+                elif events_have or self._run_is_live(rid):
+                    payload["run_found"] = True
+                    payload["live"] = True
+                    payload["reason"] = (
+                        "живые события прогона; архив появится после финализации"
+                    )
+                else:
+                    payload["run_found"] = False
+                    payload["reason"] = (
+                        "архив недоступен: экспорт прогона отсутствует или вычищен "
+                        "retention-политикой"
+                    )
         except Exception as exc:
             self._json_error(500, str(exc))
             return
@@ -1768,13 +1863,95 @@ class _LiveHandler(BaseHTTPRequestHandler):
         try:
             from utils.live_pers_acl import may_view_run, parse_caller_user
 
-            caller = parse_caller_user(self.headers)
+            caller = parse_caller_user(self.headers, peer_host=self.client_address[0])
             if may_view_run(caller=caller, run_id=rid):
                 return True
         except Exception:
             pass
         self._json_error(403, "no access to run")
         return False
+
+    def _run_source(self, run_id: str) -> str:
+        """Источник знания о прогоне: active|export|run_dir|runs_index|"".
+
+        REGISTRY-RUN-STATUS-HYGIENE: для ``/api/meta?run_id=`` отличаем
+        существующий прогон (в т.ч. архивный) от неизвестного/вычищенного,
+        чтобы страница могла показать честный empty-state.
+
+        LIVE-MONITOR-REVIVE: «active» — кросс-процессный факт. Живой ран
+        исполняется ВНЕШНИМ раннером, у idle-wrapper (:8767) его run_id нет
+        в env, поэтому одного ``_active_run_id()`` мало: сверяем дисковую
+        мету (run_id + status=running) и свежий running в runs_index —
+        паритет с live-веткой журнала (``_run_is_live``).
+        """
+        rid = (run_id or "").strip()
+        if not rid:
+            return ""
+        # Authoritative shared phase (lab_run current.json): «finished» подавляет
+        # process-local env/meta-shortcuts (устранение stale «active»).
+        shared_phase = shared_run_phase(rid)
+        if shared_phase == "running":
+            return "active"
+        shared_finished = shared_phase == "finished"
+        try:
+            if not shared_finished and str(diary_bus._active_run_id() or "") == rid:
+                return "active"
+        except Exception:
+            pass
+        # Кросс-процессный live: мета на диске говорит «этот ран сейчас идёт».
+        try:
+            meta = diary_bus.get_meta() or {}
+            meta_rid = str(meta.get("run_id") or "").strip()
+            meta_status = str(meta.get("status") or "").strip().lower()
+            if not shared_finished and meta_rid == rid and meta_status == "running":
+                return "active"
+        except Exception:
+            pass
+        # Фолбэк: свежий running в runs_index (старт зафиксирован, финала нет).
+        # Shared, process-independent live signal (lab_run current.json).
+        if run_is_live_shared(rid):
+            return "active"
+        if self._run_is_live(rid):
+            return "active"
+        try:
+            if diary_bus.export_ndjson_path_for_run_id(rid) is not None:
+                return "export"
+        except Exception:
+            pass
+        try:
+            from pathlib import Path as _Path
+
+            from utils.paths import RUNS_DIR
+
+            if (_Path(RUNS_DIR) / rid).is_dir():
+                return "run_dir"
+        except Exception:
+            pass
+        try:
+            from utils.runs_index import _lookup_run_index
+
+            if _lookup_run_index(rid) is not None:
+                return "runs_index"
+        except Exception:
+            pass
+        return ""
+
+    def _run_is_live(self, run_id: str) -> bool:
+        """MONITOR-RETENTION-TEST-LEAK: прогон СЕЙЧАС идёт (свежий running в runs_index).
+
+        Отличает живой ран (архив появится после финализации) от завершённого,
+        у которого архив отсутствует/вычищен retention-политикой.
+        """
+        rid = (run_id or "").strip()
+        if not rid:
+            return False
+        try:
+            from utils.checks_registry import _run_is_freshly_running
+            from utils.runs_index import _lookup_run_index
+
+            return bool(_run_is_freshly_running(_lookup_run_index(rid)))
+        except Exception:
+            return False
 
     def _accept_run_event(self):
         """
@@ -1815,7 +1992,7 @@ class _LiveHandler(BaseHTTPRequestHandler):
                     "status": "success",
                     "ci_verdict": payload.get("ci_verdict"),
                     "owner_user_id": payload.get("owner_user_id")
-                    or parse_caller_user(self.headers)
+                    or parse_caller_user(self.headers, peer_host=self.client_address[0])
                     or meta_owner,
                     "source": "run_ended",
                 }
@@ -1860,7 +2037,10 @@ class _LiveHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _serve_recording_status(self):
-        """B-2: статус видео-записи — ready / size / path."""
+        """B-2 + MONITOR-LIVE-DEEPLINK: статус видео-записи run'а.
+
+        ready / recording (идёт сейчас) / reason — без cross-run fallback.
+        """
         qs = parse_qs(urlparse(self.path).query)
         run_id = (qs.get("run_id") or [""])[0]
         if not run_id:
@@ -1869,19 +2049,21 @@ class _LiveHandler(BaseHTTPRequestHandler):
         if not self._gate_run_id(run_id):
             return
         try:
-            from utils.run_recording import find_video_for_run
-            path = find_video_for_run(run_id)
+            from utils.run_recording import capture_status
+
+            status = capture_status(run_id)
         except Exception as exc:
             self._json_error(500, str(exc))
             return
-        if path is None:
-            payload = {"ok": True, "ready": False}
-        else:
-            try:
-                size = path.stat().st_size
-            except OSError:
-                size = 0
-            payload = {"ok": True, "ready": True, "path": str(path), "size": size}
+        payload = {
+            "ok": True,
+            "run_id": run_id,
+            "ready": bool(status.get("ready")),
+            "recording": bool(status.get("recording")),
+            "path": status.get("path"),
+            "size": int(status.get("size") or 0),
+            "reason": status.get("reason") or "",
+        }
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self._json_response(body)
 
@@ -1896,7 +2078,7 @@ class _LiveHandler(BaseHTTPRequestHandler):
             from utils.live_pers_acl import parse_caller_user
             from utils.runs_index import list_run_index
 
-            caller = parse_caller_user(self.headers)
+            caller = parse_caller_user(self.headers, peer_host=self.client_address[0])
             rows = list_run_index(limit=limit)
             # MH-7: фильтр по caller (политика видимости)
             from utils.live_pers_acl import filter_runs_for_caller
@@ -1921,7 +2103,7 @@ class _LiveHandler(BaseHTTPRequestHandler):
             from utils.live_pers_acl import filter_runs_for_caller, parse_caller_user
             from utils.runs_index import list_run_apps
 
-            caller = parse_caller_user(self.headers)
+            caller = parse_caller_user(self.headers, peer_host=self.client_address[0])
             apps = list_run_apps()
             # MH-7: ACL-фильтр. Если caller — оператор, оставляем только
             # его instance'ы и убираем пустые deploy/app.
@@ -2211,13 +2393,7 @@ class _LiveHandler(BaseHTTPRequestHandler):
         want_kind = (kind_filter or "").strip()
 
         def _match(ev: dict) -> bool:
-            if want_run and ev.get("run_id") not in (want_run, ""):
-                return False if ev.get("run_id") else True
-            if want_kind:
-                from utils.diary_bus import _kind_match
-                if not _kind_match(want_kind, ev.get("kind", "")):
-                    return False
-            return True
+            return _diary_event_matches(ev, want_run, want_kind)
 
         backlog = [e for e in diary_bus.read_file_backlog(filt) if _match(e)]
         offset = diary_bus.file_size()
@@ -2430,13 +2606,21 @@ class _LiveHandler(BaseHTTPRequestHandler):
         except Exception:
             self._json_error(500, "trend_failed")
             return
-        body = json.dumps(data, ensure_ascii=False).encode("utf-8")
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(body)))
-        self._cors_headers()
-        self.end_headers()
-        self.wfile.write(body)
+        # LIVE-SUMMARY-TREND-MEMORY: кодирование/отдача не должны ронять shell.
+        try:
+            body = json.dumps(data, ensure_ascii=False).encode("utf-8")
+        except (MemoryError, RecursionError, ValueError, TypeError):
+            self._json_error(500, "trend_too_large")
+            return
+        try:
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self._cors_headers()
+            self.end_headers()
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionError, OSError):
+            return
 
     def _serve_run_evidence(self, run_id: str):
         """PERS-B5: evidence proxy — список артефактов прогона с presigned URLs."""

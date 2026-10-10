@@ -27,13 +27,17 @@
 
 ---
 
-## 3. Диспетч и делегирование (PK-DIR-006)
+## 3. Диспетч и делегирование (PK-DIR-006 · PK-DIR-010)
 
-Диспетч воркеров выполняется **строго одной строкой**:
+Диспетч воркеров выполняется **строго одной строкой**, с маркировкой stream:
 ```text
-Worker, CARD-ID, D:\prettyk-secops\docs\backlog.md
+Worker > Stream > Task-ID(s) -> абсолютный путь к backlog
+
+Boss > SecOps > BROWSER-STUDIO-VIEWFIT-FE -> D:\prettyk-secops\docs\backlog.md
 ```
-- Один воркер = одна задача = одна строка. Без размытого владения вида «Boss + Luna».
+- `Stream` — продуктовый/workstream-владелец, принимающий результат: `SecOps` (Keeper), `Airlock` (Cosmo), `Hub` (Arbiter), `Web IDE` (Vector), `Platform` (Максим), `Void` (Vector — центральная cross-line поверхность). Один dispatch — один stream; несколько Task-ID допустимы в одном stream и у одного воркера.
+- **Первая строка отчёта воркера** — routing header: `Worker > SecOps`; stream обязан совпадать с dispatch, иначе маршрут уточняется, а не угадывается. Прежняя форма `Worker, CARD-ID, ...` (PK-DIR-006) — историческая; для новых dispatch применяется только stream-схема.
+- Один воркер = одна задача = одна строка. Без размытого владения вида «Boss + Luna»; при разных stream/владельцах — отдельные карточки и отдельные строки.
 - Воркер начинает сессию с чтения `PROGRESS.md` + `git log --oneline -10`.
 - По завершении воркер обновляет статус в `docs/backlog.md` и пишет строку в `PROGRESS.md`.
 
@@ -51,4 +55,4 @@ Worker, CARD-ID, D:\prettyk-secops\docs\backlog.md
 | [`PROGRESS.md`](PROGRESS.md) | **Журнал репозитория:** текущее состояние, последние действия и следующие шаги |
 | [`docs/backlog.md`](docs/backlog.md) | **QUEUE:** оперативный верстак, активные и закрытые карточки задач |
 | [`sanctuary/pure/INDEX.md`](sanctuary/pure/INDEX.md) | **Канон Святилища:** запечатанный реестр принятых истин (2FA sealed) |
-| [`D:\prettyk\docs\board\ANNOUNCEMENTS.md`](../prettyk/docs/board/ANNOUNCEMENTS.md) | **Доска линейки:** актуальные директивы (PK-DIR-XXX) и межпродуктовый статус |
+| [`D:\prettyk.io\docs\board\ANNOUNCEMENTS.md`](../prettyk.io/docs/board/ANNOUNCEMENTS.md) | **Доска линейки:** актуальные директивы (PK-DIR-XXX) и межпродуктовый статус |

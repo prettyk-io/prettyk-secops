@@ -36,7 +36,7 @@ import { LogoutButton } from './shell/LogoutButton';
 import { LanguageSwitcher } from './shell/LanguageSwitcher';
 import { useThemeMode } from './theme/ThemeProvider';
 import { useLocale } from './locales';
-import { collectAllMonacoDiagnostics } from './monaco/penguinDiagnosticsGate';
+import { collectGateDiagnostics } from './monaco/penguinDiagnosticsGate';
 import { readSession, capsForUser } from './shell/auth';
 import { clampFormDataForRoleCaps, consumeRoleCapsThreat } from './utils/applyRoleCaps';
 import { serializeCheckBuffer, type CheckCloseGuard } from './checks/closeGuard';
@@ -59,7 +59,7 @@ import {
 import {
   scheduleRevisionedSave,
   flushDraftRevisioned,
-  setDraftRevision,
+  adoptDraftRevision,
   onDraftConflict,
   resolveConflict,
 } from './checks/draftRevision';
@@ -75,7 +75,8 @@ import {
   type DownloadActContext,
 } from './results/ResultsWorkspace';
 import { postRunStart } from './results/postRunStart';
-import { buildMonitorUrl } from './results/monitorLink';
+import { LIVE_HOME } from './api/apiBase';
+import { resolveMonitorTarget, type MonitorTarget } from './results/monitorLink';
 import { buildRunRecordFromLive } from './results/buildRunRecordFromLive';
 import { buildBlankPayload } from './results/blankPayload';
 import { downloadBlankHtml } from './results/blankHtml';
@@ -363,7 +364,7 @@ export default function App({
     const item = getCheck(checkId);
     if (!item) return;
     restoreDraftIfNewer(checkId, item.updated_at)
-      .then((draft) => {
+      .then(({ draft, revision }) => {
         if (draft) {
           setRawFormData(
             clampFormDataForRoleCaps(draft.wired, roleCaps),
@@ -371,13 +372,15 @@ export default function App({
           if (draft.resource_contents) {
             setResourceContents({ ...draft.resource_contents });
           }
-          // Restore revision if server sent one (PK-WB-S2)
-          if (typeof draft.meta?.revision === 'number') {
-            setDraftRevision(checkId, draft.meta.revision);
-          }
         } else {
           // Mark current state as clean baseline for draft tracking
           markDraftClean(checkId, rawFormData, resourceContents);
+        }
+        // DRAFT-CONFLICT-TRUTH: адоптим серверный revision всегда (даже когда
+        // черновик не новее) — иначе первый autosave стартует с expected=0 и
+        // ловит вечный 409. Монотонно: не понижаем уже известный revision.
+        if (revision !== null) {
+          adoptDraftRevision(checkId, revision);
         }
       })
       .catch(() => {
@@ -494,7 +497,9 @@ export default function App({
       data: unknown = rawFormData,
       onBackendUnavailable?: () => void,
     ): Promise<boolean> => {
-      const diags = collectAllMonacoDiagnostics(monaco);
+      // RUN-GATE-MARKERS: гейт смотрит активную модель редактора, не все модели
+      // (stale/скрытые модели больше не дают ложную модалку «Ошибки в редакторе»).
+      const diags = collectGateDiagnostics(monaco);
       if (diags.length > 0) {
         markValidationFailed({
           title: 'Ошибки в редакторе',
@@ -683,12 +688,16 @@ export default function App({
         void message.error(pipelineSchemaBlockedToast());
       },
       onRunStarted: (runId) => {
-        const activeId = getActiveCheckId();
-        if (activeId) {
-          upsertCheckRun(activeId, {
+        // MONITOR-FRESH-STAMP: ран стартовал из ЭТОГО чека (checkId-prop), а не
+        // из «активного» localStorage-курсора: он бывает чужим → штамп времени
+        // уезжал в другой чек, а запись этого чека рождалась без started_at.
+        const targetId = checkId || getActiveCheckId();
+        if (targetId) {
+          upsertCheckRun(targetId, {
             run_id: runId,
             started_at: new Date().toISOString(),
             status: 'running',
+            check_id: targetId,
           });
         }
         void message.success(pipelineRunStartedToast(runId));
@@ -711,6 +720,7 @@ export default function App({
         ),
     });
   }, [
+    checkId,
     gateConstructorsOrPenguin,
     goToView,
     markValidationFailed,
@@ -736,10 +746,26 @@ export default function App({
     });
   }, [checkId, message, onCheckDeleted]);
 
-  // Monitor — открыть Live `?run_id=&token=` для текущего инстанса
+  // Monitor — открыть Live для текущего инстанса: живой → последний с
+  // артефактами → Live home (MONITOR-ENTRY-LINK-TRUTH). Окно открываем
+  // синхронно (popup-blocker), адрес подставляем после резолва цели.
   const handleOpenMonitor = useCallback(() => {
-    const monitorUrl = buildMonitorUrl(checkId);
-    window.open(monitorUrl, '_blank', 'noopener,noreferrer');
+    const win = window.open('about:blank', '_blank');
+    if (win) {
+      try {
+        win.opener = null;
+      } catch {
+        /* cross-origin/hardened — не критично */
+      }
+    }
+    void (async () => {
+      const target = await resolveMonitorTarget(checkId);
+      if (win && !win.closed) {
+        win.location.replace(target.url);
+        return;
+      }
+      window.open(target.url, '_blank', 'noopener,noreferrer');
+    })();
   }, [checkId]);
 
   // Monitor indicator state (серый → зелёный пульс → зелёный static)
@@ -767,6 +793,30 @@ export default function App({
     };
     const timer = window.setInterval(refresh, 2_000);
     return () => window.clearInterval(timer);
+  }, [checkId]);
+
+  // MONITOR-ENTRY-LINK-TRUTH: цель «Мониторинг» — ран, который реально можно
+  // посмотреть (живой → последний с журналом/записью → Live home). Пустой/
+  // вычищенный ран не выбирается; пробы — по Live API статусов.
+  const [monitorTarget, setMonitorTarget] = useState<MonitorTarget>(() => ({
+    url: LIVE_HOME,
+    reason: 'none',
+  }));
+
+  useEffect(() => {
+    let cancelled = false;
+    const refresh = async () => {
+      const target = await resolveMonitorTarget(checkId);
+      if (!cancelled) {
+        setMonitorTarget(target);
+      }
+    };
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), 15_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
   }, [checkId]);
 
   // Replay from History — one-shot pipeline start after check open
@@ -1096,7 +1146,8 @@ export default function App({
                 onSavePackage={handleSavePackage}
                 onLaunch={handlePipelineStart}
                 launchStarting={pipelineStarting}
-                monitorUrl={buildMonitorUrl(checkId)}
+                monitorUrl={monitorTarget.url}
+                monitorRunId={monitorTarget.run?.run_id ?? null}
                 formData={rawFormData}
               />
             </div>

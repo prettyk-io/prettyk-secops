@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
@@ -303,8 +304,14 @@ def test_run_ended_export_and_latest():
     from urllib.error import HTTPError
     from urllib.request import Request
 
-    diary_bus.publish("STEP", "before-export", channel="diary")
-    diary_bus.publish("HIGH", "scanner-line", channel="scanner")
+    # MONITOR-LIVE-DEEPLINK: события прогона штампуются его run_id (как в раннере,
+    # где PK_RUN_ID стоит в окружении) — экспорт строго по run.
+    os.environ["PK_RUN_ID"] = "export-live"
+    try:
+        diary_bus.publish("STEP", "before-export", channel="diary")
+        diary_bus.publish("HIGH", "scanner-line", channel="scanner")
+    finally:
+        os.environ.pop("PK_RUN_ID", None)
     url = start_live_server(session_name="export-live")
     assert url == "http://127.0.0.1:18767/"
 
@@ -763,6 +770,130 @@ def test_journal_latest_query_by_run_id():
     assert payload["ok"] is True
     assert payload["run_id"] == "no-such-run"
     assert payload["events_total"] == 0
+    # REGISTRY-RUN-STATUS-HYGIENE: replay честно различает «события есть» и
+    # «прогон не найден/вычищен» (empty-state для страницы).
+    assert payload["run_found"] is False
+    assert payload.get("reason")
+
+
+def test_meta_unknown_run_reports_not_found():
+    """REGISTRY-RUN-STATUS-HYGIENE: /api/meta?run_id=unknown — честный empty-state,
+    а не мета живого чужого прогона."""
+    from urllib.request import urlopen
+
+    url = start_live_server(session_name="meta-unknown-run")
+    with urlopen(url + "api/meta?run_id=no-such-run-xyz", timeout=2) as resp:
+        payload = json.loads(resp.read().decode("utf-8"))
+    assert payload["ok"] is True
+    assert payload["run_found"] is False
+    assert payload["requested_run_id"] == "no-such-run-xyz"
+    assert payload["status"] == "unknown"
+    assert payload.get("reason")
+    # resident-поля чужого прогона не подставлены
+    assert set(payload) <= {"ok", "run_found", "requested_run_id", "status", "reason"}
+
+
+def test_meta_live_run_cross_process_is_live(monkeypatch, tmp_path):
+    """LIVE-MONITOR-REVIVE: живой ран исполняется ВНЕШНИМ раннером (у idle-сервера
+    :8767 его нет в env) - мета обязана резолвить live кросс-процессно:
+    run_source=active, status=running, run_id не выпадает. Иначе страница метит
+    живой ран «архивом #...» и не включает live-режим."""
+    import time as _time
+    from urllib.request import urlopen
+
+    index = tmp_path / "runs_index.ndjson"
+    index.write_text(
+        json.dumps(
+            {
+                "run_id": "run-live-cc",
+                "status": "running",
+                "last_run_ts": _time.time(),
+                "owner_user_id": "admin",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("PK_RUNS_INDEX_PATH", str(index))
+    monkeypatch.delenv("PK_RUN_ID", raising=False)
+    monkeypatch.delenv("PK_LIVE_LOCAL_IDENTITY", raising=False)
+    # Дисковая мета, как её пишет раннер; сервер (idle-wrapper) читает её
+    # кросс-процессно. Файл уводим в tmp - реальные артефакты не трогаем.
+    monkeypatch.setattr(diary_bus, "LIVE_META_JSON", tmp_path / "meta.json")
+    monkeypatch.setattr(diary_bus, "_meta", dict(diary_bus._meta))
+    diary_bus.set_meta(run_id="run-live-cc", status="running")
+
+    url = start_live_server(session_name="meta-live-cross")
+    with urlopen(url + "api/meta?run_id=run-live-cc", timeout=3) as resp:
+        payload = json.loads(resp.read().decode("utf-8"))
+    assert payload["run_found"] is True
+    assert payload["run_source"] == "active"
+    assert payload["status"] == "running"
+    assert payload["run_id"] == "run-live-cc"
+    assert payload["requested_run_id"] == "run-live-cc"
+
+
+def test_meta_finished_run_is_not_live(monkeypatch, tmp_path):
+    """LIVE-MONITOR-REVIVE (негатив): завершённый ран НЕ считается живым даже при
+    свежей мете на диске - source уходит в архивный (export), live не включается."""
+    from urllib.request import urlopen
+
+    exports = tmp_path / "exports"
+    exports.mkdir(parents=True)
+    (exports / "run-done.ndjson").write_text("{}", encoding="utf-8")
+    (exports / "run-done.json").write_text(
+        json.dumps({"run_id": "run-done"}), encoding="utf-8"
+    )
+    monkeypatch.setattr(diary_bus, "LIVE_EXPORTS_DIR", exports)
+    monkeypatch.setattr(diary_bus, "LIVE_META_JSON", tmp_path / "meta.json")
+    monkeypatch.setattr(diary_bus, "_meta", dict(diary_bus._meta))
+    monkeypatch.delenv("PK_RUN_ID", raising=False)
+    monkeypatch.delenv("PK_LIVE_LOCAL_IDENTITY", raising=False)
+    diary_bus.set_meta(run_id="run-done", status="waiting")
+
+    url = start_live_server(session_name="meta-finished-run")
+    with urlopen(url + "api/meta?run_id=run-done", timeout=3) as resp:
+        payload = json.loads(resp.read().decode("utf-8"))
+    assert payload["run_found"] is True
+    assert payload["run_source"] == "export"
+    assert payload["status"] == "waiting"
+
+
+def test_meta_run_id_loopback_identity(monkeypatch, tmp_path):
+    """MONITOR-ACL-IDENTITY: loopback без кук открывает свой (admin) прогон;
+    чужой caller — честный 403."""
+    import urllib.request
+    from urllib.error import HTTPError
+    from urllib.request import urlopen
+
+    index = tmp_path / "runs_index.ndjson"
+    index.write_text(
+        json.dumps(
+            {"run_id": "run-monitor-acl", "owner_user_id": "admin", "status": "success"}
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("PK_RUNS_INDEX_PATH", str(index))
+    monkeypatch.delenv("PK_LIVE_LOCAL_IDENTITY", raising=False)
+
+    url = start_live_server(session_name="acl-loopback")
+    # без identity (обычный браузер на localhost): loopback-fallback admin → доступ есть
+    with urlopen(url + "api/meta?run_id=run-monitor-acl", timeout=2) as resp:
+        payload = json.loads(resp.read().decode("utf-8"))
+    assert payload.get("run_found") is True
+
+    # гость (не владелец, не админ) → 403, а не маска «не найден»
+    req = urllib.request.Request(
+        url + "api/meta?run_id=run-monitor-acl",
+        headers={"Cookie": "pk_user=appsec-expert"},
+    )
+    try:
+        urlopen(req, timeout=2)
+    except HTTPError as exc:
+        assert exc.code == 403
+    else:
+        raise AssertionError("expected 403 for foreign caller")
 
 
 def test_export_by_run_id_requires_param():
@@ -877,15 +1008,30 @@ def test_serve_runs_apps_and_index(tmp_path, monkeypatch):
 
 
 def test_serve_retention_api(tmp_path, monkeypatch):
-    """RET-API: проверка GET /api/admin/retention/status и POST clean."""
+    """RET-API: status + clean. MONITOR-RETENTION-TEST-LEAK: ВСЕ roots retention'а —
+    tmp (реальные exports/runs стенда тест не трогает); days<1 без confirm → 400."""
+    from urllib.error import HTTPError
     from urllib.request import Request, urlopen
+
     from utils import retention_manager
 
     vdir = tmp_path / "video"
     vdir.mkdir(parents=True)
     (vdir / "old.mp4").write_bytes(b"test")
+    exports = tmp_path / "live" / "exports"
+    exports.mkdir(parents=True)
+    (exports / "run-z.ndjson").write_bytes(b"{}")
+    runs = tmp_path / "runs"
+    runs.mkdir(parents=True)
+    (runs / "run-z").mkdir()
+    (runs / "run-z" / "f.txt").write_bytes(b"x")
 
+    # Полная изоляция: патчим ВСЕ каталоги, которые читает/чистит retention_manager.
     monkeypatch.setattr(retention_manager, "VIDEO_DIR", vdir)
+    monkeypatch.setattr(retention_manager, "LIVE_EXPORTS_DIR", exports)
+    monkeypatch.setattr(retention_manager, "RUNS_DIR", runs)
+    monkeypatch.setattr(retention_manager, "LIVE_DIR", tmp_path / "live")
+    monkeypatch.setattr(retention_manager, "ALLURE_RESULTS_DIR", tmp_path / "allure")
 
     url = start_live_server(session_name="test-retention-api")
     with urlopen(url + "api/admin/retention/status", timeout=2) as resp:
@@ -893,20 +1039,41 @@ def test_serve_retention_api(tmp_path, monkeypatch):
     assert status_data["ok"] is True
     assert "categories" in status_data
 
-    # POST clean
+    # days<1 без явного подтверждения → 400 (guard), ничего не удалено
     req = Request(
         url + "api/admin/retention/clean",
         data=json.dumps({"days_older_than": 0, "dry_run": False}).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+    )
+    try:
+        urlopen(req, timeout=2)
+    except HTTPError as exc:
+        assert exc.code == 400
+        payload = json.loads(exc.read().decode("utf-8"))
+        assert payload["ok"] is False
+        assert "allow_full_wipe" in str(payload.get("error") or "")
+    else:
+        raise AssertionError("expected 400 for full wipe without confirm")
+    assert (vdir / "old.mp4").exists()
+    assert (runs / "run-z").exists()
+
+    # days=0 + allow_full_wipe=true → ok, чистит ТОЛЬКО tmp-изолированный стенд
+    req = Request(
+        url + "api/admin/retention/clean",
+        data=json.dumps(
+            {"days_older_than": 0, "dry_run": False, "allow_full_wipe": True}
+        ).encode("utf-8"),
         headers={"Content-Type": "application/json"},
     )
     with urlopen(req, timeout=2) as resp:
         clean_data = json.loads(resp.read().decode("utf-8"))
     assert clean_data["ok"] is True
     assert clean_data["deleted_count"] >= 1
+    assert not (vdir / "old.mp4").exists()
 
 
 def test_export_diary_filters_by_run_id(monkeypatch):
-    """export_diary_snapshot filters events by run_id; events without run_id pass through."""
+    """MONITOR-LIVE-DEEPLINK: run-export строго по run_id; unscoped не подмешивается."""
     monkeypatch.delenv("PK_RUN_ID", raising=False)
     diary_bus.clear()
     diary_bus.publish("STEP", "shared-no-run", channel="diary")
@@ -919,20 +1086,20 @@ def test_export_diary_filters_by_run_id(monkeypatch):
     all_export = diary_bus.export_diary_snapshot(run_id="", filter_preset="all")
     assert all_export["events_count"] == 3
 
-    # Filter to alpha — events without run_id AND alpha events
+    # Filter to alpha — ТОЛЬКО alpha (unscoped/чужие отсечены)
     alpha_export = diary_bus.export_diary_snapshot(run_id="alpha", filter_preset="all")
-    assert alpha_export["events_count"] == 2
+    assert alpha_export["events_count"] == 1
     raw = Path(alpha_export["export_path"]).read_text(encoding="utf-8")
     lines = [json.loads(x) for x in raw.splitlines() if x.strip()]
-    assert any("shared-no-run" in e["text"] for e in lines)
+    assert not any("shared-no-run" in e["text"] for e in lines)
     assert any("alpha-only" in e["text"] for e in lines)
     assert not any("beta-only" in e.get("text", "") for e in lines)
 
-    # Filter to beta — events without run_id AND beta events
+    # Filter to beta — ТОЛЬКО beta
     beta_export = diary_bus.export_diary_snapshot(run_id="beta", filter_preset="all")
     raw_beta = Path(beta_export["export_path"]).read_text(encoding="utf-8")
     lines_beta = [json.loads(x) for x in raw_beta.splitlines() if x.strip()]
-    assert any("shared-no-run" in e["text"] for e in lines_beta)
+    assert not any("shared-no-run" in e["text"] for e in lines_beta)
     assert any("beta-only" in e["text"] for e in lines_beta)
     assert not any("alpha-only" in e.get("text", "") for e in lines_beta)
 
@@ -976,5 +1143,122 @@ def test_get_results_hooks_filters_by_run_id(monkeypatch, tmp_path: Path):
     assert unknown_hooks["allure"] is None
     assert unknown_hooks["dojo"] is None
     assert unknown_hooks["scanner"] is not None  # no run_id — passes
+
+
+# ── MONITOR-LIVE-DEEPLINK: run-scoped live events / archive / recording ──────
+
+
+def test_diary_event_match_is_run_scoped():
+    """Строгий run-фильтр SSE: unscoped/чужие события не подмешиваются."""
+    from utils.live_server import _diary_event_matches
+
+    assert _diary_event_matches({"run_id": "A"}, "A") is True
+    assert _diary_event_matches({"run_id": "B"}, "A") is False
+    assert _diary_event_matches({}, "A") is False  # unscoped не подмешивается
+    assert _diary_event_matches({}, "") is True  # без run-фильтра — всё
+
+
+def test_journal_run_scoped_live_fallback(monkeypatch, tmp_path):
+    """Живой ран (экспорта нет): journal?run_id= отдаёт ТОЛЬКО его события."""
+    from urllib.request import urlopen
+
+    (Path(diary_bus.DIARY_NDJSON)).write_text(
+        json.dumps({"kind": "STEP", "text": "own-step", "run_id": "run-liveX", "ts": 1})
+        + "\n"
+        + json.dumps({"kind": "STEP", "text": "unscoped", "ts": 2})
+        + "\n"
+        + json.dumps({"kind": "STEP", "text": "foreign", "run_id": "run-other", "ts": 3})
+        + "\n",
+        encoding="utf-8",
+    )
+    index = tmp_path / "runs_index.ndjson"
+    index.write_text(
+        json.dumps({"run_id": "run-liveX", "status": "running", "owner_user_id": "admin"})
+        + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("PK_RUNS_INDEX_PATH", str(index))
+    monkeypatch.delenv("PK_LIVE_LOCAL_IDENTITY", raising=False)
+
+    url = start_live_server(session_name="live-scope")
+    with urlopen(url + "api/journal/latest?run_id=run-liveX&preset=all", timeout=3) as resp:
+        payload = json.loads(resp.read().decode("utf-8"))
+    assert [e.get("text") for e in payload["events"]] == ["own-step"]
+    assert payload["run_found"] is True
+    assert payload.get("live") is True
+    assert payload.get("run_archive") is False
+
+
+def test_recording_status_honest_states(monkeypatch, tmp_path):
+    """MONITOR-LIVE-DEEPLINK: статус записи — ready/recording/reason, без fallback."""
+    from urllib.request import urlopen
+
+    from utils import run_recording
+
+    monkeypatch.setattr(run_recording, "VIDEO_DIR", tmp_path)
+    monkeypatch.delenv("PK_LIVE_LOCAL_IDENTITY", raising=False)
+    url = start_live_server(session_name="rec-status")
+
+    with urlopen(url + "api/recording/status?run_id=run-rec-none", timeout=3) as resp:
+        payload = json.loads(resp.read().decode("utf-8"))
+    assert payload["ready"] is False
+    assert payload["recording"] is False
+    assert payload["reason"]
+
+    (tmp_path / "run-rec-none.mp4").write_bytes(b"\x00" * 10)
+    with urlopen(url + "api/recording/status?run_id=run-rec-none", timeout=3) as resp:
+        payload = json.loads(resp.read().decode("utf-8"))
+    assert payload["ready"] is True
+    assert payload["size"] == 10
+    assert payload["reason"] == ""
+
+
+def test_journal_finished_run_without_archive_is_honest(monkeypatch, tmp_path):
+    """MONITOR-RETENTION-TEST-LEAK: завершённый ран без архива — «вычищен», не «live»."""
+    from urllib.request import urlopen
+
+    index = tmp_path / "runs_index.ndjson"
+    index.write_text(
+        json.dumps({"run_id": "run-paged01", "status": "success", "owner_user_id": "admin"})
+        + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("PK_RUNS_INDEX_PATH", str(index))
+
+    url = start_live_server(session_name="journal-archive-gone")
+    with urlopen(url + "api/journal?run_id=run-paged01&preset=all", timeout=3) as resp:
+        payload = json.loads(resp.read().decode("utf-8"))
+    assert payload["run_found"] is False
+    assert payload["run_archive"] is False
+    assert "вычищен" in payload["reason"]
+    assert not payload.get("live")
+
+
+def test_journal_fresh_running_without_archive_is_live(monkeypatch, tmp_path):
+    """Свежий running без архива → live (архив появится после финализации)."""
+    import time as _time
+    from urllib.request import urlopen
+
+    index = tmp_path / "runs_index.ndjson"
+    index.write_text(
+        json.dumps(
+            {
+                "run_id": "run-warm01",
+                "status": "running",
+                "last_run_ts": _time.time(),
+                "owner_user_id": "admin",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("PK_RUNS_INDEX_PATH", str(index))
+
+    url = start_live_server(session_name="journal-live-warm")
+    with urlopen(url + "api/journal?run_id=run-warm01&preset=all", timeout=3) as resp:
+        payload = json.loads(resp.read().decode("utf-8"))
+    assert payload["run_found"] is True
+    assert payload.get("live") is True
+    assert payload["run_archive"] is False
 
 

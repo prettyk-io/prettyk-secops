@@ -1,0 +1,89 @@
+# RUNTIME-UN-CUTOVER-GRID-WEBM: возврат боевого рантайма на Selenium Grid.
+#
+# Grid выпилен cutover-коммитом 3dfc2f1 (28.08); этот файл возвращает 1:1 состав
+# (hub + chrome + firefox + noVNC :7900/:7901 + chrome-video), образы уже на диске.
+# Playwright-контур (playwright-authoring) живёт отдельно и НЕ удаляется.
+#
+# Видео: sidecar chrome-video пишет MP4 в ../reports/video (как было исторически,
+# SE_VIDEO_FILE_NAME=auto + se:videoName от клиента); runner-финал конвертирует
+# запись в WEBM (`{run_id}.webm`) — целевой формат rewind монитора.
+#
+# Старт: `orchestrator/tools/lab_up.ps1` (Start-Compose docker-compose.grid.yml).
+
+services:
+  selenium-hub:
+    image: selenium/hub:4.34.0-20250717
+    container_name: selenium-hub
+    restart: unless-stopped
+    ports:
+      - "4444:4444"
+    environment:
+      - SE_SESSION_TIMEOUT=600
+      # Не отклонять неизвестные caps (напр. устаревшие selenoid:options от KDT).
+      - SE_REJECT_UNSUPPORTED_CAPS=false
+
+  chrome:
+    image: selenium/node-chrome:4.34.0-20250717
+    container_name: selenium-chrome
+    restart: unless-stopped
+    shm_size: 2gb
+    depends_on:
+      - selenium-hub
+    ports:
+      - "7900:7900"
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_SESSION_TIMEOUT=600
+      # Публичный URL Grid с хоста — корректные ссылки в UI / session info.
+      - SE_NODE_GRID_URL=http://127.0.0.1:4444
+      - SE_VNC_NO_PASSWORD=1
+      - SE_SCREEN_WIDTH=1920
+      - SE_SCREEN_HEIGHT=1080
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  firefox:
+    image: selenium/node-firefox:4.34.0-20250717
+    container_name: selenium-firefox
+    restart: unless-stopped
+    shm_size: 2gb
+    depends_on:
+      - selenium-hub
+    ports:
+      - "7901:7900"
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_SESSION_TIMEOUT=600
+      - SE_NODE_GRID_URL=http://127.0.0.1:4444
+      - SE_VNC_NO_PASSWORD=1
+      - SE_SCREEN_WIDTH=1920
+      - SE_SCREEN_HEIGHT=1080
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # Запись видео Chrome (1:1 к node). Клиент: se:recordVideo (по умолчанию вкл.;
+  # выкл. — PK_SELENIUM_VIDEO=0). Файлы → ../reports/video (MP4; runner конвертирует
+  # в WEBM по завершении прогона).
+  chrome-video:
+    image: selenium/video:ffmpeg-7.1-20250717
+    container_name: selenium-chrome-video
+    restart: unless-stopped
+    depends_on:
+      - chrome
+    environment:
+      DISPLAY_CONTAINER_NAME: selenium-chrome
+      SE_NODE_GRID_URL: http://selenium-hub:4444
+      SE_VIDEO_FILE_NAME: auto
+    volumes:
+      - ../reports/video:/videos
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+networks:
+  default:
+    name: pk-net
+    external: true

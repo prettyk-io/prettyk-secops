@@ -81,10 +81,10 @@ Use the canonical labels:
 | `Hub` | Arbiter |
 | `Web IDE` | Vector (Maxim is final owner) |
 | `Platform` | Maxim (Buddy/Meter by his routing) |
-| `Nexus` | Vector (cross-line documents and coordination) |
+| `Void` | Vector (central cross-line surface) |
 
 One dispatch line covers one stream only. A task in the Master backlog for a PO
-still uses that PO's product stream; use `Nexus` only when the deliverable itself
+still uses that PO's product stream; use `Void` only when the deliverable itself
 belongs to the central cross-line surface. If an assignment crosses product
 ownership, split it into owner-aligned cards and dispatch lines instead of using
 an ambiguous `Cross-product` stream.

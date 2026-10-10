@@ -56,6 +56,11 @@ def _as_event(raw: Any) -> Optional[Dict[str, Any]]:
         "channel": str(raw.get("channel") or "diary").strip().lower() or "diary",
         "text": text[:2000],
     }
+    # MONITOR-LIVE-DEEPLINK: provenance — run_id не теряется (строгий run-фильтр
+    # journal'а и клиентская идентичность).
+    rid = str(raw.get("run_id") or "").strip()
+    if rid:
+        ev["run_id"] = rid
     pretty = str(raw.get("pretty") or "").strip()
     if pretty:
         ev["pretty"] = pretty[:400]
@@ -157,6 +162,11 @@ def build_journal_from_export(
         )
     root = Path(path)
     events = read_ndjson_events(root)
+    rid = (run_id or "").strip()
+    if rid:
+        # MONITOR-LIVE-DEEPLINK: архив run'а — только его события (старые
+        # экспорты могли нести unscoped-legacy; честно режем при выдаче).
+        events = [e for e in events if str(e.get("run_id") or "").strip() == rid]
     return build_run_journal(
         events=events,
         preset=preset,
@@ -178,6 +188,10 @@ def build_journal_from_live_diary(
 
     events = [_as_event(e) for e in diary_bus.read_file_backlog("all")]
     clean = [e for e in events if e is not None]
+    rid = (run_id or "").strip()
+    if rid:
+        # MONITOR-LIVE-DEEPLINK: живые события — строго этого run.
+        clean = [e for e in clean if str(e.get("run_id") or "").strip() == rid]
     return build_run_journal(
         events=clean,
         preset=preset,

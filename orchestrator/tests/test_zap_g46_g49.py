@@ -211,6 +211,10 @@ def test_generate_report_xml_full_export_mock(tmp_path):
                 "url": "http://127.0.0.1:3000/rest/products/search",
                 "param": "q",
                 "attack": "' OR 1=1 --",
+                "description": "<p>sql desc</p>",
+                "solution": "<p>use params</p>",
+                "reference": "<p>owasp</p>",
+                "confidence": "High",
             },
             {
                 "pluginId": "10020",
@@ -236,6 +240,77 @@ def test_generate_report_xml_full_export_mock(tmp_path):
     assert "riskcode" in text and ">3<" in text
     assert "40018" in text
     assert adapter._scanner.core.xmlreport.called is False
+    # DOJO-IMPORT-500: поля, которые DD ZapParser читает через html2text —
+    # обязаны присутствовать (иначе html2text(None) → HTTP 500).
+    import xml.etree.ElementTree as ET
+
+    tree = ET.parse(path)
+    items = tree.findall("site/alerts/alertitem")
+    assert items
+    for item in items:
+        for tag in ("desc", "solution", "reference", "confidence"):
+            assert item.findtext(tag) is not None, f"<{tag}> отсутствует → Dojo 500"
+    assert "sql desc" in text and "use params" in text
+
+
+def test_owasp_xml_full_emits_dojo_required_fields(tmp_path):
+    """DOJO-IMPORT-500: даже у «бедного» alert'а desc/solution/reference есть (пустые)."""
+    adapter = ScannerAdapter.__new__(ScannerAdapter)
+    adapter._connected = True
+    adapter.base_url = "http://127.0.0.1:3000"
+    adapter._scanner = MagicMock()
+    adapter._fetch_alerts_paginated = MagicMock(
+        return_value=[
+            {"pluginId": "1", "name": "Bare alert", "risk": "Informational", "url": "http://x/"},
+        ]
+    )
+    out = tmp_path / "bare.xml"
+    adapter._export_owasp_xml_full(out)
+
+    import xml.etree.ElementTree as ET
+
+    item = ET.parse(out).find("site/alerts/alertitem")
+    assert item is not None
+    for tag in ("desc", "solution", "reference", "confidence", "cweid", "wascid"):
+        assert item.findtext(tag) is not None, f"<{tag}> отсутствует → Dojo 500"
+    assert item.findtext("desc") == ""
+    assert item.findtext("alert") == "Bare alert"
+
+
+def test_owasp_xml_full_sanitizes_control_chars(tmp_path):
+    """DOJO-IMPORT-500 (NUL-инцидент house-run 114a): control-символы fuzz-пейлоадов
+    стрипаются — XML остаётся well-formed (иначе defusedxml ParseError → HTTP 500)."""
+    adapter = ScannerAdapter.__new__(ScannerAdapter)
+    adapter._connected = True
+    adapter.base_url = "http://127.0.0.1:3000"
+    adapter._scanner = MagicMock()
+    adapter._fetch_alerts_paginated = MagicMock(
+        return_value=[
+            {
+                "pluginId": "40012",
+                "name": "Cross Site Scripting",
+                "risk": "High",
+                "url": "http://127.0.0.1:3000/rest/user/login",
+                "param": "email",
+                "method": "POST",
+                "attack": "\x00<script>alert(1)</script>\x0b",
+                "evidence": "XSS\x1f",
+                "description": "desc\x00",
+            }
+        ]
+    )
+    out = tmp_path / "fuzz.xml"
+    adapter._export_owasp_xml_full(out)
+
+    import xml.etree.ElementTree as ET
+
+    tree = ET.parse(out)  # не должно быть ParseError «invalid token»
+    item = tree.find("site/alerts/alertitem")
+    assert item.find("instances/instance/attack").text == "<script>alert(1)</script>"
+    assert item.findtext("desc") == "desc"
+    raw = out.read_bytes()
+    for bad in (b"\x00", b"\x0b", b"\x1f"):
+        assert bad not in raw, f"control-байт {bad!r} остался в XML"
 
 
 def test_generate_report_html_deterministic_file(tmp_path):

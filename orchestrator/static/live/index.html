@@ -274,6 +274,22 @@
     .status-flag.offline .status-dot {
       background: #ea4335;
     }
+    /* REGISTRY-RUN-STATUS-HYGIENE: честный empty-state для replay/неизвестного run */
+    .run-state-banner {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      margin: 0 8px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #f0d9a8;
+      background: rgba(210, 150, 30, 0.14);
+      border: 1px solid rgba(210, 150, 30, 0.45);
+      max-width: 52ch;
+      line-height: 1.3;
+    }
+    .run-state-banner.show { display: inline-flex; }
     @keyframes status-pulse {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.45; }
@@ -932,6 +948,23 @@
     body.homepage-view .playhead,
     body.homepage-view .layout { display: none; }
     body.homepage-view header h1 { flex: 1; }
+    /* MONITOR-DEEPLINK-LIVE-CLIENT: честное состояние recording в хедере */
+    .recording-state {
+      font-size: 11px;
+      color: var(--muted);
+      border: 1px solid rgba(138, 180, 248, 0.35);
+      border-radius: 999px;
+      padding: 2px 8px;
+      margin-left: 6px;
+      max-width: 460px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .recording-state[data-state="pending"],
+    .recording-state[data-state="live"] { color: #fdd663; border-color: rgba(253, 214, 99, 0.4); }
+    .recording-state[data-state="ready"] { color: #81c995; border-color: rgba(129, 201, 149, 0.45); }
+    .recording-state[data-state="absent"] { color: #f28b82; border-color: rgba(242, 139, 130, 0.45); }
   </style>
 </head>
 <body>
@@ -941,10 +974,12 @@
       <span id="instanceRunId" class="instance-tag" title="">#…</span>
       <span id="instanceCheckId" class="instance-tag" title="" hidden>#…</span>
     </span>
+    <span class="recording-state" id="recordingState" data-state="hidden" hidden></span>
     <div class="status-flag offline" id="statusFlag">
       <span class="status-dot" aria-hidden="true"></span>
       <span id="statusLabel">оффлайн</span>
     </div>
+    <div class="run-state-banner" id="runStateBanner" role="status" aria-live="polite"></div>
     <div class="debug-controls" id="debugControls" aria-label="Режим отладки">
       <span class="debug-banner" id="debugBanner">отладка: таймеры сняты · допуск VOID</span>
       <button type="button" id="debugPauseBtn" title="Пауза сценария (можно кликать в noVNC)">Пауза</button>
@@ -1245,6 +1280,16 @@
     const instanceTags = document.getElementById("instanceTags");
     const instanceRunId = document.getElementById("instanceRunId");
     const instanceCheckId = document.getElementById("instanceCheckId");
+    const runStateBanner = document.getElementById("runStateBanner");
+    /* REGISTRY-RUN-STATUS-HYGIENE: баннер честного empty-state (replay без событий) */
+    function showRunStateBanner(text) {
+      if (!runStateBanner) return;
+      runStateBanner.textContent = text || "События недоступны";
+      runStateBanner.classList.add("show");
+    }
+    function hideRunStateBanner() {
+      if (runStateBanner) runStateBanner.classList.remove("show");
+    }
     const linkCheckResults = document.getElementById("linkCheckResults");
     const runsDropdown = document.getElementById("runsDropdown");
     let resultsCheckId = null;
@@ -1294,6 +1339,8 @@
       const rect = playheadBar.getBoundingClientRect();
       const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
       playhead.currentTime = ratio * playhead.duration;
+      /* Скраб уводит от края — фоллов выключается; возврат к краю — включает. */
+      liveFollow = ratio >= 0.999;
       renderPlayhead();
       return playhead.currentTime;
     }
@@ -1495,14 +1542,19 @@
     let sawRunning = false;             /* видели status=running — был живой прогон */
     let liveToReplayTransitioned = false;
     let pendingReplaySeek = null;       /* точка для <video> после loadedmetadata */
+    let liveRunMode = false;            /* deep-link на активный ран: live-стрим привязан к нему */
+    let boundRunResolved = false;       /* boot по ?run_id= завершён (meta-резолв режима) */
+    let liveRunAccepted = 0;            /* сколько событий привязанного рана доставлено live */
+    let liveFollow = true;              /* live: playhead идёт за краем потока (скраб выключает) */
 
     /* Читаем run_id из query-строки */
     {
       const params = new URLSearchParams(window.location.search);
       const rid = params.get("run_id");
       if (rid) {
+        // MONITOR-DEEPLINK-LIVE-CLIENT: режим ещё НЕ фиксируем — bootBoundRun
+        // резолвит live/архив по реальному состоянию рана (meta?run_id).
         replayRunId = rid;
-        replayMode = true;
         urlBound = true;
         urlBoundRunId = rid;
       }
@@ -1526,12 +1578,48 @@
       return url + sep + "token=" + encodeURIComponent(urlToken);
     }
 
+    /* bound-run helpers:begin (MONITOR-DEEPLINK-LIVE-CLIENT)
+       Чистые решения deep-link-режима и изоляции событий; блок извлекается и
+       прогоняется контракт-тестом (pytest → node). */
+    var PK_BOUND_RUN = (function () {
+      /* live — только когда запрошенный ран СЕЙЧАС активен и ещё идёт;
+         известный завершённый ран — архив; неизвестный — честный empty-state. */
+      function decideBoundRunMode(meta) {
+        if (!meta || meta.run_found === false) return "unknown";
+        var source = String(meta.run_source || "").trim().toLowerCase();
+        var status = String(meta.status || "").trim().toLowerCase();
+        if (source === "active" && status === "running") return "live";
+        return "replay";
+      }
+      /* Строгая изоляция: событие принадлежит рану только с явным совпадающим
+         run_id; чужой или неустановленный run_id не подмешиваем. */
+      function acceptBoundRunEvent(ev, runId) {
+        var rid = String(runId || "").trim();
+        if (!rid) return true;
+        if (!ev || typeof ev !== "object") return false;
+        return String(ev.run_id || "").trim() === rid;
+      }
+      /* Состояние recording: ready | pending | absent (лимит ожидания). */
+      function recordingStateFrom(ready, attempts, maxAttempts) {
+        if (ready) return "ready";
+        return attempts >= maxAttempts ? "absent" : "pending";
+      }
+      return {
+        decideBoundRunMode: decideBoundRunMode,
+        acceptBoundRunEvent: acceptBoundRunEvent,
+        recordingStateFrom: recordingStateFrom,
+      };
+    })();
+    /* bound-run helpers:end */
+
     function enterReplayMode(opts) {
       // opts = { keepLogs, currentTime } — при переходе live→replay сохраняем накопленные события.
       const keepLogs = !!(opts && opts.keepLogs);
       const seekTo = (opts && typeof opts.currentTime === "number") ? opts.currentTime : null;
       if (!replayRunId) return;
       replayMode = true;
+      liveRunMode = false; /* архив: привязка к live-потоку снята */
+      liveFollow = false;  /* replay: временем управляет скраб/video */
       liveToReplayTransitioned = true;
       // Остановить live-таймер: в replay текущее время ведёт <video>.
       if (playTimerId) { cancelAnimationFrame(playTimerId); playTimerId = null; }
@@ -1541,15 +1629,12 @@
       // Переключить отображение: убрать VNC, показать video.
       vncFrame.style.display = "none";
       replayVideoEl.classList.add("show");
-      // Установить src один раз; 404 (ffmpeg ещё дописывает MP4) → тихий ретрай.
-      const recSrc = addTokenParam("/api/recording?run_id=" + encodeURIComponent(replayRunId));
-      if (replayVideoEl.getAttribute("src") !== recSrc) {
-        replayVideoEl.src = recSrc;
-      }
+      // MONITOR-DEEPLINK-LIVE-CLIENT: готовность MP4 — по /api/recording/status,
+      // без слепых 404-ретраев; src ставится, когда файл реально готов.
       if (seekTo != null) {
         pendingReplaySeek = seekTo;
       }
-      scheduleRecordingRetry();
+      startRecordingPoll();
       // Переподключить SSE на run_id (только если не закончен прогон).
       if (window._liveEventSource) {
         window._liveEventSource.close();
@@ -1566,32 +1651,182 @@
       loadReplayJournal();
     }
 
-    /* Если MP4 ещё дописывается Grid'ом (ffmpeg), <video> словит error/404.
-       Ретраим раз в ~1.5с, не трогая состояние playhead. */
-    let recordingRetryTimer = null;
-    let recordingRetryAttempts = 0;
-    const RECORDING_RETRY_MAX = 20;
-    function scheduleRecordingRetry() {
-      if (!replayMode || !replayRunId) return;
-      if (recordingRetryAttempts >= RECORDING_RETRY_MAX) return;
-      if (recordingRetryTimer) clearTimeout(recordingRetryTimer);
-      recordingRetryTimer = setTimeout(() => {
-        recordingRetryTimer = null;
-        const recSrc = addTokenParam("/api/recording?run_id=" + encodeURIComponent(replayRunId));
-        const hadSrc = replayVideoEl.getAttribute("src");
-        replayVideoEl.load();
-        if (!hadSrc) {
-          replayVideoEl.src = recSrc;
+    /* MONITOR-DEEPLINK-LIVE-CLIENT: deep-link сначала смотрит на РЕАЛЬНЫЙ run:
+       активный прогон → live-поток этого рана; завершённый → архив;
+       неизвестный → честный empty-state (никакого forced replay). */
+    function rebindLiveSSE(url) {
+      if (window._liveEventSource) {
+        window._liveEventSource.close();
+        window._liveEventSource = null;
+      }
+      console.info("[live-monitor] SSE rebind", url);
+      window._liveEventSource = bindSSE(url, handleDiaryEvent);
+      if (!window._liveEventSource) {
+        console.error("[live-monitor] SSE rebind failed (EventSource not created)");
+      }
+    }
+
+    function enterLiveRunMode(runId, meta) {
+      liveRunMode = true;
+      replayMode = false;
+      liveRunAccepted = 0;
+      liveFollow = true; /* live-видение по умолчанию идёт за краем потока */
+      console.info("[live-monitor] enter live mode", runId);
+      if (meta) applyMeta(meta);
+      vncFrame.style.display = "";
+      replayVideoEl.classList.remove("show");
+      hideRunStateBanner();
+      renderRecordingState("live");
+      rebindLiveSSE(addTokenParam("/api/diary?channel=all&run_id=" + encodeURIComponent(runId)));
+    }
+
+    async function bootBoundRun(runId) {
+      try {
+        const res = await fetch(
+          addTokenParam("/api/meta?run_id=" + encodeURIComponent(runId)),
+          { cache: "no-store" }
+        );
+        boundRunResolved = true;
+        if (res.status === 403) {
+          showRunStateBanner("Нет доступа к прогону: недостаточно прав (403). Откройте монитор под владельцем прогона.");
+          statusFlag.className = "status-flag offline";
+          statusLabel.textContent = "нет доступа";
+          return;
         }
-      }, 1500);
+        if (!res.ok) {
+          showRunStateBanner("Монитор не получил состояние прогона (сеть/сервер). Повторите открытие ссылки позже.");
+          renderStatus();
+          return;
+        }
+        const meta = await res.json();
+        const mode = PK_BOUND_RUN.decideBoundRunMode(meta);
+        if (mode === "unknown") {
+          metaReachable = true;
+          statusFlag.className = "status-flag online";
+          statusLabel.textContent = "неизвестный прогон";
+          showRunStateBanner(meta.reason || "Прогон не найден в текущем окне — события недоступны.");
+          renderInstanceTags(urlBoundRunId, urlBoundCheckId);
+          return;
+        }
+        if (mode === "live") {
+          enterLiveRunMode(runId, meta);
+          return;
+        }
+        enterReplayMode();
+      } catch (_) {
+        boundRunResolved = true;
+        showRunStateBanner("Монитор не смог связаться с сервером состояния (network). Повторите позже.");
+      }
+    }
+
+    /* После live→replay: подтверждаем архив; если live-поток ничего не успел
+       показать — восстанавливаем картину из журнала. Показанное не теряем и
+       не дублируем (непустой live-набор журнал не перерисовывает). */
+    async function reconcileJournalWithLive() {
+      if (!replayRunId) return;
+      let attempts = 0;
+      const tryOnce = async () => {
+        attempts += 1;
+        try {
+          const res = await fetch(
+            addTokenParam("/api/journal?run_id=" + encodeURIComponent(replayRunId) + "&preset=signal"),
+            { cache: "no-store" }
+          );
+          if (res.ok) {
+            const data = await res.json();
+            const events = data.events || [];
+            if (data.run_found !== false && events.length > 0 && liveRunAccepted === 0) {
+              await loadReplayJournal();
+              return;
+            }
+            if (data.run_found !== false) return; /* архив подтверждён — показанное не трогаем */
+          }
+        } catch (_) {}
+        if (attempts < 10 && replayMode) {
+          setTimeout(tryOnce, 2000);
+        }
+      };
+      void tryOnce();
+    }
+
+    /* MONITOR-DEEPLINK-LIVE-CLIENT: готовность записи ведёт /api/recording/status
+       (единый источник истины), без слепых 404-ретраев. Состояния честные:
+       pending → «готовится», ready → видео, absent (лимит) → явная причина.
+       LIVE-MONITOR-REVIVE: копирайт называет фактический формат — webm. */
+    let recordingRetryTimer = null;
+    let recordingPollAttempts = 0;
+    const RECORDING_POLL_MS = 1500;
+    const RECORDING_POLL_MAX = 20;
+    function renderRecordingState(state) {
+      const el = document.getElementById("recordingState");
+      if (!el) return;
+      if (!state || state === "hidden") {
+        el.hidden = true;
+        el.dataset.state = "hidden";
+        el.textContent = "";
+        return;
+      }
+      const texts = {
+        live: "запись: появится после завершения прогона",
+        pending: "запись: готовится… (ожидание webm-файла)",
+        ready: "запись: готова",
+        absent: "запись: недоступна — webm-запись этого прогона не найдена (producer не создал запись или она вычищена retention)",
+      };
+      el.hidden = false;
+      el.dataset.state = state;
+      el.textContent = texts[state] || "";
+    }
+    function loadReplayVideoSource() {
+      const recSrc = addTokenParam(
+        "/api/recording?run_id=" + encodeURIComponent(replayRunId) + "&t=" + Date.now()
+      );
+      if (replayVideoEl.getAttribute("src") !== recSrc) {
+        replayVideoEl.src = recSrc;
+        replayVideoEl.load();
+      }
+    }
+    async function pollRecordingOnce() {
+      recordingRetryTimer = null;
+      if (!replayMode || !replayRunId) return;
+      recordingPollAttempts += 1;
+      let ready = false;
+      try {
+        const res = await fetch(
+          addTokenParam("/api/recording/status?run_id=" + encodeURIComponent(replayRunId)),
+          { cache: "no-store" }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          ready = !!data.ready;
+        }
+      } catch (_) {}
+      const state = PK_BOUND_RUN.recordingStateFrom(ready, recordingPollAttempts, RECORDING_POLL_MAX);
+      if (state === "ready") {
+        renderRecordingState("ready");
+        loadReplayVideoSource();
+        return;
+      }
+      renderRecordingState(state);
+      if (state !== "absent") {
+        recordingRetryTimer = setTimeout(pollRecordingOnce, RECORDING_POLL_MS);
+      }
+    }
+    function startRecordingPoll() {
+      if (!replayMode || !replayRunId) return;
+      recordingPollAttempts = 0;
+      if (recordingRetryTimer) clearTimeout(recordingRetryTimer);
+      void pollRecordingOnce();
     }
     replayVideoEl.addEventListener("error", () => {
-      if (!replayMode) return;
-      recordingRetryAttempts += 1;
-      scheduleRecordingRetry();
+      /* Плеер не прочитал файл (mid-write) — продолжаем опрос статуса, не сбрасывая src. */
+      if (!replayMode || !replayRunId) return;
+      if (recordingRetryTimer == null && recordingPollAttempts < RECORDING_POLL_MAX) {
+        recordingRetryTimer = setTimeout(pollRecordingOnce, RECORDING_POLL_MS);
+      }
     });
     replayVideoEl.addEventListener("loadedmetadata", () => {
-      recordingRetryAttempts = RECORDING_RETRY_MAX; /* готово — больше не ретраим */
+      recordingPollAttempts = RECORDING_POLL_MAX; /* файл читается — ожидание завершено */
+      renderRecordingState("ready");
       if (replayVideoEl.duration && Number.isFinite(replayVideoEl.duration)) {
         playhead.duration = Math.max(playhead.duration, replayVideoEl.duration);
         renderPlayhead();
@@ -1602,9 +1837,29 @@
       if (!replayRunId) return;
       try {
         const res = await fetch(addTokenParam("/api/journal?run_id=" + encodeURIComponent(replayRunId) + "&preset=signal"), { cache: "no-store" });
-        if (!res.ok) return;
+        if (!res.ok) {
+          /* MONITOR-ACL-IDENTITY: 403 — это «нет доступа», а не «не найден». */
+          if (res.status === 403) {
+            showRunStateBanner("Нет доступа к прогону: недостаточно прав (403). Откройте монитор под владельцем прогона.");
+          } else {
+            showRunStateBanner("События недоступны: прогон не найден в текущем окне (события вычищены или неизвестный run_id).");
+          }
+          return;
+        }
         const data = await res.json();
         const events = data.events || [];
+        /* REGISTRY-RUN-STATUS-HYGIENE: честный empty-state вместо тишины.
+           reason сервера уже содержит контекст — не дублируем префикс. */
+        if (data.run_found === false || events.length === 0) {
+          const reason = String(data.reason || "").trim();
+          showRunStateBanner(
+            reason
+              ? reason.charAt(0).toUpperCase() + reason.slice(1)
+              : "События недоступны: прогон не найден в текущем окне — события вычищены"
+          );
+        } else {
+          hideRunStateBanner();
+        }
         /* Заполняем панели и playhead */
         if (events.length > 0) {
           runStartTs = events[0].ts || (Date.now() / 1000);
@@ -1631,11 +1886,13 @@
             /* MON-15: заполняем конвейер для скраббинга (STEP/NEXT) */
             updateExecutionRail(ev);
           }
+          /* MONITOR-DEEPLINK-LIVE-CLIENT: архив открывается ЦЕЛИКОМ (каретка на
+             конце журнала); скраб возвращает прогрессивный показ по времени. */
+          playhead.currentTime = playhead.duration;
           renderPlayhead();
           setPlayheadMarkers(playheadMarkerSet);
-          /* MON-15: инициализировать конвейер и панели на момент 0 */
           playheadPaneListeners.forEach((fn) => fn());
-          rebuildExecutionRailAtTime(0);
+          rebuildExecutionRailAtTime(playhead.currentTime);
         }
       } catch (_) {}
     }
@@ -2121,15 +2378,30 @@
     registerPlayheadPane(() => scannerPane.renderAll());
 
     function bindSSE(url, onEvent) {
-      const es = new EventSource(url);
+      let es;
+      try {
+        es = new EventSource(url);
+      } catch (err) {
+        console.error("[live-sse] EventSource failed", url, err);
+        return null;
+      }
+      es.onopen = () => console.info("[live-sse] open", url);
+      es.onerror = () => console.warn("[live-sse] error", url, "readyState=" + es.readyState);
       es.onmessage = (msg) => {
-        try { onEvent(JSON.parse(msg.data)); } catch (_) {}
+        try { onEvent(JSON.parse(msg.data)); } catch (err) { console.debug("[live-sse] handler error", err); }
       };
       return es;
     }
 
     function handleDiaryEvent(event) {
       if (replayMode) return; /* в режиме replay архив событий загружен через loadReplayJournal, live SSE игнорируем */
+      if (replayRunId && !liveRunMode) return; /* deep-link: до live-резолва чужие события не рендерим */
+      if (liveRunMode) {
+        /* Строгая привязка: только события запрошенного рана; чужой или
+           неустановленный run_id не подмешиваем (cross-run isolation). */
+        if (!PK_BOUND_RUN.acceptBoundRunEvent(event, replayRunId)) return;
+        liveRunAccepted += 1;
+      }
       const kind = String(event?.kind || "").toUpperCase();
       const channel = String(event?.channel || "diary").toLowerCase();
 
@@ -2146,6 +2418,12 @@
           setPlayheadMarkers(playheadMarkerSet);
         }
       }
+      /* MONITOR-DEEPLINK-LIVE-CLIENT: live-видение идёт за краем потока —
+         новые события видимы сразу; пользовательский скраб выключает фоллов. */
+      if (!replayMode && liveFollow) {
+        playhead.currentTime = playhead.duration;
+        renderPlayhead();
+      }
 
       if (kind === "NEXT") {
         updateExecutionRail(event);
@@ -2161,7 +2439,11 @@
       updateExecutionRail(event);
     }
 
-    window._liveEventSource = bindSSE(addTokenParam("/api/diary?channel=all"), handleDiaryEvent);
+    /* MONITOR-DEEPLINK-LIVE-CLIENT: deep-link на ран подключает run-scoped
+       стрим после boot-резолва; глобальный поток в этом случае не нужен. */
+    if (!replayRunId) {
+      window._liveEventSource = bindSSE(addTokenParam("/api/diary?channel=all"), handleDiaryEvent);
+    }
 
     const debugControls = document.getElementById("debugControls");
     const debugPauseBtn = document.getElementById("debugPauseBtn");
@@ -2214,7 +2496,8 @@
       }
       const runLive = (metaStatus || "").toLowerCase() === "running";
       statusFlag.className = runLive ? "status-flag pulse" : "status-flag online";
-      statusLabel.textContent = runLive ? "прогон" : "онлайн";
+      /* LIVE-MONITOR-REVIVE: живой прогон подписан явно, а не «прогон»/«архив». */
+      statusLabel.textContent = runLive ? "живой прогон" : "онлайн";
       renderResultsLink(null, runLive);
     }
 
@@ -2329,6 +2612,58 @@
     }
 
     async function refreshMeta() {
+      if (replayRunId && !boundRunResolved) {
+        return; /* boot ещё резолвит режим привязанного рана — не вмешиваемся */
+      }
+      if (replayRunId && !replayMode && !liveRunMode) {
+        return; /* bound-состояние без режима (unknown/403/сеть): глобальная мета
+                   чужого прогона его не подменяет */
+      }
+      if (liveRunMode) {
+        /* LIVE-MONITOR-REVIVE: self-heal — живой режим не имеет права молча
+           остаться без SSE (иначе «Ожидание событий...» на живом прогоне). */
+        if (!window._liveEventSource && replayRunId) {
+          console.warn("[live-monitor] live SSE missing - self-heal rebind");
+          rebindLiveSSE(addTokenParam("/api/diary?channel=all&run_id=" + encodeURIComponent(replayRunId)));
+        }
+        try {
+          const res = await fetch(
+            addTokenParam("/api/meta?run_id=" + encodeURIComponent(replayRunId)),
+            { cache: "no-store" }
+          );
+          if (res.status === 403) {
+            showRunStateBanner("Нет доступа к прогону: недостаточно прав (403). Откройте монитор под владельцем прогона.");
+            return;
+          }
+          if (!res.ok) {
+            metaReachable = false;
+            renderStatus();
+            return;
+          }
+          const meta = await res.json();
+          metaReachable = true;
+          if (meta.run_found === false) {
+            showRunStateBanner(meta.reason || "Прогон не найден в текущем окне — события недоступны.");
+            return;
+          }
+          metaStatus = meta.status || "";
+          const mode = PK_BOUND_RUN.decideBoundRunMode(meta);
+          if (mode === "live") {
+            applyMeta(meta);
+            return;
+          }
+          /* Тот же ран завершился: автоматический переход live → архив/replay
+             на ТОМ ЖЕ run_id; показанные события сохраняем (keepLogs). */
+          applyMeta(meta);
+          enterReplayMode({ keepLogs: true });
+          reconcileJournalWithLive();
+          return;
+        } catch (_) {
+          metaReachable = false;
+          renderStatus();
+        }
+        return;
+      }
       if (replayMode) {
         const url = addTokenParam("/api/meta?run_id=" + encodeURIComponent(replayRunId));
         try {
@@ -2337,6 +2672,13 @@
             const meta = await res.json();
             metaReachable = true;
             metaStatus = meta.status || "";
+            /* REGISTRY-RUN-STATUS-HYGIENE: неизвестный/вычищенный прогон —
+               видимый empty-state с причиной, а не тишина. */
+            if (meta.run_found === false) {
+              showRunStateBanner(
+                meta.reason || "Прогон не найден в текущем окне — события недоступны."
+              );
+            }
             const replayLabel = meta.requested_run_id
               ? "архив #" + String(meta.requested_run_id).slice(0, 8)
               : "архив";
@@ -2351,6 +2693,10 @@
             refreshRunsDropdown();
           } else {
             metaReachable = false;
+            /* MONITOR-ACL-IDENTITY: 403 честно отличается от «не найден». */
+            if (res.status === 403) {
+              showRunStateBanner("Нет доступа к прогону: недостаточно прав (403). Откройте монитор под владельцем прогона.");
+            }
             renderStatus();
           }
         } catch (_) {
@@ -2425,9 +2771,11 @@
       });
     }
 
-    /* MON-6: авто-вход в replay, если run_id в query */
+    /* MONITOR-DEEPLINK-LIVE-CLIENT: deep-link резолвит реальный режим рана:
+       активный прогон → live-поток; завершённый → архив; неизвестный →
+       честный empty-state (без форс-входа в архив). */
     if (replayRunId) {
-      enterReplayMode();
+      void bootBoundRun(replayRunId);
     } else if (!urlBound) {
       /* MH-3: голый :8767/ — HomePage */
       hpInit();

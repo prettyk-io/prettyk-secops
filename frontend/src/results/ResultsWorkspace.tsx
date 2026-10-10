@@ -57,6 +57,12 @@ export type ResultsWorkspaceProps = {
   launchStarting?: boolean;
   /** Deep-link в Live-монитор конкретного инстанса проверки. */
   monitorUrl?: string;
+  /**
+   * MONITOR-ENTRY-LINK-TRUTH: ран ссылки «в монитор» (живой → последний с
+   * артефактами). Журнал панели показывает тот же ран, что и ссылка;
+   * null/undefined — legacy fallback на новейший ран чека.
+   */
+  monitorRunId?: string | null;
   /** Данные манифеста/формы для inline-превью акта */
   formData?: unknown;
 };
@@ -67,6 +73,7 @@ export function ResultsWorkspace({
   onLaunch,
   launchStarting = false,
   monitorUrl,
+  monitorRunId,
   formData,
 }: ResultsWorkspaceProps): React.JSX.Element {
   const { message } = App.useApp();
@@ -88,8 +95,10 @@ export function ResultsWorkspace({
   }, [activeCheckId, meta?.run_id, meta?.last_export_run_id]);
   const runsRunId = useMemo(() => {
     if (!activeCheckId) return null;
-    return getCheck(activeCheckId)?.runs?.[0]?.run_id ?? null;
-  }, [activeCheckId, meta?.run_id, meta?.last_export_run_id]);
+    // MONITOR-ENTRY-LINK-TRUTH: журнал — тот же ран, что у ссылки «в монитор»
+    // (вычищенный/пустой ран не подменяет наблюдаемый); fallback — новейший.
+    return monitorRunId ?? getCheck(activeCheckId)?.runs?.[0]?.run_id ?? null;
+  }, [activeCheckId, monitorRunId, meta?.run_id, meta?.last_export_run_id]);
   const staleMeta = useMemo(() => {
     if (!meta || checkHasOwnRuns) return false;
     const verdict = pipelineStatusFromMeta(meta).verdict;

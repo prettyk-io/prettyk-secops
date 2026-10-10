@@ -50,17 +50,19 @@ logger = logging.getLogger("controller")
 
 
 def resolve_browser_runtime() -> str:
-    """PW-E1/PW-C1: выбор браузерного рантайма. Дефолт — playwright (после cutover).
+    """PW-E1/PW-C1 + RUNTIME-UN-CUTOVER-GRID-WEBM: боевой рантайм — Selenium Grid.
 
-    ``PK_BROWSER_RUNTIME=playwright`` (или пусто) → ``"playwright"`` (PlaywrightAdapter),
-    ``PK_BROWSER_RUNTIME=selenium`` → ``"selenium"`` (WebDriverAdapter, legacy Grid).
+    ``PK_BROWSER_RUNTIME=playwright`` (явный флаг) → ``"playwright"`` (PlaywrightAdapter),
+    ``PK_BROWSER_RUNTIME=selenium`` → ``"selenium"`` (WebDriverAdapter, Grid).
+    Пусто/неизвестно → ``"selenium"`` (возврат боевого дефолта; Playwright сохранён
+    за флагом и не удалён).
 
-    Одна точка правды: и `_init_adapters`, и тесты читают отсюда —
-    никакого двойного префикса (``pk_env`` сам добавляет ``PK_``).
-    Возвращает только канонические ``playwright``/``selenium``.
+    Читается здесь в `_init_adapters`, в env воркеров - самостоятельный дефолт
+    (см. вызовы из API). `pk_env` сам добавляет префикс ``PK_``).
+    Разрешены только явные ``playwright``/``selenium``.
     """
-    raw = (pk_env("BROWSER_RUNTIME") or "playwright").strip().lower()
-    return raw if raw in ("playwright", "selenium") else "playwright"
+    raw = (pk_env("BROWSER_RUNTIME") or "selenium").strip().lower()
+    return raw if raw in ("playwright", "selenium") else "selenium"
 
 
 # Порты scanner задаёт инфраструктура раннера, не манифест.
@@ -208,11 +210,26 @@ class Controller:
                 allowed_extra_domains=allowed_extra,
                 cdp_endpoint=cdp_endpoint,
             )
-            # PW-E3: запись видео при headless=False (headed execution)
-            if not headless:
+            # MONITOR-LIVE-DEEPLINK: видео прогона привязано к его run_id.
+            #  - CDP-контейнер: запись Xvfb-экрана контейнера (start/stop per-run,
+            #    MP4 появляется по тому же run_id);
+            #  - локальный launch (в т.ч. headless): Playwright record_video_dir.
+            if cdp_endpoint is None:
                 safe_session = re.sub(r"[^A-Za-z0-9._-]+", "-", playwright_adapter._session_name).strip("-.") or "run"
                 video_dir = str(VIDEO_DIR / f"record_{safe_session}")
                 playwright_adapter.set_record_video_dir(video_dir)
+            else:
+                run_capture_id = (pk_env("RUN_ID") or "").strip() or self._session_name()
+                self._run_capture_id = run_capture_id
+                self._run_capture = False
+                try:
+                    from utils.run_recording import start_run_capture
+
+                    capture = start_run_capture(run_capture_id)
+                    self._run_capture = bool(capture.get("ok"))
+                    logger.info("Run video capture: %s", capture)
+                except Exception as exc:  # noqa: BLE001 — запись не должна валить старт
+                    logger.warning("Run video capture start skipped: %s", exc)
             self.adapters["webdriver"] = playwright_adapter
             self.adapters["browser"] = playwright_adapter
             self.reporter = Reporter(playwright_adapter)
@@ -231,6 +248,9 @@ class Controller:
             self.adapters["webdriver"] = webdriver_adapter
             self.adapters["browser"] = BrowserAdapter(webdriver_adapter)
             self.reporter = Reporter(webdriver_adapter)
+            # RUNTIME-UN-CUTOVER-GRID-WEBM: webm-финал Grid-записи этого run
+            # (sidecar chrome-video пишет MP4; teardown конвертирует в webm).
+            self._grid_video_run_id = (pk_env("RUN_ID") or "").strip() or self._session_name()
 
         logger.info(
             "scanner API on 127.0.0.1:%s, browser proxy on %s",
@@ -1219,6 +1239,27 @@ class Controller:
                 convert_webm_to_mp4(adapter._video_dir, run_id)
         except Exception as e:
             logger.debug("webm->mp4 conversion skipped: %s", e)
+
+        # MONITOR-LIVE-DEEPLINK: финализировать контейнерную запись этого run.
+        if getattr(self, "_run_capture", False):
+            try:
+                from utils.run_recording import stop_run_capture
+
+                finalized = stop_run_capture(self._run_capture_id)
+                logger.info("Run video capture finalized: %s", finalized)
+            except Exception as e:  # noqa: BLE001 — teardown не должен падать
+                logger.warning("Run video capture finalize failed: %s", e)
+
+        # RUNTIME-UN-CUTOVER-GRID-WEBM: Grid MP4 → WEBM (формат rewind монитора).
+        grid_rid = getattr(self, "_grid_video_run_id", "")
+        if grid_rid:
+            try:
+                from utils.run_recording import finalize_grid_video_webm
+
+                grid_final = finalize_grid_video_webm(grid_rid)
+                logger.info("Grid video webm finalize: %s", grid_final)
+            except Exception as e:  # noqa: BLE001 — teardown не должен падать
+                logger.warning("Grid video webm finalize failed: %s", e)
         try:
             from utils.log_cuts import close_all as log_cuts_close_all
 

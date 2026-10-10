@@ -27,6 +27,15 @@ class TestDraftStore:
     def test_load_missing_returns_none(self, tmp_drafts):
         assert store.load_draft("no-such-check") is None
 
+    def test_load_draft_exposes_revision_in_meta(self, tmp_drafts):
+        # DRAFT-CONFLICT-TRUTH: GET обязан отдавать revision (meta.revision),
+        # иначе свежая сессия не адоптит серверную версию → вечный 409.
+        store.save_draft("chk-1", _payload("chk-1"), 0)  # rev → 1
+        loaded = store.load_draft("chk-1")
+        assert loaded is not None
+        assert loaded["meta"]["revision"] == 1
+        assert loaded["meta"]["checkId"] == "chk-1"  # остальные поля целы
+
     def test_save_then_load_roundtrip(self, tmp_drafts):
         code, resp = store.save_draft("chk-1", _payload("chk-1"), expected_revision=0)
         assert code == 200

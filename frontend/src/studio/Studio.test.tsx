@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { Studio } from './Studio';
 
 // ── Heavy deps mocks (Monaco, CDP, buddy dock, tree, canvas) ──
@@ -51,6 +51,23 @@ vi.mock('../monaco/constructorDiagnosticsMerge', () => ({
 vi.mock('./Canvas', () => ({
   Canvas: (props: { counts?: Record<string, number> }) => (
     <div data-testid="canvas-v2" data-counts={JSON.stringify(props.counts ?? null)} />
+  ),
+}));
+
+// STUDIO-FUZZER-FORM-SURFACE: дерево тяжёлое (dnd/antd-обвес) — в юнит-тестах
+// Studio даём лёгкий стаб; сам StudioBlocksTree покрыт своим сьютом, живое
+// дерево проверяется live-пруфом.
+vi.mock('./StudioExplorer', () => ({
+  StudioExplorer: (props: { onSelectTab: (id: string) => void }) => (
+    <div data-testid="studio-explorer">
+      <button data-testid="select-fuzzer-0" onClick={() => props.onSelectTab('fuzzer:0')} />
+      <button data-testid="select-fuzzer-1" onClick={() => props.onSelectTab('fuzzer:1')} />
+      <button data-testid="select-resource-0" onClick={() => props.onSelectTab('resource:0')} />
+      <button
+        data-testid="select-deleted-fuzzer"
+        onClick={() => props.onSelectTab('fuzzer:9')}
+      />
+    </div>
   ),
 }));
 
@@ -140,4 +157,93 @@ describe('Studio (STU-V2 B1/B2/B4)', () => {
     expect(editor.getAttribute('data-language')).toBe('prettyk');
     expect(screen.getByText('PrettyK DSL')).toBeDefined();
   });
+});
+
+function makeWiredWithForms() {
+  const base = makeWired(0, 0);
+  return {
+    ...base,
+    test_suites: {
+      ...base.test_suites,
+      fuzzers: [
+        {
+          id: 'juice_search_q',
+          targets: [
+            {
+              url: 'http://juice-shop:3000/rest/products/search?q=',
+              method: 'GET',
+              corpus: 'intent_sqli_smoke',
+            },
+          ],
+        },
+        { id: 'juice0' },
+      ],
+      imports: [{ path: 'resources/customers.txt', kind: 'data_file', as: 'customers' }],
+    },
+  };
+}
+
+describe('Studio — STUDIO-FUZZER-FORM-SURFACE: форма вместо пустоты', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it('выбор фаззера в дереве открывает прежнюю форму (корпус/словарь), без конструктора шагов', () => {
+    render(<Studio formData={makeWiredWithForms()} onFormDataChange={vi.fn()} />);
+
+    fireEvent.click(screen.getByTestId('select-fuzzer-0'));
+
+    const surface = screen.getByTestId('studio-form-surface');
+    expect(within(surface).getByText('Corpus (словарь)')).toBeDefined();
+    expect(screen.getByDisplayValue('juice_search_q')).toBeDefined();
+    // чужой контент (конструктор шагов Canvas) на форме не остаётся
+    expect(screen.queryByTestId('canvas-v2')).toBeNull();
+  }, 20000);
+
+  it('второй фаззер чека (juice0) открывается той же формой', () => {
+    render(<Studio formData={makeWiredWithForms()} onFormDataChange={vi.fn()} />);
+
+    fireEvent.click(screen.getByTestId('select-fuzzer-1'));
+
+    expect(screen.getByDisplayValue('juice0')).toBeDefined();
+    expect(screen.getByText('Corpus (словарь)')).toBeDefined();
+  }, 10000);
+
+  it('правки формы сохраняются в чек (targets уходят в formData)', () => {
+    const onFormDataChange = vi.fn();
+    render(<Studio formData={makeWiredWithForms()} onFormDataChange={onFormDataChange} />);
+
+    fireEvent.click(screen.getByTestId('select-fuzzer-0'));
+    fireEvent.click(screen.getByText('+ Добавить цель'));
+
+    expect(onFormDataChange).toHaveBeenCalled();
+    const next = onFormDataChange.mock.calls.at(-1)?.[0] as {
+      test_suites: { fuzzers: { targets: unknown[] }[] };
+    };
+    expect(next.test_suites.fuzzers[0]?.targets.length).toBe(2);
+  }, 10000);
+
+  it('выбор ресурса открывает форму ресурса (path/kind/as/содержимое)', () => {
+    render(<Studio formData={makeWiredWithForms()} onFormDataChange={vi.fn()} />);
+
+    fireEvent.click(screen.getByTestId('select-resource-0'));
+
+    expect(screen.getByTestId('resource-form')).toBeDefined();
+    expect(screen.getByDisplayValue('resources/customers.txt')).toBeDefined();
+    expect(screen.getByDisplayValue('customers')).toBeDefined();
+  }, 10000);
+
+  it('негатив: удалённый фаззер → честное «не найдено», без фантомной формы', () => {
+    render(<Studio formData={makeWiredWithForms()} onFormDataChange={vi.fn()} />);
+
+    fireEvent.click(screen.getByTestId('select-deleted-fuzzer'));
+
+    expect(screen.getByTestId('studio-form-surface-missing')).toBeDefined();
+    expect(screen.queryByTestId('studio-form-surface')).toBeNull();
+    expect(screen.getByText(/Элемент не найден/)).toBeDefined();
+  }, 10000);
 });

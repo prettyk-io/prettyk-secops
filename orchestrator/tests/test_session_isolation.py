@@ -34,23 +34,30 @@ def _docker_available() -> bool:
         return False
 
 
-def _build_contexts_ready() -> bool:
-    """session-template.yml собирает образы из build-контекстов — нужны их Dockerfile.
+def _infra_gap() -> str | None:
+    """Причина, почему session-template не поднимется (None — можно запускать).
 
-    Без контекста `pk-api-lab` (git-ignored остаток, только proto_pack) compose
-    падает на `failed to read dockerfile`, а не скипает. Проверяем до запуска.
+    PK-API-LAB-SRC: контекст `pk-api-lab` в репо отсутствует by design —
+    внешне-провижининг (opt-in session target, см. services/pk-api-lab/README.md).
+    Compose без него падает на `failed to read dockerfile`, поэтому честно
+    скипаем с явной причиной, а не глухим «contexts not built».
     """
+    if not _docker_available():
+        return "Docker Engine unavailable"
     services_dir = Path(__file__).resolve().parents[2] / "services"
-    return all(
-        (services_dir / ctx / "Dockerfile").is_file()
-        for ctx in ("playwright-authoring", "pk-api-lab")
-    )
+    if not (services_dir / "playwright-authoring" / "Dockerfile").is_file():
+        return "playwright-authoring build context missing (repo incomplete)"
+    if not (services_dir / "pk-api-lab" / "Dockerfile").is_file():
+        return (
+            "pk-api-lab is provisioned externally (sources not in repo) — "
+            "opt-in session target, see services/pk-api-lab/README.md"
+        )
+    return None
 
 
-_docker_skip = pytest.mark.skipif(
-    not _docker_available() or not _build_contexts_ready(),
-    reason="Docker Engine unavailable or session-template build contexts not built",
-)
+_INFRA_GAP = _infra_gap()
+
+_docker_skip = pytest.mark.skipif(_INFRA_GAP is not None, reason=_INFRA_GAP or "")
 
 
 class TestParallelSessions:

@@ -5,6 +5,7 @@ from utils.env_dual import pk_env
 import json
 import logging
 import os
+import re
 import time
 from pathlib import Path
 
@@ -73,6 +74,23 @@ def scanner_har_file_for_api(host_path: str) -> str:
         ).rstrip("/")
         return f"{container_root}/{rel}"
     return host
+
+
+# DOJO-IMPORT-500 (NUL-инцидент house-run 114a): XML 1.0 запрещает control-символы
+# (NUL 0x00, 0x01–0x08, 0x0B, 0x0C, 0x0E–0x1F, surrogate-диапазон). Fuzz-пейлоады
+# их содержат (напр. "\x00<script>alert(1)</script>"), ElementTree сериализует их
+# как есть → defusedxml ParseError «not well-formed (invalid token)» → import-scan
+# HTTP 500. Чистим все текстовые значения экспорта.
+_XML_INVALID_RE = re.compile(
+    "[^\u0009\u000A\u000D\u0020-\uD7FF\uE000-\uFFFD\U00010000-\U0010FFFF]"
+)
+
+
+def _xml_safe(value) -> str:
+    """Строка без нелегальных для XML 1.0 символов (markup экранирует ElementTree)."""
+    if not isinstance(value, str):
+        value = str(value if value is not None else "")
+    return _XML_INVALID_RE.sub("", value)
 
 
 class ScannerAdapter(BaseAdapter):
@@ -3810,7 +3828,7 @@ class ScannerAdapter(BaseAdapter):
         root = ET.Element("OWASPscannerReport")
         root.set("version", "2.14.0")
         site = ET.SubElement(root, "site")
-        site.set("name", site_name)
+        site.set("name", _xml_safe(site_name))
         alerts_el = ET.SubElement(site, "alerts")
 
         risk_map = {
@@ -3823,32 +3841,44 @@ class ScannerAdapter(BaseAdapter):
 
         groups = {}
         for alert in alerts:
-            pid = str(alert.get("pluginId") or alert.get("pluginid") or "")
-            name = str(alert.get("name") or alert.get("alert") or "(alert)")
-            risk = str(alert.get("risk") or "Informational")
+            pid = _xml_safe(alert.get("pluginId") or alert.get("pluginid") or "")
+            name = _xml_safe(alert.get("name") or alert.get("alert") or "(alert)")
+            risk = _xml_safe(alert.get("risk") or "Informational")
             groups.setdefault((pid, name, risk), []).append(alert)
 
         for (pid, name, risk), items in groups.items():
             code, label = risk_map.get(risk, ("0", str(risk)))
             item_el = ET.SubElement(alerts_el, "alertitem")
             ET.SubElement(item_el, "pluginid").text = pid
-            ET.SubElement(item_el, "alertRef").text = str(
+            ET.SubElement(item_el, "alertRef").text = _xml_safe(
                 items[0].get("alertRef") or pid or ""
             )
             ET.SubElement(item_el, "alert").text = name
             ET.SubElement(item_el, "name").text = name
             ET.SubElement(item_el, "riskcode").text = code
+            ET.SubElement(item_el, "confidence").text = _xml_safe(
+                items[0].get("confidence") or ""
+            )
             ET.SubElement(item_el, "riskdesc").text = f"{label} ({label})"
-            ET.SubElement(item_el, "cweid").text = str(items[0].get("cweid") or "")
+            # DOJO-IMPORT-500: DD ZapParser зовёт html2text(findtext("desc"/
+            # "solution"/"reference")) — при ОТСУТСТВИИ элемента findtext() даёт
+            # None → html2text(None) → AttributeError 'NoneType' … 'replace' →
+            # import-scan HTTP 500. Эмитим все поля, которые читает парсер Dojo
+            # (пусть пустыми строками), как делал legacy core.xmlreport().
+            ET.SubElement(item_el, "desc").text = _xml_safe(items[0].get("description") or "")
+            ET.SubElement(item_el, "solution").text = _xml_safe(items[0].get("solution") or "")
+            ET.SubElement(item_el, "reference").text = _xml_safe(items[0].get("reference") or "")
+            ET.SubElement(item_el, "cweid").text = _xml_safe(items[0].get("cweid") or "")
+            ET.SubElement(item_el, "wascid").text = _xml_safe(items[0].get("wascid") or "")
             ET.SubElement(item_el, "count").text = str(len(items))
             instances_el = ET.SubElement(item_el, "instances")
             for alert in items:
                 inst = ET.SubElement(instances_el, "instance")
-                ET.SubElement(inst, "uri").text = str(alert.get("url") or site_name)
-                ET.SubElement(inst, "param").text = str(alert.get("param") or "")
-                ET.SubElement(inst, "method").text = str(alert.get("method") or "")
-                ET.SubElement(inst, "attack").text = str(alert.get("attack") or "")
-                ET.SubElement(inst, "evidence").text = str(alert.get("evidence") or "")
+                ET.SubElement(inst, "uri").text = _xml_safe(alert.get("url") or site_name)
+                ET.SubElement(inst, "param").text = _xml_safe(alert.get("param") or "")
+                ET.SubElement(inst, "method").text = _xml_safe(alert.get("method") or "")
+                ET.SubElement(inst, "attack").text = _xml_safe(alert.get("attack") or "")
+                ET.SubElement(inst, "evidence").text = _xml_safe(alert.get("evidence") or "")
 
         tree = ET.ElementTree(root)
         try:

@@ -90,6 +90,7 @@ def test_build_run_package_includes_diary_cuts_meta(tmp_path, monkeypatch):
                 "kind": "scanner",
                 "text": "Authorization Bearer secret-token-abc password=hunter2",
                 "channel": "scanner",
+                "run_id": "packdemo",
                 "ts": 1,
             }
         )
@@ -153,6 +154,26 @@ def test_build_run_package_includes_diary_cuts_meta(tmp_path, monkeypatch):
         assert "secret-token-abc" not in diary_text
         assert "hunter2" not in diary_text
         assert "Bearer ***" in diary_text or "***" in diary_text
+
+
+def test_export_diary_snapshot_is_run_scoped(tmp_path, monkeypatch):
+    """MONITOR-LIVE-DEEPLINK: run-export не подмешивает unscoped/чужие события."""
+    live, _exports, _runs = _patch_layout(tmp_path, monkeypatch)
+    diary_bus.clear()
+    (live / "diary.ndjson").write_text(
+        json.dumps({"kind": "STEP", "text": "own", "run_id": "run-A", "ts": 1}) + "\n"
+        + json.dumps({"kind": "STEP", "text": "unscoped", "ts": 2}) + "\n"
+        + json.dumps({"kind": "STEP", "text": "foreign", "run_id": "run-B", "ts": 3}) + "\n",
+        encoding="utf-8",
+    )
+    snap = diary_bus.export_diary_snapshot(run_id="run-A")
+    lines = [
+        json.loads(x)
+        for x in Path(snap["export_path"]).read_text(encoding="utf-8").splitlines()
+        if x.strip()
+    ]
+    assert [e.get("text") for e in lines] == ["own"]
+    assert snap["events_count"] == 1
 
 
 def test_build_run_package_omits_act_when_generate_act_false(tmp_path, monkeypatch):

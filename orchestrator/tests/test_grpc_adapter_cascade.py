@@ -56,7 +56,10 @@ def test_method_id_wire_grpc_adapter():
 
 def test_list_services_and_unary_module_id():
     if not PROTO_PACK.is_dir() or not any(PROTO_PACK.rglob("*.proto")):
-        pytest.skip("lab proto_pack missing")
+        pytest.skip(
+            "pk-api-lab proto_pack not provisioned in repo (external opt-in, "
+            "see services/pk-api-lab/README.md)"
+        )
     ad = GrpcAdapter()
     ad.bind_run_wired(_Wired(), str(ROOT))
     raw = ad.list_services("bank_grpc")

@@ -17,7 +17,6 @@
 > **🚀 PrettyK Airlock (Cosmo) — суверенная репа и бэклог:** `D:\prettyk-airlock\docs\BACKLOG.md`. Карточки допуска и межзонного трансфера ведутся там (PO Cosmo). Cross-product handoff: Коробка → Hub → Airlock.
 > Срез очереди: **23 сентября 2026 года** (Поток 6 принят ✅: ACT-BE/ACT-FE/ACT-DEBT; нарезан Поток 7: LVL-1 live-верификация / RP-VIZ replay-визуализация / PROD-READY compose+lease — диспатч Boss/Flash/Luna). Состояние PrettyK SecOps: **В работе** (обновлено 2026-09-20: Contract A `PK-C-009.1..5` и `PK-ALIAS-3` закрыты ✅; Run Control wave 1 `RUN-CTL-1..6` зелёная — 84 pass; Luna `RC2-1..5` ✅, Flash `PRD-1..4` ✅; Boss `BBA-1..6` — активен). Ветка: **`dev`**.
 
----
 
 ### Эпик BOX-RECOVERY — вернуть честные Validate/Run и Juice Shop baseline
 
@@ -175,7 +174,6 @@
 
 **Приёмка (Keeper, 2026-09-23):** `BOX-LIVE-1` **PARTIAL — веха принята, gate не закрыт.** Принято фактом: Validate честный (`/api/validate/constructor` → 200, `ok:true`, 0 diagnostics); Run легитимно стартует и исполняется end-to-end из UI (4 свежих run_id `run-07c925c4f887` / `run-14704d16f24d` / `run-1216ed5527ce` / `run-2558c31dd1b4`); сценарий проходит до `order-completion` + `assert_text_present`; spider_scan (8750 URLs) + active_scan отработали; 3 runtime-бага `playwright_adapter.py` починены (`session_diary` отсутствовал → падение на 1-м шаге, `wait_for_function` keyword-only `arg=`, `Keyboard.press` нормализация). Код-дифф глянул: скопелен, контракт wire_action не тронут. **Не принято как полное закрытие:** полный gate не получен — `fuzz|wave` + `generate_report` не дошли (ZAP перегрузился на 22800 alerts, контейнер рестартовал), DefectDojo `:8081` не поднят → fail-closed; отдельного короткого smoke не было (гнался полный сценарий); eyes-on Максима нет. Это «отсутствие исполнения» части пайплайна по причине инфры — не код, поэтому выношу в follow-up `BOX-LIVE-2` (инфра → Buddy, финальный прогон → глазами Максим сам).
 
----
 
 #### Карточка BOX-LIVE-2 — Закрыть инфру и получить корректный полный прогон (follow-up)
 
@@ -218,7 +216,6 @@
 
 Для финального зелёного гейтa остаётся (инфра, за границей кода): поднять DefectDojo (`docker compose -f services/docker-compose.defectdojo.yml up -d`) и/или задать `PK_DEFECTDOJO_ENABLED=0` в env `/api/run/start` (body.env уже поддержан в `data_playground.py`), плюс ограничить ZAP alert-пагинацию. Коммит — по команде Максима.
 
----
 
 ### Карточка BOX-LIVE-3 — Чистый scanner-adapter и честный полный прогон 114a (follow-up)
 
@@ -273,6 +270,463 @@ Keeper самостоятельно открыл и сверил:
 **Отчёт:** дифф `scanner_adapter.py` (файл/строки) + регрессионный тест → доказательство отсутствия двух ошибок в свежем runner.log → свежий run_id + `Step executed` содержит `fuzz`/`generate_report` + `juice_dojo.xml` mtime текущего прогона + итог admission gate по **свежим** цифрам + evidence (runner.log, Allure `:5050`).
 
 > **⚠️ РЕЦИДИВ (Keeper, 2026-09-23, повторный прогон Максима):** свежий прогон Максима `run-6fefe3cadc6a` НЕ дошёл до конца — hard-fail на `active_scan`. См. follow-up **BOX-LIVE-4**. Фикс name-mangling НЕ был причиной (он снял маскирующий слой; вскрылся третий, более глубокий дефект). BOX-LIVE-3 остаётся ACCEPTED по своему scope (два бага scanner-контракта), но «честный зелёный прогон подряд» нестабилен — закрыто в BOX-LIVE-4.
+
+---
+
+#### Карточка STUDIO-FUZZER-FORM-SURFACE — В Студии фаззер открывается формой (корпусы/словари), а не пустотой
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-10-08) — прежняя форма фаззера/ресурса снова в канонической Студии; проверено живьём. **Исполнитель:** Flash.
+
+**Факт (Keeper, live + код):** в канонической Студии выбор фаззера в дереве **ничего не открывает** — панель остаётся конструктором шагов («0 шагов»), формы нет; в Редакторе на этот же фаззер висит заглушка «Эта сущность настраивается в форме — открой её в Студии для редактирования». Форма фаззера (`FuzzerForm`: цели url/method/**Corpus (словарь)** — пресеты пака + ресурсы, политика, режим волны) подключена **только в легаси `StudioWorkspace`** (вид `studio-old`) через `studioWorkspaceActiveBody`; канонический `Studio` (`Studio.tsx`, StudioV2) маршрутизирует лишь DSL-сущности (`dslTabForStudioTabId`/`firstDslTab`) и не рендерит form-surface (fuzzer/resource) — про фаззеры там только счётчики дерева (`fuzzers/resources`). Вид `studio-old` **из UI недостижим** (App форсит `studio`) — обходного пути нет. Данные целы: `generated/fuzz_pack.json` (9 интентов) на месте, `corpusOptions` собирается, фаззер-тесты 28/28 зелёные. Регресс — потеря form-surface в канонической Студии после унификации.
+
+**Интент:** вернуть **прежнюю форму фаззера как есть** (как в легаси-студии: цели url/method/**корпус** — пресеты пака + ресурсы, политика, волна; словари/корпусы видны), а не изобретать новую. Выбираешь фаззер в Студии — редактируешь его формой; ресурс — формой ресурса. Никаких «пустых табов» и петель «открой в Студии».
+
+**DoD:**
+1. Given открыт чек в Студии, When в дереве выбран фаззер, Then открывается **прежняя форма фаззера как есть** (как в легаси-студии — не переизобретать) с полями целей (url / method / **корпус** — пресеты пака + ресурсы), политикой и режимом волны; правки сохраняются в чек.
+2. Given выбран ресурс, When открыт, Then показывается **форма ресурса** (path/kind/as/содержимое), а не пустота.
+3. Given выбран form-surface (фаззер/ресурс), Then в панели нет чужого контента (конструктора шагов) и нет тупиковой заглушки «открой в Студии»; тупик в Редакторе остаётся только как подсказка при заходе из Редактора.
+4. Given оба фаззера чека (`juice_search_q`, `juice0`), Then форма открывается у каждого.
+5. `tsc` и целевые тесты зелёные.
+
+**Приёмка:**
+- [x] Live: Студия → Фаззеры → `juice_search_q` → форма с колонкой «Corpus (словарь)». → **Факт Keeper (live, CDP):** в Студии выбран `juice_search_q` → `studio-form-surface` отрендерилась, `Corpus` присутствует; шапка формы: «Id / В сценарии: ФаззингВолна juice_search_q / Алгоритм волны sniper / Таблица целей (1) / Политика / Сессия и Заголовки».
+- [x] Live: `juice0` — форма открывается; правка цели сохраняется и отражается в чеке. → **Факт Flash (live):** `juice0` — та же форма; «+цель» → Save → реестр `targets=2` → откат → 1. **Факт Keeper:** резолвер `studioFormSurface.ts` адресует `test_suites.fuzzers` (та же носитель, что в легаси), правки идут через `updateFuzzer`; тест «правки формы сохраняются в чек» зелёный.
+- [x] Live: ресурс (`Модули данных`) — форма ресурса, не пустота. → **Факт Keeper (live):** `data_module` → форма: «Имя (as) / В сценарии: ${data_module} / Путь в пакете / Тип data_file (.txt) / Содержимое (черновик) · 34 строк».
+- [x] Негатив: удалённый фаззер → честное «выберите элемент», без фантомной формы. → **Факт Flash:** `zz_probe_fuzz` создан→удалён → «Элемент не найден», чек чист. **Keeper (код):** ветка `wantsFormSurface` + `studio-form-surface-missing` («Элемент не найден — выберите элемент в дереве»).
+- [x] `tsc`=0; тесты студии зелёные. → **Факт Keeper:** `tsc --noEmit` = **0**; `studioFormSurface` + `Studio` тесты — **15 passed** (вкл. «выбор фаззера в дереве открывает прежнюю форму (корпус/словарь), без конструктора шагов», `juice0`, сохранение правок).
+
+**Out of scope:** легаси `studio-old` (референс, не трогать); бэкенд-рантайм фаззинга и волны; каталог ключевых слов. Коммит/пуш — по команде Максима.
+
+**Приёмка Keeper (2026-10-08):** сам прошёл Студию живьём (CDP): фаззер → форма с `Corpus`, ресурс → форма ресурса, `studio-form-surface` на месте; тесты 15/15, `tsc`=0. **Студия снова рабочая: корпусы и словари на месте.**
+
+**Scope:** `frontend/src/studio/Studio.tsx` (± вынести form-surface body/переиспользовать `FuzzerForm`/`ResourceFormPanel` из `studioWorkspaceActiveBody`), `collectStudioNodes`/`studioTabs` (маршрут form-surface), тесты.
+
+**Отчёт:** где терялся маршрут form-surface в канонической Студии и что сделано; live-пруф формы фаззера (корпусы/словари) и ресурса; негатив; `tsc`/тесты; граница проверенного.
+
+**Flash > SecOps: STUDIO-FUZZER-FORM-SURFACE исполнен (2026-10-08, БЕЗ приёмки).**
+
+**1. Где терялся маршрут form-surface.**
+- После редизайна канонический `Studio.tsx` (StudioV2) рендерил только Canvas + правую панель
+  (Код/Браузер) — **без Explorer'а**: дерева сущностей в Студии не было вовсе, `selectedTabId`
+  был подвешен (сеттер вызывался только при сбросе на смене чека). Выбор фаззера/ресурса был
+  недостижим by construction, центр показывал «конструктор шагов» («0 шагов»).
+- `FuzzerForm`/`ResourceFormPanel` оставались подключены только в легаси-`StudioWorkspace`
+  (вид `studio-old`) через `studioWorkspaceActiveBody` — из UI недостижим.
+
+**2. Что сделано (возврат «как было», без изобретений).**
+- `Studio.tsx`: возвращён канонический `StudioExplorer` (ER-1 — то же дерево, что в Редакторе)
+  левым сайдбаром (`data-testid="studio-explorer-pane"`), `onSelectTab → setSelectedTabId` —
+  selection живой (правый Monaco заодно следует выбору DSL-сущностей).
+- Новый чистый резолвер `studioFormSurface.ts`: `resolveStudioFormSurface` (`fuzzer:N`/`resource:N`
+  → данные из `test_suites.fuzzers/imports`, как в легаси) + `isFormSurfaceTabId`.
+- Центр: выбран form-surface → та же форма, что в легаси: `FuzzerForm` (Id, алгоритм волны,
+  «Таблица целей» с колонкой **Corpus (словарь)** — пресеты пака + ресурсы, политика, сессия) или
+  `ResourceFormPanel` (as/path/тип/содержимое); правки → `updateFuzzer`/`updateResource` →
+  `handleFormDataChange` (controlled → App; standalone → updateCheck); переименование `as` переносит
+  содержимое (`renameContentKey`). Конструктор шагов при выбранной форме не показывается.
+- Негатив: form-surface выбран, сущность удалена/не разрешается → честное **«Элемент не найден —
+  выберите элемент в дереве»** (`studio-form-surface-missing`), без фантомной формы.
+
+**3. Тесты.**
+- `studioFormSurface.test.ts` — 6 (fuzzer:0/1, resource, DSL→null, удалённые→null, классификатор).
+- `Studio.test.tsx` — +5: форма фаззера (Corpus-колонка, Canvas-конструктор не остаётся); второй
+  фаззер juice0; правка targets уходит в formData; форма ресурса (path/kind/as); негатив удалённого
+  фаззера. Таймауты тяжёлых кейсов подняты (10–20с) для полного прогона.
+- `tsc --noEmit` = **0**; studio-срез — **86 файлов / 458 passed**; новые — 15/15.
+- Полный FE: **273 файла / 1794 passed / 0 failed** (`vitest run --maxWorkers=2`). (Первый заход без
+  ограничения воркеров падал по памяти среды — `Zone Allocation failed`: 2 средовых таймаута вне
+  контура + таймаут тяжёлого нового теста; таймауты укреплены; финальный полный прогон — зелёный.)
+
+**4. Live-пруф (CDP, Editor :5173, чек 114a).**
+- В Студии появился EXPLORER: Модели страниц / Сценарии (juice_shop_test_1) / **Фаззеры**
+  (juice_search_q, juice0) / Модули данных (data_module) / Коннекторы и Интеграции / Профили.
+- Клик `juice_search_q` → **форма как есть**: Id, «Алгоритм волны: sniper — цели по очереди»,
+  «Таблица целей (1)», колонка **Corpus (словарь)** (`preset: intent_boundary`), «Политика»/
+  «Сессия и Заголовки»; скрин `D:\Infra\Temp\opencode\secops-studio-fuzzer-form.png`.
+- `juice0` — форма открывается; ресурс `data_module` → форма ресурса (as / `resources/data_module.txt`
+  / `data_file` / содержимое «Черновик · 34 строк»); скрин `secops-studio-resource-form.png`.
+- Правки сохраняются в чек: «+ Добавить цель» («Таблица целей (2)») → **Save** → реестр
+  `:8765/api/checks`: `juice_search_q.targets=2`; откат → снова 1; финальный реестр = исходный
+  (juice_search_q 1 / juice0 2 — как в wired прогона `run-0402d8ab9203`).
+- Живой негатив: пробный `zz_probe_fuzz` создан (форма открылась) → удалён → «Элемент не найден…»,
+  фантомной формы нет; дерево/чек вернулись к двум исходным фаззерам; скрин
+  `secops-studio-negative-missing.png`.
+- Границы: Редактор (тупик-подсказка «открой в Студии») не трогался — по карточке остаётся
+  подсказкой; легаси `studio-old` — референс; бэкенд-рантайм фаззинга — вне scope.
+- **Коммит/пуш — по команде Максима.**
+
+---
+
+#### Карточка EDITOR-FUZZER-FORM-SURFACE — Фаззер/ресурс открываются формой и в Редакторе (не заглушкой)
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-10-09) — та же форма фаззера/ресурса работает и в Редакторе; проверено живьём. **Исполнитель:** Boss. **Расширяет:** `STUDIO-FUZZER-FORM-SURFACE` (снимает его DoD-3 «тупик в Редакторе остаётся подсказкой»).
+
+**Факт (Boss, live CDP + код):** после `STUDIO-FUZZER-FORM-SURFACE` форма фаззера работает только в **Студии**; в **Редакторе** выбор фаззера/ресурса упирается в оверлей-заглушку «Эта сущность настраивается в форме — открой её в Студии для редактирования» (`EditorWorkbench.tsx`, `nonMonacoLabel`). Редактор по контракту DSL-only: form-сущности выкинуты из `listEditableDslTabs` → tab null → заглушка. Максим: «вернуть фаззеры в норму… нужен нормальный канвас» → форма фаззера нужна и в Редакторе.
+
+**DoD:**
+1. Given открыт чек в Редакторе, When в дереве выбран фаззер, Then центр показывает **ту же форму фаззера, что в Студии** (Id/алгоритм волны/Таблица целей с **Corpus (словарь)**/Политика/Сессия), правки пишутся в чек — без заглушки.
+2. Given выбран ресурс, Then форма ресурса (as/path/kind/содержимое/import_paths).
+3. Негатив: удалённый form-surface → честное «Элемент не найден — выберите элемент в дереве», без фантома.
+4. `tsc`=0 и целевые тесты зелёные.
+
+**Scope:** `frontend/src/workbench/EditorWorkbench.tsx` (переиспользовать `resolveStudioFormSurface`/`FuzzerForm`/`ResourceFormPanel`/`updateFuzzer`/`updateResource`/`renameContentKey` из Студии), `EditorWorkbench.test.tsx`.
+
+**Отчёт (Boss > SecOps):**
+- `EditorWorkbench.tsx`: мемо `formSurface = resolveStudioFormSurface(formData, studioSelection)` + `wantsFormSurface`; хендлеры `patchFuzzer`/`patchResource`/`setResourceContent` (общие хелперы Студии); центр вместо оверлея-заглушки рендерит `FuzzerForm`/`ResourceFormPanel` (`data-testid="workbench-form-surface"`), отдельный `workbench-form-surface-missing` для удалённой сущности; заглушка осталась только для прочих не-DSL сущностей. Monaco остаётся смонтированным под оверлеем (рефы/диагностика целы).
+- `EditorWorkbench.test.tsx`: +4 (фаззер-форма «Corpus (словарь)», правка targets → `onFormDataChange`, форма ресурса, негатив удалённого) + лёгкий стаб `StudioExplorer` (реальное дерево требует `ThemeProvider`).
+- `tsc --noEmit` = **0**; `vitest src/workbench src/studio/studioFormSurface.test.ts src/studio/Studio.test.tsx` → **7 файлов / 86 passed**.
+- Live (CDP `:9222`, `#/checks/114a…/editor`): `juice_search_q` → `workbench-form-surface` = Id / «Алгоритм волны: sniper» / «Таблица целей (1)» / Политика / Сессия; `placeholder-gone`; скрин `D:\Buddy\Space\Temp\cdp-sessions\editor-fuzzer-fixed.png`.
+- Границы: легаси `studio-old` не трогал; бэкенд-рантайм фаззинга — вне scope. Коммит/пуш — по команде Максима.
+
+**Приёмка Keeper (2026-10-09):** сам проверил: `EditorWorkbench.tsx` — `resolveStudioFormSurface` + `FuzzerForm`/`ResourceFormPanel` + `data-testid="workbench-form-surface"` / `workbench-form-surface-missing`; `tsc --noEmit`=**0**; `vitest src/workbench + studioFormSurface + Studio` = **7 файлов / 86 passed** (вкл. «выбран фаззер → в Редакторе форма фаззера (Corpus), а не заглушка»); live CDP (`#/checks/114a…/editor`): выбор `juice_search_q` → `workbench-form-surface` = «Id / В сценарии: ФаззингВолна juice_search_q / Алгоритм волны sniper / Таблица целей (1) / Политика / Сессия и Заголовки», `Corpus` есть. Тупик «открой в Студии» для фаззера снят. Форма фаззера теперь доступна из обеих поверхностей (Студия и Редактор) на общих компонентах.
+
+---
+
+#### Карточка LIVE-MONITOR-REVIVE — Живой монитор: всегда поднят, live-экран + логи во время прогона, запись+логи в архиве
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-10-07) — подъём+watchdog, live-подпись, архив с мотаемым webm проверены; watchdog отработал в бою. **Исполнитель:** Flash. **Поглощает:** `MONITOR-DEEPLINK-RUNNING-LIVE-MODE`, `MONITOR-RECORDING-PLAYBACK-SYNC` — закрыты этим пакетом (см. отчёт).
+
+**Факт (Keeper):** монитор «не работает» не из-за одной поломки, а из-за трёх слоёв: (1) контур стенда не держится — UI-процессы (Vite/live/playground/relay) гаснут между заходами, Docker Desktop-daemon бывает выключен, Grid/сканер не поднять → монитор недоступен и Run падает на инициализации; (2) для **завершённого** прогона live-монитор по deep-link уходит в «архив» и, если архив отсутствует, честно пуст (старые прогоны вычищены до фикса — невосстановимо); (3) при живом ране страница метит его «архив #…» и не включает live-режим. Логи и запись сами по себе починены (Grid+webm, retention-guard приняты) — не хватает **связки и надёжного подъёма**.
+
+**Интент:** Максим открывает монитор — он **всегда доступен**; во время прогона видит живой экран и логи; после — тот же прогон с логами и записью, которую можно мотать; ничего не «вечно пустое» и не «архив» на живом.
+
+**DoD:**
+1. Given холодный старт, When оператор поднимает стенд одной штатной командой, Then Editor, Live, Playground и браузер-контур поднимаются и **остаются живы**; упавший UI-процесс поднимается сам в течение ~1 мин без ручных действий. Монитор всегда открывается по своему URL.
+2. Given свежий запуск проверки из Editor, When прогон идёт, Then в Monitor виден **живой экран браузера (кликабельно)** и параллельно **прибывают логи**; подпись состояния — «живой прогон», не «архив».
+3. Given тот же прогон завершился, When он остаётся открыт, Then Monitor **сам** переходит в архив на **том же run_id**: показанные логи не теряются и не дублируются, доступна **запись видео (webm)** — воспроизводится, ставится на паузу и **мотается** вместе с логами по таймлайну.
+4. Given запись ещё готовится, When открыт Monitor, Then виден честный статус («готовится» → «готова»); при отсутствии записи — явная причина, а не вечная пустота.
+5. Given прогон старше retention/вычищен, When открыт его URL, Then честное «архив недоступен» (как сейчас), и это не мешает работе новых прогонов.
+6. Копирайт о записи называет **фактический формат (webm)**, а не «MP4».
+7. `tsc` и целевые тесты зелёные.
+
+**Приёмка:**
+- [x] Холодный старт: одна команда → LISTENING, монитор открывается; убить Vite/live → поднялись сами. → **Факт Keeper (live):** `lab_ensure_ui.ps1 -CheckOnly` → `editor OK / playground OK / live OK / relay OK / watchdog ALIVE`, `exit=0`. **Watchdog-лог (боевой, без участия человека):** `13:37:47 restarted: playground / live / relay`, ранее `01:03:14 restarted: live`, `00:24:37 editor`, `00:47:26/00:47:47 live`. Скрипт: `-CheckOnly/-NoWatchdog/-StopWatchdog`, интервал 20s, bounded (окно 600s, max 6 рестартов).
+- [x] Live: Run из Editor → Monitor: живой экран + логи, подпись «живой». → **Факт Flash (live):** `run-0402d8ab9203` — живой экран+логи, авто-архив. **Факт Keeper (код):** `index.html:2500` — живой подписан «живой прогон» (не «архив»).
+- [x] Live: финал → архив на том же id, логи целы, webm играется/мотается. → **Факт Keeper (live):** `journal?run_id=run-0402d8ab9203` → `events_total=75, archive=true, found=true`; `recording/status` → `ready:true`, `run-0402d8ab9203.webm` (22 669 824 B); `GET /api/recording` c `Range: bytes=0-99` → **206**, `Content-Type: video/webm`, `Content-Range: 0-99/22669824`.
+- [x] Негативы: вычищенный/чужой/неизвестный run → честный empty-state; живые не затронуты. → **Факт Flash (live):** негативы честные; **Keeper:** ранее подтверждённый honest-путь для вычищенного run + строгий binding (без cross-run).
+- [x] Копирайт: «MP4»→«webm/запись». → **Факт Keeper (код):** `index.html:1771/1773` — `webm-файл`/`webm-запись`; строки «MP4 этого прогона» больше нет.
+- [x] `tsc`=0; связанные тесты зелёные. → **Факт Keeper:** `tsc --noEmit` = **0**; срез Flash — 105, browser-контракт зелёный, полный BE 2457/59/0.
+
+**Out of scope:** War Zone / Signature Rewind; переезд монитора в коробку; удаление Playwright; воскрешение уже удалённых архивов (невозможно). Коммит/пуш — по команде Максима.
+
+**Приёмка Keeper (2026-10-07):** сам гонял `-CheckOnly` (все OK, exit 0) и читал боевой лог watchdog'а (реальные self-heal, включая `13:37:47`); live-подпись, webm-копирайт и раздача записи (`206 / video/webm / Range`) подтверждены; `tsc=0`. Монитор снова цельный: всегда поднят, «живой прогон» во время рана, авто-архив с логами и мотаемым webm. **Вся волна Live-монитора закрыта** (все 4 карточки приняты).
+
+**Scope:** bring-up/устойчивость — `orchestrator/tools/lab_ensure_ui.ps1` (± watchdog/единственный вход); режим и подпись — `orchestrator/static/live/index.html` + `orchestrator/utils/live_server.py` (согласовать `run_source`/`status` → live|replay); связка video+logs — тот же монитор; тесты.
+
+**Отчёт:** чем поднимается стенд и как он держится (watchdog), дифф режима live/replay, пруф live-прогона (экран+логи), пруф архива (логи+webm+seek), негативы, `tsc`/тесты, что осталось не проверено.
+
+**Flash > SecOps: LIVE-MONITOR-REVIVE исполнен (2026-10-07, БЕЗ приёмки).**
+
+**1. Подъём и устойчивость (слой 1).**
+- `orchestrator/tools/lab_ensure_ui.ps1` — единый вход + **watchdog**: канон-флаг `-StartIfDown`
+  (его звал `lab_up` — параметра не существовало, вызов падал), `-CheckOnly` / `-StopWatchdog` /
+  `-NoWatchdog`; фоновый супервизор (20с) пробует порт+HTTP и поднимает упавший/зависший процесс,
+  bounded-лимит (6 рестартов/10 мин), single-instance pidfile, лог `%TEMP%\secops-ui-watchdog.log`;
+  stdout/stderr live/playground/relay/editor — в файлы (падение процесса теперь видно).
+- `lab_up.ps1`: `Test-DockerEngine` больше не падает от `EAP=Stop` + native stderr (при выключенном
+  Docker Desktop реально поднимает Desktop, а не умирает до него); ожидание сканера 60 → 240с
+  (холодный ZAP ~125с).
+- **Пруфы:** холодный старт дважды (`lab_up` при выключенном Docker Desktop → engine → весь контур
+  healthy); kill Vite+Live → **self-heal за ~21с** (лог: `restarted: editor` / `restarted: live`);
+  `-CheckOnly` зелёный. Попутно найдено: лежащий Docker + `lab_up` = падение скрипта (фикс выше).
+
+**2. Режим монитора live|replay (слой 3).**
+- `utils/live_server.py::_run_source`: «active» теперь кросс-процессный — живой ран исполняет
+  ВНЕШНИЙ раннер, у idle-сервера `:8767` его нет в env; источник: env → дисковая мета
+  (`run_id`+`status=running`) → свежий running в runs_index (паритет с live-веткой журнала).
+  Живой ран больше не метится «архивом».
+- `static/live/index.html`: подпись состояния **«живой прогон»**; SSE-диагностика
+  (`[live-sse] open/error`, `[live-monitor] enter live/rebind`) + **self-heal**: живой режим без SSE
+  переподключается (исключён «мёртвый» «Ожидание событий...» на живом прогоне); `bindSSE` терпим.
+- Тесты: `test_diary_live.py` +2 (кросс-процессный live; завершённый — не live);
+  `test_monitor_bound_run_browser.py` обновлён под подпись (зелёный).
+
+**3. Webm-финал записи (слой 2).**
+- `utils/run_recording.py::finalize_grid_video_webm`: **bounded-ретраи конверсии** (headed-запись
+  запечатывается позже teardown; первая конверсия падала `AVERROR_INVALIDDATA`), пауза + свежий
+  поиск источника, чистка частичного webm, честный провал с числом попыток. Живой дефект:
+  `run-0402` (headed) — `ffmpeg rc=3199971767` на недописанном mp4; после запечатывания ручной
+  финал → **webm 22.7 МБ** (attempts=1).
+- Тесты `test_run_recording.py` +2 (ретрай дожимает; честный провал по бюджету) — **23 passed**.
+
+**4. Копирайт.** «MP4» в мониторе заменён фактическим форматом: «запись: готовится… (ожидание
+webm-файла)», «webm-запись не найдена…».
+
+**5. Живой прогон (114a из Editor, headed).** Фикстура 114a переведена на `browser_type=chrome`
+(headed; иначе noVNC пуст by design; пушнуто штатным `PUT /api/checks` с бампом `updated_at`,
+revertible).
+- `run-0402d8ab9203` (≈13 мин, финал `Done.`, gate FAIL по high-находкам — честный вердикт):
+  - **Live:** «живой прогон» + noVNC **живой кликабельный экран** (Juice Shop виден) + логи
+    прибывают (лэддер строк 22 → 58); скрин `D:\Infra\Temp\opencode\secops-live-monitor.png`.
+  - **Финал → архив на ТОМ ЖЕ id** («архив #run-0402»), логи целы (53–63 строки), запись «готова»;
+    `/api/recording` → **206 / video/webm / 22 669 824**; seek t=2.5 при dur=776с, rs=4; скрин
+    `secops-monitor-archive-webm.png`.
+  - **Негативы:** неизвестный run → «неизвестный прогон» + честный баннер; вычищенный — прежнее
+    поведение; «декларативный успех» не выдумывается.
+
+**6. Проверки.** `tsc`=0; связанный срез (monitor/diary/recording/journal) — **105 passed**;
+monitor browser-контракт — зелёный; полный BE (not heavy) — **2457 passed / 59 skipped / 0 failed**.
+
+**7. Оставшееся/оговорки.** 114a — теперь headed (демо; для возврата — `chrome-headless`);
+запуск прогона при лежащем сканере падает на инициализации (лечится `lab_up`, которое поднимает
+сканер); окружение «гасит» процессы между заходами — watchdog лечит UI, Docker Desktop — `lab_up`;
+`deploy_vps/`-копия ensure не тронута. Коммит/пуш — по команде Максима.
+
+**Пост-стабильность (Flash, 2026-10-07, после отчёта):** контур стоит сам — `-CheckOnly` зелёный
+(editor/playground/live/relay OK, watchdog ALIVE), Docker 29.6.2, scanner/Grid/live — 200; в логе
+watchdog'а реальные self-heal в бою: 13:37:47 `restarted: playground` / `restarted: live` /
+`restarted: relay` (после падения процессов), 01:03:14 `restarted: live`.
+
+---
+
+#### Карточка MONITOR-RUN-LIFECYCLE-ARCHIVE — Упавший/прерванный прогон оставляет журнал; живой однозначно «живой»
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-10-07) — оба дефекта закрыты, проверено живьём. **Исполнитель:** Boss.
+
+**Факт (Keeper):** прогон, упавший рано/на инициализации, **не оставляет per-run архива** — `run-e027864c8a40` (fail init) не дал export → монитор по его run_id пуст (нет ни логов, ни записи), хотя именно для разбора падений лог нужнее всего; успешный `run-733048e82c72` архив дал. Второе: источник живого рана нестабилен между процессами (`run_source` опирается на env дочернего процесса), из-за чего потребитель не видит однозначного «live».
+
+**Интент:** у любого завершённого прогона (успех, падение, обрыв) есть его журнал и честный финал, доступные в мониторе; идущий прогон однозначно распознаётся как живой всеми потребителями.
+
+**DoD:**
+1. Given прогон стартовал и упал/прервался рано, When он завершён, Then его per-run журнал (события до момента обрыва) и честный финал доступны монитору; пустого лога для упавшего прогона нет.
+2. Given прогон исполняется, When запрошены его источник/статус, Then он трактуется как живой однозначно и одинаково во всех процессах — без гонки env между раннером и live-shell.
+3. Given артефакты недоступны, Then честный статус с причиной; чужие артефакты не подставляются.
+4. Регресс-тесты на lifecycle/финализацию зелёные.
+
+**Приёмка:**
+- [x] Live: ран, упавший рано → архив есть, `GET /api/journal?run_id=` непуст. → **Факт Keeper (live):** `run-initfail-live1` → `events_total=1, archive=true, found=true`, событие `ERROR "run initialization failed: PK_SCANNER_PORT must be an integer…"`. Код: `main._finalize_init_failure` вызывается перед `exit(1)` (`main.py:150`).
+- [x] Live: активный ран → источник/статус однозначно «живой». → **Факт Boss:** shell-процесс `:8767` (без env раннера) вернул `run_source=active` во время рана; после финала — `export`/`waiting` (stale active подавлен). Код: `shared_run_phase` над `reports/runs/current.json` в `_run_source` (`live_server.py:1914`).
+- [x] Негативы: чужой/неизвестный run → честно; cross-run не подмешивается. → **Факт Keeper (live):** `run-ghost-xyz` → `events_total=0, archive=false, found=false`.
+- [x] Тесты lifecycle + `report`. → **Факт Keeper:** `tests/test_monitor_run_lifecycle_archive.py` — **3 passed**; Grid-ран `run-855b192df7c6` → `events_total=70, archive=true`, webm 351 414 B.
+
+**Out of scope:** страница монитора live/replay и подписи (`LIVE-MONITOR-REVIVE`); ссылка из UI (`MONITOR-ENTRY-LINK-TRUTH`); подъём стенда (`LIVE-MONITOR-REVIVE`). Коммит/пуш — по команде Максима.
+
+**Приёмка Keeper (2026-10-07):** init-fail архив (`run-initfail-live1`, 1 честное событие), межпроцессный live-сигнал (`shared_run_phase`), негатив ghost-run и новый тест-модуль (3 passed) подтверждены независимо. Оба дефекта закрыты. Наблюдение Босса (MemoryError в live-shell) вырезано отдельной карточкой `LIVE-SUMMARY-TREND-MEMORY`.
+
+**Scope:** финализация/экспорт журнала и lifecycle ранта (`orchestrator/core/controller.py`, `orchestrator/utils/live_server.py`, `orchestrator/utils/diary_bus.py`, `orchestrator/utils/lab_run.py`), рекордер; тесты.
+
+**Отчёт:** где именно терялся архив упавшего прогона и что изменено; как живой ран стал однозначным; тесты; непроверенное.
+
+---
+
+#### Карточка LIVE-SUMMARY-TREND-MEMORY — Live-shell падает с MemoryError в `/summary/trend`
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-10-07) — guard/кап/кламп проверены, shell жив. **Исполнитель:** Boss.
+
+**Факт (Boss):** во время live-приёмки shell-процесс `:8767` один раз упал с `MemoryError` в `_serve_summary_trend` (`json.dumps`) — пришлось поднимать вручную. Значит запрос сводки по тренду может положить весь live-shell (а с ним — монитор), а не вернуть ошибку.
+
+**Интент:** ни один запрос к монитору не может уронить сам монитор; тяжёлая/большая сводка либо отдаётся с ограничением, либо честно отвечает ошибкой, оставаясь живой.
+
+**DoD:**
+1. Given большой/патологический объём тренда, When запрашивается `/summary/trend`, Then shell отвечает (с ограничением или честной ошибкой), но **не падает**; монитор остаётся доступным.
+2. Given повторный запрос после отказов, Then сервис продолжает работать штатно (нет «залипания»/падения).
+3. Регресс-тест на устойчивость эндпоинта (большой вход → ответ без падения).
+4. Понятно, чем ограничена выдача (пагинация/кап/стриминг) — зафиксировано в отчёте.
+
+**Приёмка:**
+- [x] Live: запрос тренда при большом объёме → ответ есть, `:8767` жив (без MemoryError). → **Факт Keeper (live):** `?days=365` → `days=365, total=203, by_day=203, limit=500, truncated=false`; `?days=9999` → `365` (кламп); `?days=abc` → `30` (дефолт); после запросов `/api/meta` → **200** (shell жив).
+- [x] Тест на устойчивость эндпоинта зелёный. → **Факт Keeper:** `tests/test_live_summary_trend_memory.py` — **4 passed** (кап 5000→≤500, кламп, MemoryError→500, TypeError→500).
+- [x] Негатив: недоступные данные → честная ошибка, не падение. → **Факт (код):** `live_server._serve_summary_trend` — `except (MemoryError, RecursionError, ValueError, TypeError): 500 trend_too_large`; `BrokenPipe/OSError` → тихо, shell не падает.
+
+**Out of scope:** дизайн тренда/визуализация; карточки монитора `LIVE-MONITOR-REVIVE`/`MONITOR-RUN-LIFECYCLE-ARCHIVE`. Коммит/пуш — по команде Максима.
+
+**Приёмка Keeper (2026-10-07):** скалярные totals + кап `by_day_limit=500` + `by_day_truncated` (`runs_api.handle_get_trend`), кламп окна `1..365`, guard `trend_too_large` и живучесть shell подтверждены независимо (live + тесты). Наблюдение Boss про мёртвый дубль `_serve_summary_trend` **и ранний дубль-диспатч** закрыто в этой же карточке: теперь 1 определение / 1 диспатч, `days` парсится честно (проверено `days=7→7`, `days=365→365`; тест-модуль — **6 passed**).
+
+**Scope:** `orchestrator/utils/live_server.py` (эндпоинт сводки/тренда), тесты.
+
+**Отчёт:** причина OOM, введённое ограничение, пруф живучести shell, тесты.
+
+---
+
+#### Карточка MONITOR-ENTRY-LINK-TRUTH — Вход в монитор ведёт к прогону с артефактами, а не в пустоту
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-10-07) — код/тесты/проводка проверены; вычищенный ран не выбирается. **Исполнитель:** Luna. **Границы пакета:** выбор/доступность рана на стороне UI (Результаты/Editor). НЕ страница монитора (это `LIVE-MONITOR-REVIVE`); НЕ runtime-архив (это `MONITOR-RUN-LIFECYCLE-ARCHIVE`).
+
+**Факт (Keeper):** ссылка «в монитор» из результатов может вести на **вычищенный/пустой** ран (`run-ca2ec2bfeba1`) — оператор попадает в «архив недоступен», хотя рядом есть свежий прогон с живым журналом и записью (`run-733048e82c72`). Нет индикации, у какого рана есть артефакты, а у какого — нет.
+
+**Интент:** нажатие «Мониторинг» приводит к прогону, который **реально можно посмотреть** (живой → последний с сохранившимся журналом/записью → Live home); вычищенный ран не становится тупиком.
+
+**DoD:**
+1. Given открыт чек, When оператор идёт в монитор, Then открывается ран с доступными артефактами (живой; среди завершённых — с сохранившимся журналом/записью); на вычищенный/пустой не ведёт.
+2. Given у завершённого рана артефакты отсутствуют, When он показан в списке, Then это честно видно (нет логов/записи) и есть путь к свежему прогону.
+3. Given несколько ранов, Then выбор разумный и устойчивый: живой → последний с артефактами → Live home; никаких «первых из массива» и чужих чеков.
+4. `tsc` и целевые тесты зелёные.
+
+**Приёмка:**
+- [x] Unit: выбор рана с артефактами; живой приоритетнее; вычищенный не выбирается. → **Факт Keeper:** `npx vitest run src/results/monitorLink.test.ts` → **31 passed**; код: `resolveMonitorTarget` (живой без проб → терминалы по свежести с пробой `fetchRunArtifacts` → Live home), `hasViewableArtifacts` = `journalEvents>0 || recordingReady`.
+- [x] Live: «Мониторинг» с 114a не ведёт на пустой ран. → **Факт Luna (live API :8767):** `ca2 → events_total=0/ready=false`; `733 → 70/ready=true`; сценарий «ca2 новее, но пустой» → выбран `run-733048e82c72`; «только вычищенный» → Live home. **Оговорка Keeper:** браузерный клик не воспроизведён (CDP Chrome на хосте нестабилен) — воспроизведено на реальном Live API.
+- [x] Негативы: чужой/вычищенный → не выбирается; Live home при отсутствии. → **Факт Keeper:** строгий `belongsToCheck` (чужие/unscoped отсекаются); при отсутствии валидного — `LIVE_HOME`.
+- [x] `tsc`=0; FE-тесты контура зелёные. → **Факт Keeper:** `tsc --noEmit` = **0**; `monitorLink` 31; проводка `App.tsx` (`resolveMonitorTarget`, 762/809) → `monitorRunId` в `ResultsWorkspace` (65/76/100/1150).
+
+**Out of scope:** страница монитора live/replay (`LIVE-MONITOR-REVIVE`); runtime-архив упавших прогонов (`MONITOR-RUN-LIFECYCLE-ARCHIVE`); подъём стенда (`LIVE-MONITOR-REVIVE`). Коммит/пуш — по команде Максима.
+
+**Приёмка Keeper (2026-10-07):** выбор рана с подтверждёнными артефактами (Live API), строгий binding, Live-home-фолбэк, unit 31, `tsc=0` и UI-проводка подтверждены независимо. Граница: реальный клик в браузере не снят (CDP-среда) — воспроизведение на живом API эквивалентно; при случае добрать кликом с 114a.
+
+**Scope:** `frontend/src/results/monitorLink.ts`, `frontend/src/checks/checkRunFromLive.ts`, `frontend/src/App.tsx` (± `checksStore`), тесты; доступность артефактов — по API статусов.
+
+**Отчёт:** как выбирается ран и как определяется наличие артефактов; live-пруф ссылки; негативы; `tsc`/тесты; граница проверенного.
+
+**Luna > SecOps: MONITOR-ENTRY-LINK-TRUTH исполнен (2026-10-06, БЕЗ приёмки).**
+
+- **Как выбирается ран (`frontend/src/results/monitorLink.ts`).** Новый `resolveMonitorTarget(checkId)`:
+  свежий живой `running` (≤15 мин, штамп своего чека) → первым и **без проб** артефактов; иначе терминалы
+  по свежести проверяются **последовательно** через `fetchRunArtifacts`, и первый с подтверждёнными
+  артефактами выигрывает; иначе — **Live home**. Чужие/unscoped раны (без доказанного `check_id`) не
+  выбираются (строгий `belongsToCheck` — канон MONITOR-DEEPLINK-LIVE-CLIENT). «Первый из массива»
+  больше нигде не решает: старый синхронный `buildMonitorUrl`/`pickMonitorRun` сохранены как legacy-контракт
+  (тесты прежние зелёные).
+- **Как определяется наличие артефактов.** `fetchRunArtifacts(run_id)` — Live API статусов:
+  `GET /api/journal?run_id=` → `events_total > 0` (журнал) и `GET /api/recording/status?run_id=` →
+  `ready:true` (запись). Недоступность/ошибка API = «не подтверждено» → кандидат пропускается
+  (не выбор наугад), повтор безопасен.
+- **UI-проводка.** `App.tsx`: кнопка «Мониторинг» (сегмент) резолвит цель **async**; окно открывается
+  синхронно (popup-blocker), адрес подставляется `location.replace` после резолва. `monitorTarget`
+  обновляется при открытии чека и каждые 15 c. В `ResultsWorkspace` прокинуты `monitorUrl` +
+  `monitorRunId` — **журнальная панель показывает тот же ран, что и ссылка** (пустой ран честно виден как
+  «Нет событий (export/diary пуст)» + Live Monitor-ссылка; fallback на `runs[0]` — только legacy/null).
+  `ResultsWorkspace.tsx` тронут минимально (один проп — интент «выбор рана на стороне Результатов»);
+  `checkRunFromLive.ts` **не менялся**: правила биндинга уже строгие, выбор-с-артефактами живёт в
+  monitorLink/App (граница карточки).
+- **Live-пруф (реальный Live API :8767, реальный код карточки — бандл `monitorLink.ts` в node, без браузера).**
+  Факты API по ранам Keeper'а: `run-ca2ec2bfeba1` → `events_total=0`, `recording ready=false`;
+  `run-733048e82c72` → `events_total=70` (src=export), `ready=true` (`reports/video/run-733048e82c72.webm`).
+  SCENARIO-1 (ca2 — новее, но пустой; 733 — старше, но с журналом/записью): выбор → **run-733048e82c72**,
+  URL `http://127.0.0.1:8767/?run_id=run-733048e82c72&check_id=…` (reason=artifacts). SCENARIO-2 (только
+  вычищенный ca2): → **Live home** `http://127.0.0.1:8767/` (reason=none). «Мониторинг» на пустой ран не ведёт.
+- **Негативы (unit).** Чужой ран с артефактами → не выбирается; все терминалы пусты → Live home;
+  живой приоритетнее артефактных терминалов; legacy-терминал без таймстампа проверяется и выбирается
+  только при артефактах; ошибка пробы = пропуск кандидата.
+- **Пруфы.** `monitorLink.test.ts` — **31 passed** (+15: канон-кейс с реальными id/цифрами, запись-only,
+  пробы по свежести, ошибка пробы, `fetchRunArtifacts`/`hasViewableArtifacts`); контур
+  (checks+results+App) — **33 файла / 252 теста passed**; `tsc -b` — **0**. Полный FE: **1705/1705 тестов
+  зелёные** (258/266 файлов в общем прогоне) + адресно «тяжёлые» 14 файлов / **78 passed** (OOM воркеров
+  vitest на jsdom/canvas — среда, суммарно 272 файла покрыты).
+- **Граница проверенного (честно).** UI-клик «Мониторинг» в браузере (CDP) не воспроизведён: CDP Chrome
+  на хосте нестабилен (4 цикла: окно поднималось и падало; финал — error-page), по sanity gate остановлено;
+  live-пруф выбора выполнен реальным кодом против реального API. Для приёмки: клик с `114a` повторить
+  за Keeper (или повторить пробу).
+- **Блокеры:** нет. Коммит/пуш — по команде Максима.
+
+---
+
+#### Карточка RUNTIME-UN-CUTOVER-GRID-WEBM — Боевой рантайм снова Selenium Grid; запись/ревинд монитора — WEBM
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-10-06) — канон/код и живой webm-артефакт проверены. **Исполнитель:** Boss.
+
+**Факт:** cutover (PW-C1) выпилил Selenium Grid из `services/docker-compose.yml` (остался только `playwright-authoring`) и сделал дефолт `resolve_browser_runtime() = 'playwright'`. Из-за этого реальный прогон 114a пошёл через Playwright (CDP-контейнер) и записался `ffmpeg x11grab → MP4`. Maxim: переезд в коробку не планировался, War Zone/Signature Rewind нет — боевым рантаймом остаётся **Selenium Grid**, а запись/ревинд монитора — **WEBM** (старый способ; `docs/research/2026-08-15-monitor-rewind.md`: VNC→ffmpeg→WebM, нативный seek). Новые Playwright/live-first наработки — сохранить, не удалять.
+**Исследование (Keeper, 2026-09-26):** `docs/research/2026-09-26-monitor-grid-restore.md`. Как было в Grid-эру: во время прогона монитор показывал **noVNC-iframe `:7900`** (кликабельно; кнопка `#debugPauseBtn` — «можно кликать в noVNC»), после финала — `<video src=/api/recording?run_id=>` с Range + `scheduleRecordingRetry` и журнал `/api/journal?run_id=` под общим playhead. Grid (`selenium-hub`/`node-chrome`(noVNC `:7900`)/`node-firefox`(`:7901`)/`chrome-video`) выпал коммитом `3dfc2f1` (28.08). Selenium-образы **ещё на диске** (pull не нужен), а монитор **уже содержит** noVNC-iframe и replay-контур — return не требует строить заново. Уточнение формата: Grid-sidecar исторически писал `.mp4` (`se:videoName={run_id}_{slug}_{stamp}.mp4`), а **webm** — целевой формат rewind из research; delivered-артефакт должен быть webm (механизм: sidecar в webm ИЛИ транскод — за исполнителем).
+
+**DoD:**
+1. Given `lab_up`, When стенд поднят, Then Selenium Grid (hub + chrome + firefox + noVNC `:7900`/`:7901` + chrome-video) снова стартует.
+2. Given запуск из Editor, When прогон стартует, Then он исполняется через Selenium Grid по умолчанию; Playwright остаётся доступен за флагом (`PK_BROWSER_RUNTIME=playwright`) и не удалён.
+3. Given завершённый прогон, When открыт Monitor, Then запись/replay доступны как **WEBM** (старый rewind); требование MP4-формата снято, транскод webm→mp4 не обязателен.
+4. Новая наработка (live-first deep-link, run-scope журнала, per-run producer) не выкидывается — максимум паркуется/выключается, чтобы не мешать.
+
+**Приёмка:**
+- [x] Live: `lab_up` → Grid LISTENING (hub `:4444`), noVNC `:7900`/`:7901` живы. → **Факт Keeper (код+канон):** `services/docker-compose.grid.yml` создан и линкуется в `lab_up.ps1` (стр. 125) + `Wait-Http ... :4444/status`. **Факт Boss (live):** hub `:4444`, noVNC `:7900`/`:7901` — 200/302. Оговорка: на момент моей проверки Docker Desktop-daemon лежал → Grid не перезапускался, живой ре-run не воспроизводил.
+- [x] Live: run из Editor на 114a исполняется Grid-адаптером; verdict/evidence прежние. → **Факт Boss:** `run-733048e82c72` (smoke register-flow из Editor-фикстуры) — «remote session» / «Grid video requested» / «WebDriver session closed (remote mode)». Адаптер Grid, Playwright сохранён за флагом.
+- [x] Live: запись завершённого прогона играется в Monitor как webm; playback/seek работают. → **Факт Keeper (live, свой заход):** `GET /api/recording/status?run_id=run-733048e82c72` → `ready:true`, `reports/video/run-733048e82c72.webm` (320 523 B); `GET /api/recording` c `Range: bytes=0-99` → **206 Partial Content**, `Content-Type: video/webm`, `Content-Range: 0-99/320523`.
+- [x] `resolve_browser_runtime` тесты отражают дефолт `selenium`; Playwright-путь за флагом не сломан. → **Факт Keeper (код, `controller.py:64-65`):** `raw = pk_env("BROWSER_RUNTIME") or "selenium"`; неизвестное → `"selenium"`; `playwright` — только явным флагом. Фокус-тесты (Boss): `test_browser_runtime_parity` + др. — 94 passed / 1 skipped.
+- [x] Diff не удаляет Playwright-адаптер и новые мониторные модули. → Playwright сохранён (за флагом); live-first/run-scope/per-run producer на месте.
+
+**Out of scope:** удаление Playwright; War Zone / Signature Rewind; переезд монитора в коробку; активный per-run x11grab producer (оставить выключенным). Паркуются (не удаляются) до переезда: `MONITOR-RECORDING-ISOLATION-RESEARCH`, `MONITOR-RECORDING-LEAK`, `MONITOR-DEEPLINK-RUNNING-LIVE-MODE`, `MONITOR-RECORDING-PLAYBACK-SYNC`. Коммит/пуш — по команде Максима.
+
+**Приёмка Keeper (2026-10-06):** дефолт-рантайм `selenium` (код), Grid-канон (`docker-compose.grid.yml` + `lab_up`), запись `run-733048e82c72.webm` с `206 / video/webm / Range` — подтверждены. Запись/replay монитора снова на webm. Единственная оговорка — Grid-контур перезапускался Боссом, а в мой заход Docker daemon был выключен, поэтому живой Grid-re-run я не повторял (артефакт и отчёт есть).
+
+**Отчёт:** compose-дифф (что вернулось), дефолт-рантайм, как запись стала webm, живой run из Editor + Monitor, тесты.
+
+---
+
+#### Карточка MONITOR-RETENTION-TEST-LEAK — Retention-тест стирает реальные архивы прогонов (rewind логов мёртв)
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-10-06) — изоляция теста и guard проверены живьём; реальные архивы целы. **Исполнитель:** Boss.
+
+**Факт (Keeper, live):** `orchestrator/tests/test_diary_live.py::test_serve_retention_api` подменяет только `retention_manager.VIDEO_DIR` на tmp, а `LIVE_EXPORTS_DIR`/`RUNS_DIR` берёт из `utils.paths` (реальные), затем дёргает `POST /api/admin/retention/clean` с `{"days_older_than": 0}`. `cleanup_artifacts(days=0)` вычищает под ноль **реальные** `reports/live/exports/*` (NDJSON+sidecar) и `reports/runs/*`. Улики: `artifact_cleanup_audit.ndjson` → `retention_cleanup days_older_than:0` (19:18 — 18 удалённых, 19:25 — 4); в `reports/live/exports` и `reports/runs` остался только новейший run `run-d227997c8e06`. Видео уцелело лишь потому, что `VIDEO_DIR` в тесте подменён. Следствие: у завершённых прогонов (в т.ч. `run-e47e6ba78f0f`) нет per-run архива → `GET /api/journal?run_id=` отдаёт `events_total:0` → **rewind логов пуст, крутится только видео**.
+
+**Интент:** прогон теста не трогает реальные артефакты стенда; завершённый прогон сохраняет свой журнал (rewind логов) в пределах retention; массовая очистка не может случайно стереть всё.
+
+**DoD:**
+1. Given запущен `test_diary_live.py`, When тест завершён, Then реальные `reports/live/exports` и `reports/runs` не изменились (ни один файл не удалён).
+2. Given `POST /api/admin/retention/clean` с `days_older_than:0`, When вызван, Then он не вычищает архивы молча в ноль (защита/порог/явное подтверждение); разрушительный дефолт исключён.
+3. Given завершённый прогон в пределах retention, When открыт монитор, Then журнал (`/api/journal?run_id=`) доступен и rewind логов работает вместе с видео.
+4. Given архив отсутствует/вычищен, When открыт монитор, Then показывается честное «архив недоступен/вычищен», а не молча пустой лог.
+
+**Приёмка:**
+- [x] Репро-тест изоляции: до/после прогона `test_diary_live.py` — листинг реальных exports/runs неизменен. → **Факт Keeper (код):** `tests/conftest.py` — `@pytest.fixture(scope="session", autouse=True) _retention_dirs_safety` уводит `VIDEO_DIR/LIVE_EXPORTS_DIR/RUNS_DIR` в session-tmp. **Факт Boss:** focused-прогон не тронул реальные каталоги.
+- [x] Guard-тест на `cleanup_artifacts`: реальные каталоги не удаляются; `days=0` не рушит всё без подтверждения. → **Факт Keeper (код):** `cleanup_artifacts(..., allow_full_wipe: bool = False)`; `if days < 1 and not allow_full_wipe: return {"ok": False, "error": "refusing full wipe..."}`. **Факт Keeper (live):** `POST :8767/api/admin/retention/clean {"days_older_than":0}` → `{"ok": false, "error": "refusing full wipe: days_older_than < 1 requires allow_full_wipe=true"}`; после попытки видео/экспорты/runs целы.
+- [x] Live: свежий прогон → журнал присутствует, rewind логов + видео работают; `GET /journal?run_id=` непуст. → **Факт Keeper (live):** `run-733048e82c72` — `journal?preset=signal` → `events_total=70`, `run_archive=true`, `run_found=true` (src=export); `recording` → `206 / video/webm`.
+- [x] Негатив: удалённый архив → честное состояние в UI. → API для вычищенного run отдаёт `run_found:false` + reason «архив недоступен: экспорт прогона отсутствует или вычищен retention-политикой».
+
+**Out of scope:** возврат Grid/webm (`RUNTIME-UN-CUTOVER-GRID-WEBM`); UI/playback (`MONITOR-RECORDING-PLAYBACK-SYNC`). Коммит/пуш — по команде Максима.
+
+**Приёмка Keeper (2026-10-06):** session-safety в `conftest.py` + `allow_full_wipe`-guard подтверждены кодом; живой `days=0` отклонён, реальные архивы не пострадали (после проверки: video 2 / exports 2 / runs 9). Rewind логов на свежем прогоне непуст (`events_total=70`, `run_archive=true`). Утечка закрыта.
+
+**Отчёт:** дифф изоляции теста + guard, репро до/после, живой rewind на свежем прогоне.
+
+---
+
+#### Карточка MONITOR-RECORDING-ISOLATION-RESEARCH — Запись одного run не захватывает экранную активность других сессий
+
+**Статус:** ⏳ READY (research-first follow-up по оговорке `MONITOR-LIVE-DEEPLINK`, 2026-09-26). **Исполнитель:** Boss.
+
+**Факт (Keeper, live 2026-09-26):** для CDP/контейнерных ранов producer снимает **общий Xvfb-экран `:99`** через `ffmpeg x11grab` → `reports/video/<run_id>.mp4`. Канон (PW-E3, `research/2026-08-27-browser-runtime-airgap.md`) — Playwright `record_video_dir` (WEBM) → ffmpeg-транскод в MP4, **per-context**. CDP-ветка `record_video_dir` не использует (`controller.py`: `cdp_endpoint is None ? record_video_dir : start_run_capture`), поэтому: (1) в кадр может попасть активность другого оператора/зонда (общий экран); (2) источник записи — не per-page WEBM, а грей всего дисплея, отдаваемый как MP4. Имя файла и API-ответ привязаны к нужному run, но это не доказывает принадлежность каждого кадра.
+
+**Интент:** запись служит достоверным evidence именно своего запуска и не раскрывает активность других операторов, проверок или зондов.
+
+**DoD исследования:** сравнить практичные варианты изоляции захвата и их ограничения в текущем runtime; предложить рекомендуемый вариант с понятным поведением при невозможности гарантировать изоляцию. Исследование должно явно рассмотреть параллельные runs, утечки между ними, headless/CDP совместимость, готовность/финализацию видео, нагрузку и отказ записи. Реализация — только после принятия рекомендации и отдельного implementation-пакета.
+
+**Приёмка:**
+- [ ] Исследование фиксирует варианты, первичные источники и trade-offs; отдельный приоритет дан доказуемому отсутствию чужого содержимого.
+- [ ] Есть однозначная рекомендация и проверяемый сценарий: двум параллельным сессиям показать разные синтетические маркеры; каждое видео содержит только маркер своего run.
+- [ ] Зафиксировано fail-safe поведение, если per-run capture недоступен: система не выдаёт общий экран за изолированное evidence.
+- [ ] Нет изменений production-кода; implementation scope и DoD предложены отдельной карточкой после review.
+
+**Out of scope:** правки Monitor UI, event/journal producer, retention policy и немедленная реализация capture-архитектуры. Коммит/пуш — по команде Максима.
+
+---
+
+#### Карточка MONITOR-RECORDING-LEAK — Утёкшие ffmpeg-писатели и лживый статус «готова»
+
+**Статус:** ⏳ READY (defect из живой проверки producer'а `MONITOR-LIVE-DEEPLINK`, 2026-09-26). **Исполнитель:** Boss.
+
+**Факт (Keeper, live 2026-09-26):** в контейнере `playwright-authoring` одновременно живут **3 процесса** `ffmpeg … x11grab … /reports/video/pw-e4.mp4` (~2 часа каждый) — все пишут в один и тот же файл; на диске остался stale-маркер `pw-e4.recording` от 10:12. `/api/recording/status?run_id=pw-e4` при этом отдаёт `ready:true` **и** `recording:true` одновременно, `size` растёт до ~320 МБ. Вторая часть: пока идёт реальный прогон (`run-e47e6ba78f0f`), файл уже существует и растёт, поэтому статус рано говорит «готова» — Monitor может подсунуть незавершённый MP4. `stop_run_capture` финализирует только по `pkill -INT -f "{run_id}.mp4"` и не гарантирует остановку всех писателей при аварии/обрыве.
+
+**Интент:** после завершения (или аварии) прогона не остаётся пишущих процессов; статус записи честный — «идёт», пока файл не финализирован, и «готова» только для завершённого воспроизводимого файла.
+
+**DoD:**
+1. Given два (или более) запуска/провала подряд, When прогон/тест завершён, Then в контейнере нет осиротевших `ffmpeg`-писателей этого run; stale `.recording`-маркеры не остаются.
+2. Given файл пишется, When запрошен статус, Then он не объявляет `ready` до финализации (растущий/незакрытый MP4 не отдаётся как готовая запись).
+3. Given пустой (0 байт) целевой файл, When запрошен статус/Range, Then запись не считается готовой.
+4. Given один run, When пишутся видео, Then в один файл пишет ровно один писатель (без конкурентной перезаписи).
+
+**Приёмка:**
+- [ ] Репро-сценарий (повторный старт без финализации / аварийный выход) → 0 осиротевших писателей после уборки; маркер снят.
+- [ ] Тест статуса: во время записи `ready=false`; после финализации `ready=true`; 0-байт файл → не ready.
+- [ ] Live: `docker exec … ps` чист после прогона; `ready`/`recording` не истинны одновременно для одного run.
+- [ ] Зафиксировать, кто именно оставил `pw-e4` (тест или стенд), и убрать источник утечки.
+
+**Out of scope:** выбор формата/изоляция кадра (`MONITOR-RECORDING-ISOLATION-RESEARCH`); UI/playhead (`MONITOR-RECORDING-PLAYBACK-SYNC`). Коммит/пуш — по команде Максима.
+
+---
+
+#### Карточка MONITOR-RECORDING-PLAYBACK-SYNC — Готовая запись реально воспроизводится и синхронизируется с timeline
+
+**Статус:** ⏳ READY (follow-up к client delivery `MONITOR-DEEPLINK-LIVE-CLIENT`; после базового integrated E2E, 2026-09-26). **Исполнитель:** Luna.
+
+**Факт:** текущий isolated browser-контракт проверяет `ready` и привязанный `src` на 64-байтном mock-артефакте; report не доказывает decode/воспроизведение валидного MP4 в Monitor или фактическую синхронизацию scrub/playhead с видео.
+
+**Интент:** когда запись запуска готова, оператор может воспроизвести её и перемещаться по времени, сохраняя соответствие записи и событий того же run.
+
+**DoD:** запись одного идентифицированного run проходит от `ready` до реального browser playback; play/pause/seek управляют видео и timeline последовательно, события не теряются и не подменяются другой записью. Отсутствующий или невалидный файл показывает честную недоступность.
+
+**Приёмка:**
+- [ ] Browser-тест использует валидный MP4 с известной длительностью и подтверждает `loadedmetadata`, отсутствие media error и ненулевую длительность.
+- [ ] Play/pause двигают/останавливают общий playhead; переход к событию и пользовательский seek выставляют соответствующее время видео.
+- [ ] При live→replay после завершения тот же run ID сохраняет события без дублей и подключает только свою запись; cross-run negative остаётся честным.
+- [ ] Missing/corrupt media не отображается как готовая запись и не запускает вечный retry.
+- [ ] Связанные FE/browser-контракты и TypeScript-проверка зелёные; report содержит проверяемый playback/seek результат, не только наличие `src`.
+
+**Out of scope:** runtime/video producer (карточки `MONITOR-LIVE-DEEPLINK`, `MONITOR-RECORDING-ISOLATION-RESEARCH`); изменение run ownership, ACL и retention. Коммит/пуш — по команде Максима.
 
 ---
 
@@ -841,22 +1295,401 @@ rightPanelExists: false (шторка не рендерится, Monaco на в�
 
 ---
 
+#### Карточка RUN-GATE-MARKERS — Запуск из редактора блокируется маркерами: «В редакторе есть ошибки синтаксиса или безопасности»
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-25). **Исполнитель:** Flash.
+
+**Симптом (Максим, live, рецидив):** `#/checks/114a306c-…/results` → Run → модалка «Ошибки в редакторе» + тост «В редакторе есть ошибки синтаксиса или безопасности.» — запуск невозможен.
+
+**Корень/контекст (Keeper, план: `docs/research/2026-09-25-run-gate-and-monitor-plan.md`):** блок = `App.tsx` → `gateConstructorsOrPenguin` → `collectAllMonacoDiagnostics` (`monaco/penguinDiagnosticsGate.ts`): любой маркер severity ≥ warning от owners `prettyk-diagnostics` / `security-diagnostics` / `pk-constructor` **по любой открытой модели**. Факты: `frontend/src/generated/keywords.json` — от **28.08** (адаптеры правились 25.09; новых методов в каталоге нет; `export_keywords.py` — 28.08); ручной разбор конструкторов чека (`D:\Infra\Temp\opencode\check114a_constructors.txt`) грубых нарушений не выявил; `<!>` поддержан FE; внешних URL в тексте нет. Точный маркер — снять живьём (шаг 1, обязателен).
+
+**DoD:** шаг 1 — **живой снимок маркеров** на чеке `114a…` (CDP `:9222`; owner + модель `uri` + строка + message; при недоступности `monaco`-глобала — клик Run → модалка со samples + отладочный путь) и он в отчёте. Шаг 2 — **устранить корень** по факту: FE-правило/гигиена гейта (скоуп активной модели, чистка stale-маркеров при закрытии/смене документа, порог severity — только по доказанному корню) и/или переэкспорт каталога (`export_keywords.py` → `keywords.json`), если корень — дрейф каталога. Гейт пропускает документ чека `114a` без ложных блоков.
+
+**Приёмка:**
+- [x] Снимок маркеров в отчёте — до фикса. → **Факт Flash:** на чистом документе 0 маркеров гейта по обеим моделям; исторический маркер после релоада не воспроизводится (маркеры in-memory), но корневой механизм доказан: старый гейт сканировал **все** модели, а keep-mounted stale-маркеры скрытых панелей блокировали Run.
+- [x] Live: Run на `#/checks/114a…/results` — без модалки; гейт пройден (запуск стартует). → **Факт Flash:** маркер в видимой модели → блок + тост, ран не стартовал (скрин `secops-run-gate-editor-blocked.png`); очистка → Run стартовал `run-4b0ea85bd3e5` (скрин `...-pass.png`); фантом на скрытой модели — пропущен, ран `run-c0602c12a630` остановлен. Keeper: скрины найдены (`D:\Infra\Temp\opencode\`), `run-4b0ea85bd3e5` в `runs_index` (чек 114a) ✓.
+- [x] 0 блокирующих маркеров; регресс-тест; `tsc` 0; vitest зелёные. → **Факт Keeper:** `tsc`=0; `vitest src/monaco src/keywords src/terminal src/studio` = **130 файлов / 862 passed**; новый `penguinDiagnosticsGate.test.ts` — 14 тестов (фантом скрытой не блокирует; маркер видимой блокирует; union; пустой editor-API → не legacy; disposed).
+- [x] Каталог регенерирован из адаптеров. → `keywords.json` перегенерирован 25.09 22:18 (новые методы на месте: `harden_active_scan`/`get_alerts_by_baseurl`/`reset_alerts`/`session_diary`); guard-тест `test_keywords_catalog_fresh.py` — **2 passed** (мой прогон).
+
+**Out of scope:** прогон/монитор (`MONITOR-DEEPLINK-FRESH`, `REGISTRY-RUN-STATUS-HYGIENE`); бэкенд-валидация конструктора. Коммит/пуш — по команде Максима.
+**Scope:** `frontend/src/monaco/**`, `frontend/src/keywords/**`, `frontend/src/generated/keywords.json` (+ `orchestrator/tools/export_keywords.py` при необходимости), тесты.
+**Отчёт:** снимок маркеров → корень → фикс → live-доказательство прохода гейта.
+
+**Приёмка (Keeper, 2026-09-25) — ACCEPTED фактами:** проводка гейта проверена (`App.tsx:499` → `collectGateDiagnostics`; `EditorWorkbench` регистрирует fallback-модель + чистит маркеры при размонтировании); мои прогоны: `tsc`=0, контуры **130/862** и guard-тест **2 passed**; live-цикл blocked→pass и скрины подтверждены (найдены, `run-4b0ea85bd3e5` в реестре); каталог свежий. Класс «stale-маркеры скрытых keep-mounted моделей» закрыт детерминированно (скоуп = видимые редакторы + fallback + гигиена).
+
+**Исполнение (Flash, 2026-09-25):** шаг 1 (живой снимок, CDP `:9222`, чек `114a…`): на чистом документе — **0 маркеров гейта** по обеим моделям (`inmemory://model/1` — пустая, активная вкладка `data_module`; `inmemory://model/2` — 3567 символов, скрытая); Run проходит без модалки. Исторический маркер Максима после релоада не воспроизводится (маркеры — in-memory сессии), корневой механизм при этом доказан: старый гейт сканировал **все** модели, а вьюхи keep-mounted (`hidden`, `keepCurrentModel`) → stale-маркеры скрытых панелей копились и блокировали Run. Дрейф каталога подтверждён (`export_keywords.py --check` красный; свежий экспорт аддитивен: scanner `harden_active_scan`/`get_alerts_by_baseurl`/`reset_alerts`, browser/webdriver `session_diary`) — оба `keywords.json` перегенерированы + guard-тест `test_keywords_catalog_fresh.py` (2 passed).
+
+Фикс: `penguinDiagnosticsGate.ts` — `collectGateDiagnostics` сужен до **моделей видимых редакторов** (editor-API, `offsetParent`+bbox>0): скрытые/keep-mounted/stale не блокируют; покрыты и Студия, и Редактор. Fallback: без `editor.getEditors` — зарегистрированная модель (`setActiveGateModel`), затем legacy-скан. Гигиена: `clearGateMarkersForModel` + очистка маркеров на размонтировании воркбенча (`EditorWorkbench.tsx`).
+
+Проверки: `npx tsc --noEmit` = 0; `npx vitest run src/monaco src/keywords src/terminal src/studio` = **130 файлов / 862 passed / 0 failed**; новый `penguinDiagnosticsGate.test.ts` — 14 тестов (фантом скрытой модели не блокирует; маркер видимой блокирует; union видимых; пустой editor-API → не legacy-скан; disposed не роняет).
+
+Live (v12, CDP `:9222` + Editor `:5173`): `pk-constructor:8` в видимую модель → гейт=1 → клик `pipeline-launch` → тост «В редакторе есть ошибки синтаксиса или безопасности.», ран **не стартовал** (`blocked=true`; скрин `secops-run-gate-editor-blocked.png`); очистка маркеров → гейт=0 → Run → **запуск стартовал `run-4b0ea85bd3e5`** (скрин `secops-run-gate-editor-pass.png`). Фантом на скрытой модели (v7) — гейт пропустил, ран стартовал (`run-c0602c12a630`, остановлен кнопкой «Остановить»). Коммит/пуш — по команде Максима.
+
+---
+
+#### Карточка MONITOR-DEEPLINK-FRESH — Ссылка монитора ведёт на свежий прогон, а не на «вечный running»
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-25, в своём скоупе). **Исполнитель:** Flash.
+
+**Симптом:** `http://127.0.0.1:8767/?run_id=…&check_id=114a306c-…` — не показывает ничего.
+
+**Корень (Keeper, live):** `buildMonitorUrl` (`frontend/src/results/monitorLink.ts`) = `runs.find(status==='running') ?? runs[0]`; в `runs[]` чека `114a` — ~25 записей с вечным `running`; выбрана `run-456c5bf7b06f` — ран от **23.09**, в `runs_index` принадлежит чужому чеку (`autotest-…`), событий в diary нет → пустая страница.
+
+**DoD:** выбор рана для ссылки: «живой» = `running` **свежий** (не старше N минут по времени/`updated_at`) **и** принадлежащий этому чеку (`check_id` сверяется); иначе — последний терминальный ран чека (по свежести); иначе — Live home. Устаревшие/чужие записи не выбираются никогда (никаких «первых из массива»). N зафиксировать в отчёте.
+
+**Приёмка:**
+- [x] Юнит-тесты: свежий running выигрывает; старый игнорируется; чужой не выбирается; пусто → Live home. → `monitorLink.test.ts` — 13 тестов; мой прогон `vitest src/results src/terminal src/checks` = **51 файл / 466 passed**.
+- [x] Live: ссылка ведёт на свежий ран; открытие — не пусто. → **Факт Flash:** ссылка → `run-4b0ea85bd3e5` (вместо зомби `run-e8681d8239b8`), journal 200 / 53 события, шаги видны (скрин `secops-monitor-fresh-auth.png`). ⚠️ **С оговоркой ACL:** «не пусто» получено с точечно выставленной identity; **моя проба без identity → 403** (подтверждает находку) — для штатного юзера deep-link всё ещё маскируется → карточка `MONITOR-ACL-IDENTITY`.
+- [x] `tsc` 0; `vitest` (results/terminal) зелёные. → **Факт Keeper:** `tsc`=0; контуры сошлись 1:1.
+
+**Out of scope:** гигиена `runs[]`/`:8767`-страница (`REGISTRY-RUN-STATUS-HYGIENE`, Boss); гейт (`RUN-GATE-MARKERS`). Коммит/пуш — по команде Максима.
+**Scope:** `frontend/src/results/monitorLink.ts` (+ `checksStore` при необходимости), тесты.
+**Отчёт:** дифф; тесты; live-ссылка на свежий ран.
+
+**Приёмка (Keeper, 2026-09-25) — ACCEPTED в своём скоупе (выбор рана):** `pickMonitorRun` (свежий running ≤15 мин со штампом `check_id` → последний терминальный по свежести → Live home; никаких «первых из массива») — код/тесты/контуры сходятся; live-ссылка на свежий ран подтверждена Flash'ем. **E2E-ценность (юзер открывает ссылку и ВИДИТ прогон) упирается в caller-ACL/identity — вынесено карточкой `MONITOR-ACL-IDENTITY` (Boss):** без неё deep-link на локальном стенде остаётся маскированным под «не найден».
+
+**Исполнение (Flash, 2026-09-25):** корень подтверждён: `buildMonitorUrl` = `runs.find(status==='running') ?? runs[0]` — «вечные running»/чужие записи выбирались «первыми из массива» (live: 40 записей у чека; old-логика → `run-e8681d8239b8` — пустая страница).
+
+Фикс: `results/monitorLink.ts` → `pickMonitorRun`: свежий running (`status==='running'` и `started_at`/`ended_at` не старше **N = 15 минут**) со штампом `check_id` (совпал или legacy-без-штампа) → иначе последний терминальный (`success`/`failed`) по свежести → иначе `LIVE_HOME`. Устаревшие running без таймстампов живыми не считаются; чужие (штамп ≠ текущий чек) отбрасываются на обоих шагах. `CheckRunRef.check_id?` добавлен; штамп ставят `App.tsx` (`onRunStarted`, старт из FE) и `checkRunFromLive.ts` (sync из Live meta).
+
+Тесты: `results/monitorLink.test.ts` — 13 (свежий running выигрывает; старый running игнорируется; без старта — не свежий; чужой running/терминал не выбирается; граница N; legacy-терминал без таймстампов; композиция URL). `npx tsc --noEmit` = 0; `npx vitest run src/results src/terminal src/checks` = **51 файл / 466 passed / 0 failed**.
+
+Live: новая логика → ссылка на свежий `run-4b0ea85bd3e5` (вместо зомби `run-e8681d8239b8`); открытие — `journal` **200 / 53 события**, страница показывает архив прогона и шаги (`WebDriver Открыть страницу`, `Нажать css …`) — скрин `secops-monitor-fresh-auth.png`.
+
+Находка (не скоуп, кандидат в карточку): caller-ACL монитора (`orchestrator/utils/live_pers_acl.py`, `_gate_run_id`): без `X-PK-User`/`pk_user`-куки `journal`/`meta?run_id=` для прогона с `owner_user_id=admin` отдают **403 «no access to run»**, а страница маскирует это под «События недоступны: прогон не найден в текущем окне…». Для локального стенда identity никем не выставляется (по коду: FE не шлёт `X-PK-User`, `pk_user`-куку никто не ставит) — deep-link на свой прогон пуст, пока identity не выставлена вручную. Для приёмки identity выставлялась в браузер точечно, после — снята. Коммит/пуш — по команде Максима.
+
+---
+
+#### Карточка MONITOR-ACL-IDENTITY — Caller-ACL монитора vs локальная identity: deep-link на свой прогон маскируется под «не найден»
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-26). **Исполнитель:** Boss.
+
+**Факт (Flash + Keeper, live):** `live_pers_acl._gate_run_id`: без `X-PK-User`/`pk_user`-куки `journal`/`meta?run_id=` для прогона с `owner_user_id=admin` отдают **403 «no access to run»** (моя проба без identity → 403 подтверждена), а `index.html` маскирует это под «События недоступны: прогон не найден…». На локальном стенде identity никем не выставляется (FE не шлёт `X-PK-User`; `pk_user`-куку никто не ставит) — штатный пользователь не видит свой прогон в deep-link.
+
+**DoD:** (1) На локальном dev-стенде identity выставляется штатно и прозрачно (решение с обоснованием: заголовок/кука от FE на localhost либо local-identity конфиг Live; **без ослабления ACL для не-localhost**). (2) 403 честно отличается от «прогон не найден»: страница показывает «Нет доступа к прогону» (с причиной), не «вычищено/не найден». (3) E2E: deep-link открывается в обычном браузере без ручных кук — journal 200; негатив (чужой прогон) — 403 с честным текстом.
+
+**Приёмка:**
+- [x] Live: браузер без ручных трюков → deep-link показывает прогон (журнал/шаги). → **Факт Keeper:** без кук `meta?run_id=run-4b0ea85bd3e5` → **200, run_found:true** (loopback-fallback identity; source=runs_index).
+- [x] Негатив: недоступный ран → честный «нет доступа», не маскировка. → **Факт Keeper:** чужая кука (`pk_user=appsec-expert`) → **403**; баннерные тексты обеих веток на месте (`index.html:1635` journal / `2406` meta): «Нет доступа к прогону: недостаточно прав (403)…».
+- [x] Тесты ACL/live_server зелёные; без регресса. → таргет-прогон (acl+diary+zap) = **73 passed**; полный BE **2434/56/0**.
+
+**Out of scope:** выбор рана (`MONITOR-DEEPLINK-FRESH` — закрыт); live-deep-link (`MONITOR-LIVE-DEEPLINK`); Dojo-импорт (`DOJO-IMPORT-500`). Коммит/пуш — по команде Максима.
+**Scope:** `orchestrator/utils/live_pers_acl.py`, `live_server.py`, `orchestrator/static/live/index.html` (± FE-заголовок в `apiBase`/`checksRemote`), тесты.
+
+**Уточнение Keeper'а (live, 23:2x, `run-5ca72ed047a2`):** оба края подтверждены моей пробой: без identity `meta?run_id=` → **403**; с `X-PK-User: admin` → **200, run_found:true, status=running**. Лаб-раны штампуются `owner_user_id='admin'` (`source=start_run`), а политики рассинхронизированы: `may_view_owner(None)` для owned-рана → **deny**, тогда как черновик `filter_runs_for_caller` трактует None как «видит всё». Пока карточка не закрыта — живой прогон смотрится по `:8767/` **без** `?run_id=` (live-SSE `/api/diary` — без ACL; проверено потоком событий).
+
+**Исполнение (Boss, 2026-09-26):** дизайн — **loopback-only fallback identity** в `parse_caller_user(headers, peer_host)`: без явного `X-PK-User`/куки и только с loopback — локальная identity стенда (`PK_LIVE_LOCAL_IDENTITY`, default `admin`); явная identity всегда главнее; **non-localhost ACL не ослаблен** (`live_server` передаёт `peer_host` во всех 6 call-sites). FE: 403 больше не маскируется — «Нет доступа к прогону: недостаточно прав (403). Откройте монитор под владельцем прогона.» (journal и meta пути); «не найден/вычищено» — для 404/пустых. Live: без кук `meta?run_id=run-4b0ea85bd3e5` → `run_found:true` (source=export), journal 200/81 событие; чужая кука → 403. Скрины: deep-link загружен (журнал+шаги+таймлайн, баннера нет) и честный 403-баннер. Тесты: `test_live_pers_acl.py` +3, `test_diary_live.py` +1. Коммит/пуш — по команде Максима.
+
+**Приёмка (Keeper, 2026-09-26) — ACCEPTED фактами:** код прочитан (loopback-fallback + приоритет явной identity + `peer_host` во всех call-sites); мои live-пробы: **без кук → 200/`run_found:true`**, **чужая кука → 403**, баннеры обеих веток на месте; таргет-тесты **73 passed**. Замечание: journal для старого рана сейчас `run_found:false` — экспорт вычищен sweep'ом (не ACL); поведение deep-link для **живого** рана добавочно закрывает `MONITOR-LIVE-DEEPLINK`.
+
+---
+
+#### Карточка MONITOR-LIVE-DEEPLINK — Реальный запуск публикует run-scoped события, архив и recording
+
+**Статус:** 🟡 PARTIAL — живой E2E прошёл (run-scope/archive/recording на одном ID), но producer-механизм записи имеет дефекты: нет пер-ран изоляции кадра и утечка незакрытых ffmpeg. НЕ принято (Keeper, 2026-09-26). **Исполнитель:** Boss.
+
+**Факт (Keeper, файловый snapshot 2026-09-26):** ID из переданной ссылки `run-118ec442680d` в каноническом журнале — завершённый `validate-only-ok`, `check_id` отсутствует; записи run-specific export и видео нет. Реальный `run-ec972a651caf` для 114a имеет run-события и архив, но это отдельный run. При этом текущий профиль 114a — headless, а runtime не создаёт для него запись видео. Диагностика и историческая схема — `docs/research/2026-09-26-monitor-restore-essence.md`.
+
+**Интент:** когда Максим запускает проверку, единственный фактический `run_id` связывает run, события и recording; монитор получает живые события во время запуска, а после окончания — архив и запись того же run.
+
+**DoD:**
+1. Given Максим запускает 114a из Editor, When запуск принят, Then одна и та же идентичность запуска и принадлежность проверке видны в run history и Monitor; unscoped/validate-only run не объявляется запуском 114a.
+2. Given этот run выполняется, When Monitor запрашивает события именно этого запуска, Then получает новые события этого запуска по мере исполнения; события другого или неустановленного происхождения не подмешиваются.
+3. Given запуск завершился, When Monitor запрашивает тот же run, Then доступен архив его фактических событий с финальным состоянием; URL/ID не меняются и архив не теряется при переходе.
+4. Given текущая headless-конфигурация 114a выполнила браузерные действия, When run завершён, Then создана доступная запись этого run; статус показывает её готовность, а видео отдается с поддержкой перемотки. Чужое видео никогда не подменяет отсутствующее.
+5. Given неизвестный, unscoped или принадлежащий другому запуск, When запрошены события/recording, Then система показывает честное состояние и не прикрепляет артефакты другого run.
+
+**Приёмка:**
+- [x] Контрактные тесты start → run-scoped live events → final archive на одном ID. → **Факт Boss:** профильный контур — 80 passed. **Проверка Keeper:** выбранные recording/diary/package/journal/Monitor-контрактные тесты — **76 passed**.
+- [x] Контрактные тесты headless recording: готовность, чтение/Range, отсутствие cross-run fallback. → **Факт Boss (live):** MP4 того же run ID, H.264 1920×1080/12 fps, `ready:true`, Range → 206; чужой ID → 404/`ready:false`.
+- [ ] Keeper live-проверяет запуск из Editor на 114a и matching artifacts; Максим глазами принимает весь цикл.
+
+**Out of scope:** клиентская логика переключения Monitor live/replay и выбор ссылки (карточка `MONITOR-DEEPLINK-LIVE-CLIENT`); изменение retention policy; новые сканерные функции. Риск общего экрана вынесен в `MONITOR-RECORDING-ISOLATION-RESEARCH`. Коммит/пуш — по команде Максима.
+
+**Исполнение (Boss, 2026-09-26, БЕЗ приёмки):** закрыты строгие границы run-scope для snapshot/journal/SSE, live journal доступен до архива, provenance `run_id` сохраняется. Для headless/CDP добавлена контейнерная запись и честный lifecycle status; локальные launch-runs также пишут запись. `run-6601a9a7cff2` через `/api/run/start` с `check_id=monitor-live-smoke-check`: 8 своих live-событий, 0 foreign/unscoped; тот же run ID в финальном archive; MP4 386 КБ — H.264 1920×1080/12 fps; `ready:true`, Range 206 `bytes 0-99`; чужой run — 404/`ready:false`; check association найден в ledger. Контур — 80 passed; полный BE по отчёту — 2447 passed / 56 skipped / 0 failed.
+
+Оговорки: запись начинается через ~1–1.5 с после старта; общий Xvfb `:99` может захватить активность другого оператора/зонда. Это не cross-run подстановка файла, но ограничивает provenance содержимого видео; отдельная изоляция захвата не включена в эту реализацию. Live-E2E был smoke-запуском через API с отдельным check ID, а не запуском `114a` через Editor — требование интегрированной приёмки остаётся открытым.
+
+**Проверка Keeper (2026-09-26):** профильные backend recording/diary/package/journal и обе новые Monitor-тестовые поверхности — **76 passed**; текущий строгий `test_run_journal` проходит. Пробный набор с дополнительным `test_live_pipeline::test_crawler_discovery_smoke` дал 1 unrelated environment failure: системному Python не хватает `bs4`; это не Monitor-регрессия. CDP Editor открыт на 114a, но запуск из UI не выполнялся. Поэтому карточка остаётся PARTIAL до свежего run 114a через Editor и проверки ID→live→archive→playable recording глазами Максима.
+
+**Live E2E Keeper (2026-09-26, запуск из Editor на 114a):** свежий запуск → **`run-e47e6ba78f0f`**. `registry` и `runs_index`: `check_id=114a…`, `source=start_run`, `started_at` проставлен. `meta?run_id=` → `run_found:true`. Пока ран шёл, `journal?run_id=` отдавал **live-события** (`live:true`, `run_archive:false`), 53 события, у каждого свой `run_id` (foreign/unscoped нет). Финал: export `run-e47e6ba78f0f.ndjson`, `run_archive:true`; `recording/status` → `ready:true`, `reports/video/run-e47e6ba78f0f.mp4` растёт до ~6.6 МБ. Прогон зелёный: `exit 0`, `ci_gate pass`, verdict `pass_watch`, Dojo findings 6 (medium 3/low 2/info 1). Один ID сквозь history→live→archive→video, cross-run подстановки нет — **producer-скоуп подтверждён живьём**.
+**Но НЕ принято:** (1) запись снята общим грей-сканированием экрана (см. `MONITOR-RECORDING-ISOLATION-RESEARCH`); (2) обнаружена утечка незакрытых ffmpeg-писателей + лживый статус «готова» (см. `MONITOR-RECORDING-LEAK`); (3) страница Monitor во время рана показала «архив» вместо live — см. `MONITOR-DEEPLINK-RUNNING-LIVE-MODE`. До закрытия этих пунктов карточка остаётся PARTIAL.
+
+---
+
+#### Карточка MONITOR-DEEPLINK-LIVE-CLIENT — Deep-link показывает текущий запуск и переходит в replay без потери идентичности
+
+**Статус:** 🟡 PARTIAL — реализация и изолированный browser-контракт проверены; integrated E2E на свежем 114a ожидает приёмки Keeper/Максима после producer (2026-09-26). **Исполнитель:** Luna.
+
+**Факт (Keeper):** deep-link с `run_id` сразу открывался как архивный replay и игнорировал live SSE. Unscoped Live metadata была приписана активному UI-чеку; **Luna подтвердила источник**: синк подставлял активный check даже без доказанной принадлежности. При 114a с headless browser видео отсутствовало; producer закрывается отдельно в `MONITOR-LIVE-DEEPLINK`.
+
+**Интент:** ссылка из результатов ведёт на настоящий run этой проверки; пока он выполняется, оператор видит ход работы без перезагрузки; после завершения те же журнал и recording доступны для replay.
+
+**DoD:**
+1. Given Live run не содержит доказанной принадлежности check, When состояние синхронизируется с UI, Then он не приписывается текущему активному check только потому, что тот открыт; link selection никогда не выбирает такой unscoped run как run проверки.
+2. Given run 114a выполняется, When Максим открывает его deep-link, Then Monitor подключается к live-событиям именно этого run; шаги и статус появляются не позднее 2 секунд, баннера «экспорт не найден» нет.
+3. Given тот же run завершён, When он остаётся открыт, Then Monitor автоматически переходит к архивному журналу и готовому recording того же ID; уже показанные события не теряются и не дублируются.
+4. Given запись ещё готовится, When Monitor показывает текущий run, Then видны живые события и честное состояние recording; при готовности появляется воспроизводимое видео с синхронизированным playhead. Если записи нет, показывается явная причина, а не вечная пустота.
+5. Given неизвестный/чужой run или run без check association, When открывается ссылка, Then сохраняются честные empty-state/403; события и видео другого запуска не отображаются.
+
+**Приёмка:**
+- [x] Unit/contract-тесты выбора run и сценариев live → finalized replay, без unscoped association, cross-run events и повторов. → **Факт Luna:** `monitorLink` 17 + `checkRunFromLive` 13; изолированный Chromium-контракт покрывает live→replay/no-duplicates и фильтры. **Проверка Keeper:** 366 FE-тестов.
+- [ ] Live: открыть свежую ссылку во время 114a, увидеть шаги ≤2 секунд; после завершения — те же шаги и playable recording.
+- [x] Unknown/foreign/unscoped negatives отображаются честно; тесты и `tsc` зелёные. → **Факт Luna:** browser smoke для archive/unknown/403, 0 console errors; FE 1763 passed, `tsc`=0. **Проверка Keeper:** целевые FE-тесты + typecheck зелёные.
+- [ ] Приёмка глазами Максима после завершения backend producer-карточки.
+
+**Out of scope:** runtime event/export/video producer (карточка `MONITOR-LIVE-DEEPLINK`); изменение ACL-политики; очистка/изменение retention; scanner/run gate. Коммит/пуш — по команде Максима.
+
+
+**Исполнение (Luna, 2026-09-26, БЕЗ приёмки):**
+
+- **Writer unscoped-записи подтверждён (факт+поля).** Запись `run-118ec442680d` в `checks_registry.json` (чек 114a) несёт ровно FE-подпись `syncActiveCheckRunFromLive`: `live_session='validate-only-ok / validate ok'`, `ci_verdict=fail_run`, `started_at=null` + `ended_at` (терминал, впервые увиденный), `check_id=114a…` проставлен фолбэком `getActiveCheckId()`. Раны того же session с `check_id: null` — след writer'а без фолбэка (другой путь). Источник подмены — FE-синк unscoped Live meta в «активный» чек.
+- **A. FE: принадлежность чеку — только доказанная.** `syncActiveCheckRunFromLive`: фолбэк «активный чек вкладки» убран; связь создаётся лишь при явном `meta.check_id`; unscoped meta НЕ создаёт новых связей (для уже записанного рана — update-only: обновление статуса/времён в его чеке без выдумывания принадлежности). `monitorLink.belongsToCheck` — строгий (`run.check_id === checkId`): unscoped и чужие раны для ссылки не выбираются (негатив-тесты на running и terminal).
+- **C. Monitor: deep-link live-first (без forced replay).** Boot резолвит режим по `/api/meta?run_id=`: `active`+`running` → **live** (run-scoped SSE `/api/diary?channel=all&run_id=`), known-завершённый → архив, unknown/403/сеть → честные состояния; bound-состояние не подменяется глобальной метой чужого прогона. События строго этого рана: чужой и неустановленный `run_id` не подмешиваются. **Live-latency (браузерный замер): 0.08–0.18 с** (DoD ≤2 с). Live-follow playhead (край потока), пользовательский скраб выключает фоллов (А-8 сохранён); архив при загрузке открывается целиком.
+- **Переход в replay без потерь/дублей.** По финалу — авто-переход на ТОМ ЖЕ `run_id` (`keepLogs`: показанные события остаются, SSE закрывается); reconcile догружает журнал только если live ничего не успел показать (recovery). Reason'ы бэкенда показываются как есть — интероп с `MONITOR-LIVE-DEEPLINK`.
+- **Recording — честные состояния.** Единый источник — `/api/recording/status` (слепые 404-ретраи убраны): `pending` («готовится…») → `ready` (src видео) → `absent` (явная причина: MP4 не найден/вычищен). Видимый бейдж `#recordingState` в хедере.
+- **Пруфы (тесты).** FE: `monitorLink.test.ts` **17** (вкл. unscoped/чужие негативы), `checkRunFromLive.test.ts` **13** (unscoped не приписывается активному чеку; update-only); контур `src/results src/terminal` **353 passed**; **полный FE: 272 файла / 1763 passed / 0 failed**; `tsc` = **0**. BE (новые): `test_monitor_bound_run_page.py` (wiring + контракт блока логики страницы через node) и `test_monitor_bound_run_browser.py` (**Chromium + изолированный live_server**: live → finalized replay на одном id, cross-run/unstamped невидимы, recording ready+src, unknown empty-state, чужой caller → 403-баннер; live-latency 0.08 с) — **3 passed**. Полный BE `-m "not heavy"`: **2439 passed / 1 failed** — единственный фейл `test_run_journal::test_read_and_filter_journal` принадлежит WIP `MONITOR-LIVE-DEEPLINK` (Boss: строгий run-фильтр в `run_journal.py`, фикстура теста пока без `run_id`) — вне этого контура.
+- **Live-стенд (пробы живой страницы :8767).** Архивный smoke-ран → «архив», recording ready + src; `run-118…` (runs_index без экспорта) → честный баннер (reason бэкенда как есть); unknown → честный empty-state; 0 console errors. Итоговая приёмка глазами Максима — на свежем `114a` после backend producer (совместно с `MONITOR-LIVE-DEEPLINK`, как и записано в карточке).
+- **Границы.** MON-11-таймфильтр сохранён (скраб А-8), добавлен live-follow; старые экспорты без `run_id` честно режутся фильтром Boss'а (ожидаемо по его карточке). Коммит/пуш — по команде Максима.
+
+**Проверка Keeper (2026-09-26):** FE-контур `src/results`, `src/terminal` и `checkRunFromLive` — **366 passed**; `tsc=0`. Связанный backend-набор с producer/journal/page/browser tests — **76 passed**, включая текущую strict-версию `test_run_journal`. Полный integrated run на 114a через Editor не запускался; из CDP подтверждены только boot Editor на check 114a и корректный viewport. Исторический широкий BE-прогон Luna имел один journal-failure во время WIP Boss; текущий targeted test проходит. Итоговая live-приёмка остаётся открыта до одного свежего 114a: live-события → replay того же ID без потерь/дублей → готовое и воспроизводимое видео/перемотка.
+
+---
+
+#### Карточка MONITOR-DEEPLINK-RUNNING-LIVE-MODE — Deep-link на живой ран входит в live-режим, а не в «архив»
+
+**Статус:** ⏳ READY (contract-drift, найден при live-приёмке 2026-09-26). **Исполнитель:** Luna.
+
+**Факт (Keeper, live 2026-09-26, `run-e47e6ba78f0f`):** пока прогон 114a шёл из Editor, страница Monitor по deep-link показала статус **«архив #run-e47e»** (режим replay), а не live. Причина — рассинхрон контракта: страница `decideBoundRunMode` входит в live только при `meta.run_source === "active"`, а backend `_run_source` отдаёт `"active"` лишь когда `diary_bus._active_run_id() == run_id`; `_active_run_id()` читает `PK_RUN_ID` **дочернего** процесса, которого в процессе live_server нет. Для реального рана (`/api/run/start`) meta во время исполнения несла `run_source: "run_dir"` → страница ушла в replay, live-SSE не подписывался (`в replayMode live SSE игнорируется`), журнал загружался один раз. Итог: живой прогресс по шагам в этом режиме не обновляется по SSE, хотя события всё же отрисовались через journal-fallback.
+
+**Интент:** deep-link на **живой** ран открывает именно live-режим и обновляет шаги/статус по мере исполнения (≤2 с), независимо от того, как называется источник знания о ране.
+
+**DoD:**
+1. Given ран имеет статус `running` и принадлежит запрошенному run_id, When открыт deep-link, Then Monitor входит в live-режим и подписывается на run-scoped SSE (или эквивалентно доказуемо обновляет поток).
+2. Given ран завершился, When он ещё открыт, Then тот же переход live→replay без потерь/дублей сохраняется.
+3. Given чужой/неизвестный/не-running ран, When открыт deep-link, Then по-прежнему replay/empty-state, событий чужого run нет.
+4. Решение не должно зависеть от точной строки `run_source`: либо страница ключуется на `status==="running"`, либо backend приводит источник к согласованному значению — с тестом на оба варианта provenance.
+
+**Приёмка:**
+- [ ] Unit/contract-тест: `meta{status:'running', run_source:'run_dir'}` (и `'active'`) → режим `live`.
+- [ ] Live: открыть deep-link во время реального 114a → статус live, шаги прибывают без ручной перезагрузки; после финала — авто-переход в архив.
+- [ ] Негативы (терминал/чужой/неизвестный) сохранены; `tsc` и связанные тесты зелёные.
+
+**Out of scope:** producer/recording (`MONITOR-LIVE-DEEPLINK`); формат записи и её воспроизведение (`MONITOR-RECORDING-*`); ACL (`MONITOR-ACL-IDENTITY`). Коммит/пуш — по команде Максима.
+
+---
+
+#### Карточка MONITOR-FRESH-STAMP — FE не штампует `started_at` у старта рана → ссылка монитора не признаёт свежий прогон живым
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-26). **Исполнитель:** Flash.
+
+**Факт (Keeper, live):** при живом прогоне `run-5ca72ed047a2` (23:20) запись `runs[]` чека `114a` имеет `status:'running'`, **но без `started_at/ended_at/updated_at`** → `pickMonitorRun` (свежесть по `timestampOf`: ended_at→started_at) не признаёт её живой → фолбэк на «последний терминальный» = старый `run-4b0ea85bd3e5` → оператор получил ссылку на мёртвый ран. `onRunStarted` (`App.tsx:687` → `upsertCheckRun`) создаёт запись без времени.
+
+**DoD:** FE штампует времена жизненного цикла рана: `started_at` (ISO) при `onRunStarted`, `ended_at` при терминальном апдейте (если отсутствует); после фикса свежий старт → ссылка ведёт на него (в окне 15 мин). Юнит-тест на штамп + на выбор.
+
+**Приёмка:**
+- [x] Тест: старт рана → запись с `started_at`; `pickMonitorRun` выбирает её. → `checkRunFromLive.test.ts` +5 (файл 12), `monitorLink` 13; мой прогон `vitest src/results src/checks src/terminal` = **471 passed**.
+- [x] Live: запуск прогона → ссылка сразу ведёт на живой ран. → **Факт Flash:** старт из редактора → `run-c6190d097230`, `buildMonitorUrl` сразу на живой ран, штамп стабилен, мисфайла нет (скрин). **Факт Keeper:** реестр 114a — `run-c6190d097230` c `started_at=2026-09-26T04:50:34.272Z` и `ended_at` ✓.
+- [x] `tsc` 0; vitest (results/checks/terminal) зелёные. → `tsc`=0; контуры **471** и `src/app src/shell` **60 passed**.
+
+**Out of scope:** ACL/identity; journal live (`MONITOR-LIVE-DEEPLINK`). Коммит/пуш — по команде Максима.
+**Scope:** `frontend/src/App.tsx` (onRunStarted/terminal-update), `checksStore` (`upsertCheckRun`), `results/monitorLink.ts` при необходимости, тесты.
+
+**Исполнение (Flash, 2026-09-26):** корень глубже факта карточки: `onRunStarted` штамповал `started_at` в **чужой чек** — `getActiveCheckId()` в сессии указывал на `f3359430…` («Juice Smoke Test»), поэтому запись 114a рождалась только meta-синком (без времени), а штамп уезжал в f3359430 (live-пруф до фикса: `run-5ca72ed047a2`/`run-4b0ea85bd3e5` там имеют `started_at`, в 114a — null).
+Фикс: (1) `App.tsx::onRunStarted` штампует по `checkId`-пропу (фолбэк — активный id) + `checkId` в deps; (2) `syncActiveCheckRunFromLive` штампует `started_at` первому наблюдению живого рана (покрывает CLI/CI-старты) и `ended_at` терминалу без времени из meta — одноразово; (3) `upsertCheckRun` merge защищает `started_at`/`ended_at` от обнуления пустыми полями синка.
+Тесты: `checkRunFromLive.test.ts` +5 (штамп running и его стабильность; FE-штамп не перезатирается; `ended_at` терминалу; ссылка после sync) — файл 12; `monitorLink` 13; `tsc` = 0; `vitest run src/results src/checks src/terminal` = **51 файл / 471 passed / 0 failed**.
+Live (26.09, CDP `:9222` + Editor `:5173`): запуск из редактора 114a → тост «Запуск стартовал (run-c6190d097230)»; запись 114a: `status=running`, `started_at=2026-09-26T04:50:34.272Z`, `check_id=114a`; `buildMonitorUrl` → `?run_id=run-c6190d097230&check_id=114a…` — **ссылка сразу ведёт на живой ран**; штамп стабилен после поллинга; в чужой f3359430 ран **не уехал** (`no_misfile=true`); скрин `secops-monitor-fresh-stamp.png`. Прогон остановлен (стенд свободен; Dojo-финал — `DOJO-IMPORT-500`). Наблюдение: старые мисфайлы f3359430 (`run-5ca72ed047a2`/`run-4b0ea85bd3e5`, «вечные running») — наследие до фикса, закроются reconcile-окном Boss'а. Коммит/пуш — по команде Максима.
+
+**Приёмка (Keeper, 2026-09-26) — ACCEPTED фактами:** корень глубже факта карточки (штамп уезжал в **чужой чек** f3359430 по устаревшему `pk.checks.active`) подтверждён live-пруфом (в f3359430 те же раны с временами, в 114a — без); мой факт: реестр 114a — старт с `started_at`/`ended_at` ✓; контуры `vitest src/results src/checks src/terminal` = **471 passed**, `src/app src/shell` = **60 passed**, `tsc`=0; штамп по `checkId`-пропу, `syncActiveCheckRunFromLive` и merge-защита времён — по коду и тестам. Наследие-мисфайлы закрываются reconcile-окном.
+
+---
+
+#### Карточка DOJO-IMPORT-500 — Импорт `juice_dojo.xml` падает HTTP 500 (fail-closed валит финал прогона)
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-26). **Исполнитель:** Boss. Root закрыт (регресс SCAN-EXPORT исправлен, импорт живой); финальный house-run `114a` — за Максимом.
+
+**Факт (Keeper, live, `run-4b0ea85bd3e5`):** финал прогона `114a` (`juice_shop_test_1`) fail-closed: `POST http://127.0.0.1:8081/api/v2/import-scan/` (mode=check, файл `reports/scanner-results/juice_dojo.xml`) → **HTTP 500** `{"message":"Internal server error, check logs for details"}`; runner.log: «DefectDojo import failed» → «DefectDojo configured but import unsuccessful → execution fail» → quality gate fail-closed (evidence). **Root (Dojo-side, из uwsgi):** `AttributeError: 'NoneType' object has no attribute 'replace'` в `default_importer.parse_findings_static_test_type` (цепочка `process_scan → base_importer.parse_findings`) — нужный парсеру атрибут отсутствует/None в нашем ZAP XML. Импорт работал 23.09 на прежнем экспорте (экспорт менялся волнами SCAN/SCAN-EXPORT).
+
+**DoD:** повторный прогон `114a` доходит до финала без «import unsuccessful» (импорт HTTP <400; fail-closed уходит); root зафиксирован (какое поле нашего XML = None для парсера Dojo) и устранён — починить экспорт ИЛИ добавить недостающий атрибут; живой смоук импорта; тест на экспорт (поле присутствует/не None).
+
+**Приёмка:**
+- [x] Live: прогон `114a` → «DefectDojo import ok», gate не падает по evidence. → **Факт Boss (live):** тот же прод-путь (адаптерный экспорт + прод-клиент, mode=check) → import ok, HTTP <400, 4 находки (medium 2 / low 1 / info 1), engagement 48. **Факт Keeper (БД Dojo):** `dojo_test` id=68 / engagement **48** / «ZAP Scan» + findings **2 Medium / 1 Low / 1 Info** — совпадает 1:1.
+- [x] Root в отчёте: поле/строка файла → место в парсере Dojo. → **Root (Boss):** `_export_owasp_xml_full` (SCAN-EXPORT) эмитил `alertitem` без `<desc>/<solution>/<reference>/<confidence>` (legacy писал всегда) → DD-парсер `zap/parser.py:86` (`html2text(None)` → `NoneType.replace`). Фикс: все поля, читаемые DD-парсером (+`wascid`), пусть пустыми.
+- [x] Тесты export/dojo-контура зелёные; без регресса. → `test_zap_g46_g49.py` = **22 passed** (+contract-тест «desc/solution/reference не None»); полный BE **2434/56/0**.
+
+**Out of scope:** caller-ACL монитора (`MONITOR-ACL-IDENTITY`); ZAP-сканер. Коммит/пуш — по команде Максима.
+**Scope:** `orchestrator/adapters/defectdojo_client.py`, `orchestrator/utils/reporter.py` (экспорт отчёта), тесты; при корне на стороне Dojo — заметка Buddy.
+
+**Исполнение (Boss, 2026-09-26):** root — регресс его же SCAN-EXPORT волны (статика: эмиссия без desc/solution/reference/confidence; репро «до»: паук → битый XML → import-scan → 500; прямой вызов парсера Dojo в контейнере дал ровно трейс Keeper'а). Фикс: экспортёр эмитит все поля DD-парсера (+`wascid`). «После»: прод-путь import ok, HTTP <400, 4 находки, engagement 48; Dojo-сторона не менялась. Оговорка: полный house-run 114a — за Максимом/Keeper'ом; проверен именно упавший путь до/после. Коммит/пуш — по команде Максима.
+
+**Приёмка (Keeper, 2026-09-26) — ACCEPTED фактами:** Dojo-сторона подтверждена моей пробой (БД: test 68 / engagement 48 / 2M-1L-1I); `test_zap_g46_g49.py` **22 passed**; полный BE **2434/56/0**. `juice_dojo.xml` уже вычищен sweep'ом старта следующего прогона (by design) — путь доказан БД-строкой + contract-тестом + live-пруфом. **Остаётся:** финальный house-run `114a` глазами Максима.
+
+---
+
+#### Карточка DRAFT-CONFLICT-TRUTH — Ложный вечный варнинг «Черновик изменён в другой сессии» (revision-адопция мертва)
+
+**Статус:** ⚠️ IN REVIEW — приёмка заблокирована follow-up `DRAFT-AUTOSAVE-CADENCE` (Keeper, 2026-09-26). **Исполнитель:** Flash.
+
+**Симптом (Максим, live):** при открытии редактора — постоянный спам «Черновик изменён в другой сессии. Следующее сохранение разрешит конфликт.»; сохраняй/не сохраняй — не проходит.
+
+**Корень (Keeper, доказан на живом стенде):**
+1. Древние черновики живут вечно: `reports/drafts/114a…json` — rev=1 от 28.08 (стаб 310B), `f3359430…` — rev=2 от 23.09; никто их не чистит.
+2. `GET /draft` отдаёт payload **без `revision`** (`draft_store.load_draft` → `{checkId,contentHash,savedAt}`) → маунт-адопция `if (typeof draft.meta?.revision === 'number') setDraftRevision(...)` (`App.tsx:375`) — **мёртвый код**; новая сессия всегда стартует с expected=0.
+3. `saveDraftRevisioned`: на 409 репортит конфликт, но **не адоптит `serverRevision`**; `resolveConflict` в проде не вызывается (импорт — только в тестах). Следующий save снова expected=0 → снова 409 → вечный цикл; каждый ретрай (autosave 500ms debounce / flush 30s / Ctrl+S) — новый тост. Live-репро: PUT `X-Draft-Revision: 0` → **409** (rev=1); после сброса черновика тот же PUT → **200 rev=1**.
+4. Любая вторая сессия (второй таб, CDP-окно) усиливает: её правки бампают revision → конфликты у всех.
+
+**DoD:**
+1. Свежая сессия + существующий черновик → **ноль варнингов** при открытии/автосейве (тихий adopt + ретрай; либо сервер экспонирует revision на GET и маунт адоптит — на выбор исполнителя, с тестом).
+2. Настоящий конфликт (revision известна, 409 `serverRev > expected`) → **один** варнинг на эпизод (дедуп по serverRev), и «следующее сохранение» реально разрешает (adopt `serverRev` → следующий save 200).
+3. Мёртвая ветка маунта — починена или удалена.
+4. Тесты: fresh-open без варнинга; реальный конфликт — один тост + авто-разрешение; цикл устранён.
+5. Live: открыть редактор — тишина; две сессии — один варнинг и авто-разрешение.
+
+**Приёмка:**
+- [ ] Live: открытие редактора с существующим черновиком — без спама.
+- [ ] Live: реальная вторая сессия — один варнинг, следующий save проходит.
+- [ ] Тесты (draftRevision/draftPersistence/checks) зелёные; `tsc` 0.
+
+**Out of scope:** механизм checks-registry; сам дизайн optimistic-concurrency. Коммит/пуш — по команде Максима.
+**Scope:** `frontend/src/checks/draftRevision.ts`, `draftPersistence.ts`, `App.tsx` (маунт/обработка 409); при варианте «сервер отдаёт revision» — `orchestrator/utils/draft_store.py` (+тест).
+
+**Исполнение (Flash, 2026-09-26):** комбинированная стратегия — сервер отдаёт revision + тихий adopt + дедуп эпизода.
+**BE:** `draft_store.load_draft` обогащает payload `meta.revision` из обёртки (`{version, revision, payload}`) → `GET /draft` теперь несёт revision; тест `test_load_draft_exposes_revision_in_meta` (контур draft_store **9 passed**).
+**FE:**
+- `draftRevision.ts`: `adoptDraftRevision` (монотонный — mount-адопция не откатывает revision, гонка с первым autosave не даёт ложный 409); `saveDraftRevisioned` — revision **неизвестна** + 409 → тихий adopt серверной версии + один ретрай (без варнинга); revision **известна** и устарела + 409 → **один** варнинг на эпизод (дедуп по `serverRevision`) + adopt (следующий save проходит); успешный save закрывает эпизод (pending/дедуп чистятся); `scheduleRevisionedSave`/`flushDraftRevisioned` больше не подставляют `0` принудительно.
+- `draftPersistence.ts`: `restoreDraftIfNewer` → `{draft, revision}` — revision отдаётся даже когда черновик не новее локального (это и была мёртвая ветка `draft.meta?.revision`).
+- `App.tsx`: маунт-адопция живая и монотонная (`adoptDraftRevision`), мёртвая ветка удалена.
+**Тесты:** `draftRevision.test.ts` — 25 (новые: монотонный adopt; свежая сессия — тихий adopt+ретрай без варнинга; известный revision — один варнинг на эпизод + adopt разрешает следующий save; новый эпизод после успеха озвучивается снова); `draftPersistence.test.ts` — 23 (обновлены под outcome; новый кейс «revision отдаётся и для stale-черновика»); `src/checks` = **10 файлов / 128 passed**; `src/app+src/shell` = 60 passed; `tsc` = 0.
+**Live (26.09, CDP `:9222` + Editor `:5173`; playground перезапущен — старый процесс держал старый `draft_store`):** открытие редактора 114a с существующим черновиком — **0 варнингов за 12s** (тихий adopt: цепочка ревизий 9→10 на маунт-PUT); `GET /draft` отдаёт `meta.revision=10`; чужая сессия (PUT с известной revision) → 200 rev 11; наш Save → **ровно 1 варнинг**, adopt; второй Save → **0 варнингов**, rev **12** (авто-разрешение). Скрины `secops-draft-conflict-one.png` (один варнинг), `secops-draft-conflict-one-silent.png` (тишина). Коммит/пуш — по команде Максима.
+
+**Проверка Keeper (2026-09-26) — не принято:** целевые тесты `draftRevision` (**25**) и `draftPersistence` (**23**) зелёные; backend draft-store **9 passed**; `tsc`=0. Скриншоты Flash подтверждают тишину при открытии и один/ноль warning в показанных состояниях. Однако второй участник был смоделирован прямым PUT-запросом, а не независимой браузерной сессией — live-пункт «две сессии» не доказан. Отдельно: активный путь автосохранения отправляет запрос при каждом изменении состояния; прежние пауза после ввода и предельный интервал принудительного сохранения в этом пути больше не действуют. Быстрые правки могут конкурировать друг с другом и снова выглядеть как конфликт с другой сессией. Закрытие отложено до `DRAFT-AUTOSAVE-CADENCE`; до этого карточка остаётся в review.
+
+**Follow-up исполнен (Flash, 2026-09-26):** `DRAFT-AUTOSAVE-CADENCE` закрыт — дебаунс 500ms + потолок 30s + сериализация PUT + dedup (см. карточку ниже). Обе оговорки приёмки сняты: (1) каденс восстановлен (быстрые правки = 1 PUT, self-конфликтов нет); (2) конфликт доказан **реальной второй браузерной сессией** (второй таб): ровно 1 варнинг, следующее сохранение 200, reload — тишина и последняя версия.
+
+---
+
+#### Карточка DRAFT-AUTOSAVE-CADENCE — Быстрые правки не создают ложный конфликт и сохраняют последнюю версию
+
+**Статус:** ⏳ READY (Keeper, 2026-09-26; SERIAL follow-up к `DRAFT-CONFLICT-TRUTH`). **Исполнитель:** Flash.
+
+**Факт приёмки:** revision-исправление прошло целевые unit/backend-тесты, но активное автосохранение запускается на каждое изменение, без прежнего ожидания после ввода и максимального интервала сохранения. Поэтому несколько быстрых собственных правок могут конкурировать за одну ревизию. Кроме того, конфликт проверен запросом от имени второй стороны, а не второй браузерной сессией.
+
+**DoD:** Максим может быстро редактировать черновик и работать в двух сессиях: свои быстрые правки не создают предупреждений о конфликте; актуальное содержимое сохраняется без потери последних изменений; при реальном конфликте между независимыми сессиями предупреждение появляется один раз, и последующее сохранение проходит.
+
+**Приёмка:**
+- [ ] Given Максим быстро вносит несколько правок в одной сессии, When автосохранение завершает работу, Then конфликтное предупреждение не появляется, а серверный черновик содержит последнее введённое значение.
+- [ ] Given правки продолжаются без длительной паузы, When проходит 30 секунд, Then актуальный черновик сохранён не реже одного раза за этот интервал, ввод остаётся отзывчивым.
+- [ ] Given явное сохранение происходит во время отложенного или выполняющегося автосохранения, When оба действия завершены, Then более старая версия не перезаписывает последнюю.
+- [ ] Given две независимые браузерные сессии открыли один черновик и одна из них сохранила изменения, When вторая сохраняет устаревшую версию, Then виден ровно один warning для конфликта; следующее сохранение проходит без повторного warning.
+- [ ] Given пользователь перезагружает редактор после завершения правок, When черновик восстанавливается, Then отображается последняя сохранённая версия без ложного предупреждения.
+- [ ] Тесты покрывают быстрые последовательные изменения, конкурирующие сохранения, явное сохранение и независимые сессии; TypeScript-проверка и связанные тесты зелёные.
+
+**Out of scope:** изменение пользовательского формата черновика, дизайн слияния содержимого при конфликте, монитор и run-поведение. `DRAFT-CONFLICT-TRUTH` — зависимая родительская карточка, её приёмка завершается после этого follow-up. Коммит/пуш — по команде Максима.
+
+**Отчёт:** наблюдаемое поведение по каждому сценарию, какие действия выполнили независимые сессии, тесты, ограничения и незакрытые дефекты.
+
+**Исполнение (Flash, 2026-09-26):** каденс возвращён в revision-aware путь (`draftRevision.ts`): дебаунс `DRAFT_SAVE_DEBOUNCE_MS` (500ms) после последней правки; потолок `DRAFT_FLUSH_MAX_MS` (30s) при непрерывном вводе; dedup по `computeDraftHash` (ре-рендер без изменений PUT не шлёт); **сериализация** — один in-flight PUT на чек, следующая правка ждёт очередь и уходит с уже адоптированным revision (self-гонка не выглядит конфликтом); `flushDraftRevisioned` отменяет отложенные более старые правки, дожидается in-flight и сохраняет актуальное.
+**Тесты:** +6 (`DRAFT-AUTOSAVE-CADENCE`: серия быстрых правок = один PUT с последним содержимым; dedup; потолок 30s при непрерывных правках; явный save отменяет отложенный; сериализация с адоптированным revision; явный save во время in-flight — старое не перезаписывает новое) — `draftRevision.test.ts` **31**; `draftPersistence` 23; `src/checks` = **10 файлов / 134 passed**; `tsc` = 0.
+**Live (26.09, CDP `:9222` + Editor `:5173`; независимые сессии — второй РЕАЛЬНЫЙ таб, не raw PUT):**
+- PH1 (A: 3 правки по 150ms): **ровно 1 PUT** (rev 30, тело = последняя правка, 200), **0 варнингов**, серверный черновик содержит последнее введённое значение.
+- PH2 (A: правка + явный Save через 120ms < дебаунса): flush 200 с актуальным телом; черновик содержит A4; 0 варнингов. Оговорка: 2 PUT вместо 1 — второй рождён нормализацией контролируемого Monaco-текста после flush (200); старой версии после новой не сохранено.
+- PH3 (две независимые сессии): B (второй таб) сохранил → 200 без варнинга; A с устаревшей ревизией → PUT **409** → **ровно 1 варнинг**; следующая правка A → **200**, без повторного варнинга; черновик содержит последнюю правку A; скрин `secops-cadence-two-sessions.png`.
+- PH4 (reload A): восстановлена последняя версия (в редакторе), **0 варнингов**; скрин `secops-cadence-silent.png`.
+- Потолок 30s live не гонялся (31s непрерывного ввода) — доказан unit-тестом; дебаунс-коалесценция доказана live (PH1).
+- Cleanup: probe-строки удалены (12), черновик чист (`hasProbe:false`). Коммит/пуш — по команде Максима.
+
+---
+
+---
+
+#### Карточка REGISTRY-RUN-STATUS-HYGIENE — «Вечные running» в runs[] реестра + честный empty-state монитора
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-25). **Исполнитель:** Boss.
+
+**Факт (Keeper, live):** у чека `114a` в `checks_registry.json` `runs[]` — ~25 вечно-`running` записей за 19–24.09; `run-456c5bf7b06f` — от чужого чека, а в `runs_index` его последняя запись тоже `running` (с `ended_at`!); `:8767` при неизвестном/вычищенном run молчит, а `/api/meta` показывает остаток другого прогона (validate-only). Источник: статусы `runs[]` не синхронизируются терминально с `runs_index`; страница не сообщает «события недоступны».
+
+**DoD:** (1) статусы `runs[]` синхронизируются из `runs_index` (derive при чтении или апдейт при `run_ended`) — непарных `running` не остаётся (кроме реально живого); исторические зомби закрыты. (2) `:8767` при run_id без событий — **честный empty-state** («прогон не найден в текущем окне / события вычищены»), не тишина; «текущий» прогон в `/api/meta` не подменяется чужим.
+
+**Приёмка:**
+- [x] Реестр: 0 непарных `running`; тест на синхронизацию. → **Факт Keeper (live):** `GET /api/checks` → running=2, оба — один живой `run-e8681d8239b8` (под двумя чеками); reconcile-код прочитан (adopt/expired/окно 6h); тест на синхронизацию в `test_checks_registry.py` (47 passed).
+- [x] Live: `/?run_id=<несуществующий>&check_id=…` → видимый empty-state с причиной. → **Факт Keeper:** `meta?run_id=no-such-run-zzz` → `{run_found:false, reason:«прогон не найден в текущем окне…»}`; journal — аналогично; **баннер `#runStateBanner` виден живьём** ( DOM-проверка на `:8767/?run_id=no-such-run-zzz&check_id=114a…`): «прогон не найден в текущем окне: неизвестный run_id или события вычищены».
+- [x] Тесты registry/live_server зелёные; комбо без регресса. → registry+diary **47 passed**; полный BE **2430 passed / 56 skipped / 0 failed** (повторный прогон; первый — 1 флейк `test_playwright_runtime_launches_headless`, известный класс само-гейтится в файле).
+
+**Out of scope:** FE-выбор ссылки (`MONITOR-DEEPLINK-FRESH`); гейт редактора (`RUN-GATE-MARKERS`). Коммит/пуш — по команде Максима.
+**Scope:** `orchestrator/utils/checks_registry.py` (± `live_server.py`, `orchestrator/static/live/index.html`), тесты.
+
+**Исполнение (Boss, 2026-09-25):** root-cause глубже карточки: `runs[]` — FE-ledger, терминал живёт в `runs_index`; реестр его не подтягивал, `_prune_dead_runs` щадил «живые» ссылки, не трогая их `running`-статус; FE периодически персистит кэш (`PUT /api/checks`) — наблюдались откаты к `running` чужими сейвами. Фикс: `_reconcile_run_statuses` — derive при чтении и записи (терминал из `runs_index` → adopt `status/ended_at/verdict`; без терминала, без run-каталога и без свежей активности >6h → `expired`; свежий `running`/run_dir — остаётся); `reconcile_checks_registry_file()` — разовая миграция; prune щадит свежие running. `live_server.py`: `run_found/run_source/reason` в `/api/meta?run_id=` (unknown → честный payload, resident не подставляется) и `/api/journal/latest`; `index.html`: `#runStateBanner` empty-state. Live: 92 running → adopted 34 / expired 58; running=2 — один живой `run-e8681d8239b8` под двумя чеками; save-гард PUT-пробы (проба → failed, не воскресла). Оговорки: кто PUT-ит кэш — не искался (канал закрыт save-гардом); молча умерший running закроется по окну 6h; случайно затёртый лейбл «оффлайн» восстановлен (дифф чист). Коммит/пуш — по команде Максима.
+
+**Приёмка (Keeper, 2026-09-25) — ACCEPTED фактами (live, post-reboot):** код `_reconcile_run_statuses`/`reconcile_checks_registry_file` прочитан; live: `GET /api/checks` → running=2 (оба — один живой `run-e8681d8239b8`, как в отчёте); `meta?run_id=no-such-run-zzz` → `{run_found:false, reason:«прогон не найден в текущем окне…»}`, journal — аналогично; баннер `#runStateBanner` — **виден живьём** (DOM-проверка Keeper'а); тесты: registry+diary **47 passed**; полный BE **2430 passed / 56 skipped / 0 failed**. ⚠️ В ходе приёмки обнаружен и закрыт **инцидент** с файлом реестра (обнулён на диске; восстановлен из FE-localStorage + baka; скан = других битых файлов нет) — детали в PROGRESS.
+**Отчёт:** дифф; данные до/после (сколько зомби закрыто); live empty-state.
+
+---
+
 #### Карточка RELAY-STALE-WATCHDOG — Залипший relay: screencast молчит, клиент видит единственный старый кадр (follow-up VIEWFIT-FE)
 
-**Статус:** ⏳ READY (Keeper, 2026-09-25). **Исполнитель:** Boss.
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-25). **Исполнитель:** Boss.
 
 **Факт (Buddy, 25.09, live + подтверждение Keeper'а):** relay-процесс от 08:43 «залип»: вкладка авторинг-браузера уже была 1083×661, а screencast отдавал клиентам единственный старый кадр (`1919×940`), viewport-sync-дог молчал; клиент видел ровно 1 кадр. Перезапуск relay (09:47) оживил контур **без правок кода**. Доп. факт: `lab_ensure_ui` проверяет только `LISTENING` — залипший relay рестартом стенда не лечится.
 
 **DoD:** relay сам детектирует «screencast молчит / кадр не обновлялся N секунд при живых клиентах» и лечится (re-start screencast / пересоздание CDP-сессии / reconnect-dog), **либо** отдаёт честный health-сигнал, по которому деск/ensure видят «стрим устарел». Root-cause зафиксирован (как именно screencast умирает, не роняя WS/CDP). Тесты на staleness-детект/лечение.
 
 **Приёмка:**
-- [ ] Воспроизведение залипания зондом (или честный repro-рецепт) + фикс: кадры снова идут ≤N сек без ручного рестарта.
-- [ ] Живой прогон: клиент получает свежие кадры после «убийства» screencast-сессии relay'я.
-- [ ] Тесты relay зелёные (per-file + комбо без регресса).
-- [ ] Заметка смежнику: `lab_ensure_ui`/health — по желанию показывать свежесть кадра, не только LISTENING (зона Buddy, отдельной строкой в отчёте).
+- [x] Repro-рецепт + фикс (кадры идут ≤N сек без ручного рестарта). → **Факт Boss (live):** «убийство» screencast на сессии тестового релея → replay 0.02s, heartbeat-кадр 5.2s, stop/start-лечение → screencast-кадр 5.24s (silence 0.0s). Точный триггер инцидента 08:43 не восстановим (процесс без redirect — логи утеряны), класс закрыт детерминированно.
+- [x] Живой прогон: свежие кадры после «убийства» screencast. → Boss: логи `stale stream: watchdog frame … (screencast_silent=6s changed=True)`, `stale screencast: restarted`; **Keeper:** живой WS-пробник на боевом новом билде — 1919×887 → 1083×661 (~0.06s) → 1920×1080 (~0.08s), стрим жив (7 кадров).
+- [x] Тесты relay зелёные (per-file + комбо без регресса). → **Факт Keeper:** relay-файл **32 passed** (+7 watchdog); комбо 5 файлов **193 passed / 2 skipped** в обоих порядках; resize-accept (Boss): 0.52s/0.15s.
+- [x] Заметка смежнику. → Зафиксировано: `lab_ensure_ui` видит только LISTENING; предложен health-рецепт «WS-проба: кадр получен ≤N сек» (зона Buddy). Подтверждено (Keeper): UI-контур к 21:29 снова лежал — ensure не отличит лежачий relay; поднят каноном.
 
 **Out of scope:** VIEWFIT-FE (закрыт), resize-API, FE. Коммит/пуш — по команде Максима.
 **Scope:** `orchestrator/browser/cdp_viewport_relay.py`, тесты; заметка по `lab_ensure_ui` — Buddy.
+
+**Исполнение (Boss, 2026-09-25):** root-cause: без таймаутов на CDP-await'ы зависший `Runtime.evaluate`/`detach` мог намертво заморозить sync-loop и reconnect-дог («залип»); гипотеза «вторая screencast-сессия убивает первую» опровергнута A/B-спайком. Фикс: `wait_for` на все CDP-вызовы цикла (evaluate/capture/detach/close); stream-watchdog: молчание ≥6s при живых клиентах → heartbeat-кадр; контент изменился, screencast молчит → stop/start на своей сессии (cooldown 30s, повторный `.on` не вешается); часы свежести (monotonic). Env: `PK_RELAY_CDP_TIMEOUT_SEC=5` / `PK_RELAY_STALE_SEC=6`. Дифф: `cdp_viewport_relay.py` (+watchdog/таймауты), `test_cdp_viewport_relay.py` (+7). Боевой релей перезапущен на новый билд. Коммит/пуш — по команде Максима.
+
+**Приёмка (Keeper, 2026-09-25) — ACCEPTED фактами:** код watchdog'а проверен (таймауты/heartbeat/restart+cooldown/логи — структура и линии логов совпадают с live-доказательством); мои прогоны: relay **32 passed**, комбо **193/2 skip**; живой WS-пробник на боевом билде — кадры идут, push'и размеров ~0.06–0.08s, стрим жив. Kill-screencast повторно не «убивал» (нужен тестовый хук сессии) — беру live-лог Boss'а + сьют; базовый контур перепроверен независимо.
+
+---
+
+#### Карточка FULL-SUITE-REBASELINE — Полный suite-срез после большой волны: честный red-счёт и триаж
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-25). **Исполнитель:** Boss.
+
+**Контекст:** волна `60a6507` + `f8fbf02` запушена (browser studio, runtime-фиксы, allure3-secops, много тестов). Последний известный полный срез — 2026-09-20 (`2235 passed / 55 skipped / 0 failed`, debt-доки RC2-5/6/7); после него большой объём правок, полного пересчёта не было — red-счёт и skip-причины могли устареть.
+
+**DoD:** полные suite'ы прогнаны и честно посчитаны: BE `pytest -q` из корня репы + `-m "heavy or lab or docker or integration"`; FE `npm run typecheck` + `npm run test`. Каждый красный/collect-error объяснён (регресс волны vs предсуществующий) с диспозицией; `docs/debt/PK-DEBT-RED.md` обновлён свежим срезом; регрессы (если есть) нарезаны карточками; тривиальные тест-гигиенические фиксы допустимы в этом же заходе с фиксацией.
+
+**Приёмка:**
+- [x] Команды + числа (BE full, heavy/lab, FE typecheck, FE full vitest) в отчёте. → **Факт Keeper (мой прогон, корень репы):** BE full **2424 passed / 56 skipped / 0 failed** (176.19s — как в отчёте); heavy/lab **14 passed / 11 skipped / 0 failed** (17s); FE `typecheck`=**0**; FE full vitest **270 файлов / 1721 passed / 0 failed** (210s — как в отчёте).
+- [x] Таблица red → причина → диспозиция; unexplained red = 0. → RC2-8 §14: `methods_placement` (регресс SCAN-волны → `_NAMELESS_BY_DESIGN`) + `lab_hooks_e2e` (stale-тест, не бежал при лежачем Dojo → канон движка-3 + условный dojo по наличию XML) — оба закрыты in-place; unexplained = 0.
+- [x] Debt-док обновлён; follow-up-карточки (если нужны) нарезаны. → `PK-DEBT-RED.md` §13–16 (RC2-8); отдельных follow-up не потребовалось.
+- [x] Регрессов от волны нет — либо каждый заведён отдельной карточкой. → Полный сьют зелёный; один найденный регресс (methods_placement) закрыт in-place и покрыт, второй — предсуществующий.
+
+**Out of scope:** house-run `114a` (глазами Максима); фиксы продуктовых дефектов «по дороге» (только отдельными карточками); чужие PO-зоны. Коммит/пуш — по команде Максима.
+**Scope:** тесты/прогоны, `docs/debt/**`, follow-up-строки в backlog.
+
+**Исполнение (Boss, 2026-09-25):** срез RC2-8 в `docs/debt/PK-DEBT-RED.md` (§13–16): BE 2424/56/0 (156s) после волны (было RC2-6: 2235/55/0); heavy/lab 14/11/0; FE typecheck 0; FE 270/1721/0 (было RC2-7: 15 failed/1601). Триаж: 2 red закрыты in-place (см. приёмку), collect-errors 0. Коммит/пуш — по команде Максима.
+
+**Приёмка (Keeper, 2026-09-25) — ACCEPTED фактами:** все четыре числа перепроверены мной с корня репы — сошлись до цифры; маркерный heavy/lab прогон — 14/11/0; skip-причины разобраны (§15, дельты честные). Замечание: прогон из `orchestrator/` даёт 30 collection-errors — канон «из корня репы» подтверждён (pre-existing env-контекст, не регресс).
+
+---
+
+#### Карточка PK-API-LAB-SRC — Источник `pk-api-lab` отсутствует в репе: восстановить или задокументировать как внешне-провижининг
+
+**Статус:** ✅ ACCEPTED (Keeper, 2026-09-25). **Исполнитель:** Boss.
+
+**Факт (Keeper, 25.09):** `services/pk-api-lab/` — только пустой `proto_pack/`, в git не tracked; образ `pk-api-lab:local` не собран; `services/session-template.yml` и `docker-compose.api-lab.yml` ссылаются на build-контекст `./pk-api-lab`, которого нет. Следствия: 4 heavy-skip (`test_session_isolation.py`) + 4 `lab proto_pack missing` (реестр: `docs/debt/PK-DEBT-RED.md` §9, follow-up с 2026-09-20).
+
+**DoD:** осознанный выбор доведён до конца: **(a)** источник восстановлен в репу (Dockerfile + сервис + proto_pack; образ `pk-api-lab:local` собирается; skip-причины обновлены/сняты), **либо (b)** зафиксировано как внешне-провижининг (stand/debt-доки + честные skip-причины: «api-lab не провижинится в репо»). Выбор обоснован в отчёте (стоимость/ценность; api-lab — opt-in).
+
+**Приёмка:**
+- [x] Выбор (a/b) обоснован; артефакты соответствуют. → Выбор **(b) внешне-провижининг**: источник (`kdt-api-lab`) жил вне репо и утрачен (git-история `services/pk-api-lab` пуста, `D:\prettyk-dev` нет, на диске не найден) → (a) = переписывание сервиса с нуля, несоразмерно opt-in-ценности. Артефакты: `services/pk-api-lab/README.md` (контракт включения), пометки в `session-template.yml`/`docker-compose.api-lab.yml`/`docs/stand.md`, debt §9 → «РЕШЕНО».
+- [x] `test_session_isolation.py` / proto_pack-скипы: причина честная (не глухой skip). → **Факт Keeper:** `test_session_isolation.py` = **5 passed / 4 skipped**, причины — «pk-api-lab is provisioned externally (sources not in repo) — see services/pk-api-lab/README.md»; `_infra_gap()` разделяет Docker Engine / playwright-authoring / pk-api-lab; 4 proto-файла — «provisioned externally».
+- [x] Доки (`docs/stand.md` / `docs/debt/**`) согласованы. → `stand.md` + README + debt §9 + compose-комментарии — прочитаны, согласованы.
+
+**Out of scope:** остальные skip-причины (PG_DSN env-гейт и пр.); реальный gRPC-прогон api-lab (opt-in). Коммит/пуш — по команде Максима.
+**Scope:** `services/pk-api-lab/**`, ссылки в compose/session-template, docs.
+
+**Исполнение (Boss, 2026-09-25):** вариант (b) внешне-провижининг; README (контракт включения), пометки в compose/session-template/stand, debt §9 «РЕШЕНО»; skip-причины явные. Live: 13 passed / 8 skipped с новыми причинами. Коммит/пуш — по команде Максима.
+
+**Приёмка (Keeper, 2026-09-25) — ACCEPTED фактами:** живой прогон session-контура подтвердил честные причины скипов; README/stand/debt прочитаны; полный сьют зелёный (скипы не маскируют красное). Вариант (b) согласен с духом карточки («восстановить ИЛИ задокументировать»).
 
 ---
 
